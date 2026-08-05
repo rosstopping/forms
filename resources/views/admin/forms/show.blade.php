@@ -5,10 +5,16 @@
     <div class="flex items-center justify-between">
         <div>
             <h1 class="text-2xl font-semibold">{{ e($form->name) }}</h1>
-            <p class="text-sm text-slate-600">Form details and recent submissions.</p>
+            <p class="text-sm text-slate-600">Form details and notification settings.</p>
         </div>
         <a href="{{ route('admin.forms.index') }}" class="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Back to forms</a>
     </div>
+
+    @if (session('status'))
+        <div class="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+            {{ session('status') }}
+        </div>
+    @endif
 
     <div class="rounded-lg border bg-white p-4 shadow-sm">
         <h2 class="font-semibold">Overview</h2>
@@ -19,6 +25,55 @@
             <div class="flex justify-between"><dt class="text-slate-500">Auto discovered</dt><dd class="font-medium">{{ $form->auto_discovered ? 'Yes' : 'No' }}</dd></div>
         </dl>
     </div>
+
+    <form method="POST" action="{{ route('admin.forms.update', $form) }}" class="rounded-lg border bg-white p-4 shadow-sm">
+        @csrf
+        @method('PUT')
+
+        <h2 class="font-semibold">Notification settings</h2>
+        <p class="mt-1 text-sm text-slate-600">Leave these off unless you want this form to send notifications.</p>
+
+        <div class="mt-4 grid gap-4 md:grid-cols-2">
+            <label class="flex items-center gap-2 rounded-md border border-slate-200 p-3 text-sm">
+                <input type="checkbox" name="email_enabled_override" value="1" @checked((bool) $form->email_enabled_override)>
+                <span>Send email notifications for this form</span>
+            </label>
+
+            <label class="flex items-center gap-2 rounded-md border border-slate-200 p-3 text-sm">
+                <input type="checkbox" name="webhook_enabled_override" value="1" @checked((bool) $form->webhook_enabled_override)>
+                <span>Send webhook notifications for this form</span>
+            </label>
+        </div>
+
+        <div class="mt-4 grid gap-4 md:grid-cols-2">
+            <div>
+                <label class="text-sm font-medium text-slate-700" for="email_recipients_override">Email recipients</label>
+                <textarea id="email_recipients_override" name="email_recipients_override" rows="3" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">{{ old('email_recipients_override', is_array($form->email_recipients_override) ? implode(PHP_EOL, $form->email_recipients_override) : (string) $form->email_recipients_override) }}</textarea>
+                <p class="mt-1 text-xs text-slate-500">Enter one email address per line.</p>
+            </div>
+
+            <div>
+                <label class="text-sm font-medium text-slate-700" for="email_subject_override">Email subject override</label>
+                <input id="email_subject_override" type="text" name="email_subject_override" value="{{ old('email_subject_override', $form->email_subject_override) }}" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+            </div>
+        </div>
+
+        <div class="mt-4 grid gap-4 md:grid-cols-2">
+            <div>
+                <label class="text-sm font-medium text-slate-700" for="webhook_url_override">Webhook URL</label>
+                <input id="webhook_url_override" type="url" name="webhook_url_override" value="{{ old('webhook_url_override', $form->webhook_url_override) }}" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+            </div>
+
+            <div>
+                <label class="text-sm font-medium text-slate-700" for="webhook_secret_override">Webhook secret</label>
+                <input id="webhook_secret_override" type="text" name="webhook_secret_override" value="{{ old('webhook_secret_override', $form->webhook_secret_override) }}" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+            </div>
+        </div>
+
+        <div class="mt-6 flex justify-end">
+            <button type="submit" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Save settings</button>
+        </div>
+    </form>
 
     <div class="rounded-lg border bg-white p-4 shadow-sm">
         <h2 class="font-semibold">Recent submissions</h2>

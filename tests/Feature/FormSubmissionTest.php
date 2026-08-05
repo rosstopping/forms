@@ -25,7 +25,7 @@ it('auto-registers a website and form and stores the submission', function (): v
 	$this->assertDatabaseHas('websites', ['name' => 'example.com', 'auto_discovered' => true]);
 	$this->assertDatabaseHas('forms', ['name' => 'Contact form', 'slug' => 'contact-form']);
 	$this->assertDatabaseHas('form_submissions', ['source_domain' => 'example.com']);
-	Mail::assertSentCount(1);
+	Mail::assertNothingSent();
 });
 
 it('allows public submissions without a CSRF token', function (): void {
