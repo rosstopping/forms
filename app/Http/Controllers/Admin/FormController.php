@@ -23,7 +23,7 @@ class FormController extends Controller
 
     public function show(Form $form)
     {
-        $form->load(['website', 'submissions' => fn ($query) => $query->latest('created_at')->limit(10)]);
+        $form->load(['website', 'submissions' => fn($query) => $query->latest('created_at')->limit(10)]);
 
         return view('admin.forms.show', compact('form'));
     }
@@ -67,6 +67,6 @@ class FormController extends Controller
             $items = [];
         }
 
-        return array_values(array_filter(array_map(static fn (mixed $item) => trim((string) $item), $items), static fn (string $item) => $item !== ''));
+        return array_values(array_filter(array_map(static fn(mixed $item) => trim((string) $item), $items), static fn(string $item) => $item !== ''));
     }
 }

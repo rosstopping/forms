@@ -21,7 +21,7 @@ class WebsiteController extends Controller
 
     public function show(Website $website)
     {
-        $website->load(['domains', 'forms' => fn ($query) => $query->latest('created_at'), 'submissions' => fn ($query) => $query->latest('created_at')->limit(10)]);
+        $website->load(['domains', 'forms' => fn($query) => $query->latest('created_at'), 'submissions' => fn($query) => $query->latest('created_at')->limit(10)]);
 
         return view('admin.websites.show', compact('website'));
     }

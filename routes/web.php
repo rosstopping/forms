@@ -18,7 +18,7 @@ Route::get('/submitted', function (Request $request) {
 })->name('forms.submitted');
 
 Route::middleware(['web', 'throttle:120,1'])->group(function () {
-    Route::options('/submit', fn () => response()->noContent())
+    Route::options('/submit', fn() => response()->noContent())
         ->middleware(AllowFormSubmissionCors::class);
 
     Route::post('/submit', [FormSubmissionController::class, 'store'])

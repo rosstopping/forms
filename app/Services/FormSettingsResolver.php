@@ -19,7 +19,7 @@ class FormSettingsResolver
 	public function resolveEmailRecipients(Form $form): array
 	{
 		if (! blank($form->email_recipients_override)) {
-			return array_values(array_filter(array_map(static fn ($recipient) => trim((string) $recipient), (array) $form->email_recipients_override)));
+			return array_values(array_filter(array_map(static fn($recipient) => trim((string) $recipient), (array) $form->email_recipients_override)));
 		}
 
 		return [];
