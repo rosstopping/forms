@@ -1,0 +1,55 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+class Website extends Model
+{
+    protected $fillable = [
+        'name',
+        'is_active',
+        'auto_discovered',
+        'email_enabled',
+        'email_recipients',
+        'webhook_enabled',
+        'webhook_url',
+        'webhook_secret',
+        'success_redirect_url',
+        'failure_redirect_url',
+        'turnstile_enabled',
+        'turnstile_secret_key',
+        'first_seen_at',
+    ];
+
+    protected $casts = [
+        'email_enabled' => 'boolean',
+        'webhook_enabled' => 'boolean',
+        'turnstile_enabled' => 'boolean',
+        'auto_discovered' => 'boolean',
+        'is_active' => 'boolean',
+        'email_recipients' => 'array',
+        'first_seen_at' => 'datetime',
+    ];
+
+    public function domains(): HasMany
+    {
+        return $this->hasMany(WebsiteDomain::class);
+    }
+
+    public function forms(): HasMany
+    {
+        return $this->hasMany(Form::class);
+    }
+
+    public function submissions(): HasMany
+    {
+        return $this->hasMany(FormSubmission::class);
+    }
+
+    public function primaryDomain(): ?WebsiteDomain
+    {
+        return $this->domains()->where('is_primary', true)->first() ?: $this->domains()->first();
+    }
+}
