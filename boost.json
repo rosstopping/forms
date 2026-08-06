@@ -12,6 +12,7 @@
     "skills": [
         "infer-conventions",
         "laravel-best-practices",
+        "configuring-horizon",
         "pest-testing",
         "tailwindcss-development"
     ]
