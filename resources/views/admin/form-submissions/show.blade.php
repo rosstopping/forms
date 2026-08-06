@@ -33,7 +33,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div>
+                {{-- <div>
                     <label class="block text-sm font-medium text-slate-700" for="assigned_to">Assigned to</label>
                     <select id="assigned_to" name="assigned_to" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
                         <option value="">Unassigned</option>
@@ -41,7 +41,7 @@
                             <option value="{{ $user->id }}" @selected($formSubmission->assigned_to === $user->id)>{{ e($user->name) }}</option>
                         @endforeach
                     </select>
-                </div>
+                </div> --}}
                 <div>
                     <label class="block text-sm font-medium text-slate-700" for="notes">Notes</label>
                     <textarea id="notes" name="notes" rows="4" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">{{ old('notes', $formSubmission->notes) }}</textarea>
