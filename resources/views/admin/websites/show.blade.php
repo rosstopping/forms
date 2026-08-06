@@ -18,7 +18,23 @@
                 <div class="flex justify-between"><dt class="text-slate-500">Auto discovered</dt><dd class="font-medium">{{ $website->auto_discovered ? 'Yes' : 'No' }}</dd></div>
                 <div class="flex justify-between"><dt class="text-slate-500">Email notifications</dt><dd class="font-medium">{{ $website->email_enabled ? 'Enabled' : 'Disabled' }}</dd></div>
                 <div class="flex justify-between"><dt class="text-slate-500">Webhook notifications</dt><dd class="font-medium">{{ $website->webhook_enabled ? 'Enabled' : 'Disabled' }}</dd></div>
+                <div class="flex justify-between"><dt class="text-slate-500">Owner</dt><dd class="font-medium">{{ $website->owner?->name ?: 'Unassigned' }}</dd></div>
             </dl>
+
+            @if (Auth::user()?->isAdmin())
+                <form method="POST" action="{{ route('admin.websites.update', $website) }}" class="mt-4 space-y-3">
+                    @csrf
+                    @method('PUT')
+                    <label class="block text-sm font-medium text-slate-700" for="user_id">Assign owner</label>
+                    <select id="user_id" name="user_id" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                        <option value="">Unassigned</option>
+                        @foreach (App\Models\User::query()->orderBy('name')->get() as $user)
+                            <option value="{{ $user->id }}" @selected($website->user_id === $user->id)>{{ e($user->name) }} ({{ e($user->email) }})</option>
+                        @endforeach
+                    </select>
+                    <button type="submit" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">Save owner</button>
+                </form>
+            @endif
         </div>
 
         <div class="rounded-lg border bg-white p-4 shadow-sm">

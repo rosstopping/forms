@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 
 class FormSubmission extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'website_id',
         'form_id',
@@ -17,6 +20,9 @@ class FormSubmission extends Model
         'ip_address',
         'user_agent',
         'is_spam',
+        'status',
+        'notes',
+        'assigned_to',
         'email_sent_at',
         'email_failed_at',
         'email_error',
@@ -30,6 +36,7 @@ class FormSubmission extends Model
     protected $casts = [
         'data' => 'array',
         'is_spam' => 'boolean',
+        'status' => 'string',
         'email_sent_at' => 'datetime',
         'email_failed_at' => 'datetime',
         'webhook_sent_at' => 'datetime',
@@ -44,6 +51,11 @@ class FormSubmission extends Model
     public function form(): BelongsTo
     {
         return $this->belongsTo(Form::class);
+    }
+
+    public function assignee(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
     }
 
     public function replyToEmail(): ?string
@@ -64,11 +76,22 @@ class FormSubmission extends Model
         return null;
     }
 
+    public function resolvedStatusLabel(): string
+    {
+        return match ($this->status) {
+            'contacted' => 'Contacted',
+            'qualified' => 'Qualified',
+            'won' => 'Won',
+            'lost' => 'Lost',
+            default => 'New',
+        };
+    }
+
     public function resolvedEmailSubject(): string
     {
         $form = $this->form;
         $website = $this->website;
-        $subject = 'New ' . $form?->name . ' submission from ' . $website?->primaryDomain()?->domain ?? $website?->name;
+        $subject = 'New '.$form?->name.' submission from '.$website?->primaryDomain()?->domain ?? $website?->name;
 
         if ($form && $form->email_subject_override) {
             return strtr($form->email_subject_override, [

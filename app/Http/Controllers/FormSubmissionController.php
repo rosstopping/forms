@@ -12,6 +12,7 @@ use App\Services\FormResolver;
 use App\Services\FormSettingsResolver;
 use App\Services\RedirectResolver;
 use App\Services\SourceWebsiteResolver;
+use App\Services\SpamDetector;
 use App\Services\WebhookSender;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -26,20 +27,23 @@ class FormSubmissionController extends Controller
         protected FormDataSanitiser $formDataSanitiser,
         protected RedirectResolver $redirectResolver,
         protected WebhookSender $webhookSender,
+        protected SpamDetector $spamDetector,
     ) {}
 
     public function store(StoreFormSubmissionRequest $request): mixed
     {
+        if ($this->isRateLimited($request)) {
+            return response()->json(['message' => 'Too many requests.'], 429);
+        }
+
+        RateLimiter::hit($this->rateLimitKey($request), 60);
+
         if ($request->filled('_honeypot')) {
             $website = $this->resolveWebsite($request);
             $form = $this->resolveForm($request, $website);
             $submission = $this->createSubmission($request, $website, $form, true);
 
             return redirect($this->redirectResolver->resolveSuccess($request, $website ?: $this->createFallbackWebsite($request), $form ?: $this->createFallbackForm($request)));
-        }
-
-        if ($this->isRateLimited($request)) {
-            return response()->json(['message' => 'Too many requests.'], 429);
         }
 
         $website = $this->resolveWebsite($request);
@@ -60,7 +64,12 @@ class FormSubmissionController extends Controller
             return response()->json(['message' => 'This form is disabled.'], 403);
         }
 
-        $submission = $this->createSubmission($request, $website, $form, false);
+        $submission = $this->createSubmission(
+            $request,
+            $website,
+            $form,
+            $this->spamDetector->isSpam($this->formDataSanitiser->sanitise($request->all())),
+        );
 
         if (! $submission->is_spam) {
             $this->sendNotifications($submission);
@@ -222,9 +231,13 @@ class FormSubmissionController extends Controller
 
     protected function isRateLimited(Request $request): bool
     {
-        $domain = $this->domainFromRequest($request);
-        $key = 'forms:' . ($domain ?: 'unknown') . ':' . $request->ip();
+        return RateLimiter::tooManyAttempts($this->rateLimitKey($request), config('forms.rate_limit_per_minute'));
+    }
 
-        return RateLimiter::tooManyAttempts($key, config('forms.rate_limit_per_minute'));
+    protected function rateLimitKey(Request $request): string
+    {
+        $domain = $this->domainFromRequest($request);
+
+        return 'forms:'.($domain ?: 'unknown').':'.$request->ip();
     }
 }

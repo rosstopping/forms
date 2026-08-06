@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\FormController;
 use App\Http\Controllers\Admin\FormSubmissionController as AdminFormSubmissionController;
+use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\WebsiteController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\FormSubmissionController;
@@ -18,7 +19,7 @@ Route::get('/submitted', function (Request $request) {
 })->name('forms.submitted');
 
 Route::middleware(['web', 'throttle:120,1'])->group(function () {
-    Route::options('/submit', fn() => response()->noContent())
+    Route::options('/submit', fn () => response()->noContent())
         ->middleware(AllowFormSubmissionCors::class);
 
     Route::post('/submit', [FormSubmissionController::class, 'store'])
@@ -38,4 +39,5 @@ Route::middleware(['web', 'auth'])->prefix('admin')->name('admin.')->group(funct
     Route::resource('websites', WebsiteController::class);
     Route::resource('forms', FormController::class);
     Route::resource('form-submissions', AdminFormSubmissionController::class);
+    Route::resource('users', UserController::class)->only(['index', 'create', 'store']);
 });

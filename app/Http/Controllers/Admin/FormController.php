@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Form;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\ValidationException;
 
@@ -12,7 +13,13 @@ class FormController extends Controller
 {
     public function index(Request $request)
     {
-        $forms = Form::query()
+        $query = Form::query();
+
+        if (! $request->user()?->isAdmin()) {
+            $query->whereHas('website', fn ($query) => $query->where('user_id', $request->user()->id));
+        }
+
+        $forms = $query
             ->with('website')
             ->withCount('submissions')
             ->latest('created_at')
@@ -23,13 +30,17 @@ class FormController extends Controller
 
     public function show(Form $form)
     {
-        $form->load(['website', 'submissions' => fn($query) => $query->latest('created_at')->limit(10)]);
+        abort_unless(Auth::user()?->isAdmin() || $form->website?->user_id === Auth::id(), 403);
+
+        $form->load(['website', 'submissions' => fn ($query) => $query->latest('created_at')->limit(10)]);
 
         return view('admin.forms.show', compact('form'));
     }
 
     public function update(Request $request, Form $form)
     {
+        abort_unless(Auth::user()?->isAdmin() || $form->website?->user_id === Auth::id(), 403);
+
         $data = $request->validate([
             'email_enabled_override' => ['nullable', 'boolean'],
             'email_subject_override' => ['nullable', 'string', 'max:255'],
@@ -67,6 +78,6 @@ class FormController extends Controller
             $items = [];
         }
 
-        return array_values(array_filter(array_map(static fn(mixed $item) => trim((string) $item), $items), static fn(string $item) => $item !== ''));
+        return array_values(array_filter(array_map(static fn (mixed $item) => trim((string) $item), $items), static fn (string $item) => $item !== ''));
     }
 }
