@@ -1,5 +1,6 @@
 <?php
 
+use App\Mail\FormSubmissionReceived;
 use App\Models\FormSubmission;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
@@ -34,6 +35,27 @@ it('allows public submissions without a CSRF token', function (): void {
         ]);
 
     $response->assertStatus(302);
+});
+
+it('escapes submitted HTML exactly once when rendering the email', function (): void {
+    $message = "Hello, I'd like a <strong>website</strong>.";
+
+    $this->withHeader('Origin', 'https://example.com')
+        ->post('/submit', [
+            '_form_name' => 'Contact form',
+            'name' => 'Grace Hopper',
+            'message' => $message,
+        ])
+        ->assertRedirectContains('/submitted');
+
+    $submission = FormSubmission::query()->latest('id')->firstOrFail();
+
+    expect($submission->data['message'])->toBe($message);
+
+    (new FormSubmissionReceived($submission))
+        ->assertSeeInHtml($message)
+        ->assertDontSeeInHtml('&amp;#039;', false)
+        ->assertDontSeeInHtml('<strong>website</strong>', false);
 });
 
 it('rejects unknown websites when auto discovery is disabled', function (): void {
