@@ -30,6 +30,10 @@
             <div class="rounded-lg border border-red-200 bg-red-50 p-4"><p class="text-xs font-medium uppercase tracking-wide text-red-700">Failed</p><p class="mt-2 text-2xl font-semibold text-red-800">{{ $report->failed_checks }}</p></div>
         </div>
 
+        <div class="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
+            <strong>{{ data_get($report->metrics, 'changes.new_issues', 0) }} new issues</strong> and <strong>{{ data_get($report->metrics, 'changes.resolved_issues', 0) }} resolved issues</strong> since the previous completed report.
+        </div>
+
         <div class="rounded-lg border bg-white p-4 shadow-sm">
             <h2 class="font-semibold">Last seven days of forms</h2>
             <dl class="mt-4 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-5">

@@ -40,6 +40,7 @@ class GenerateWebsiteHealthReport implements ShouldBeUnique, ShouldQueue
 
         try {
             $result = $auditor->audit($this->report->website);
+            $result['metrics']['changes'] = $this->changesSincePreviousReport($result['checks']);
 
             $this->report->update([
                 ...$result,
@@ -80,5 +81,30 @@ class GenerateWebsiteHealthReport implements ShouldBeUnique, ShouldQueue
         }
 
         $this->report->update(['emailed_at' => now()]);
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $checks
+     * @return array{new_issues: int, resolved_issues: int}
+     */
+    protected function changesSincePreviousReport(array $checks): array
+    {
+        $previousReport = $this->report->website->healthReports()
+            ->whereKeyNot($this->report->id)
+            ->where('status', WebsiteHealthReport::STATUS_COMPLETED)
+            ->latest('completed_at')
+            ->first();
+
+        $currentIssues = collect($checks)
+            ->reject(fn (array $check) => $check['status'] === 'passed')
+            ->mapWithKeys(fn (array $check) => [$check['category'].':'.$check['key'] => $check['status']]);
+        $previousIssues = collect($previousReport?->checks ?? [])
+            ->reject(fn (array $check) => $check['status'] === 'passed')
+            ->mapWithKeys(fn (array $check) => [$check['category'].':'.$check['key'] => $check['status']]);
+
+        return [
+            'new_issues' => $currentIssues->keys()->diff($previousIssues->keys())->count(),
+            'resolved_issues' => $previousIssues->keys()->diff($currentIssues->keys())->count(),
+        ];
     }
 }
