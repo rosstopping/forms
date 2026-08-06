@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\FormController;
 use App\Http\Controllers\Admin\FormSubmissionController as AdminFormSubmissionController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\WebsiteController;
+use App\Http\Controllers\Admin\WebsiteHealthReportController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\FormSubmissionController;
 use App\Http\Middleware\AllowFormSubmissionCors;
@@ -37,6 +38,8 @@ Route::middleware('web')->group(function () {
 Route::middleware(['web', 'auth'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::resource('websites', WebsiteController::class);
+    Route::post('websites/{website}/health-reports', [WebsiteHealthReportController::class, 'store'])->name('website-health-reports.store');
+    Route::get('websites/{website}/health-reports/{websiteHealthReport}', [WebsiteHealthReportController::class, 'show'])->name('website-health-reports.show');
     Route::resource('forms', FormController::class);
     Route::resource('form-submissions', AdminFormSubmissionController::class);
     Route::resource('users', UserController::class)->only(['index', 'create', 'store']);

@@ -22,6 +22,7 @@ class WebsiteFactory extends Factory
             'auto_discovered' => false,
             'email_enabled' => true,
             'webhook_enabled' => false,
+            'health_reports_enabled' => false,
             'success_redirect_url' => null,
             'failure_redirect_url' => null,
             'turnstile_enabled' => false,

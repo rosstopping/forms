@@ -11,6 +11,12 @@ return [
     'max_field_length' => (int) env('FORMS_MAX_FIELD_LENGTH', 10000),
     'webhook_timeout' => (int) env('FORMS_WEBHOOK_TIMEOUT', 10),
     'webhook_response_max_length' => (int) env('FORMS_WEBHOOK_RESPONSE_MAX_LENGTH', 2000),
+    'health_reports' => [
+        'timeout' => (int) env('FORMS_HEALTH_REPORT_TIMEOUT', 10),
+        'connect_timeout' => (int) env('FORMS_HEALTH_REPORT_CONNECT_TIMEOUT', 5),
+        'max_response_kb' => (int) env('FORMS_HEALTH_REPORT_MAX_RESPONSE_KB', 1024),
+        'frequency_days' => (int) env('FORMS_HEALTH_REPORT_FREQUENCY_DAYS', 7),
+    ],
     'spam' => [
         'threshold' => (int) env('FORMS_SPAM_THRESHOLD', 3),
         'max_links' => (int) env('FORMS_SPAM_MAX_LINKS', 3),

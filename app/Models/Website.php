@@ -19,6 +19,7 @@ class Website extends Model
         'email_enabled',
         'email_recipients',
         'webhook_enabled',
+        'health_reports_enabled',
         'webhook_url',
         'webhook_secret',
         'success_redirect_url',
@@ -31,6 +32,7 @@ class Website extends Model
     protected $casts = [
         'email_enabled' => 'boolean',
         'webhook_enabled' => 'boolean',
+        'health_reports_enabled' => 'boolean',
         'turnstile_enabled' => 'boolean',
         'auto_discovered' => 'boolean',
         'is_active' => 'boolean',
@@ -56,6 +58,11 @@ class Website extends Model
     public function submissions(): HasMany
     {
         return $this->hasMany(FormSubmission::class);
+    }
+
+    public function healthReports(): HasMany
+    {
+        return $this->hasMany(WebsiteHealthReport::class);
     }
 
     public function primaryDomain(): ?WebsiteDomain

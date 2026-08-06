@@ -1,0 +1,46 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Jobs\GenerateWebsiteHealthReport;
+use App\Models\Website;
+use App\Models\WebsiteHealthReport;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Redirect;
+use Illuminate\View\View;
+
+class WebsiteHealthReportController extends Controller
+{
+    public function store(Request $request, Website $website): RedirectResponse
+    {
+        abort_unless($request->user()?->isAdmin(), 403);
+
+        $existingReport = $website->healthReports()
+            ->whereIn('status', [WebsiteHealthReport::STATUS_PENDING, WebsiteHealthReport::STATUS_RUNNING])
+            ->latest('id')
+            ->first();
+
+        if ($existingReport) {
+            return Redirect::route('admin.website-health-reports.show', [$website, $existingReport])
+                ->with('status', 'A health report is already running.');
+        }
+
+        $report = $website->healthReports()->create(['status' => WebsiteHealthReport::STATUS_PENDING]);
+        GenerateWebsiteHealthReport::dispatch($report);
+
+        return Redirect::route('admin.website-health-reports.show', [$website, $report])
+            ->with('status', 'The website health report has been queued.');
+    }
+
+    public function show(Request $request, Website $website, WebsiteHealthReport $websiteHealthReport): View
+    {
+        abort_unless($request->user()?->isAdmin() || $website->user_id === $request->user()?->id, 403);
+        abort_unless($websiteHealthReport->website_id === $website->id, 404);
+
+        $websiteHealthReport->load('website');
+
+        return view('admin.website-health-reports.show', ['report' => $websiteHealthReport]);
+    }
+}
