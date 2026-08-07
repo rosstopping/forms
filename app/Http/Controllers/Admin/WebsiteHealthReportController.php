@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Jobs\GenerateWebsiteHealthReport;
 use App\Models\Website;
 use App\Models\WebsiteHealthReport;
+use App\Services\WebsiteHealthReportPromptGenerator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
@@ -13,6 +14,8 @@ use Illuminate\View\View;
 
 class WebsiteHealthReportController extends Controller
 {
+    public function __construct(protected WebsiteHealthReportPromptGenerator $promptGenerator) {}
+
     public function store(Request $request, Website $website): RedirectResponse
     {
         abort_unless($request->user()?->isAdmin(), 403);
@@ -39,8 +42,13 @@ class WebsiteHealthReportController extends Controller
         abort_unless($request->user()?->isAdmin() || $website->user_id === $request->user()?->id, 403);
         abort_unless($websiteHealthReport->website_id === $website->id, 404);
 
-        $websiteHealthReport->load('website');
+        $websiteHealthReport->load(['website', 'pages' => fn ($query) => $query->orderBy('depth')->orderBy('url')]);
 
-        return view('admin.website-health-reports.show', ['report' => $websiteHealthReport]);
+        return view('admin.website-health-reports.show', [
+            'report' => $websiteHealthReport,
+            'aiPrompt' => $request->user()?->isAdmin() && $websiteHealthReport->status === WebsiteHealthReport::STATUS_COMPLETED
+                ? $this->promptGenerator->generate($websiteHealthReport)
+                : null,
+        ]);
     }
 }

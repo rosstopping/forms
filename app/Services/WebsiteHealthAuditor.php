@@ -14,6 +14,8 @@ use RuntimeException;
 
 class WebsiteHealthAuditor
 {
+    public function __construct(protected WebsiteCrawler $crawler) {}
+
     /**
      * @return array{overall_status: string, passed_checks: int, warning_checks: int, failed_checks: int, categories: array<string, array<string, int>>, checks: array<int, array<string, mixed>>, metrics: array<string, mixed>}
      */
@@ -51,7 +53,42 @@ class WebsiteHealthAuditor
         $checks[] = $this->endpointCheck($url.'/sitemap.xml', 'sitemap_xml', 'XML sitemap available');
         $checks = [...$checks, ...$this->formChecks($metrics)];
 
-        return $this->summarise($checks, $metrics);
+        $pages = $this->crawler->crawl($website);
+        $metrics['pages_analyzed'] = count($pages);
+        $checks = [...$checks, ...$this->siteWideChecks($pages)];
+
+        return [...$this->summarise($checks, $metrics), 'pages' => $pages];
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $pages
+     * @return array<int, array<string, mixed>>
+     */
+    protected function siteWideChecks(array $pages): array
+    {
+        $pageCollection = collect($pages);
+        $unavailable = $pageCollection->filter(fn (array $page) => $page['status_code'] === null || $page['status_code'] >= 400)->count();
+        $redirects = $pageCollection->filter(fn (array $page) => $page['status_code'] >= 300 && $page['status_code'] < 400)->count();
+        $duplicateTitles = $pageCollection->pluck('title')->filter()->map(fn (string $title) => Str::lower($title))->countBy()->filter(fn (int $count) => $count > 1)->count();
+        $duplicateDescriptions = $pageCollection->pluck('meta_description')->filter()->map(fn (string $description) => Str::lower($description))->countBy()->filter(fn (int $count) => $count > 1)->count();
+        $missingTitles = $pageCollection->whereNull('title')->count();
+        $missingDescriptions = $pageCollection->whereNull('meta_description')->count();
+        $noindexPages = $pageCollection->where('is_indexable', false)->count();
+        $missingAlt = $pageCollection->sum('missing_alt_count');
+        $thinPages = $pageCollection->where('word_count', '<', 150)->count();
+
+        return [
+            $this->check('site_wide_seo', 'crawl_coverage', 'Pages analysed', $pages === [] ? 'failed' : 'passed', count($pages).' internal pages were analysed.'),
+            $this->check('site_wide_seo', 'unavailable_pages', 'Unavailable pages', $unavailable > 0 ? 'failed' : 'passed', $unavailable > 0 ? "{$unavailable} pages returned an error or could not be reached." : 'All analysed pages were reachable.'),
+            $this->check('site_wide_seo', 'redirecting_pages', 'Redirecting pages', $redirects > 0 ? 'warning' : 'passed', "{$redirects} analysed pages redirect elsewhere."),
+            $this->check('site_wide_seo', 'duplicate_titles', 'Duplicate titles', $duplicateTitles > 0 ? 'warning' : 'passed', "{$duplicateTitles} duplicated title groups were found."),
+            $this->check('site_wide_seo', 'duplicate_descriptions', 'Duplicate descriptions', $duplicateDescriptions > 0 ? 'warning' : 'passed', "{$duplicateDescriptions} duplicated description groups were found."),
+            $this->check('site_wide_seo', 'missing_titles', 'Missing titles', $missingTitles > 0 ? 'failed' : 'passed', "{$missingTitles} pages have no title."),
+            $this->check('site_wide_seo', 'missing_descriptions', 'Missing descriptions', $missingDescriptions > 0 ? 'warning' : 'passed', "{$missingDescriptions} pages have no meta description."),
+            $this->check('site_wide_seo', 'noindex_pages', 'Noindex pages', $noindexPages > 0 ? 'warning' : 'passed', "{$noindexPages} pages contain a noindex directive."),
+            $this->check('site_wide_seo', 'missing_alt_text', 'Missing image descriptions', $missingAlt > 0 ? 'warning' : 'passed', "{$missingAlt} images are missing alternative text across the site."),
+            $this->check('site_wide_seo', 'thin_content', 'Thin content', $thinPages > 0 ? 'warning' : 'passed', "{$thinPages} pages contain fewer than 150 words."),
+        ];
     }
 
     /**

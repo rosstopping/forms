@@ -1,9 +1,10 @@
 <?php
 
+use App\Services\WebsiteCrawler;
 use App\Services\WebsiteHealthAuditor;
 
 it('finds actionable on-page SEO problems without executing submitted HTML', function (): void {
-    $checks = (new WebsiteHealthAuditor)->inspectHtml(
+    $checks = (new WebsiteHealthAuditor(new WebsiteCrawler))->inspectHtml(
         '<html><head><meta name="robots" content="noindex"></head><body><h1>One</h1><h1>Two</h1><img src="photo.jpg"><script type="application/ld+json">invalid</script></body></html>',
         'https://example.com',
     );

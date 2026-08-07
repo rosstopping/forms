@@ -20,6 +20,10 @@ class GenerateWebsiteHealthReport implements ShouldBeUnique, ShouldQueue
 
     public int $uniqueFor = 3600;
 
+    public int $timeout = 300;
+
+    public bool $failOnTimeout = true;
+
     /** @var array<int, int> */
     public array $backoff = [60, 300];
 
@@ -40,7 +44,12 @@ class GenerateWebsiteHealthReport implements ShouldBeUnique, ShouldQueue
 
         try {
             $result = $auditor->audit($this->report->website);
+            $pages = $result['pages'];
+            unset($result['pages']);
             $result['metrics']['changes'] = $this->changesSincePreviousReport($result['checks']);
+
+            $this->report->pages()->delete();
+            $this->report->pages()->createMany($pages);
 
             $this->report->update([
                 ...$result,
@@ -77,7 +86,7 @@ class GenerateWebsiteHealthReport implements ShouldBeUnique, ShouldQueue
         }
 
         foreach ($recipients as $recipient) {
-            Mail::to($recipient)->send(new WebsiteHealthReportReady($this->report->fresh(['website'])));
+            Mail::to($recipient)->send(new WebsiteHealthReportReady($this->report->fresh(['website', 'pages'])));
         }
 
         $this->report->update(['emailed_at' => now()]);

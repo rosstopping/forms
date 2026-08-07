@@ -5,6 +5,7 @@ use App\Mail\WebsiteHealthReportReady;
 use App\Models\User;
 use App\Models\Website;
 use App\Models\WebsiteHealthReport;
+use App\Models\WebsiteHealthReportPage;
 use App\Services\WebsiteHealthAuditor;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
@@ -46,12 +47,20 @@ it('allows an owner to view only reports for their website', function (): void {
     $website = websiteWithDomain(['user_id' => $owner->id]);
     $otherWebsite = websiteWithDomain([], 'other.example.com');
     $report = WebsiteHealthReport::factory()->for($website)->create();
+    WebsiteHealthReportPage::factory()->for($report, 'report')->create([
+        'url' => 'https://example.com/about',
+        'url_hash' => hash('sha256', 'https://example.com/about'),
+        'title' => 'About us',
+        'checks' => [['key' => 'meta_description', 'label' => 'Meta description', 'status' => 'warning', 'message' => 'No meta description was found.']],
+    ]);
     $otherReport = WebsiteHealthReport::factory()->for($otherWebsite)->create();
 
     $this->actingAs($owner)
         ->get(route('admin.website-health-reports.show', [$website, $report]))
         ->assertSuccessful()
-        ->assertSee('Website health report');
+        ->assertSee('Website health report')
+        ->assertSee('Page-by-page analysis')
+        ->assertSee('About us');
 
     $this->actingAs($owner)
         ->get(route('admin.website-health-reports.show', [$otherWebsite, $otherReport]))
@@ -75,6 +84,12 @@ it('audits a website and queues the completed report for admins and the owner', 
             'X-Content-Type-Options' => 'nosniff',
             'Referrer-Policy' => 'strict-origin-when-cross-origin',
         ]),
+        'https://example.com/' => Http::response('<html lang="en"><head><title>Example</title><meta name="description" content="A useful description"><meta name="viewport" content="width=device-width"><link rel="canonical" href="https://example.com"></head><body><h1>Welcome</h1><img src="logo.png" alt="Logo"></body></html>', 200, [
+            'Strict-Transport-Security' => 'max-age=31536000',
+            'Content-Security-Policy' => "default-src 'self'; frame-ancestors 'none'",
+            'X-Content-Type-Options' => 'nosniff',
+            'Referrer-Policy' => 'strict-origin-when-cross-origin',
+        ]),
         'https://example.com/robots.txt' => Http::response('User-agent: *', 200),
         'https://example.com/sitemap.xml' => Http::response('<?xml version="1.0"?><urlset></urlset>', 200),
     ]);
@@ -84,6 +99,8 @@ it('audits a website and queues the completed report for admins and the owner', 
     $report->refresh();
     expect($report->status)->toBe(WebsiteHealthReport::STATUS_COMPLETED)
         ->and($report->passed_checks)->toBeGreaterThan(0)
+        ->and($report->pages)->toHaveCount(1)
+        ->and($report->metrics['pages_analyzed'])->toBe(1)
         ->and($report->completed_at)->not->toBeNull();
 
     Mail::assertQueued(WebsiteHealthReportReady::class, 2);

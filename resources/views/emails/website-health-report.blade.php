@@ -7,6 +7,7 @@
         <h1 style="margin:4px 0 8px;font-size:24px;">{{ $report->website->name }}</h1>
         <p style="color:#475569;">Overall status: <strong>{{ str_replace('_', ' ', ucfirst($report->overall_status)) }}</strong></p>
         <p style="color:#475569;">{{ data_get($report->metrics, 'changes.new_issues', 0) }} new issues and {{ data_get($report->metrics, 'changes.resolved_issues', 0) }} resolved issues since the previous report.</p>
+        <p style="color:#475569;"><strong>{{ data_get($report->metrics, 'pages_analyzed', 0) }} pages analysed</strong>, including titles, descriptions, headings, indexability, canonical URLs, content depth, links, and image accessibility.</p>
         <table style="width:100%;border-collapse:collapse;margin:20px 0;">
             <tr>
                 <td style="padding:12px;background:#ecfdf5;color:#065f46;"><strong>{{ $report->passed_checks }}</strong><br>Passed</td>
