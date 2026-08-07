@@ -60,11 +60,44 @@ it('allows an owner to view only reports for their website', function (): void {
         ->assertSuccessful()
         ->assertSee('Website health report')
         ->assertSee('Page-by-page analysis')
-        ->assertSee('About us');
+        ->assertSee('About us')
+        ->assertDontSee('AI remediation prompt');
 
     $this->actingAs($owner)
         ->get(route('admin.website-health-reports.show', [$otherWebsite, $otherReport]))
         ->assertForbidden();
+});
+
+it('shows administrators a copyable AI prompt containing every report issue', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $website = websiteWithDomain();
+    $report = WebsiteHealthReport::factory()->for($website)->create([
+        'checks' => [
+            ['category' => 'security', 'key' => 'content_security_policy', 'label' => 'Content Security Policy', 'status' => 'warning', 'message' => 'The security header is missing.', 'details' => []],
+            ['category' => 'site_wide_seo', 'key' => 'missing_titles', 'label' => 'Missing titles', 'status' => 'failed', 'message' => 'One page has no title.', 'details' => []],
+            ['category' => 'availability', 'key' => 'https', 'label' => 'HTTPS enabled', 'status' => 'passed', 'message' => 'HTTPS is enabled.', 'details' => []],
+        ],
+    ]);
+    WebsiteHealthReportPage::factory()->for($report, 'report')->create([
+        'url' => 'https://example.com/services',
+        'url_hash' => hash('sha256', 'https://example.com/services'),
+        'checks' => [
+            ['key' => 'meta_description', 'label' => 'Meta description', 'status' => 'warning', 'message' => 'No meta description was found.'],
+            ['key' => 'h1', 'label' => 'Primary heading', 'status' => 'passed', 'message' => 'The page has one H1.'],
+        ],
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.website-health-reports.show', [$website, $report]))
+        ->assertSuccessful()
+        ->assertSee('AI remediation prompt')
+        ->assertSee('Copy prompt')
+        ->assertSee('[FAILED] Missing titles: One page has no title.')
+        ->assertSee('[WARNING] Content Security Policy: The security header is missing.')
+        ->assertSee('https://example.com/services')
+        ->assertSee('[WARNING] Meta description: No meta description was found.')
+        ->assertDontSee('[PASSED] HTTPS enabled')
+        ->assertDontSee('[PASSED] Primary heading');
 });
 
 it('audits a website and queues the completed report for admins and the owner', function (): void {
