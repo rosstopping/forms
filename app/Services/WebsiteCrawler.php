@@ -54,7 +54,8 @@ class WebsiteCrawler
                 $response = $this->request()->get($url);
                 $responseTime = (int) round((microtime(true) - $startedAt) * 1000);
                 $contentType = Str::lower((string) $response->header('content-type'));
-                $analysis = Str::contains($contentType, ['text/html', 'application/xhtml+xml']) || $contentType === ''
+                $isHtml = Str::contains($contentType, ['text/html', 'application/xhtml+xml']) || $contentType === '';
+                $analysis = $response->successful() && $isHtml
                     ? $this->analyseHtml($this->boundedBody($response->body()), $url, $candidate['depth'])
                     : $this->emptyAnalysis($url, $candidate['depth']);
 

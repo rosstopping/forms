@@ -67,15 +67,16 @@ class WebsiteHealthAuditor
     protected function siteWideChecks(array $pages): array
     {
         $pageCollection = collect($pages);
+        $successfulPages = $pageCollection->filter(fn (array $page) => $page['status_code'] >= 200 && $page['status_code'] < 300);
         $unavailable = $pageCollection->filter(fn (array $page) => $page['status_code'] === null || $page['status_code'] >= 400)->count();
         $redirects = $pageCollection->filter(fn (array $page) => $page['status_code'] >= 300 && $page['status_code'] < 400)->count();
-        $duplicateTitles = $pageCollection->pluck('title')->filter()->map(fn (string $title) => Str::lower($title))->countBy()->filter(fn (int $count) => $count > 1)->count();
-        $duplicateDescriptions = $pageCollection->pluck('meta_description')->filter()->map(fn (string $description) => Str::lower($description))->countBy()->filter(fn (int $count) => $count > 1)->count();
-        $missingTitles = $pageCollection->whereNull('title')->count();
-        $missingDescriptions = $pageCollection->whereNull('meta_description')->count();
-        $noindexPages = $pageCollection->where('is_indexable', false)->count();
-        $missingAlt = $pageCollection->sum('missing_alt_count');
-        $thinPages = $pageCollection->where('word_count', '<', 150)->count();
+        $duplicateTitles = $successfulPages->pluck('title')->filter()->map(fn (string $title) => Str::lower($title))->countBy()->filter(fn (int $count) => $count > 1)->count();
+        $duplicateDescriptions = $successfulPages->pluck('meta_description')->filter()->map(fn (string $description) => Str::lower($description))->countBy()->filter(fn (int $count) => $count > 1)->count();
+        $missingTitles = $successfulPages->whereNull('title')->count();
+        $missingDescriptions = $successfulPages->whereNull('meta_description')->count();
+        $noindexPages = $successfulPages->where('is_indexable', false)->count();
+        $missingAlt = $successfulPages->sum('missing_alt_count');
+        $thinPages = $successfulPages->where('word_count', '<', 150)->count();
 
         return [
             $this->check('site_wide_seo', 'crawl_coverage', 'Pages analysed', $pages === [] ? 'failed' : 'passed', count($pages).' internal pages were analysed.'),

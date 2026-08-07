@@ -29,7 +29,9 @@ it('analyses sitemap and discovered internal pages without leaving the website',
         ])
         ->and(collect($pages)->firstWhere('url', 'https://example.com/services')['is_indexable'])->toBeFalse()
         ->and(collect($pages)->firstWhere('url', 'https://example.com/services')['missing_alt_count'])->toBe(1)
-        ->and(collect($pages)->firstWhere('url', 'https://example.com/about')['status_code'])->toBe(404);
+        ->and(collect($pages)->firstWhere('url', 'https://example.com/about')['status_code'])->toBe(404)
+        ->and(collect($pages)->firstWhere('url', 'https://example.com/about')['title'])->toBeNull()
+        ->and(collect($pages)->firstWhere('url', 'https://example.com/about')['checks'])->toBeEmpty();
 
     Http::assertNotSent(fn ($request) => str_contains($request->url(), 'outside.test'));
 });

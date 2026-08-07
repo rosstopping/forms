@@ -100,6 +100,18 @@ it('shows administrators a copyable AI prompt containing every report issue', fu
         ->assertDontSee('[PASSED] Primary heading');
 });
 
+it('stores page titles longer than the varchar limit', function (): void {
+    $report = WebsiteHealthReport::factory()->create();
+    $longRedirectTitle = 'Redirecting to https://example.com/search?months='.str_repeat('September%202026%2C', 30);
+
+    $page = WebsiteHealthReportPage::factory()->for($report, 'report')->create([
+        'title' => $longRedirectTitle,
+    ]);
+
+    expect($page->fresh()->title)->toBe($longRedirectTitle)
+        ->and(mb_strlen($page->title))->toBeGreaterThan(255);
+});
+
 it('audits a website and queues the completed report for admins and the owner', function (): void {
     Mail::fake();
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
