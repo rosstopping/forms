@@ -131,6 +131,53 @@ it('does not flag a legitimate message containing one link', function (): void {
     expect(FormSubmission::query()->latest('id')->firstOrFail()->is_spam)->toBeFalse();
 });
 
+it('quarantines submissions with an explicitly blank message', function (): void {
+    $this->withHeader('Origin', 'https://blank-message.example')
+        ->post('/submit', [
+            '_form_name' => 'Contact form',
+            'name' => 'MarcuspaX',
+            'company' => 'google',
+            'email' => 'zuyev-vadik@bk.ru',
+            'phone' => '86798813878',
+            'message' => '',
+            'submit' => '',
+        ])
+        ->assertRedirectContains('/submitted');
+
+    expect(FormSubmission::query()->latest('id')->firstOrFail()->is_spam)->toBeTrue();
+    Mail::assertNothingSent();
+});
+
+it('allows callback forms that do not include a message field', function (): void {
+    $this->withHeader('Origin', 'https://callback-form.example')
+        ->post('/submit', [
+            '_form_name' => 'Callback form',
+            'name' => 'Ada Lovelace',
+            'email' => 'ada@example.com',
+            'phone' => '01234567890',
+        ])
+        ->assertRedirectContains('/submitted');
+
+    expect(FormSubmission::query()->latest('id')->firstOrFail()->is_spam)->toBeFalse();
+});
+
+it('quarantines HTML link injection and known automation markers', function (): void {
+    $this->withHeader('Origin', 'https://html-link-spam.example')
+        ->post('/submit', [
+            '_form_name' => 'Contact form',
+            'name' => 'Miguelelata',
+            'company' => 'google',
+            'email' => 'xrumer23Ter@gmail.com',
+            'phone' => '89595152958',
+            'message' => '<a href="https://t.me/detivetrachat">https://t.me/detivetrachat</a> кайт хургада',
+            'submit' => '',
+        ])
+        ->assertRedirectContains('/submitted');
+
+    expect(FormSubmission::query()->latest('id')->firstOrFail()->is_spam)->toBeTrue();
+    Mail::assertNothingSent();
+});
+
 it('rate limits repeated submissions from the same domain and IP address', function (): void {
     config()->set('forms.rate_limit_per_minute', 2);
 

@@ -7,7 +7,12 @@
             <h1 class="text-2xl font-semibold">Websites</h1>
             <p class="text-sm text-slate-600">Manage the websites that can submit forms.</p>
         </div>
-        <a href="{{ route('admin.dashboard') }}" class="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Back to dashboard</a>
+        <div class="flex items-center gap-2">
+            @if (Auth::user()?->isAdmin())
+                <a href="{{ route('admin.websites.create') }}" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">Add website</a>
+            @endif
+            <a href="{{ route('admin.dashboard') }}" class="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Back to dashboard</a>
+        </div>
     </div>
 
     <div class="overflow-hidden rounded-lg border bg-white shadow-sm">

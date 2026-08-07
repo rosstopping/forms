@@ -21,6 +21,11 @@ return [
         'threshold' => (int) env('FORMS_SPAM_THRESHOLD', 3),
         'max_links' => (int) env('FORMS_SPAM_MAX_LINKS', 3),
         'long_content_length' => (int) env('FORMS_SPAM_LONG_CONTENT_LENGTH', 4000),
+        'empty_content_score' => (int) env('FORMS_SPAM_EMPTY_CONTENT_SCORE', 3),
+        'html_link_score' => (int) env('FORMS_SPAM_HTML_LINK_SCORE', 3),
+        'automation_phrase_score' => (int) env('FORMS_SPAM_AUTOMATION_PHRASE_SCORE', 3),
+        'content_fields' => ['message', 'comments', 'comment', 'enquiry', 'inquiry', 'details'],
+        'automation_phrases' => ['xrumer'],
         'promotional_phrases' => [
             '50% off',
             'free shipping',

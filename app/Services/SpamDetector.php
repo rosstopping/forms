@@ -27,6 +27,18 @@ class SpamDetector
             $score += 2;
         }
 
+        if ($this->hasExplicitlyEmptyContent($payload)) {
+            $score += config('forms.spam.empty_content_score', 3);
+        }
+
+        if (preg_match('/<\s*a\b[^>]*\bhref\s*=/iu', $content) === 1) {
+            $score += config('forms.spam.html_link_score', 3);
+        }
+
+        if (Str::contains(Str::lower($content), config('forms.spam.automation_phrases', []))) {
+            $score += config('forms.spam.automation_phrase_score', 3);
+        }
+
         if (Str::contains(Str::lower($content), config('forms.spam.promotional_phrases', []))) {
             $score += 2;
         }
@@ -58,5 +70,18 @@ class SpamDetector
         }
 
         return false;
+    }
+
+    protected function hasExplicitlyEmptyContent(array $payload): bool
+    {
+        $contentFields = collect($payload)
+            ->filter(function (mixed $value, string|int $key): bool {
+                $normalizedKey = Str::of((string) $key)->lower()->replace('-', '_')->toString();
+
+                return in_array($normalizedKey, config('forms.spam.content_fields', []), true);
+            });
+
+        return $contentFields->isNotEmpty()
+            && $contentFields->every(fn (mixed $value): bool => ! is_scalar($value) || blank(trim((string) $value)));
     }
 }
