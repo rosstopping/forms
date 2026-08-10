@@ -14,8 +14,12 @@ class SpamDetector
             ->map(fn (mixed $value): string => (string) $value);
 
         $content = $fields->implode("\n");
+        $normalizedContent = preg_replace('/(?<=[\pL\pN])\s*\.\s*(?=[\pL])/u', '.', $content) ?? $content;
         $score = 0;
-        $urlCount = preg_match_all('/(?:https?:\/\/|www\.)[^\s<]+/iu', $content);
+        $urlCount = preg_match_all(
+            '/(?:https?:\/\/|www\.)[^\s<]+|(?<![@\pL\pN._-])(?:[a-z0-9-]+\.)+(?:com|net|org|io|co|li|me|app|info|biz)(?:\/[^\s<]*)?/iu',
+            $normalizedContent,
+        );
 
         if ($urlCount >= config('forms.spam.max_links', 3)) {
             $score += 3;
@@ -41,6 +45,10 @@ class SpamDetector
 
         if (Str::contains(Str::lower($content), config('forms.spam.promotional_phrases', []))) {
             $score += 2;
+        }
+
+        if (Str::contains(Str::lower($normalizedContent), config('forms.spam.shortened_link_domains', []))) {
+            $score += config('forms.spam.shortened_link_score', 3);
         }
 
         if (Str::length($content) > config('forms.spam.long_content_length', 4000)) {

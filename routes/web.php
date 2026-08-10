@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\WebsiteController;
 use App\Http\Controllers\Admin\WebsiteHealthReportController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\FormSubmissionController;
+use App\Http\Controllers\FormSubmissionSpamController;
 use App\Http\Middleware\AllowFormSubmissionCors;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Http\Request;
@@ -33,6 +34,13 @@ Route::middleware('web')->group(function () {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
     Route::post('/login', [AuthenticatedSessionController::class, 'store']);
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
+});
+
+Route::middleware(['web', 'signed', 'throttle:20,1'])->group(function () {
+    Route::get('/form-submissions/{formSubmission}/spam', [FormSubmissionSpamController::class, 'show'])
+        ->name('form-submissions.spam.confirm');
+    Route::post('/form-submissions/{formSubmission}/spam', [FormSubmissionSpamController::class, 'store'])
+        ->name('form-submissions.spam.store');
 });
 
 Route::middleware(['web', 'auth'])->prefix('admin')->name('admin.')->group(function () {

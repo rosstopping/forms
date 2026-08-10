@@ -178,6 +178,23 @@ it('quarantines HTML link injection and known automation markers', function (): 
     Mail::assertNothingSent();
 });
 
+it('quarantines shortened and obfuscated links', function (string $message): void {
+    $this->withHeader('Origin', 'https://short-link-spam.example')
+        ->post('/submit', [
+            '_form_name' => 'Contact form',
+            'name' => 'Promotional sender',
+            'email' => 'sender@example.com',
+            'message' => $message,
+        ])
+        ->assertRedirectContains('/submitted');
+
+    expect(FormSubmission::query()->latest('id')->firstOrFail()->is_spam)->toBeTrue();
+    Mail::assertNothingSent();
+})->with([
+    'bare shortened link' => 'Start winning here: psee.io/8r5adn',
+    'obfuscated shortened link' => 'Remove us by visiting brnd .li/delist',
+]);
+
 it('rate limits repeated submissions from the same domain and IP address', function (): void {
     config()->set('forms.rate_limit_per_minute', 2);
 

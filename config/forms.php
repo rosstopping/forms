@@ -28,8 +28,15 @@ return [
         'empty_content_score' => (int) env('FORMS_SPAM_EMPTY_CONTENT_SCORE', 3),
         'html_link_score' => (int) env('FORMS_SPAM_HTML_LINK_SCORE', 3),
         'automation_phrase_score' => (int) env('FORMS_SPAM_AUTOMATION_PHRASE_SCORE', 3),
+        'shortened_link_score' => (int) env('FORMS_SPAM_SHORTENED_LINK_SCORE', 3),
+        'mark_link_expiry_days' => (int) env('FORMS_SPAM_MARK_LINK_EXPIRY_DAYS', 30),
         'content_fields' => ['message', 'comments', 'comment', 'enquiry', 'inquiry', 'details'],
-        'automation_phrases' => ['xrumer'],
+        'automation_phrases' => [
+            'xrumer',
+            'no longer want to receive future messages',
+            'fill the form at',
+        ],
+        'shortened_link_domains' => ['bit.ly', 'brnd.li', 'cutt.ly', 'psee.io', 'tinyurl.com'],
         'promotional_phrases' => [
             '50% off',
             'free shipping',

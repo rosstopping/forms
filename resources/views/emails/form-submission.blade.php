@@ -21,6 +21,11 @@
             @endforeach
         </ul>
         <p><a href="{{ url('/admin/form-submissions/'.$submission->id) }}">View submission in the admin area</a></p>
+        <hr style="margin:24px 0; border:0; border-top:1px solid #e5e7eb;">
+        <p style="margin-bottom:8px; color:#4b5563; font-size:14px;">Was this submission unwanted?</p>
+        <p style="margin:0;">
+            <a href="{{ $markAsSpamUrl }}" style="display:inline-block; border-radius:6px; background:#b91c1c; color:#ffffff; padding:10px 16px; font-size:14px; font-weight:bold; text-decoration:none;">Mark as spam</a>
+        </p>
     </div>
 </body>
 </html>

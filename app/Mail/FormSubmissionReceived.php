@@ -8,6 +8,7 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\URL;
 
 class FormSubmissionReceived extends Mailable
 {
@@ -29,6 +30,11 @@ class FormSubmissionReceived extends Mailable
             view: 'emails.form-submission',
             with: [
                 'submission' => $this->submission,
+                'markAsSpamUrl' => URL::temporarySignedRoute(
+                    'form-submissions.spam.confirm',
+                    now()->addDays(config('forms.spam.mark_link_expiry_days', 30)),
+                    ['formSubmission' => $this->submission],
+                ),
             ],
         );
     }
