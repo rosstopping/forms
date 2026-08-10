@@ -35,3 +35,34 @@ it('analyses sitemap and discovered internal pages without leaving the website',
 
     Http::assertNotSent(fn ($request) => str_contains($request->url(), 'outside.test'));
 });
+
+it('preserves trailing slashes from sitemaps and internal links', function (): void {
+    config()->set('forms.health_reports.max_pages', 5);
+    config()->set('forms.health_reports.max_depth', 2);
+    config()->set('forms.health_reports.crawl_delay_ms', 0);
+
+    $website = Website::factory()->create();
+    $website->domains()->create(['domain' => 'example.com', 'is_primary' => true]);
+
+    Http::fake([
+        'https://example.com/sitemap.xml' => Http::response('<urlset><url><loc>https://example.com/about/</loc></url></urlset>', 200, ['Content-Type' => 'application/xml']),
+        'https://example.com/' => Http::response('<html><head><title>Home</title></head><body><h1>Home</h1><a href="/contact/">Contact</a></body></html>', 200, ['Content-Type' => 'text/html']),
+        'https://example.com/about/' => Http::response('<html><head><title>About</title></head><body><h1>About</h1><a href="team/">Team</a></body></html>', 200, ['Content-Type' => 'text/html']),
+        'https://example.com/about/team/' => Http::response('<html><head><title>Team</title></head><body><h1>Team</h1></body></html>', 200, ['Content-Type' => 'text/html']),
+        'https://example.com/contact/' => Http::response('<html><head><title>Contact</title></head><body><h1>Contact</h1></body></html>', 200, ['Content-Type' => 'text/html']),
+    ]);
+
+    $pages = app(WebsiteCrawler::class)->crawl($website);
+
+    expect(collect($pages)->pluck('url')->all())->toBe([
+        'https://example.com/',
+        'https://example.com/about/',
+        'https://example.com/contact/',
+        'https://example.com/about/team/',
+    ])->and(collect($pages)->pluck('status_code')->all())->toBe([200, 200, 200, 200]);
+
+    Http::assertNotSent(fn ($request): bool => in_array($request->url(), [
+        'https://example.com/about',
+        'https://example.com/contact',
+    ], true));
+});

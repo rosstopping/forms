@@ -223,7 +223,10 @@ class WebsiteCrawler
             return $origin.$href;
         }
 
-        $directory = rtrim(str_replace('\\', '/', dirname($parts['path'] ?? '/')), '/');
+        $basePath = str_replace('\\', '/', $parts['path'] ?? '/');
+        $directory = Str::endsWith($basePath, '/')
+            ? rtrim($basePath, '/')
+            : rtrim(dirname($basePath), '/');
         $directory = in_array($directory, ['.', '/'], true) ? '' : $directory;
 
         return $origin.($directory ? '/'.$directory : '').'/'.$href;
@@ -238,7 +241,6 @@ class WebsiteCrawler
         }
 
         $path = preg_replace('#/+#', '/', $parts['path'] ?? '/') ?: '/';
-        $path = $path === '/' ? '/' : rtrim($path, '/');
 
         return 'https://'.Str::lower($parts['host']).$path;
     }
