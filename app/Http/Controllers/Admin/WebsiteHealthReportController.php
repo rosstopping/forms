@@ -18,7 +18,7 @@ class WebsiteHealthReportController extends Controller
 
     public function store(Request $request, Website $website): RedirectResponse
     {
-        abort_unless($request->user()?->isAdmin(), 403);
+        abort_unless($request->user()?->isAdmin() || $website->user_id === $request->user()?->id, 403);
 
         $existingReport = $website->healthReports()
             ->whereIn('status', [WebsiteHealthReport::STATUS_PENDING, WebsiteHealthReport::STATUS_RUNNING])

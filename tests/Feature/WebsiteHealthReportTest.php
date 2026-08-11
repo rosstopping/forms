@@ -85,6 +85,31 @@ it('lets an administrator enable reports and queue one immediately', function ()
     Queue::assertPushed(GenerateWebsiteHealthReport::class, fn ($job) => $job->report->is($report));
 });
 
+it('lets a website owner manually queue a health report', function (): void {
+    Queue::fake();
+    $owner = User::factory()->create();
+    $otherUser = User::factory()->create();
+    $website = websiteWithDomain(['user_id' => $owner->id]);
+
+    $this->actingAs($owner)
+        ->get(route('admin.websites.show', $website))
+        ->assertSuccessful()
+        ->assertSee('Run report now');
+
+    $this->actingAs($owner)
+        ->post(route('admin.website-health-reports.store', $website))
+        ->assertRedirect();
+
+    $report = $website->healthReports()->sole();
+
+    expect($report->status)->toBe(WebsiteHealthReport::STATUS_PENDING);
+    Queue::assertPushed(GenerateWebsiteHealthReport::class, fn ($job) => $job->report->is($report));
+
+    $this->actingAs($otherUser)
+        ->post(route('admin.website-health-reports.store', $website))
+        ->assertForbidden();
+});
+
 it('allows an owner to view only reports for their website', function (): void {
     $owner = User::factory()->create();
     $website = websiteWithDomain(['user_id' => $owner->id]);

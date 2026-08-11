@@ -19,9 +19,7 @@
     <div class="website-tabs" role="tablist" aria-label="Website sections">
         <button type="button" id="website-tab-health" class="website-tab" role="tab" aria-selected="true" aria-controls="website-panel-health" tabindex="0" data-tab="health">Health reports</button>
         <button type="button" id="website-tab-search" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-search" tabindex="-1" data-tab="search">Search</button>
-        @if ($website->repository)
-            <button type="button" id="website-tab-content" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-content" tabindex="-1" data-tab="content">Content</button>
-        @endif
+        <button type="button" id="website-tab-content" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-content" tabindex="-1" data-tab="content">Content</button>
         <button type="button" id="website-tab-forms" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-forms" tabindex="-1" data-tab="forms">Forms & submissions</button>
         <button type="button" id="website-tab-settings" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-settings" tabindex="-1" data-tab="settings">Settings</button>
     </div>
@@ -35,12 +33,10 @@
                 <h2 id="health-title" class="mt-1 text-lg font-semibold text-slate-950">Health reports</h2>
                 <p class="mt-1 text-sm text-slate-600">Availability, on-page SEO, security headers, discoverability, and form delivery.</p>
             </div>
-            @if (Auth::user()?->isAdmin())
-                <form method="POST" action="{{ route('admin.website-health-reports.store', $website) }}">
-                    @csrf
-                    <button type="submit" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900">Run report now</button>
-                </form>
-            @endif
+            <form method="POST" action="{{ route('admin.website-health-reports.store', $website) }}">
+                @csrf
+                <button type="submit" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900">Run report now</button>
+            </form>
         </div>
         @if ($latestReport)
             <dl class="grid grid-cols-2 gap-px bg-slate-200 @container sm:grid-cols-4">
@@ -64,36 +60,6 @@
         </div>
         </section>
 
-        <div class="rounded-lg border bg-white p-4 shadow-sm">
-            <div class="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                    <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Automated remediation</p>
-                    <h2 class="mt-1 font-semibold">GitHub repository</h2>
-                    @if ($website->repository)
-                        <p class="mt-1 text-sm text-slate-600">
-                            <span class="font-medium text-slate-900">{{ $website->repository->full_name }}</span>
-                            on {{ $website->repository->default_branch }}
-                            @if ($website->repository->project_path)
-                                · {{ $website->repository->project_path }}
-                            @endif
-                        </p>
-                        <p class="mt-1 text-xs text-slate-500">Installed for {{ $website->repository->installation->account_login }}.</p>
-                    @else
-                        <p class="mt-1 text-sm text-slate-600">Connect the source repository to prepare tracked fixes from health-report findings.</p>
-                    @endif
-                </div>
-                <div class="flex flex-wrap gap-2">
-                    <a href="{{ route('admin.website-repositories.create', $website) }}" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">{{ $website->repository ? 'Change repository' : 'Connect GitHub' }}</a>
-                    @if ($website->repository)
-                        <form method="POST" action="{{ route('admin.website-repositories.destroy', $website) }}">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Disconnect</button>
-                        </form>
-                    @endif
-                </div>
-            </div>
-        </div>
     </div>
 
     <div id="website-panel-search" class="rounded-lg border bg-white p-4 shadow-sm" role="tabpanel" aria-labelledby="website-tab-search" data-tab-panel="search" hidden>
@@ -137,8 +103,39 @@
             @endif
         </div>
 
-    @if ($website->repository)
-        <div id="website-panel-content" class="space-y-6" role="tabpanel" aria-labelledby="website-tab-content" data-tab-panel="content" hidden>
+    <div id="website-panel-content" class="space-y-6" role="tabpanel" aria-labelledby="website-tab-content" data-tab-panel="content" hidden>
+        <div class="rounded-lg border bg-white p-4 shadow-sm">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                    <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Content publishing</p>
+                    <h2 class="mt-1 font-semibold">GitHub repository</h2>
+                    @if ($website->repository)
+                        <p class="mt-1 text-sm text-slate-600">
+                            <span class="font-medium text-slate-900">{{ $website->repository->full_name }}</span>
+                            on {{ $website->repository->default_branch }}
+                            @if ($website->repository->project_path)
+                                · {{ $website->repository->project_path }}
+                            @endif
+                        </p>
+                        <p class="mt-1 text-xs text-slate-500">Installed for {{ $website->repository->installation->account_login }}.</p>
+                    @else
+                        <p class="mt-1 text-sm text-slate-600">Connect the website's source repository before adding requests or generating content.</p>
+                    @endif
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <a href="{{ route('admin.website-repositories.create', $website) }}" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">{{ $website->repository ? 'Change repository' : 'Connect GitHub' }}</a>
+                    @if ($website->repository)
+                        <form method="POST" action="{{ route('admin.website-repositories.destroy', $website) }}">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Disconnect</button>
+                        </form>
+                    @endif
+                </div>
+            </div>
+        </div>
+
+        @if ($website->repository)
         @if (Auth::user()?->isAdmin())
         @php($contentPlan = $website->contentPlan)
         <div class="rounded-lg border bg-white p-4 shadow-sm">
@@ -223,8 +220,8 @@
             </div>
         </div>
         </section>
-        </div>
-    @endif
+        @endif
+    </div>
 
     <div id="website-panel-settings" class="grid gap-6 lg:grid-cols-2" role="tabpanel" aria-labelledby="website-tab-settings" data-tab-panel="settings" hidden>
         <div class="rounded-lg border bg-white p-4 shadow-sm">
