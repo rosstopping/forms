@@ -53,6 +53,8 @@
 
         <x-performance-summary :report="$report" />
 
+        <x-structured-data-summary :report="$report" />
+
         @if (data_get($report->metrics, 'search_console'))
             <section class="rounded-xl border bg-white p-5 shadow-sm sm:p-6">
                 <h2 class="text-xl font-semibold text-slate-900">How people found the website</h2>

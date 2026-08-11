@@ -416,6 +416,8 @@ it('audits a website and queues the completed report for admins and the owner', 
     $this->actingAs($admin)
         ->get(route('admin.website-health-reports.show', [$website, $report]))
         ->assertSuccessful()
+        ->assertSee('Structured data and schema recommendations')
+        ->assertSee('Organization schema opportunity')
         ->assertSee('Last seven days of forms');
 
     Mail::assertQueued(WebsiteHealthReportReady::class, 2);
@@ -439,6 +441,8 @@ it('audits a website and queues the completed report for admins and the owner', 
         ->assertSee('Content changes this week')
         ->assertSee('Publish a guide to choosing event forms')
         ->assertSee('Added a practical guide based on this week’s search demand.')
+        ->assertSee('Structured data and schema recommendations')
+        ->assertSee('Organization schema opportunity')
         ->assertSee('resources/views/guides/event-forms.blade.php');
 });
 

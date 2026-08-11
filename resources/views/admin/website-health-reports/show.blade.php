@@ -111,6 +111,8 @@
 
         <x-performance-summary :report="$report" />
 
+        <x-structured-data-summary :report="$report" />
+
         @if (data_get($report->metrics, 'forms_count', 0) > 0)
             <div class="rounded-lg border bg-white p-4 shadow-sm">
                 <h2 class="font-semibold">Last seven days of forms</h2>

@@ -1,10 +1,11 @@
 <?php
 
+use App\Services\StructuredDataAnalyzer;
 use App\Services\WebsiteCrawler;
 use App\Services\WebsiteHealthAuditor;
 
 it('finds actionable on-page SEO problems without executing submitted HTML', function (): void {
-    $checks = (new WebsiteHealthAuditor(new WebsiteCrawler))->inspectHtml(
+    $checks = (new WebsiteHealthAuditor(new WebsiteCrawler(new StructuredDataAnalyzer)))->inspectHtml(
         '<html><head><meta name="robots" content="noindex"></head><body><h1>One</h1><h1>Two</h1><img src="photo.jpg"><script type="application/ld+json">invalid</script></body></html>',
         'https://example.com',
     );
@@ -21,7 +22,7 @@ it('finds actionable on-page SEO problems without executing submitted HTML', fun
 it('explains homepage metadata length warnings', function (): void {
     $title = str_repeat('Long title ', 8);
     $description = str_repeat('Long description ', 12);
-    $checks = (new WebsiteHealthAuditor(new WebsiteCrawler))->inspectHtml(
+    $checks = (new WebsiteHealthAuditor(new WebsiteCrawler(new StructuredDataAnalyzer)))->inspectHtml(
         '<html><head><title>'.$title.'</title><meta name="description" content="'.$description.'"></head><body><h1>Home</h1></body></html>',
         'https://example.com',
     );

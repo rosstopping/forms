@@ -14,6 +14,8 @@ use RuntimeException;
 
 class WebsiteCrawler
 {
+    public function __construct(protected StructuredDataAnalyzer $structuredDataAnalyzer) {}
+
     /** @return array<int, array<string, mixed>> */
     public function crawl(Website $website): array
     {
@@ -180,7 +182,7 @@ class WebsiteCrawler
         $bodyText = preg_replace('/\s+/u', ' ', trim((string) $xpath->evaluate('string(//body)'))) ?: '';
         $wordCount = $bodyText === '' ? 0 : str_word_count(strip_tags($bodyText));
         $links = $this->links($xpath, $url);
-        $invalidStructuredData = $this->invalidStructuredDataCount($xpath);
+        $structuredDataChecks = $this->structuredDataAnalyzer->analyze($xpath, $url);
         $expectedHost = $this->normaliseHost((string) parse_url($url, PHP_URL_HOST));
         $canonicalHost = $this->normaliseHost((string) parse_url($canonical, PHP_URL_HOST));
         $isIndexable = ! Str::contains($robots, 'noindex');
@@ -209,7 +211,7 @@ class WebsiteCrawler
                 $this->check('language', 'Page language', $language === '' ? 'warning' : 'passed', $language === '' ? 'The HTML element has no language.' : 'Language: '.$language),
                 $this->check('viewport', 'Mobile viewport', $viewport === '' ? 'warning' : 'passed', $viewport === '' ? 'No mobile viewport was found.' : 'A mobile viewport is configured.'),
                 $this->check('image_alt_text', 'Image alternative text', $missingAlt > 0 ? 'warning' : 'passed', $missingAlt > 0 ? "{$missingAlt} of {$images} images have no alternative text." : 'All images have alternative text.'),
-                $this->check('structured_data', 'Structured data syntax', $invalidStructuredData > 0 ? 'warning' : 'passed', $invalidStructuredData > 0 ? "{$invalidStructuredData} structured data blocks contain invalid JSON." : 'No invalid structured data JSON was found.'),
+                ...$structuredDataChecks,
                 $this->check('content_depth', 'Content depth', $wordCount < 150 ? 'warning' : 'passed', "The page contains approximately {$wordCount} words."),
             ],
             'discovered_links' => $links,
@@ -329,21 +331,6 @@ class WebsiteCrawler
     protected function normaliseHost(string $host): string
     {
         return Str::lower(Str::after($host, 'www.'));
-    }
-
-    protected function invalidStructuredDataCount(DOMXPath $xpath): int
-    {
-        $nodes = $xpath->query('//script[translate(@type, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz")="application/ld+json"]');
-        $invalid = 0;
-
-        if ($nodes !== false) {
-            foreach ($nodes as $node) {
-                json_decode($node->textContent, true);
-                $invalid += json_last_error() === JSON_ERROR_NONE ? 0 : 1;
-            }
-        }
-
-        return $invalid;
     }
 
     /** @return array<string, mixed> */
