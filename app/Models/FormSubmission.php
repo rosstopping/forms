@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -63,6 +64,25 @@ class FormSubmission extends Model
     public function assignee(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    /** @param array<string, mixed> $filters */
+    public function scopeFiltered(Builder $query, array $filters): Builder
+    {
+        $spam = $filters['spam'] ?? 'exclude';
+
+        return $query
+            ->when($spam === 'exclude', fn (Builder $query) => $query->where('is_spam', false))
+            ->when($spam === 'only', fn (Builder $query) => $query->where('is_spam', true))
+            ->when(filled($filters['status'] ?? null), fn (Builder $query) => $query->where('status', $filters['status']))
+            ->when(filled($filters['website_id'] ?? null), fn (Builder $query) => $query->where('website_id', $filters['website_id']))
+            ->when(filled($filters['assigned_to'] ?? null), fn (Builder $query) => $filters['assigned_to'] === 'unassigned'
+                ? $query->whereNull('assigned_to')
+                : $query->where('assigned_to', $filters['assigned_to']))
+            ->when(filled($filters['search'] ?? null), function (Builder $query) use ($filters): void {
+                $search = '%'.Str::limit(Str::of($filters['search'])->trim(), 100, '').'%';
+                $query->where(fn (Builder $query) => $query->where('source_domain', 'like', $search)->orWhere('source_url', 'like', $search)->orWhere('data', 'like', $search));
+            });
     }
 
     public function replyToEmail(): ?string

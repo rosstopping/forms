@@ -2,13 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Builder;
 
 class Website extends Model
 {
@@ -76,6 +76,19 @@ class Website extends Model
             ->orWhereHas('members', fn (Builder $query) => $query->whereKey($user->id)));
     }
 
+    public function scopeManageableBy(Builder $query, User $user): Builder
+    {
+        if ($user->isAdmin()) {
+            return $query;
+        }
+
+        return $query->where(fn (Builder $query) => $query
+            ->where('user_id', $user->id)
+            ->orWhereHas('members', fn (Builder $query) => $query
+                ->whereKey($user->id)
+                ->wherePivot('role', self::MEMBER_ROLE_MANAGER)));
+    }
+
     public function isAccessibleBy(?User $user): bool
     {
         return $user !== null && ($user->isAdmin() || $this->user_id === $user->id || $this->members()->whereKey($user->id)->exists());
@@ -92,7 +105,7 @@ class Website extends Model
             return 'owner';
         }
 
-        return $this->members()->whereKey($user->id)->value('role');
+        return $this->members()->whereKey($user->id)->first()?->pivot?->role;
     }
 
     public function domains(): HasMany

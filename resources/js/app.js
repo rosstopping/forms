@@ -188,3 +188,125 @@ document.querySelectorAll('[data-searchable-select]').forEach((combobox) => {
         }
     });
 });
+
+document.querySelectorAll('[data-bulk-leads-form]').forEach((form) => {
+    const selectAll = form.querySelector('[data-bulk-leads-select-all]');
+    const checkboxes = [...form.querySelectorAll('[data-bulk-leads-checkbox]')];
+    const action = form.querySelector('[data-bulk-leads-action]');
+    const selectionScope = form.querySelector('[data-bulk-leads-scope]');
+    const actions = form.querySelector('[data-bulk-leads-actions]');
+    const selectedCount = form.querySelector('[data-bulk-leads-count]');
+    const selectionControl = form.querySelector('[data-bulk-leads-selection-control]');
+    const selectionToggle = form.querySelector('[data-bulk-leads-selection-toggle]');
+    const selectionMenu = form.querySelector('[data-bulk-leads-selection-menu]');
+    const selectPage = form.querySelector('[data-bulk-leads-select-page]');
+    const selectMatching = form.querySelector('[data-bulk-leads-select-matching]');
+    const pageIndicator = form.querySelector('[data-bulk-leads-page-indicator]');
+    const allIndicator = form.querySelector('[data-bulk-leads-all-indicator]');
+    const menuToggle = form.querySelector('[data-bulk-leads-menu-toggle]');
+    const menu = form.querySelector('[data-bulk-leads-menu]');
+    const dialog = form.querySelector('[data-bulk-leads-dialog]');
+    const dialogTitle = form.querySelector('[data-bulk-leads-dialog-title]');
+    const dialogMessage = form.querySelector('[data-bulk-leads-dialog-message]');
+    const statusField = form.querySelector('[data-bulk-leads-status-field]');
+    const confirmButton = form.querySelector('[data-bulk-leads-confirm]');
+    const totalMatching = Number(form.dataset.bulkLeadsTotal);
+    let allMatching = false;
+
+    const updateSelection = () => {
+        const pageCount = checkboxes.filter((checkbox) => checkbox.checked).length;
+        const count = allMatching ? totalMatching : pageCount;
+        const wholePageSelected = checkboxes.length > 0 && pageCount === checkboxes.length;
+
+        actions.classList.toggle('hidden', count === 0);
+        actions.classList.toggle('flex', count > 0);
+        selectedCount.textContent = count.toString();
+        selectAll.checked = wholePageSelected;
+        selectAll.indeterminate = pageCount > 0 && !wholePageSelected;
+        selectionScope.value = allMatching ? 'all' : 'page';
+        pageIndicator.classList.toggle('bg-teal-600', wholePageSelected && !allMatching);
+        pageIndicator.classList.toggle('border-teal-600', wholePageSelected && !allMatching);
+        allIndicator.classList.toggle('bg-teal-600', allMatching);
+        allIndicator.classList.toggle('border-teal-600', allMatching);
+    };
+
+    selectAll?.addEventListener('change', () => {
+        allMatching = false;
+        checkboxes.forEach((checkbox) => {
+            checkbox.checked = selectAll.checked;
+        });
+        updateSelection();
+    });
+
+    checkboxes.forEach((checkbox) => checkbox.addEventListener('change', () => {
+        allMatching = false;
+        updateSelection();
+    }));
+
+    selectionToggle?.addEventListener('click', () => {
+        const open = selectionMenu.classList.toggle('hidden') === false;
+
+        selectionToggle.setAttribute('aria-expanded', open.toString());
+    });
+
+    selectPage?.addEventListener('click', () => {
+        allMatching = false;
+        checkboxes.forEach((checkbox) => {
+            checkbox.checked = true;
+        });
+        selectionMenu.classList.add('hidden');
+        selectionToggle.setAttribute('aria-expanded', 'false');
+        updateSelection();
+    });
+
+    selectMatching?.addEventListener('click', () => {
+        allMatching = true;
+        checkboxes.forEach((checkbox) => {
+            checkbox.checked = true;
+        });
+        selectionMenu.classList.add('hidden');
+        selectionToggle.setAttribute('aria-expanded', 'false');
+        updateSelection();
+    });
+
+    menuToggle?.addEventListener('click', () => {
+        const open = menu.classList.toggle('hidden') === false;
+
+        menuToggle.setAttribute('aria-expanded', open.toString());
+    });
+
+    form.querySelectorAll('[data-bulk-leads-open]').forEach((button) => button.addEventListener('click', () => {
+        const selectedAction = button.dataset.bulkLeadsOpen;
+        const count = checkboxes.filter((checkbox) => checkbox.checked).length;
+        const content = {
+            update_status: ['Update lead status?', `Choose the new status for ${count} selected lead${count === 1 ? '' : 's'}.`, 'Update status'],
+            mark_spam: ['Mark leads as spam?', `${count} selected lead${count === 1 ? '' : 's'} will be hidden from the default inbox.`, 'Mark as spam'],
+            delete: ['Delete selected leads?', `${count} selected lead${count === 1 ? '' : 's'} will be permanently deleted. This cannot be undone.`, 'Delete leads'],
+        }[selectedAction];
+
+        action.value = selectedAction;
+        dialogTitle.textContent = content[0];
+        dialogMessage.textContent = content[1];
+        confirmButton.textContent = content[2];
+        confirmButton.classList.toggle('bg-red-700', selectedAction === 'delete');
+        confirmButton.classList.toggle('bg-slate-900', selectedAction !== 'delete');
+        statusField.classList.toggle('hidden', selectedAction !== 'update_status');
+        menu.classList.add('hidden');
+        menuToggle.setAttribute('aria-expanded', 'false');
+        dialog.showModal();
+    }));
+
+    form.querySelector('[data-bulk-leads-cancel]')?.addEventListener('click', () => dialog.close());
+    document.addEventListener('click', (event) => {
+        if (!selectionControl.contains(event.target)) {
+            selectionMenu.classList.add('hidden');
+            selectionToggle.setAttribute('aria-expanded', 'false');
+        }
+
+        if (!menu.contains(event.target) && !menuToggle.contains(event.target)) {
+            menu.classList.add('hidden');
+            menuToggle.setAttribute('aria-expanded', 'false');
+        }
+    });
+    updateSelection();
+});

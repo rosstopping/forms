@@ -19,7 +19,7 @@
                 <div class="flex justify-between"><dt class="text-slate-500">Form</dt><dd class="font-medium">{{ e($formSubmission->form?->name ?: 'Unknown form') }}</dd></div>
                 <div class="flex justify-between"><dt class="text-slate-500">Website</dt><dd class="font-medium">{{ e($formSubmission->website?->name ?: 'Unknown website') }}</dd></div>
                 <div class="flex justify-between"><dt class="text-slate-500">Status</dt><dd class="font-medium"><span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">{{ $formSubmission->resolvedStatusLabel() }}</span></dd></div>
-                <div class="flex justify-between"><dt class="text-slate-500">Owner</dt><dd class="font-medium">{{ e($formSubmission->assignee?->name ?: 'Unassigned') }}</dd></div>
+                {{-- <div class="flex justify-between"><dt class="text-slate-500">Owner</dt><dd class="font-medium">{{ e($formSubmission->assignee?->name ?: 'Unassigned') }}</dd></div> --}}
             </dl>
 
             <form method="POST" action="{{ route('admin.form-submissions.update', $formSubmission) }}" class="mt-5 space-y-4">
@@ -33,7 +33,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div>
+                {{-- <div>
                     <label class="block text-sm font-medium text-slate-700" for="assigned_to">Assigned to</label>
                     <select id="assigned_to" name="assigned_to" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
                         <option value="">Unassigned</option>
@@ -41,7 +41,7 @@
                             <option value="{{ $user->id }}" @selected($formSubmission->assigned_to === $user->id)>{{ e($user->name) }}</option>
                         @endforeach
                     </select>
-                </div>
+                </div> --}}
                 <div>
                     <label class="block text-sm font-medium text-slate-700" for="notes">Notes</label>
                     <textarea id="notes" name="notes" rows="4" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">{{ old('notes', $formSubmission->notes) }}</textarea>

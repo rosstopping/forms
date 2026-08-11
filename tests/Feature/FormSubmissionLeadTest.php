@@ -97,6 +97,96 @@ it('shows leads in the primary navigation', function () {
         ->assertSee('Leads');
 });
 
+it('bulk updates statuses marks spam and deletes selected leads', function () {
+    $owner = User::factory()->create();
+    $website = Website::factory()->create(['user_id' => $owner->id]);
+    $form = Form::factory()->create(['website_id' => $website->id]);
+    $statusLead = FormSubmission::factory()->create(['website_id' => $website->id, 'form_id' => $form->id]);
+    $spamLead = FormSubmission::factory()->create(['website_id' => $website->id, 'form_id' => $form->id]);
+    $deletedLead = FormSubmission::factory()->create(['website_id' => $website->id, 'form_id' => $form->id]);
+
+    $this->actingAs($owner)->get(route('admin.form-submissions.index'))
+        ->assertOk()
+        ->assertSee('data-bulk-leads-actions class="hidden', false)
+        ->assertSee('data-bulk-leads-selection-menu', false)
+        ->assertSee('Select this page')
+        ->assertSee('Select all')
+        ->assertSee('data-bulk-leads-dialog', false)
+        ->assertSee('data-bulk-leads-status-field', false)
+        ->assertDontSee('>Apply</button>', false);
+
+    $this->patch(route('admin.form-submissions.bulk'), [
+        'submission_ids' => [$statusLead->id],
+        'selection_scope' => 'page',
+        'action' => 'update_status',
+        'status' => 'won',
+    ])->assertRedirect();
+
+    $this->patch(route('admin.form-submissions.bulk'), [
+        'submission_ids' => [$spamLead->id],
+        'selection_scope' => 'page',
+        'action' => 'mark_spam',
+    ])->assertRedirect();
+
+    $this->patch(route('admin.form-submissions.bulk'), [
+        'submission_ids' => [$deletedLead->id],
+        'selection_scope' => 'page',
+        'action' => 'delete',
+    ])->assertRedirect();
+
+    expect($statusLead->refresh()->status)->toBe('won')
+        ->and($spamLead->refresh()->is_spam)->toBeTrue();
+    $this->assertModelMissing($deletedLead);
+});
+
+it('rejects a bulk action when any selected lead is not manageable', function () {
+    $owner = User::factory()->create();
+    $member = User::factory()->create();
+    $managedWebsite = Website::factory()->create(['user_id' => $owner->id]);
+    $managedWebsite->members()->attach($member, ['role' => Website::MEMBER_ROLE_MANAGER]);
+    $managedForm = Form::factory()->create(['website_id' => $managedWebsite->id]);
+    $managedLead = FormSubmission::factory()->create(['website_id' => $managedWebsite->id, 'form_id' => $managedForm->id]);
+    $privateWebsite = Website::factory()->create();
+    $privateForm = Form::factory()->create(['website_id' => $privateWebsite->id]);
+    $privateLead = FormSubmission::factory()->create(['website_id' => $privateWebsite->id, 'form_id' => $privateForm->id]);
+
+    $this->actingAs($member)->patch(route('admin.form-submissions.bulk'), [
+        'submission_ids' => [$managedLead->id, $privateLead->id],
+        'selection_scope' => 'page',
+        'action' => 'mark_spam',
+    ])->assertForbidden();
+
+    expect($managedLead->refresh()->is_spam)->toBeFalse()
+        ->and($privateLead->refresh()->is_spam)->toBeFalse();
+});
+
+it('bulk updates all manageable leads matching the active filters', function () {
+    $owner = User::factory()->create();
+    $website = Website::factory()->create(['user_id' => $owner->id]);
+    $form = Form::factory()->create(['website_id' => $website->id]);
+    $matchingLeads = FormSubmission::factory()->count(3)->create([
+        'website_id' => $website->id,
+        'form_id' => $form->id,
+        'status' => 'new',
+    ]);
+    $excludedLead = FormSubmission::factory()->create([
+        'website_id' => $website->id,
+        'form_id' => $form->id,
+        'status' => 'qualified',
+    ]);
+
+    $this->actingAs($owner)->patch(route('admin.form-submissions.bulk'), [
+        'selection_scope' => 'all',
+        'action' => 'update_status',
+        'status' => 'contacted',
+        'filter_status' => 'new',
+        'spam' => 'exclude',
+    ])->assertRedirect();
+
+    expect($matchingLeads->each->refresh()->pluck('status')->unique()->all())->toBe(['contacted'])
+        ->and($excludedLead->refresh()->status)->toBe('qualified');
+});
+
 it('lets a website owner configure the site wide automatic reply', function () {
     $owner = User::factory()->create();
     $website = Website::factory()->create(['user_id' => $owner->id]);

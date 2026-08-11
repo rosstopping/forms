@@ -115,7 +115,7 @@ class WebsiteController extends Controller
         $users = $user?->isAdmin() ? User::query()->orderBy('name')->get(['id', 'name', 'email']) : collect();
         $canManageMembers = $user?->can('manageMembers', $website) === true;
         $availableMembers = $canManageMembers
-            ? User::query()->whereKeyNot($website->user_id)->whereDoesntHave('sharedWebsites', fn ($query) => $query->whereKey($website->id))->orderBy('name')->get(['id', 'name', 'email'])
+            ? User::query()->when($website->user_id, fn ($query) => $query->whereKeyNot($website->user_id))->whereDoesntHave('sharedWebsites', fn ($query) => $query->whereKey($website->id))->orderBy('name')->get(['id', 'name', 'email'])
             : collect();
         $searchConsoleReport = null;
         $searchConsoleReportUnavailable = false;
@@ -149,6 +149,10 @@ class WebsiteController extends Controller
         ]);
 
         $website->fill($data)->save();
+
+        if ($website->user_id) {
+            $website->members()->detach($website->user_id);
+        }
 
         return Redirect::route('admin.websites.show', $website)->with('status', 'Website settings updated.');
     }

@@ -38,15 +38,11 @@ class FormSubmissionController extends Controller
         $summary = (clone $query)->where('is_spam', false)
             ->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
 
-        $query->when($request->input('spam', 'exclude') === 'exclude', fn ($query) => $query->where('is_spam', false))
-            ->when($request->input('spam') === 'only', fn ($query) => $query->where('is_spam', true))
-            ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')))
-            ->when($request->filled('website_id'), fn ($query) => $query->where('website_id', $request->integer('website_id')))
-            ->when($request->filled('assigned_to'), fn ($query) => $request->input('assigned_to') === 'unassigned' ? $query->whereNull('assigned_to') : $query->where('assigned_to', $request->integer('assigned_to')))
-            ->when($request->filled('search'), function ($query) use ($request): void {
-                $search = '%'.Str::limit($request->string('search')->trim(), 100, '').'%';
-                $query->where(fn ($query) => $query->where('source_domain', 'like', $search)->orWhere('source_url', 'like', $search)->orWhere('data', 'like', $search));
-            });
+        $query->filtered($request->only($filterKeys));
+
+        $bulkSelectableCount = (clone $query)
+            ->whereHas('website', fn ($query) => $query->manageableBy($request->user()))
+            ->count();
 
         $submissions = $query
             ->with(['website', 'form', 'assignee'])
@@ -54,9 +50,11 @@ class FormSubmissionController extends Controller
             ->paginate(20)->withQueryString();
 
         $websites = Website::query()->when(! $request->user()?->isAdmin(), fn ($query) => $query->accessibleTo($request->user()))->orderBy('name')->get(['id', 'name']);
+        $manageableWebsiteIds = Website::query()->manageableBy($request->user())->pluck('id');
+        $bulkPageSelectableCount = $submissions->getCollection()->whereIn('website_id', $manageableWebsiteIds)->count();
         $users = $request->user()?->isAdmin() ? User::query()->orderBy('name')->get(['id', 'name']) : collect([$request->user()]);
 
-        return view('admin.form-submissions.index', compact('submissions', 'summary', 'websites', 'users'));
+        return view('admin.form-submissions.index', compact('submissions', 'summary', 'websites', 'manageableWebsiteIds', 'bulkSelectableCount', 'bulkPageSelectableCount', 'users'));
     }
 
     public function show(Request $request, FormSubmission $formSubmission)

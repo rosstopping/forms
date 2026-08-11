@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\BulkFormSubmissionController;
 use App\Http\Controllers\Admin\BusinessProfileController;
 use App\Http\Controllers\Admin\BusinessProfilePostController;
 use App\Http\Controllers\Admin\BusinessProfileRecommendationController;
@@ -118,6 +119,7 @@ Route::middleware(['web', 'auth'])->prefix('admin')->name('admin.')->group(funct
     Route::post('websites/{website}/content-requests', [ContentRequestController::class, 'store'])->name('content-requests.store');
     Route::delete('websites/{website}/content-requests/{contentRequest}', [ContentRequestController::class, 'destroy'])->name('content-requests.destroy');
     Route::resource('forms', FormController::class);
+    Route::patch('form-submissions/bulk', BulkFormSubmissionController::class)->name('form-submissions.bulk');
     Route::resource('form-submissions', AdminFormSubmissionController::class);
     Route::resource('users', UserController::class)->only(['index', 'create', 'store', 'edit', 'update']);
 });
