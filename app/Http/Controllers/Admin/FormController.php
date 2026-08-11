@@ -16,7 +16,7 @@ class FormController extends Controller
         $query = Form::query();
 
         if (! $request->user()?->isAdmin()) {
-            $query->whereHas('website', fn ($query) => $query->where('user_id', $request->user()->id));
+            $query->whereHas('website', fn ($query) => $query->accessibleTo($request->user()));
         }
 
         $forms = $query
@@ -30,7 +30,7 @@ class FormController extends Controller
 
     public function show(Form $form)
     {
-        abort_unless(Auth::user()?->isAdmin() || $form->website?->user_id === Auth::id(), 403);
+        abort_unless($form->website?->isAccessibleBy(Auth::user()), 403);
 
         $form->load(['website', 'submissions' => fn ($query) => $query->latest('created_at')->limit(10)]);
 
@@ -39,11 +39,14 @@ class FormController extends Controller
 
     public function update(Request $request, Form $form)
     {
-        abort_unless(Auth::user()?->isAdmin() || $form->website?->user_id === Auth::id(), 403);
+        abort_unless($form->website?->isManageableBy(Auth::user()), 403);
 
         $data = $request->validate([
             'email_enabled_override' => ['nullable', 'boolean'],
             'email_subject_override' => ['nullable', 'string', 'max:255'],
+            'autoresponder_mode' => ['required', 'string', 'in:inherit,enabled,disabled'],
+            'autoresponder_subject_override' => ['nullable', 'string', 'max:255'],
+            'autoresponder_body_override' => ['nullable', 'string', 'max:5000'],
             'webhook_enabled_override' => ['nullable', 'boolean'],
             'webhook_url_override' => ['nullable', 'url', 'max:255'],
             'webhook_secret_override' => ['nullable', 'string', 'max:255'],
@@ -60,6 +63,12 @@ class FormController extends Controller
         }
 
         $data['email_enabled_override'] = (bool) $request->boolean('email_enabled_override');
+        $data['autoresponder_enabled_override'] = match ($data['autoresponder_mode']) {
+            'enabled' => true,
+            'disabled' => false,
+            default => null,
+        };
+        unset($data['autoresponder_mode']);
         $data['email_recipients_override'] = $emailRecipients;
         $data['webhook_enabled_override'] = (bool) $request->boolean('webhook_enabled_override');
 

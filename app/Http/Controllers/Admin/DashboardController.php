@@ -19,7 +19,7 @@ class DashboardController extends Controller
             ->withCount(['forms', 'submissions']);
 
         if (! $user?->isAdmin()) {
-            $websiteQuery->where('user_id', $user?->id);
+            $websiteQuery->accessibleTo($user);
         }
 
         $websites = $websiteQuery->orderBy('name')->get();

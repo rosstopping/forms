@@ -35,7 +35,7 @@ class BusinessProfileReviewController extends Controller
 
     protected function authorizeReview(Request $request, Website $website, BusinessProfileReview $review): void
     {
-        abort_unless($request->user()?->isAdmin() || $website->user_id === $request->user()?->id, 403);
+        abort_unless($website->isManageableBy($request->user()), 403);
         abort_unless($review->connection->website_id === $website->id, 404);
     }
 }

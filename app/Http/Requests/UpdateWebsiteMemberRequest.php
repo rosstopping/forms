@@ -5,18 +5,16 @@ namespace App\Http\Requests;
 use App\Models\Website;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
-class StoreSearchConsolePropertyRequest extends FormRequest
+class UpdateWebsiteMemberRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
     {
-        $website = $this->route('website');
-
-        return $website instanceof Website
-            && $website->isManageableBy($this->user());
+        return $this->user()?->can('manageMembers', $this->route('website')) === true;
     }
 
     /**
@@ -27,7 +25,7 @@ class StoreSearchConsolePropertyRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'property_url' => ['required', 'string', 'max:2048'],
+            'role' => ['required', 'string', Rule::in(Website::MEMBER_ROLES)],
         ];
     }
 }

@@ -14,7 +14,7 @@ class StoreContentRequestRequest extends FormRequest
     {
         $website = $this->route('website');
 
-        return $this->user()?->isAdmin() === true || $website?->user_id === $this->user()?->id;
+        return $website?->isManageableBy($this->user()) === true;
     }
 
     /**

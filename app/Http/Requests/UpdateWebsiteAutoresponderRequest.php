@@ -2,11 +2,10 @@
 
 namespace App\Http\Requests;
 
-use App\Models\Website;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreSearchConsolePropertyRequest extends FormRequest
+class UpdateWebsiteAutoresponderRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -15,8 +14,7 @@ class StoreSearchConsolePropertyRequest extends FormRequest
     {
         $website = $this->route('website');
 
-        return $website instanceof Website
-            && $website->isManageableBy($this->user());
+        return $website?->isManageableBy($this->user()) === true;
     }
 
     /**
@@ -27,7 +25,9 @@ class StoreSearchConsolePropertyRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'property_url' => ['required', 'string', 'max:2048'],
+            'autoresponder_enabled' => ['required', 'boolean'],
+            'autoresponder_subject' => ['nullable', 'string', 'max:255'],
+            'autoresponder_body' => ['nullable', 'string', 'max:5000'],
         ];
     }
 }

@@ -1,7 +1,10 @@
 <?php
 
+use App\Mail\FormSubmissionAcknowledgement;
 use App\Mail\FormSubmissionReceived;
+use App\Models\Form;
 use App\Models\FormSubmission;
+use App\Models\Website;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Testing\TestResponse;
@@ -159,6 +162,45 @@ it('allows callback forms that do not include a message field', function (): voi
         ->assertRedirectContains('/submitted');
 
     expect(FormSubmission::query()->latest('id')->firstOrFail()->is_spam)->toBeFalse();
+});
+
+it('sends the configured website acknowledgement to a genuine lead', function (): void {
+    $website = Website::factory()->create([
+        'name' => 'Acme Studio',
+        'autoresponder_enabled' => true,
+        'autoresponder_subject' => 'Thanks {name}',
+        'autoresponder_body' => 'Hello {name}, we received your {form_name} enquiry.',
+    ]);
+    $website->domains()->create(['domain' => 'autoresponder.example', 'is_primary' => true]);
+    Form::factory()->create([
+        'website_id' => $website->id,
+        'name' => 'Contact form',
+        'slug' => 'contact-form',
+        'email_enabled_override' => false,
+        'autoresponder_enabled_override' => null,
+    ]);
+
+    $this->withHeader('Origin', 'https://autoresponder.example')->post('/submit', [
+        '_form_name' => 'Contact form',
+        'name' => 'Ada Lovelace',
+        'email' => 'ada@example.com',
+        'message' => 'Please call me about a project.',
+    ])->assertRedirectContains('/submitted');
+
+    Mail::assertSent(FormSubmissionAcknowledgement::class, fn (FormSubmissionAcknowledgement $mail): bool => $mail->hasTo('ada@example.com') && $mail->emailSubject === 'Thanks Ada Lovelace');
+    expect(FormSubmission::query()->latest('id')->firstOrFail()->autoresponder_sent_at)->not->toBeNull();
+});
+
+it('allows a form to disable the website acknowledgement', function (): void {
+    $website = Website::factory()->create(['autoresponder_enabled' => true]);
+    $website->domains()->create(['domain' => 'no-reply.example', 'is_primary' => true]);
+    Form::factory()->create(['website_id' => $website->id, 'name' => 'Contact form', 'slug' => 'contact-form', 'email_enabled_override' => false, 'autoresponder_enabled_override' => false]);
+
+    $this->withHeader('Origin', 'https://no-reply.example')->post('/submit', [
+        '_form_name' => 'Contact form', 'name' => 'Ada', 'email' => 'ada@example.com', 'message' => 'A genuine enquiry.',
+    ]);
+
+    Mail::assertNotSent(FormSubmissionAcknowledgement::class);
 });
 
 it('quarantines HTML link injection and known automation markers', function (): void {

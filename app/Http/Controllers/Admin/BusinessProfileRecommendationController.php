@@ -14,7 +14,7 @@ class BusinessProfileRecommendationController extends Controller
 {
     public function update(Request $request, Website $website, BusinessProfileRecommendation $recommendation, BusinessProfileClient $client): RedirectResponse
     {
-        abort_unless($request->user()?->isAdmin() || $website->user_id === $request->user()?->id, 403);
+        abort_unless($website->isManageableBy($request->user()), 403);
         abort_unless($recommendation->audit->connection->website_id === $website->id, 404);
         abort_unless($recommendation->status === BusinessProfileRecommendation::STATUS_PENDING && $recommendation->field_mask && $recommendation->proposed_value, 422);
         $recommendation->update(['status' => BusinessProfileRecommendation::STATUS_APPLYING, 'approved_by' => $request->user()->id, 'approved_at' => now(), 'error' => null]);
@@ -31,7 +31,7 @@ class BusinessProfileRecommendationController extends Controller
 
     public function destroy(Request $request, Website $website, BusinessProfileRecommendation $recommendation): RedirectResponse
     {
-        abort_unless($request->user()?->isAdmin() || $website->user_id === $request->user()?->id, 403);
+        abort_unless($website->isManageableBy($request->user()), 403);
         abort_unless($recommendation->audit->connection->website_id === $website->id, 404);
         $recommendation->update(['status' => BusinessProfileRecommendation::STATUS_DISMISSED]);
 

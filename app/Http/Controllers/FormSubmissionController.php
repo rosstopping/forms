@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreFormSubmissionRequest;
+use App\Mail\FormSubmissionAcknowledgement;
 use App\Mail\FormSubmissionReceived;
 use App\Models\Form;
 use App\Models\FormSubmission;
@@ -194,6 +195,22 @@ class FormSubmissionController extends Controller
                     'email_error' => $e->getMessage(),
                 ]);
                 logger()->warning('Form email failed', ['error' => $e->getMessage()]);
+            }
+        }
+
+        $replyToEmail = $submission->replyToEmail();
+
+        if ($replyToEmail && $this->formSettingsResolver->resolveAutoresponderEnabled($form)) {
+            try {
+                Mail::to($replyToEmail)->send(new FormSubmissionAcknowledgement(
+                    $submission,
+                    $this->formSettingsResolver->resolveAutoresponderSubject($form, $submission),
+                    $this->formSettingsResolver->resolveAutoresponderBody($form, $submission),
+                ));
+                $submission->update(['autoresponder_sent_at' => now()]);
+            } catch (\Throwable $e) {
+                $submission->update(['autoresponder_failed_at' => now(), 'autoresponder_error' => $e->getMessage()]);
+                logger()->warning('Form autoresponder failed', ['error' => $e->getMessage()]);
             }
         }
 

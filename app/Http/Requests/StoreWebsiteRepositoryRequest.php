@@ -27,7 +27,7 @@ class StoreWebsiteRepositoryRequest extends FormRequest
         $website = $this->route('website');
 
         return $website instanceof Website
-            && ($this->user()?->isAdmin() === true || $website->user_id === $this->user()?->id);
+            && $website->isManageableBy($this->user());
     }
 
     /**

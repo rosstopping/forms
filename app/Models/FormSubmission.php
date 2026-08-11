@@ -9,6 +9,8 @@ use Illuminate\Support\Str;
 
 class FormSubmission extends Model
 {
+    public const STATUSES = ['new', 'contacted', 'qualified', 'won', 'lost'];
+
     use HasFactory;
 
     protected $fillable = [
@@ -26,6 +28,9 @@ class FormSubmission extends Model
         'email_sent_at',
         'email_failed_at',
         'email_error',
+        'autoresponder_sent_at',
+        'autoresponder_failed_at',
+        'autoresponder_error',
         'webhook_sent_at',
         'webhook_failed_at',
         'webhook_status_code',
@@ -39,6 +44,8 @@ class FormSubmission extends Model
         'status' => 'string',
         'email_sent_at' => 'datetime',
         'email_failed_at' => 'datetime',
+        'autoresponder_sent_at' => 'datetime',
+        'autoresponder_failed_at' => 'datetime',
         'webhook_sent_at' => 'datetime',
         'webhook_failed_at' => 'datetime',
     ];
@@ -70,6 +77,42 @@ class FormSubmission extends Model
 
             if (in_array($normalizedKey, ['email', 'email_address', 'email-address', 'your_email', 'your-email', 'contact_email', 'contact-email'], true)) {
                 return $candidate;
+            }
+        }
+
+        return null;
+    }
+
+    public function contactName(): ?string
+    {
+        $data = $this->data ?? [];
+
+        foreach (['name', 'full_name', 'full-name', 'your_name', 'your-name', 'contact_name'] as $key) {
+            if (isset($data[$key]) && is_string($data[$key]) && filled($data[$key])) {
+                return trim($data[$key]);
+            }
+        }
+
+        $name = trim(implode(' ', array_filter([
+            is_string($data['first_name'] ?? null) ? $data['first_name'] : null,
+            is_string($data['last_name'] ?? null) ? $data['last_name'] : null,
+        ])));
+
+        return $name !== '' ? $name : null;
+    }
+
+    public function displayName(): string
+    {
+        return $this->contactName() ?? $this->replyToEmail() ?? $this->source_domain ?? 'Unknown lead';
+    }
+
+    public function messageExcerpt(): ?string
+    {
+        foreach (['message', 'enquiry', 'comments', 'comment', 'details'] as $key) {
+            $value = $this->data[$key] ?? null;
+
+            if (is_string($value) && filled($value)) {
+                return Str::limit(trim($value), 120);
             }
         }
 

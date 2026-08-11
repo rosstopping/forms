@@ -34,7 +34,7 @@ it('prioritises website audit health on the dashboard', function (): void {
         ->assertSee('Needs attention')
         ->assertSee('Recent audit activity')
         ->assertDontSee('href="'.route('admin.forms.index').'"', false)
-        ->assertDontSee('href="'.route('admin.form-submissions.index').'"', false);
+        ->assertSee('href="'.route('admin.form-submissions.index').'"', false);
 });
 
 it('keeps forms and submissions inside the website workspace', function (): void {

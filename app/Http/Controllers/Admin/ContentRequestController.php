@@ -26,7 +26,7 @@ class ContentRequestController extends Controller
 
     public function destroy(Request $request, Website $website, ContentRequest $contentRequest): RedirectResponse
     {
-        abort_unless($request->user()?->isAdmin() || $website->user_id === $request->user()?->id, 403);
+        abort_unless($website->isManageableBy($request->user()), 403);
         abort_unless($contentRequest->website_id === $website->id, 404);
         abort_if($contentRequest->picked_up_at, 422, 'A content request cannot be removed after Copilot has picked it up.');
 

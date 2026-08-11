@@ -18,7 +18,7 @@ class WebsiteHealthReportController extends Controller
 
     public function store(Request $request, Website $website): RedirectResponse
     {
-        abort_unless($request->user()?->isAdmin() || $website->user_id === $request->user()?->id, 403);
+        abort_unless($website->isManageableBy($request->user()), 403);
 
         $existingReport = $website->healthReports()
             ->whereIn('status', [WebsiteHealthReport::STATUS_PENDING, WebsiteHealthReport::STATUS_RUNNING])
@@ -39,7 +39,7 @@ class WebsiteHealthReportController extends Controller
 
     public function show(Request $request, Website $website, WebsiteHealthReport $websiteHealthReport): View
     {
-        abort_unless($request->user()?->isAdmin() || $website->user_id === $request->user()?->id, 403);
+        abort_unless($website->isAccessibleBy($request->user()), 403);
         abort_unless($websiteHealthReport->website_id === $website->id, 404);
 
         $websiteHealthReport->load([

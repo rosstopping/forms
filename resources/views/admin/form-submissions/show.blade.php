@@ -4,8 +4,8 @@
 <div class="space-y-6">
     <div class="flex items-center justify-between">
         <div>
-            <h1 class="text-2xl font-semibold">Submission details</h1>
-            <p class="text-sm text-slate-600">Inspect the submitted data and source information.</p>
+            <h1 class="text-2xl font-semibold">{{ $formSubmission->displayName() }}</h1>
+            <p class="text-sm text-slate-600">{{ $formSubmission->replyToEmail() ?: 'No email address supplied' }}</p>
         </div>
         <a href="{{ route('admin.form-submissions.index') }}" class="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Back to submissions</a>
     </div>
@@ -33,15 +33,15 @@
                         @endforeach
                     </select>
                 </div>
-                {{-- <div>
+                <div>
                     <label class="block text-sm font-medium text-slate-700" for="assigned_to">Assigned to</label>
                     <select id="assigned_to" name="assigned_to" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
                         <option value="">Unassigned</option>
-                        @foreach (App\Models\User::query()->orderBy('name')->get() as $user)
+                        @foreach ($users as $user)
                             <option value="{{ $user->id }}" @selected($formSubmission->assigned_to === $user->id)>{{ e($user->name) }}</option>
                         @endforeach
                     </select>
-                </div> --}}
+                </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700" for="notes">Notes</label>
                     <textarea id="notes" name="notes" rows="4" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">{{ old('notes', $formSubmission->notes) }}</textarea>
@@ -51,8 +51,18 @@
         </div>
 
         <div class="rounded-lg border bg-white p-4 shadow-sm">
-            <h2 class="font-semibold">Submission data</h2>
-            <pre class="mt-3 overflow-x-auto rounded bg-slate-50 p-3 text-xs text-slate-700">{{ json_encode($formSubmission->data ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
+            <h2 class="font-semibold">Enquiry details</h2>
+            <dl class="mt-3 divide-y divide-slate-100">
+                @foreach ($formSubmission->data ?? [] as $key => $value)
+                    <div class="py-3"><dt class="text-xs font-medium uppercase tracking-wide text-slate-500">{{ str($key)->replace(['_', '-'], ' ')->title() }}</dt><dd class="mt-1 whitespace-pre-wrap break-words text-sm text-slate-800">{{ is_scalar($value) ? $value : json_encode($value, JSON_UNESCAPED_SLASHES) }}</dd></div>
+                @endforeach
+            </dl>
+            <h3 class="mt-6 font-semibold">Delivery history</h3>
+            <dl class="mt-3 space-y-2 text-sm">
+                <div class="flex justify-between"><dt class="text-slate-500">Team email</dt><dd>{{ $formSubmission->email_sent_at ? 'Sent '.$formSubmission->email_sent_at->diffForHumans() : ($formSubmission->email_failed_at ? 'Failed' : 'Not sent') }}</dd></div>
+                <div class="flex justify-between"><dt class="text-slate-500">Customer reply</dt><dd>{{ $formSubmission->autoresponder_sent_at ? 'Sent '.$formSubmission->autoresponder_sent_at->diffForHumans() : ($formSubmission->autoresponder_failed_at ? 'Failed' : 'Not sent') }}</dd></div>
+                <div class="flex justify-between"><dt class="text-slate-500">Webhook</dt><dd>{{ $formSubmission->webhook_sent_at ? 'Sent '.$formSubmission->webhook_sent_at->diffForHumans() : ($formSubmission->webhook_failed_at ? 'Failed' : 'Not sent') }}</dd></div>
+            </dl>
         </div>
     </div>
 </div>

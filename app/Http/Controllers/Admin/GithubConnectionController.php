@@ -122,6 +122,6 @@ class GithubConnectionController extends Controller
 
     protected function authorizeWebsite(Request $request, Website $website): void
     {
-        abort_unless($request->user()?->isAdmin() || $website->user_id === $request->user()?->id, 403);
+        abort_unless($website->isManageableBy($request->user()), 403);
     }
 }

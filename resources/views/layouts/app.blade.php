@@ -26,9 +26,13 @@
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="size-5 shrink-0" aria-hidden="true"><path d="M4 13h6V4H4v9Zm0 7h6v-4H4v4Zm10 0h6v-9h-6v9Zm0-16v4h6V4h-6Z" stroke-linejoin="round"/></svg>
                             Overview
                         </a>
-                        <a href="{{ route('admin.websites.index') }}" @class(['flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium', 'bg-white/10 text-white' => request()->routeIs(['admin.websites.*', 'admin.website-health-reports.*', 'admin.website-repositories.*', 'admin.search-console.*', 'admin.forms.*', 'admin.form-submissions.*']), 'text-slate-400 hover:bg-white/5 hover:text-white' => ! request()->routeIs(['admin.websites.*', 'admin.website-health-reports.*', 'admin.website-repositories.*', 'admin.search-console.*', 'admin.forms.*', 'admin.form-submissions.*'])])>
+                        <a href="{{ route('admin.websites.index') }}" @class(['flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium', 'bg-white/10 text-white' => request()->routeIs(['admin.websites.*', 'admin.website-health-reports.*', 'admin.website-repositories.*', 'admin.search-console.*', 'admin.forms.*']), 'text-slate-400 hover:bg-white/5 hover:text-white' => ! request()->routeIs(['admin.websites.*', 'admin.website-health-reports.*', 'admin.website-repositories.*', 'admin.search-console.*', 'admin.forms.*'])])>
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="size-5 shrink-0" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg>
                             Websites
+                        </a>
+                        <a href="{{ route('admin.form-submissions.index') }}" @class(['flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium', 'bg-white/10 text-white' => request()->routeIs('admin.form-submissions.*'), 'text-slate-400 hover:bg-white/5 hover:text-white' => ! request()->routeIs('admin.form-submissions.*')])>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="size-5 shrink-0" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v13a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 18.5v-13Z"/><path d="M8 8h8M8 12h8M8 16h5" stroke-linecap="round"/></svg>
+                            Leads
                         </a>
                     </div>
 
@@ -80,6 +84,7 @@
                         <nav class="mt-8 space-y-2" aria-label="Mobile navigation">
                             <a href="{{ route('admin.dashboard') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Overview</a>
                             <a href="{{ route('admin.websites.index') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Websites</a>
+                            <a href="{{ route('admin.form-submissions.index') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Leads</a>
                             @if (Auth::user()?->isAdmin())<a href="{{ route('admin.users.index') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Users</a>@endif
                         </nav>
                         <form method="POST" action="{{ route('logout') }}" class="mt-auto border-t border-white/10 pt-4">

@@ -45,6 +45,30 @@
             </label>
         </div>
 
+        <div class="mt-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
+            <h3 class="font-semibold text-blue-950">Automatic customer reply</h3>
+            <p class="mt-1 text-sm text-blue-800">Acknowledge genuine enquiries immediately. Spam submissions are never emailed.</p>
+            <div class="mt-4 grid gap-4 md:grid-cols-2">
+                <div>
+                    <label class="text-sm font-medium text-slate-700" for="autoresponder_mode">Behaviour for this form</label>
+                    <select id="autoresponder_mode" name="autoresponder_mode" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                        <option value="inherit" @selected(old('autoresponder_mode', $form->autoresponder_enabled_override === null ? 'inherit' : ($form->autoresponder_enabled_override ? 'enabled' : 'disabled')) === 'inherit')>Use website setting</option>
+                        <option value="enabled" @selected(old('autoresponder_mode', $form->autoresponder_enabled_override ? 'enabled' : null) === 'enabled')>Enabled for this form</option>
+                        <option value="disabled" @selected(old('autoresponder_mode', $form->autoresponder_enabled_override === false ? 'disabled' : null) === 'disabled')>Disabled for this form</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-sm font-medium text-slate-700" for="autoresponder_subject_override">Subject override</label>
+                    <input id="autoresponder_subject_override" name="autoresponder_subject_override" value="{{ old('autoresponder_subject_override', $form->autoresponder_subject_override) }}" placeholder="Leave blank to use website default" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                </div>
+            </div>
+            <div class="mt-4">
+                <label class="text-sm font-medium text-slate-700" for="autoresponder_body_override">Message override</label>
+                <textarea id="autoresponder_body_override" name="autoresponder_body_override" rows="6" placeholder="Leave blank to use website default" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">{{ old('autoresponder_body_override', $form->autoresponder_body_override) }}</textarea>
+                <p class="mt-1 text-xs text-slate-500">Available placeholders: {name}, {form_name}, {website_name}, {website_domain}, {submission_id}</p>
+            </div>
+        </div>
+
         <div class="mt-4 grid gap-4 md:grid-cols-2">
             <div>
                 <label class="text-sm font-medium text-slate-700" for="email_recipients_override">Email recipients</label>

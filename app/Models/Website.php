@@ -5,11 +5,19 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Builder;
 
 class Website extends Model
 {
+    public const MEMBER_ROLE_MANAGER = 'manager';
+
+    public const MEMBER_ROLE_VIEWER = 'viewer';
+
+    public const MEMBER_ROLES = [self::MEMBER_ROLE_MANAGER, self::MEMBER_ROLE_VIEWER];
+
     use HasFactory;
 
     protected $fillable = [
@@ -19,6 +27,9 @@ class Website extends Model
         'auto_discovered',
         'email_enabled',
         'email_recipients',
+        'autoresponder_enabled',
+        'autoresponder_subject',
+        'autoresponder_body',
         'webhook_enabled',
         'health_reports_enabled',
         'webhook_url',
@@ -32,6 +43,7 @@ class Website extends Model
 
     protected $casts = [
         'email_enabled' => 'boolean',
+        'autoresponder_enabled' => 'boolean',
         'webhook_enabled' => 'boolean',
         'health_reports_enabled' => 'boolean',
         'turnstile_enabled' => 'boolean',
@@ -44,6 +56,43 @@ class Website extends Model
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function members(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class)
+            ->withPivot('role')
+            ->withTimestamps();
+    }
+
+    public function scopeAccessibleTo(Builder $query, User $user): Builder
+    {
+        if ($user->isAdmin()) {
+            return $query;
+        }
+
+        return $query->where(fn (Builder $query) => $query
+            ->where('user_id', $user->id)
+            ->orWhereHas('members', fn (Builder $query) => $query->whereKey($user->id)));
+    }
+
+    public function isAccessibleBy(?User $user): bool
+    {
+        return $user !== null && ($user->isAdmin() || $this->user_id === $user->id || $this->members()->whereKey($user->id)->exists());
+    }
+
+    public function isManageableBy(?User $user): bool
+    {
+        return $user !== null && ($user->isAdmin() || $this->user_id === $user->id || $this->members()->whereKey($user->id)->wherePivot('role', self::MEMBER_ROLE_MANAGER)->exists());
+    }
+
+    public function membershipRoleFor(User $user): ?string
+    {
+        if ($this->user_id === $user->id) {
+            return 'owner';
+        }
+
+        return $this->members()->whereKey($user->id)->value('role');
     }
 
     public function domains(): HasMany

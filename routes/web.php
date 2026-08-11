@@ -14,8 +14,10 @@ use App\Http\Controllers\Admin\RemediationRunController;
 use App\Http\Controllers\Admin\SearchConsoleController;
 use App\Http\Controllers\Admin\SearchOpportunityController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\WebsiteAutoresponderController;
 use App\Http\Controllers\Admin\WebsiteController;
 use App\Http\Controllers\Admin\WebsiteHealthReportController;
+use App\Http\Controllers\Admin\WebsiteMemberController;
 use App\Http\Controllers\Admin\WebsiteRepositoryController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\FormSubmissionController;
@@ -76,6 +78,10 @@ Route::middleware(['web', 'signed', 'throttle:20,1'])->group(function () {
 Route::middleware(['web', 'auth'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::resource('websites', WebsiteController::class);
+    Route::put('websites/{website}/autoresponder', WebsiteAutoresponderController::class)->name('websites.autoresponder.update');
+    Route::post('websites/{website}/members', [WebsiteMemberController::class, 'store'])->name('websites.members.store');
+    Route::put('websites/{website}/members/{member}', [WebsiteMemberController::class, 'update'])->name('websites.members.update');
+    Route::delete('websites/{website}/members/{member}', [WebsiteMemberController::class, 'destroy'])->name('websites.members.destroy');
     Route::post('websites/{website}/health-reports', [WebsiteHealthReportController::class, 'store'])->name('website-health-reports.store');
     Route::get('websites/{website}/health-reports/{websiteHealthReport}', [WebsiteHealthReportController::class, 'show'])->name('website-health-reports.show');
     Route::post('websites/{website}/health-reports/{websiteHealthReport}/remediations', [RemediationRunController::class, 'store'])->name('remediation-runs.store');

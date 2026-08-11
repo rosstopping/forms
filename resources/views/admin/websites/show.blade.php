@@ -143,6 +143,30 @@
             </div>
         </div>
 
+        <div class="rounded-lg border border-blue-200 bg-blue-50 p-4 shadow-sm">
+            <h2 class="font-semibold text-blue-950">Automatic customer reply</h2>
+            <p class="mt-1 text-sm text-blue-800">Set the website-wide acknowledgement. Individual forms can inherit or override it.</p>
+            <form method="POST" action="{{ route('admin.websites.autoresponder.update', $website) }}" class="mt-4 space-y-4">
+                @csrf
+                @method('PUT')
+                <input type="hidden" name="autoresponder_enabled" value="0">
+                <label class="flex items-start gap-3 rounded-lg border border-blue-200 bg-white p-3">
+                    <input type="checkbox" name="autoresponder_enabled" value="1" class="mt-1 rounded border-slate-300" @checked(old('autoresponder_enabled', $website->autoresponder_enabled))>
+                    <span><span class="block text-sm font-medium text-slate-900">Automatically acknowledge new enquiries</span><span class="block text-xs text-slate-500">Only sends when a valid customer email is present and the submission passes spam checks.</span></span>
+                </label>
+                <div>
+                    <label class="text-sm font-medium text-slate-700" for="autoresponder_subject">Email subject</label>
+                    <input id="autoresponder_subject" name="autoresponder_subject" value="{{ old('autoresponder_subject', $website->autoresponder_subject) }}" placeholder="We've received your {form_name} enquiry" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="text-sm font-medium text-slate-700" for="autoresponder_body">Email message</label>
+                    <textarea id="autoresponder_body" name="autoresponder_body" rows="7" placeholder="Hi {name},&#10;&#10;Thanks for contacting {website_name}. We've received your enquiry and someone from our team will get back to you soon." class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">{{ old('autoresponder_body', $website->autoresponder_body) }}</textarea>
+                    <p class="mt-1 text-xs text-slate-500">Available placeholders: {name}, {form_name}, {website_name}, {website_domain}, {submission_id}</p>
+                </div>
+                <button class="rounded-md bg-blue-900 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800">Save automatic reply</button>
+            </form>
+        </div>
+
         @if ($website->repository)
         @if (Auth::user()?->isAdmin())
         @php($contentPlan = $website->contentPlan)

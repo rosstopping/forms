@@ -26,7 +26,7 @@ class WebsiteController extends Controller
         $query = Website::query();
 
         if (! $request->user()?->isAdmin()) {
-            $query->where('user_id', $request->user()->id);
+            $query->accessibleTo($request->user());
         }
 
         $websites = $query
@@ -94,10 +94,12 @@ class WebsiteController extends Controller
     {
         $user = Auth::user();
 
-        abort_unless($user?->isAdmin() || $website->user_id === $user?->id, 403);
+        abort_unless($website->isAccessibleBy($user), 403);
 
         $website->load([
             'domains',
+            'owner:id,name,email',
+            'members' => fn ($query) => $query->select('users.id', 'users.name', 'users.email')->orderBy('name'),
             'forms' => fn ($query) => $query->latest('created_at'),
             'healthReports' => fn ($query) => $query->latest('created_at')->limit(8),
             'repository.installation',
@@ -111,6 +113,10 @@ class WebsiteController extends Controller
             'submissions' => fn ($query) => $query->latest('created_at')->limit(10),
         ]);
         $users = $user?->isAdmin() ? User::query()->orderBy('name')->get(['id', 'name', 'email']) : collect();
+        $canManageMembers = $user?->can('manageMembers', $website) === true;
+        $availableMembers = $canManageMembers
+            ? User::query()->whereKeyNot($website->user_id)->whereDoesntHave('sharedWebsites', fn ($query) => $query->whereKey($website->id))->orderBy('name')->get(['id', 'name', 'email'])
+            : collect();
         $searchConsoleReport = null;
         $searchConsoleReportUnavailable = false;
 
@@ -124,7 +130,7 @@ class WebsiteController extends Controller
             }
         }
 
-        return view('admin.websites.show', compact('website', 'users', 'searchConsoleReport', 'searchConsoleReportUnavailable'));
+        return view('admin.websites.show', compact('website', 'users', 'availableMembers', 'canManageMembers', 'searchConsoleReport', 'searchConsoleReportUnavailable'));
     }
 
     public function update(Request $request, Website $website): RedirectResponse
