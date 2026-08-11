@@ -1,7 +1,10 @@
 <div id="website-panel-business-profile" class="space-y-6" role="tabpanel" aria-labelledby="website-tab-business-profile" data-tab-panel="business-profile" hidden>
     @php($profile = $website->businessProfileConnection)
     @if (! $profile)
-        <section class="rounded-lg border border-slate-200 bg-white p-6"><h2 class="text-lg font-semibold text-slate-950">Google Business Profile</h2><p class="mt-2 max-w-2xl text-sm text-slate-600">Connect a managed location for weekly health checks, approval-first changes, generated post drafts, and approval-first review replies.</p><a href="{{ route('admin.business-profile.connect', $website) }}" class="mt-4 inline-flex rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white">Connect Google Business Profile</a></section>
+        <section class="rounded-lg border border-slate-200 bg-white p-6"><h2 class="text-lg font-semibold text-slate-950">Google Business Profile</h2><p class="mt-2 max-w-2xl text-sm text-slate-600">Connect a managed location for weekly health checks, approval-first changes, generated post drafts, and approval-first review replies.</p>
+            <p>Coming soon...</p>
+            {{-- <a href="{{ route('admin.business-profile.connect', $website) }}" class="mt-4 inline-flex rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white">Connect Google Business Profile</a> --}}
+        </section>
     @else
         <section class="rounded-lg border border-slate-200 bg-white">
             <div class="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 p-4"><div><p class="text-xs font-medium uppercase tracking-widest text-slate-500">Connected location</p><h2 class="mt-1 text-lg font-semibold text-slate-950">{{ $profile->location_title ?: 'Select a location' }}</h2><p class="mt-1 text-sm text-slate-600">All posts, replies, and profile edits require explicit approval.</p></div><div class="flex gap-2"><form method="POST" action="{{ route('admin.business-profile.audits.store', $website) }}">@csrf<button class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white">Run health check</button></form><form method="POST" action="{{ route('admin.business-profile.reviews.sync', $website) }}">@csrf<button class="rounded-md border border-slate-200 px-3 py-2 text-sm font-medium">Sync reviews</button></form></div></div>
