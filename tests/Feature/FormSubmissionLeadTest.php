@@ -206,6 +206,54 @@ it('bulk updates all manageable leads matching the active filters', function () 
         ->and($excludedLead->refresh()->status)->toBe('qualified');
 });
 
+it('marks a single lead as spam from its detail page', function () {
+    $owner = User::factory()->create();
+    $website = Website::factory()->create(['user_id' => $owner->id]);
+    $form = Form::factory()->create(['website_id' => $website->id]);
+    $submission = FormSubmission::factory()->create(['website_id' => $website->id, 'form_id' => $form->id]);
+
+    $this->actingAs($owner)->get(route('admin.form-submissions.show', $submission))
+        ->assertOk()
+        ->assertSee('Mark as spam')
+        ->assertSee('Delete')
+        ->assertSee('data-confirm-action-dialog', false);
+
+    $this->patch(route('admin.form-submissions.spam', $submission))
+        ->assertRedirect(route('admin.form-submissions.index'));
+
+    expect($submission->refresh()->is_spam)->toBeTrue();
+});
+
+it('deletes a single lead from its detail page', function () {
+    $owner = User::factory()->create();
+    $website = Website::factory()->create(['user_id' => $owner->id]);
+    $form = Form::factory()->create(['website_id' => $website->id]);
+    $submission = FormSubmission::factory()->create(['website_id' => $website->id, 'form_id' => $form->id]);
+
+    $this->actingAs($owner)->delete(route('admin.form-submissions.destroy', $submission))
+        ->assertRedirect(route('admin.form-submissions.index'));
+
+    $this->assertModelMissing($submission);
+});
+
+it('prevents viewers from moderating a single lead', function () {
+    $owner = User::factory()->create();
+    $viewer = User::factory()->create();
+    $website = Website::factory()->create(['user_id' => $owner->id]);
+    $website->members()->attach($viewer, ['role' => Website::MEMBER_ROLE_VIEWER]);
+    $form = Form::factory()->create(['website_id' => $website->id]);
+    $submission = FormSubmission::factory()->create(['website_id' => $website->id, 'form_id' => $form->id]);
+
+    $this->actingAs($viewer)->get(route('admin.form-submissions.show', $submission))
+        ->assertOk()
+        ->assertDontSee('Mark as spam')
+        ->assertDontSee('data-confirm-danger', false);
+
+    $this->patch(route('admin.form-submissions.spam', $submission))->assertForbidden();
+    $this->delete(route('admin.form-submissions.destroy', $submission))->assertForbidden();
+    $this->assertModelExists($submission);
+});
+
 it('lets a website owner configure the site wide automatic reply', function () {
     $owner = User::factory()->create();
     $website = Website::factory()->create(['user_id' => $owner->id]);

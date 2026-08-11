@@ -7,7 +7,23 @@
             <h1 class="text-2xl font-semibold">{{ $formSubmission->displayName() }}</h1>
             <p class="text-sm text-slate-600">{{ $formSubmission->replyToEmail() ?: 'No email address supplied' }}</p>
         </div>
-        <a href="{{ route('admin.form-submissions.index') }}" class="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Back to submissions</a>
+        <div class="flex flex-wrap items-center gap-2">
+            @if ($canManage)
+                @unless ($formSubmission->is_spam)
+                    <form method="POST" action="{{ route('admin.form-submissions.spam', $formSubmission) }}" data-confirm-action-form>
+                        @csrf
+                        @method('PATCH')
+                        <button type="button" data-confirm-action data-confirm-title="Mark this lead as spam?" data-confirm-message="The lead will be hidden from the default inbox, but it will not be deleted." data-confirm-label="Mark as spam" class="rounded-md border border-amber-300 bg-white px-3 py-2 text-sm font-medium text-amber-800 hover:bg-amber-50">Mark as spam</button>
+                    </form>
+                @endunless
+                <form method="POST" action="{{ route('admin.form-submissions.destroy', $formSubmission) }}" data-confirm-action-form>
+                    @csrf
+                    @method('DELETE')
+                    <button type="button" data-confirm-action data-confirm-title="Delete this lead?" data-confirm-message="This submission will be permanently deleted. This cannot be undone." data-confirm-label="Delete lead" data-confirm-danger class="rounded-md border border-red-300 bg-white px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50">Delete</button>
+                </form>
+            @endif
+            <a href="{{ route('admin.form-submissions.index') }}" class="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Back to submissions</a>
+        </div>
     </div>
 
     <div class="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
@@ -65,5 +81,16 @@
             </dl>
         </div>
     </div>
+
+    <dialog data-confirm-action-dialog class="m-auto w-[min(30rem,calc(100%-2rem))] rounded-xl border border-slate-200 bg-white p-0 shadow-2xl backdrop:bg-slate-950/50">
+        <div class="p-5">
+            <h2 data-confirm-action-title class="text-lg font-semibold text-slate-950">Confirm action</h2>
+            <p data-confirm-action-message class="mt-2 text-sm text-slate-600"></p>
+            <div class="mt-6 flex justify-end gap-2">
+                <button type="button" data-confirm-action-cancel class="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
+                <button type="button" data-confirm-action-submit class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">Confirm</button>
+            </div>
+        </div>
+    </dialog>
 </div>
 @endsection

@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateFormSubmissionRequest;
 use App\Models\FormSubmission;
 use App\Models\User;
 use App\Models\Website;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Str;
@@ -64,8 +65,9 @@ class FormSubmissionController extends Controller
         $formSubmission->load(['website', 'form', 'assignee']);
 
         $users = $request->user()?->isAdmin() ? User::query()->orderBy('name')->get(['id', 'name']) : collect([$request->user()]);
+        $canManage = $formSubmission->website?->isManageableBy($request->user()) === true;
 
-        return view('admin.form-submissions.show', compact('formSubmission', 'users'));
+        return view('admin.form-submissions.show', compact('formSubmission', 'users', 'canManage'));
     }
 
     public function update(UpdateFormSubmissionRequest $request, FormSubmission $formSubmission)
@@ -91,5 +93,23 @@ class FormSubmissionController extends Controller
         }
 
         return Redirect::route('admin.form-submissions.show', $formSubmission)->with('status', 'Lead updated.');
+    }
+
+    public function markSpam(Request $request, FormSubmission $formSubmission): RedirectResponse
+    {
+        abort_unless($formSubmission->website?->isManageableBy($request->user()), 403);
+
+        $formSubmission->update(['is_spam' => true]);
+
+        return Redirect::route('admin.form-submissions.index')->with('status', 'Lead marked as spam.');
+    }
+
+    public function destroy(Request $request, FormSubmission $formSubmission): RedirectResponse
+    {
+        abort_unless($formSubmission->website?->isManageableBy($request->user()), 403);
+
+        $formSubmission->delete();
+
+        return Redirect::route('admin.form-submissions.index')->with('status', 'Lead deleted.');
     }
 }

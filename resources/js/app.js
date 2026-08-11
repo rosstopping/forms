@@ -310,3 +310,23 @@ document.querySelectorAll('[data-bulk-leads-form]').forEach((form) => {
     });
     updateSelection();
 });
+
+document.querySelectorAll('[data-confirm-action-dialog]').forEach((dialog) => {
+    const title = dialog.querySelector('[data-confirm-action-title]');
+    const message = dialog.querySelector('[data-confirm-action-message]');
+    const submit = dialog.querySelector('[data-confirm-action-submit]');
+    let activeForm = null;
+
+    document.querySelectorAll('[data-confirm-action]').forEach((button) => button.addEventListener('click', () => {
+        activeForm = button.closest('[data-confirm-action-form]');
+        title.textContent = button.dataset.confirmTitle;
+        message.textContent = button.dataset.confirmMessage;
+        submit.textContent = button.dataset.confirmLabel;
+        submit.classList.toggle('bg-red-700', button.hasAttribute('data-confirm-danger'));
+        submit.classList.toggle('bg-slate-900', !button.hasAttribute('data-confirm-danger'));
+        dialog.showModal();
+    }));
+
+    dialog.querySelector('[data-confirm-action-cancel]')?.addEventListener('click', () => dialog.close());
+    submit.addEventListener('click', () => activeForm?.requestSubmit());
+});
