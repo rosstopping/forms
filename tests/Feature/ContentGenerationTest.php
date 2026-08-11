@@ -10,10 +10,12 @@ use App\Models\SearchConsoleConnection;
 use App\Models\User;
 use App\Models\Website;
 use App\Models\WebsiteRepository;
+use App\Services\ContentGenerationPromptGenerator;
 use App\Services\CopilotAgentClient;
 use App\Services\GoogleOAuthClient;
 use App\Services\SearchConsoleClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 
@@ -178,6 +180,73 @@ test('content generation uses search performance to start a copilot pull request
     expect($generation->fresh()->status)->toBe(ContentGeneration::STATUS_RUNNING)
         ->and($generation->fresh()->search_performance[0]['query'])->toBe('useful service');
     Queue::assertPushed(SyncContentGeneration::class);
+});
+
+test('content generation prompts keep every section within the Copilot request budget', function () {
+    $website = Website::factory()->create(['name' => 'Example Site']);
+    $repository = WebsiteRepository::factory()->create(['website_id' => $website->id]);
+    $plan = ContentPlan::factory()->create([
+        'website_id' => $website->id,
+        'audience' => str_repeat('A', 6000),
+        'guidance' => str_repeat('G', 18000),
+    ]);
+    $generation = ContentGeneration::factory()->create([
+        'content_plan_id' => $plan->id,
+        'website_repository_id' => $repository->id,
+        'search_performance' => collect(range(1, 250))->map(fn (int $row): array => [
+            'query' => "useful search query {$row}",
+            'page' => "https://example.test/a-long-content-page/{$row}",
+            'clicks' => 10.0,
+            'impressions' => 100.0,
+            'ctr' => 0.1,
+            'position' => 4.2,
+        ])->all(),
+    ]);
+
+    $prompt = app(ContentGenerationPromptGenerator::class)->generate($generation);
+
+    expect(mb_strlen($prompt))->toBeLessThanOrEqual(30000)
+        ->and($prompt)->toContain('[Audience truncated for Copilot.]')
+        ->and($prompt)->toContain('[Editorial guidance truncated for Copilot.]')
+        ->and($prompt)->toContain('Search Console rows included.]')
+        ->and($prompt)->toContain('Requirements:')
+        ->and($prompt)->toContain('Search Console top query/page rows');
+});
+
+test('starting a Copilot task is never automatically replayed', function () {
+    config(['services.github.api_url' => 'https://api.github.test']);
+    Http::preventStrayRequests();
+    Http::fakeSequence('api.github.test/agents/repos/*/tasks')
+        ->push(['message' => 'Temporary GitHub error'], 500)
+        ->push([
+            'id' => '22222222-2222-4222-8222-222222222222',
+            'state' => 'queued',
+        ], 201);
+    $authorization = GithubUserAuthorization::factory()->create();
+    $repository = WebsiteRepository::factory()->create(['full_name' => 'acme/site']);
+
+    expect(fn () => app(CopilotAgentClient::class)->startTask($authorization, $repository, 'Create useful content.'))
+        ->toThrow(RequestException::class)
+        ->and((new StartContentGeneration(ContentGeneration::factory()->create()))->tries)->toBe(1);
+
+    Http::assertSentCount(1);
+});
+
+test('a content generation with a recorded Copilot task is not started again', function () {
+    $generation = ContentGeneration::factory()->create([
+        'copilot_task_id' => '33333333-3333-4333-8333-333333333333',
+        'copilot_task_state' => 'queued',
+    ]);
+    $searchConsole = $this->mock(SearchConsoleClient::class);
+    $prompts = $this->mock(ContentGenerationPromptGenerator::class);
+    $copilot = $this->mock(CopilotAgentClient::class);
+    $searchConsole->shouldNotReceive('performance');
+    $prompts->shouldNotReceive('generate');
+    $copilot->shouldNotReceive('startTask');
+
+    (new StartContentGeneration($generation))->handle($searchConsole, $prompts, $copilot);
+
+    expect($generation->fresh()->copilot_task_id)->toBe('33333333-3333-4333-8333-333333333333');
 });
 
 test('search console access and refresh tokens are encrypted at rest', function () {

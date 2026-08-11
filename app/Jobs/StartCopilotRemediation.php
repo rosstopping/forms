@@ -15,7 +15,7 @@ class StartCopilotRemediation implements ShouldBeEncrypted, ShouldBeUnique, Shou
 {
     use Queueable;
 
-    public int $tries = 3;
+    public int $tries = 1;
 
     public int $timeout = 60;
 
@@ -33,6 +33,12 @@ class StartCopilotRemediation implements ShouldBeEncrypted, ShouldBeUnique, Shou
 
     public function handle(CopilotAgentClient $copilot, RemediationPromptGenerator $prompts): void
     {
+        $this->run->refresh();
+
+        if ($this->run->copilot_task_id) {
+            return;
+        }
+
         $this->run->loadMissing(['repository', 'report.website']);
         $authorization = $this->run->requester?->githubAuthorization;
 

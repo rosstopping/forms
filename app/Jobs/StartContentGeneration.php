@@ -16,7 +16,7 @@ class StartContentGeneration implements ShouldBeEncrypted, ShouldBeUnique, Shoul
 {
     use Queueable;
 
-    public int $tries = 3;
+    public int $tries = 1;
 
     public int $timeout = 90;
 
@@ -34,6 +34,12 @@ class StartContentGeneration implements ShouldBeEncrypted, ShouldBeUnique, Shoul
 
     public function handle(SearchConsoleClient $searchConsole, ContentGenerationPromptGenerator $prompts, CopilotAgentClient $copilot): void
     {
+        $this->generation->refresh();
+
+        if ($this->generation->copilot_task_id) {
+            return;
+        }
+
         $this->generation->loadMissing(['plan.website.searchConsoleConnection', 'repository', 'requester.githubAuthorization']);
         $connection = $this->generation->plan->website->searchConsoleConnection;
         $authorization = $this->generation->requester?->githubAuthorization;
