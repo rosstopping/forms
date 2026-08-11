@@ -352,6 +352,11 @@ it('audits a website and queues the completed report for admins and the owner', 
         ->and($generation->fresh()->pull_request_state)->toBe('closed')
         ->and($generation->fresh()->merged_at)->not->toBeNull();
 
+    $this->actingAs($admin)
+        ->get(route('admin.website-health-reports.show', [$website, $report]))
+        ->assertSuccessful()
+        ->assertSee('Last seven days of forms');
+
     Mail::assertQueued(WebsiteHealthReportReady::class, 2);
     Mail::assertQueued(WebsiteHealthReportReady::class, fn ($mail) => $mail->hasTo($admin->email));
     Mail::assertQueued(WebsiteHealthReportReady::class, fn ($mail) => $mail->hasTo($owner->email));
@@ -377,6 +382,7 @@ it('audits a website and queues the completed report for admins and the owner', 
 });
 
 it('omits form submission details from audit emails for websites without forms', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     $website = websiteWithDomain();
     $report = WebsiteHealthReport::factory()->for($website)->create([
         'metrics' => [
@@ -391,6 +397,11 @@ it('omits form submission details from audit emails for websites without forms',
     (new WebsiteHealthReportReady($report->fresh(['website'])))
         ->assertDontSeeInHtml('Forms in the last seven days')
         ->assertDontSeeInHtml('legitimate submissions');
+
+    $this->actingAs($admin)
+        ->get(route('admin.website-health-reports.show', [$website, $report]))
+        ->assertSuccessful()
+        ->assertDontSee('Last seven days of forms');
 });
 
 it('dispatches only due enabled websites from the scheduler command', function (): void {

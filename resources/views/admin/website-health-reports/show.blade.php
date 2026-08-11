@@ -109,16 +109,18 @@
             <strong>{{ data_get($report->metrics, 'changes.new_issues', 0) }} new issues</strong> and <strong>{{ data_get($report->metrics, 'changes.resolved_issues', 0) }} resolved issues</strong> since the previous completed report.
         </div>
 
-        <div class="rounded-lg border bg-white p-4 shadow-sm">
-            <h2 class="font-semibold">Last seven days of forms</h2>
-            <dl class="mt-4 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-5">
-                <div><dt class="text-slate-500">Submissions</dt><dd class="mt-1 text-xl font-semibold">{{ data_get($report->metrics, 'submissions', 0) }}</dd></div>
-                <div><dt class="text-slate-500">Legitimate</dt><dd class="mt-1 text-xl font-semibold">{{ data_get($report->metrics, 'legitimate_submissions', 0) }}</dd></div>
-                <div><dt class="text-slate-500">Spam</dt><dd class="mt-1 text-xl font-semibold">{{ data_get($report->metrics, 'spam_submissions', 0) }}</dd></div>
-                <div><dt class="text-slate-500">Email failures</dt><dd class="mt-1 text-xl font-semibold">{{ data_get($report->metrics, 'email_failures', 0) }}</dd></div>
-                <div><dt class="text-slate-500">Webhook failures</dt><dd class="mt-1 text-xl font-semibold">{{ data_get($report->metrics, 'webhook_failures', 0) }}</dd></div>
-            </dl>
-        </div>
+        @if (data_get($report->metrics, 'forms_count', 0) > 0)
+            <div class="rounded-lg border bg-white p-4 shadow-sm">
+                <h2 class="font-semibold">Last seven days of forms</h2>
+                <dl class="mt-4 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-5">
+                    <div><dt class="text-slate-500">Submissions</dt><dd class="mt-1 text-xl font-semibold">{{ data_get($report->metrics, 'submissions', 0) }}</dd></div>
+                    <div><dt class="text-slate-500">Legitimate</dt><dd class="mt-1 text-xl font-semibold">{{ data_get($report->metrics, 'legitimate_submissions', 0) }}</dd></div>
+                    <div><dt class="text-slate-500">Spam</dt><dd class="mt-1 text-xl font-semibold">{{ data_get($report->metrics, 'spam_submissions', 0) }}</dd></div>
+                    <div><dt class="text-slate-500">Email failures</dt><dd class="mt-1 text-xl font-semibold">{{ data_get($report->metrics, 'email_failures', 0) }}</dd></div>
+                    <div><dt class="text-slate-500">Webhook failures</dt><dd class="mt-1 text-xl font-semibold">{{ data_get($report->metrics, 'webhook_failures', 0) }}</dd></div>
+                </dl>
+            </div>
+        @endif
 
         @foreach (collect($report->checks)->groupBy('category') as $category => $checks)
             <div class="rounded-lg border bg-white p-4 shadow-sm">

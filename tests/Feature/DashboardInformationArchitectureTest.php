@@ -55,6 +55,11 @@ it('keeps forms and submissions inside the website workspace', function (): void
         ->assertSee('data-tab-panel="health"', false)
         ->assertSee('data-tab-panel="forms" hidden', false)
         ->assertDontSee('href="#health"', false)
+        ->assertSee('Connect a website form')
+        ->assertSee(route('forms.submit'))
+        ->assertSee('name="_form_name"', false)
+        ->assertSee('name="_honeypot"', false)
+        ->assertSee('data-copy-target="form-onboarding-example"', false)
         ->assertSee('Contact form')
         ->assertSee('Recent submissions');
 });
