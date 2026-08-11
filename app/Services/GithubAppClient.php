@@ -40,6 +40,28 @@ class GithubAppClient
         ];
     }
 
+    /** @return array<string, mixed> */
+    public function pullRequestForHead(WebsiteRepository $repository, string $headRef): array
+    {
+        $token = $this->installationToken($repository->installation->installation_id);
+        $owner = Str::before($repository->full_name, '/');
+        $pullRequest = $this->request($token)
+            ->get("repos/{$repository->full_name}/pulls", [
+                'state' => 'all',
+                'head' => $owner.':'.$headRef,
+                'per_page' => 1,
+            ])
+            ->throw()
+            ->collect()
+            ->first();
+
+        if (! is_array($pullRequest)) {
+            throw new RuntimeException("GitHub did not return a pull request for branch {$headRef}.");
+        }
+
+        return $pullRequest;
+    }
+
     public function installationToken(int $installationId): string
     {
         $token = $this->appRequest()

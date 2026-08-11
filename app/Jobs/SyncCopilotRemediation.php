@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\RemediationRun;
 use App\Services\CopilotAgentClient;
+use App\Services\GithubAppClient;
 use Illuminate\Contracts\Queue\ShouldBeEncrypted;
 use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -30,7 +31,7 @@ class SyncCopilotRemediation implements ShouldBeEncrypted, ShouldBeUniqueUntilPr
         return (string) $this->run->id;
     }
 
-    public function handle(CopilotAgentClient $copilot): void
+    public function handle(CopilotAgentClient $copilot, GithubAppClient $github): void
     {
         $this->run->loadMissing('repository');
         $authorization = $this->run->requester?->githubAuthorization;
@@ -54,6 +55,14 @@ class SyncCopilotRemediation implements ShouldBeEncrypted, ShouldBeUniqueUntilPr
         if ($state === 'completed') {
             $pullRequest = collect($task['artifacts'] ?? [])->first(fn (array $artifact) => ($artifact['provider'] ?? null) === 'github' && ($artifact['type'] ?? null) === 'pull');
             $pullRequestNumber = data_get($pullRequest, 'data.number', data_get($pullRequest, 'data.id'));
+            $pullRequestUrl = null;
+            $headRef = data_get($task, 'sessions.0.head_ref');
+
+            if (is_string($headRef) && $headRef !== '') {
+                $resolvedPullRequest = $github->pullRequestForHead($this->run->repository, $headRef);
+                $pullRequestNumber = $resolvedPullRequest['number'] ?? null;
+                $pullRequestUrl = $resolvedPullRequest['html_url'] ?? null;
+            }
 
             if (! $pullRequestNumber) {
                 $this->failRun('GitHub Copilot completed without creating a pull request.');
@@ -64,7 +73,7 @@ class SyncCopilotRemediation implements ShouldBeEncrypted, ShouldBeUniqueUntilPr
             $this->run->update([
                 'status' => RemediationRun::STATUS_PULL_REQUEST_OPEN,
                 'pull_request_number' => $pullRequestNumber,
-                'pull_request_url' => "https://github.com/{$this->run->repository->full_name}/pull/{$pullRequestNumber}",
+                'pull_request_url' => $pullRequestUrl ?: "https://github.com/{$this->run->repository->full_name}/pull/{$pullRequestNumber}",
                 'pull_request_state' => 'open',
             ]);
 

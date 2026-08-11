@@ -6,6 +6,7 @@ use App\Mail\WebsiteHealthReportReady;
 use App\Models\ContentGeneration;
 use App\Models\User;
 use App\Models\WebsiteHealthReport;
+use App\Services\CopilotAgentClient;
 use App\Services\GithubAppClient;
 use App\Services\SearchConsoleClient;
 use App\Services\WebsiteHealthAuditor;
@@ -39,7 +40,7 @@ class GenerateWebsiteHealthReport implements ShouldBeUnique, ShouldQueue
         return (string) $this->report->website_id;
     }
 
-    public function handle(WebsiteHealthAuditor $auditor, SearchConsoleClient $searchConsole, GithubAppClient $github): void
+    public function handle(WebsiteHealthAuditor $auditor, SearchConsoleClient $searchConsole, GithubAppClient $github, CopilotAgentClient $copilot): void
     {
         $this->report->update([
             'status' => WebsiteHealthReport::STATUS_RUNNING,
@@ -53,7 +54,7 @@ class GenerateWebsiteHealthReport implements ShouldBeUnique, ShouldQueue
             unset($result['pages']);
             $result['metrics']['changes'] = $this->changesSincePreviousReport($result['checks']);
             $result['metrics']['search_console'] = $this->searchConsoleReport($searchConsole);
-            $result['metrics']['content_updates'] = $this->contentUpdates($github);
+            $result['metrics']['content_updates'] = $this->contentUpdates($github, $copilot);
 
             $this->report->pages()->delete();
             $this->report->pages()->createMany($pages);
@@ -77,7 +78,7 @@ class GenerateWebsiteHealthReport implements ShouldBeUnique, ShouldQueue
     }
 
     /** @return array<int, array<string, mixed>> */
-    protected function contentUpdates(GithubAppClient $github): array
+    protected function contentUpdates(GithubAppClient $github, CopilotAgentClient $copilot): array
     {
         $plan = $this->report->website->contentPlan()->where('enabled', true)->first();
 
@@ -86,16 +87,16 @@ class GenerateWebsiteHealthReport implements ShouldBeUnique, ShouldQueue
         }
 
         return $plan->generations()
-            ->with('repository.installation')
+            ->with(['repository.installation', 'requester.githubAuthorization'])
             ->whereNotNull('pull_request_number')
             ->where(function ($query): void {
                 $query->where('status', ContentGeneration::STATUS_PULL_REQUEST_OPEN)
                     ->orWhere('merged_at', '>=', $this->contentUpdatesStartDate());
             })
             ->get()
-            ->map(function ($generation) use ($github): ?array {
+            ->map(function ($generation) use ($github, $copilot): ?array {
                 try {
-                    $details = $github->pullRequestDetails($generation->repository, $generation->pull_request_number);
+                    $details = $this->contentUpdateDetails($generation, $github, $copilot);
                     $pullRequest = $details['pull_request'];
                     $mergedAt = filled($pullRequest['merged_at'] ?? null)
                         ? Carbon::parse($pullRequest['merged_at'])
@@ -150,6 +151,41 @@ class GenerateWebsiteHealthReport implements ShouldBeUnique, ShouldQueue
             ->sortBy('merged_at')
             ->values()
             ->all();
+    }
+
+    /** @return array{pull_request: array<string, mixed>, files: array<int, array<string, mixed>>} */
+    protected function contentUpdateDetails(ContentGeneration $generation, GithubAppClient $github, CopilotAgentClient $copilot): array
+    {
+        try {
+            return $github->pullRequestDetails($generation->repository, $generation->pull_request_number);
+        } catch (Throwable $exception) {
+            $authorization = $generation->requester?->githubAuthorization;
+
+            if (! $authorization || ! $generation->copilot_task_id) {
+                throw $exception;
+            }
+
+            $task = $copilot->task($authorization, $generation->repository, $generation->copilot_task_id);
+            $headRef = data_get($task, 'sessions.0.head_ref');
+
+            if (! is_string($headRef) || $headRef === '') {
+                throw $exception;
+            }
+
+            $pullRequest = $github->pullRequestForHead($generation->repository, $headRef);
+            $pullRequestNumber = (int) ($pullRequest['number'] ?? 0);
+
+            if ($pullRequestNumber < 1) {
+                throw $exception;
+            }
+
+            $generation->update([
+                'pull_request_number' => $pullRequestNumber,
+                'pull_request_url' => (string) ($pullRequest['html_url'] ?? "https://github.com/{$generation->repository->full_name}/pull/{$pullRequestNumber}"),
+            ]);
+
+            return $github->pullRequestDetails($generation->repository, $pullRequestNumber);
+        }
     }
 
     protected function contentUpdatesStartDate(): Carbon

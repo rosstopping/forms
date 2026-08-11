@@ -12,6 +12,7 @@ use App\Models\Website;
 use App\Models\WebsiteRepository;
 use App\Services\ContentGenerationPromptGenerator;
 use App\Services\CopilotAgentClient;
+use App\Services\GithubAppClient;
 use App\Services\GoogleOAuthClient;
 use App\Services\SearchConsoleClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -251,6 +252,37 @@ test('a content generation with a recorded Copilot task is not started again', f
     (new StartContentGeneration($generation))->handle($searchConsole, $prompts, $copilot);
 
     expect($generation->fresh()->copilot_task_id)->toBe('33333333-3333-4333-8333-333333333333');
+});
+
+test('content synchronization stores the pull request resolved from the copilot branch', function () {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    GithubUserAuthorization::factory()->for($admin)->create();
+    $repository = WebsiteRepository::factory()->create(['full_name' => 'acme/site']);
+    $generation = ContentGeneration::factory()->for($repository, 'repository')->for($admin, 'requester')->create([
+        'status' => ContentGeneration::STATUS_RUNNING,
+        'copilot_task_id' => '33333333-3333-4333-8333-333333333333',
+        'started_at' => now()->subMinute(),
+    ]);
+    $copilot = $this->mock(CopilotAgentClient::class);
+    $copilot->shouldReceive('task')->once()->andReturn([
+        'state' => 'completed',
+        'artifacts' => [['provider' => 'github', 'type' => 'pull', 'data' => ['id' => 999999]]],
+        'sessions' => [['head_ref' => 'copilot/create-useful-content']],
+    ]);
+    $github = $this->mock(GithubAppClient::class);
+    $github->shouldReceive('pullRequestForHead')
+        ->once()
+        ->withArgs(fn ($passedRepository, string $headRef): bool => $passedRepository->is($repository) && $headRef === 'copilot/create-useful-content')
+        ->andReturn([
+            'number' => 42,
+            'html_url' => 'https://github.com/acme/site/pull/42',
+        ]);
+
+    (new SyncContentGeneration($generation))->handle($copilot, $github);
+
+    expect($generation->fresh()->pull_request_number)->toBe(42)
+        ->and($generation->fresh()->pull_request_url)->toBe('https://github.com/acme/site/pull/42')
+        ->and($generation->fresh()->pull_request_url)->not->toContain('999999');
 });
 
 test('search console access and refresh tokens are encrypted at rest', function () {

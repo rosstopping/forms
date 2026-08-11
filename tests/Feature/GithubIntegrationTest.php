@@ -302,7 +302,7 @@ it('links a completed Copilot task to its pull request', function (): void {
         'artifacts' => [['provider' => 'github', 'type' => 'pull', 'data' => ['id' => 42]]],
     ]);
 
-    (new SyncCopilotRemediation($run))->handle($copilot);
+    (new SyncCopilotRemediation($run))->handle($copilot, mock(GithubAppClient::class));
 
     expect($run->fresh()->status)->toBe(RemediationRun::STATUS_PULL_REQUEST_OPEN)
         ->and($run->fresh()->pull_request_number)->toBe(42)

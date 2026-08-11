@@ -6,12 +6,14 @@ use App\Models\ContentGeneration;
 use App\Models\ContentPlan;
 use App\Models\Form;
 use App\Models\GithubInstallation;
+use App\Models\GithubUserAuthorization;
 use App\Models\SearchConsoleConnection;
 use App\Models\User;
 use App\Models\Website;
 use App\Models\WebsiteHealthReport;
 use App\Models\WebsiteHealthReportPage;
 use App\Models\WebsiteRepository;
+use App\Services\CopilotAgentClient;
 use App\Services\GithubAppClient;
 use App\Services\SearchConsoleClient;
 use App\Services\WebsiteHealthAuditor;
@@ -215,6 +217,7 @@ it('stores page titles longer than the varchar limit', function (): void {
 it('audits a website and queues the completed report for admins and the owner', function (): void {
     Mail::fake();
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    GithubUserAuthorization::factory()->for($admin)->create();
     $owner = User::factory()->create();
     $website = websiteWithDomain(['user_id' => $owner->id]);
     Form::factory()->for($website)->create();
@@ -227,8 +230,10 @@ it('audits a website and queues the completed report for admins and the owner', 
     $contentPlan = ContentPlan::factory()->for($website)->create(['created_by' => $admin->id, 'enabled' => true]);
     $generation = ContentGeneration::factory()->for($contentPlan, 'plan')->for($repository, 'repository')->create([
         'status' => ContentGeneration::STATUS_PULL_REQUEST_OPEN,
-        'pull_request_number' => 42,
-        'pull_request_url' => 'https://github.com/acme/example-site/pull/42',
+        'requested_by' => $admin->id,
+        'copilot_task_id' => 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+        'pull_request_number' => 999999,
+        'pull_request_url' => 'https://github.com/acme/example-site/pull/999999',
         'pull_request_state' => 'open',
         'merged_at' => null,
         'completed_at' => null,
@@ -258,6 +263,11 @@ it('audits a website and queues the completed report for admins and the owner', 
     $searchConsole = $this->mock(SearchConsoleClient::class);
     $searchConsole->shouldReceive('report')->once()->andReturn(searchConsoleReportData());
     $github = $this->mock(GithubAppClient::class);
+    $github->shouldReceive('pullRequestDetails')->once()->withArgs(fn ($passedRepository, int $number): bool => $passedRepository->is($repository) && $number === 999999)->andThrow(new RuntimeException('Pull request not found.'));
+    $github->shouldReceive('pullRequestForHead')->once()->withArgs(fn ($passedRepository, string $headRef): bool => $passedRepository->is($repository) && $headRef === 'copilot/content-update')->andReturn([
+        'number' => 42,
+        'html_url' => 'https://github.com/acme/example-site/pull/42',
+    ]);
     $github->shouldReceive('pullRequestDetails')->once()->withArgs(fn ($passedRepository, int $number): bool => $passedRepository->is($repository) && $number === 42)->andReturn([
         'pull_request' => [
             'title' => 'Publish a guide to choosing event forms',
@@ -274,7 +284,12 @@ it('audits a website and queues the completed report for admins and the owner', 
         ],
     ]);
 
-    (new GenerateWebsiteHealthReport($report))->handle(app(WebsiteHealthAuditor::class), $searchConsole, $github);
+    $copilot = $this->mock(CopilotAgentClient::class);
+    $copilot->shouldReceive('task')->once()->andReturn([
+        'sessions' => [['head_ref' => 'copilot/content-update']],
+    ]);
+
+    (new GenerateWebsiteHealthReport($report))->handle(app(WebsiteHealthAuditor::class), $searchConsole, $github, $copilot);
 
     $report->refresh();
     expect($report->status)->toBe(WebsiteHealthReport::STATUS_COMPLETED)
@@ -288,6 +303,8 @@ it('audits a website and queues the completed report for admins and the owner', 
         ->and($report->completed_at)->not->toBeNull();
 
     expect($generation->fresh()->status)->toBe(ContentGeneration::STATUS_COMPLETED)
+        ->and($generation->fresh()->pull_request_number)->toBe(42)
+        ->and($generation->fresh()->pull_request_url)->toBe('https://github.com/acme/example-site/pull/42')
         ->and($generation->fresh()->pull_request_state)->toBe('closed')
         ->and($generation->fresh()->merged_at)->not->toBeNull();
 

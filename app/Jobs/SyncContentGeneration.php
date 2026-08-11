@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\ContentGeneration;
 use App\Services\CopilotAgentClient;
+use App\Services\GithubAppClient;
 use Illuminate\Contracts\Queue\ShouldBeEncrypted;
 use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -30,7 +31,7 @@ class SyncContentGeneration implements ShouldBeEncrypted, ShouldBeUniqueUntilPro
         return (string) $this->generation->id;
     }
 
-    public function handle(CopilotAgentClient $copilot): void
+    public function handle(CopilotAgentClient $copilot, GithubAppClient $github): void
     {
         $this->generation->loadMissing(['repository', 'requester.githubAuthorization']);
         $authorization = $this->generation->requester?->githubAuthorization;
@@ -51,6 +52,15 @@ class SyncContentGeneration implements ShouldBeEncrypted, ShouldBeUniqueUntilPro
         if ($state === 'completed') {
             $pullRequest = collect($task['artifacts'] ?? [])->first(fn (array $artifact) => ($artifact['provider'] ?? null) === 'github' && ($artifact['type'] ?? null) === 'pull');
             $number = data_get($pullRequest, 'data.number', data_get($pullRequest, 'data.id'));
+            $url = null;
+            $headRef = data_get($task, 'sessions.0.head_ref');
+
+            if (is_string($headRef) && $headRef !== '') {
+                $resolvedPullRequest = $github->pullRequestForHead($this->generation->repository, $headRef);
+                $number = $resolvedPullRequest['number'] ?? null;
+                $url = $resolvedPullRequest['html_url'] ?? null;
+            }
+
             if (! $number) {
                 $this->failGeneration('GitHub Copilot completed without creating a pull request.');
 
@@ -59,7 +69,7 @@ class SyncContentGeneration implements ShouldBeEncrypted, ShouldBeUniqueUntilPro
             $this->generation->update([
                 'status' => ContentGeneration::STATUS_PULL_REQUEST_OPEN,
                 'pull_request_number' => $number,
-                'pull_request_url' => "https://github.com/{$this->generation->repository->full_name}/pull/{$number}",
+                'pull_request_url' => $url ?: "https://github.com/{$this->generation->repository->full_name}/pull/{$number}",
                 'pull_request_state' => 'open',
             ]);
 
