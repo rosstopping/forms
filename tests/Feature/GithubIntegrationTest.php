@@ -20,6 +20,31 @@ use Illuminate\Support\Facades\Queue;
 
 use function Pest\Laravel\mock;
 
+it('retrieves pull request content and changed files with an installation token', function (): void {
+    config(['services.github.api_url' => 'https://api.github.test']);
+    Http::preventStrayRequests();
+    Http::fake([
+        'api.github.test/repos/acme/site/pulls/42' => Http::response([
+            'number' => 42,
+            'title' => 'Publish a new guide',
+            'body' => 'Adds a guide based on search demand.',
+            'merged_at' => now()->toIso8601String(),
+        ]),
+        'api.github.test/repos/acme/site/pulls/42/files*' => Http::response([
+            ['filename' => 'resources/views/guide.blade.php', 'status' => 'added', 'additions' => 100, 'deletions' => 0],
+        ]),
+    ]);
+    $installation = GithubInstallation::factory()->create(['installation_id' => 9876]);
+    $repository = WebsiteRepository::factory()->for($installation, 'installation')->create(['full_name' => 'acme/site']);
+    $github = mock(GithubAppClient::class)->makePartial();
+    $github->shouldReceive('installationToken')->once()->with(9876)->andReturn('installation-token');
+
+    $details = $github->pullRequestDetails($repository, 42);
+
+    expect($details['pull_request']['title'])->toBe('Publish a new guide')
+        ->and($details['files'][0]['filename'])->toBe('resources/views/guide.blade.php');
+});
+
 it('starts a GitHub App installation for an administrator', function (): void {
     config(['services.github.app_slug' => 'website-health-bot']);
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);

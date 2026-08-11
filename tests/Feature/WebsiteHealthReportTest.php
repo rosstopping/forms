@@ -2,12 +2,17 @@
 
 use App\Jobs\GenerateWebsiteHealthReport;
 use App\Mail\WebsiteHealthReportReady;
+use App\Models\ContentGeneration;
+use App\Models\ContentPlan;
 use App\Models\Form;
+use App\Models\GithubInstallation;
 use App\Models\SearchConsoleConnection;
 use App\Models\User;
 use App\Models\Website;
 use App\Models\WebsiteHealthReport;
 use App\Models\WebsiteHealthReportPage;
+use App\Models\WebsiteRepository;
+use App\Services\GithubAppClient;
 use App\Services\SearchConsoleClient;
 use App\Services\WebsiteHealthAuditor;
 use Illuminate\Support\Facades\Http;
@@ -153,6 +158,20 @@ it('audits a website and queues the completed report for admins and the owner', 
     $website = websiteWithDomain(['user_id' => $owner->id]);
     Form::factory()->for($website)->create();
     SearchConsoleConnection::factory()->for($website)->create(['connected_by' => $admin->id]);
+    $installation = GithubInstallation::factory()->create(['installed_by' => $admin->id]);
+    $repository = WebsiteRepository::factory()->for($website)->create([
+        'github_installation_id' => $installation->id,
+        'full_name' => 'acme/example-site',
+    ]);
+    $contentPlan = ContentPlan::factory()->for($website)->create(['created_by' => $admin->id, 'enabled' => true]);
+    ContentGeneration::factory()->for($contentPlan, 'plan')->for($repository, 'repository')->create([
+        'status' => ContentGeneration::STATUS_COMPLETED,
+        'pull_request_number' => 42,
+        'pull_request_url' => 'https://github.com/acme/example-site/pull/42',
+        'pull_request_state' => 'closed',
+        'merged_at' => now()->subDay(),
+        'completed_at' => now()->subDay(),
+    ]);
     $report = WebsiteHealthReport::factory()->for($website)->create([
         'status' => WebsiteHealthReport::STATUS_PENDING,
         'completed_at' => null,
@@ -177,8 +196,24 @@ it('audits a website and queues the completed report for admins and the owner', 
 
     $searchConsole = $this->mock(SearchConsoleClient::class);
     $searchConsole->shouldReceive('report')->once()->andReturn(searchConsoleReportData());
+    $github = $this->mock(GithubAppClient::class);
+    $github->shouldReceive('pullRequestDetails')->once()->withArgs(fn ($passedRepository, int $number): bool => $passedRepository->is($repository) && $number === 42)->andReturn([
+        'pull_request' => [
+            'title' => 'Publish a guide to choosing event forms',
+            'body' => 'Added a practical guide based on this week’s search demand.',
+            'html_url' => 'https://github.com/acme/example-site/pull/42',
+            'merged_at' => now()->subDay()->toIso8601String(),
+            'additions' => 180,
+            'deletions' => 12,
+            'changed_files' => 2,
+        ],
+        'files' => [
+            ['filename' => 'resources/views/guides/event-forms.blade.php', 'status' => 'added', 'additions' => 170, 'deletions' => 0],
+            ['filename' => 'routes/web.php', 'status' => 'modified', 'additions' => 10, 'deletions' => 12],
+        ],
+    ]);
 
-    (new GenerateWebsiteHealthReport($report))->handle(app(WebsiteHealthAuditor::class), $searchConsole);
+    (new GenerateWebsiteHealthReport($report))->handle(app(WebsiteHealthAuditor::class), $searchConsole, $github);
 
     $report->refresh();
     expect($report->status)->toBe(WebsiteHealthReport::STATUS_COMPLETED)
@@ -187,6 +222,8 @@ it('audits a website and queues the completed report for admins and the owner', 
         ->and($report->metrics['pages_analyzed'])->toBe(1)
         ->and($report->metrics['forms_count'])->toBe(1)
         ->and($report->metrics['search_console']['totals']['clicks'])->toBe(125)
+        ->and($report->metrics['content_updates'][0]['title'])->toBe('Publish a guide to choosing event forms')
+        ->and($report->metrics['content_updates'][0]['changed_files'])->toBe(2)
         ->and($report->completed_at)->not->toBeNull();
 
     Mail::assertQueued(WebsiteHealthReportReady::class, 2);
@@ -196,6 +233,9 @@ it('audits a website and queues the completed report for admins and the owner', 
     (new WebsiteHealthReportReady($report->fresh(['website'])))
         ->assertSeeInHtml('Weekly website health report')
         ->assertSeeInHtml('Forms in the last seven days')
+        ->assertSeeInHtml('Content updates this week')
+        ->assertSeeInHtml('Publish a guide to choosing event forms')
+        ->assertSeeInHtml('resources/views/guides/event-forms.blade.php')
         ->assertSeeInHtml('Google Search Console')
         ->assertSeeInHtml('example services')
         ->assertSeeInHtml('View the full report');

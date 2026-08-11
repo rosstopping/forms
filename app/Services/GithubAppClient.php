@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\WebsiteRepository;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -25,6 +26,18 @@ class GithubAppClient
             ->throw()
             ->collect('repositories')
             ->all();
+    }
+
+    /** @return array{pull_request: array<string, mixed>, files: array<int, array<string, mixed>>} */
+    public function pullRequestDetails(WebsiteRepository $repository, int $pullRequestNumber): array
+    {
+        $token = $this->installationToken($repository->installation->installation_id);
+        $request = $this->request($token);
+
+        return [
+            'pull_request' => $request->get("repos/{$repository->full_name}/pulls/{$pullRequestNumber}")->throw()->json(),
+            'files' => $request->get("repos/{$repository->full_name}/pulls/{$pullRequestNumber}/files", ['per_page' => 100])->throw()->json(),
+        ];
     }
 
     public function installationToken(int $installationId): string

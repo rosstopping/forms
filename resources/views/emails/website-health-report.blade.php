@@ -19,6 +19,26 @@
             <h2 style="font-size:18px;">Forms in the last seven days</h2>
             <p>{{ data_get($report->metrics, 'legitimate_submissions', 0) }} legitimate submissions, {{ data_get($report->metrics, 'spam_submissions', 0) }} spam submissions, and {{ data_get($report->metrics, 'email_failures', 0) + data_get($report->metrics, 'webhook_failures', 0) }} delivery failures.</p>
         @endif
+        @if (data_get($report->metrics, 'content_updates'))
+            <h2 style="margin-top:24px;font-size:18px;">Content updates this week</h2>
+            @foreach (data_get($report->metrics, 'content_updates', []) as $update)
+                <div style="margin-top:12px;padding:16px;border:1px solid #e2e8f0;border-radius:8px;">
+                    <h3 style="margin:0;font-size:16px;"><a href="{{ $update['url'] }}" style="color:#0f172a;">{{ $update['title'] }}</a></h3>
+                    <p style="margin:6px 0;color:#64748b;font-size:13px;">Merged {{ \Illuminate\Support\Carbon::parse($update['merged_at'])->format('j M Y') }} · {{ number_format($update['changed_files']) }} files · <span style="color:#047857;">+{{ number_format($update['additions']) }}</span> <span style="color:#b91c1c;">−{{ number_format($update['deletions']) }}</span></p>
+                    @if ($update['summary'])
+                        <p style="margin:10px 0;white-space:pre-line;">{{ $update['summary'] }}</p>
+                    @endif
+                    @if ($update['files'])
+                        <p style="margin:10px 0 4px;"><strong>Changed files</strong></p>
+                        <ul style="margin:0;padding-left:20px;">
+                            @foreach (array_slice($update['files'], 0, 5) as $file)
+                                <li>{{ $file['name'] }} ({{ $file['status'] }})</li>
+                            @endforeach
+                        </ul>
+                    @endif
+                </div>
+            @endforeach
+        @endif
         @if (data_get($report->metrics, 'search_console'))
             <h2 style="margin-top:24px;font-size:18px;">Google Search Console</h2>
             <p style="color:#64748b;font-size:13px;">{{ \Illuminate\Support\Carbon::parse(data_get($report->metrics, 'search_console.period.start'))->format('j M') }}–{{ \Illuminate\Support\Carbon::parse(data_get($report->metrics, 'search_console.period.end'))->format('j M Y') }}</p>
