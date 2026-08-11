@@ -66,7 +66,7 @@ it('shows Search Console reporting on the website dashboard', function (): void 
         ->assertSee(route('admin.search-console.performance', $website));
 });
 
-it('shows paginated Search Console queries and landing pages to website users', function (): void {
+it('shows sortable Search Console queries and landing pages to website users', function (): void {
     $owner = User::factory()->create();
     $otherUser = User::factory()->create();
     $website = websiteWithDomain(['user_id' => $owner->id]);
@@ -78,14 +78,26 @@ it('shows paginated Search Console queries and landing pages to website users', 
     $this->mock(SearchConsoleClient::class)
         ->shouldReceive('queryPagePerformance')
         ->once()
-        ->withArgs(fn (SearchConsoleConnection $requestedConnection, int $limit, int $offset): bool => $requestedConnection->is($connection) && $limit === 101 && $offset === 100)
-        ->andReturn([['query' => 'second page query', 'page' => 'https://example.com/ranking-page', 'clicks' => 18.0, 'impressions' => 240.0, 'ctr' => 0.075, 'position' => 12.4]])
+        ->withArgs(fn (SearchConsoleConnection $requestedConnection, int $limit): bool => $requestedConnection->is($connection) && $limit === 25000)
+        ->andReturn([
+            ['query' => 'lower ranking query', 'page' => 'https://example.com/lower-ranking-page', 'clicks' => 18.0, 'impressions' => 240.0, 'ctr' => 0.075, 'position' => 12.4],
+            ['query' => 'higher ranking query', 'page' => 'https://example.com/higher-ranking-page', 'clicks' => 12.0, 'impressions' => 200.0, 'ctr' => 0.06, 'position' => 3.1],
+        ])
         ->shouldReceive('pagePerformance')
         ->once()
-        ->withArgs(fn (SearchConsoleConnection $requestedConnection, int $limit, int $offset): bool => $requestedConnection->is($connection) && $limit === 101 && $offset === 0)
-        ->andReturn([['page' => 'https://example.com/landing', 'clicks' => 12.0, 'impressions' => 200.0, 'ctr' => 0.06, 'position' => 8.7]]);
+        ->withArgs(fn (SearchConsoleConnection $requestedConnection, int $limit): bool => $requestedConnection->is($connection) && $limit === 25000)
+        ->andReturn([
+            ['page' => 'https://example.com/strong-page', 'clicks' => 20.0, 'impressions' => 300.0, 'ctr' => 0.067, 'position' => 2.5],
+            ['page' => 'https://example.com/weak-page', 'clicks' => 8.0, 'impressions' => 150.0, 'ctr' => 0.053, 'position' => 14.2],
+        ]);
 
-    $url = route('admin.search-console.performance', [$website, 'queries_page' => 2, 'pages_page' => 1]);
+    $url = route('admin.search-console.performance', [
+        $website,
+        'query_sort' => 'position',
+        'query_direction' => 'asc',
+        'page_sort' => 'position',
+        'page_direction' => 'desc',
+    ]);
 
     $this->actingAs($owner)
         ->get($url)
@@ -94,10 +106,10 @@ it('shows paginated Search Console queries and landing pages to website users', 
         ->assertSee('All available landing pages')
         ->assertSee('Average position')
         ->assertSee('Ranking page')
-        ->assertSee('second page query')
-        ->assertSee('example.com/ranking-page')
-        ->assertSee('12.4')
-        ->assertSee('example.com/landing');
+        ->assertSeeInOrder(['higher ranking query', 'lower ranking query'])
+        ->assertSeeInOrder(['example.com/weak-page', 'example.com/strong-page'])
+        ->assertSee('query_sort=clicks')
+        ->assertSee('page_sort=clicks');
 
     $this->actingAs($otherUser)
         ->get($url)

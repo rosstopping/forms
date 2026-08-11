@@ -12,12 +12,15 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Throwable;
 
 class SearchConsoleController extends Controller
 {
     protected const PERFORMANCE_PAGE_SIZE = 100;
+
+    protected const PERFORMANCE_ROW_LIMIT = 25000;
 
     public function __construct(protected GoogleOAuthClient $oauth, protected SearchConsoleClient $searchConsole) {}
 
@@ -63,26 +66,53 @@ class SearchConsoleController extends Controller
         $pages = $request->validate([
             'queries_page' => ['sometimes', 'integer', 'min:1'],
             'pages_page' => ['sometimes', 'integer', 'min:1'],
+            'query_sort' => ['sometimes', Rule::in(['query', 'page', 'clicks', 'impressions', 'ctr', 'position'])],
+            'query_direction' => ['sometimes', Rule::in(['asc', 'desc'])],
+            'page_sort' => ['sometimes', Rule::in(['page', 'clicks', 'impressions', 'ctr', 'position'])],
+            'page_direction' => ['sometimes', Rule::in(['asc', 'desc'])],
         ]);
         $queryPage = (int) ($pages['queries_page'] ?? 1);
         $pagePage = (int) ($pages['pages_page'] ?? 1);
-        $limit = self::PERFORMANCE_PAGE_SIZE + 1;
+        $querySort = $pages['query_sort'] ?? 'clicks';
+        $queryDirection = $pages['query_direction'] ?? 'desc';
+        $pageSort = $pages['page_sort'] ?? 'clicks';
+        $pageDirection = $pages['page_direction'] ?? 'desc';
         $cacheKey = 'search-console-performance:'.$connection->id.':'.$connection->updated_at->timestamp.':';
-        $queries = Cache::remember($cacheKey.'query-pages:'.$queryPage, now()->addMinutes(15), fn (): array => $this->searchConsole->queryPagePerformance($connection, $limit, ($queryPage - 1) * self::PERFORMANCE_PAGE_SIZE));
-        $landingPages = Cache::remember($cacheKey.'pages:'.$pagePage, now()->addMinutes(15), fn (): array => $this->searchConsole->pagePerformance($connection, $limit, ($pagePage - 1) * self::PERFORMANCE_PAGE_SIZE));
+        $queries = Cache::remember($cacheKey.'query-pages', now()->addMinutes(15), fn (): array => $this->searchConsole->queryPagePerformance($connection, self::PERFORMANCE_ROW_LIMIT));
+        $landingPages = Cache::remember($cacheKey.'pages', now()->addMinutes(15), fn (): array => $this->searchConsole->pagePerformance($connection, self::PERFORMANCE_ROW_LIMIT));
+        $queries = $this->sortPerformanceRows($queries, $querySort, $queryDirection);
+        $landingPages = $this->sortPerformanceRows($landingPages, $pageSort, $pageDirection);
+        $queryOffset = ($queryPage - 1) * self::PERFORMANCE_PAGE_SIZE;
+        $pageOffset = ($pagePage - 1) * self::PERFORMANCE_PAGE_SIZE;
 
         return view('admin.websites.search-console-performance', [
             'website' => $website,
             'connection' => $connection,
-            'queries' => array_slice($queries, 0, self::PERFORMANCE_PAGE_SIZE),
-            'landingPages' => array_slice($landingPages, 0, self::PERFORMANCE_PAGE_SIZE),
+            'queries' => array_slice($queries, $queryOffset, self::PERFORMANCE_PAGE_SIZE),
+            'landingPages' => array_slice($landingPages, $pageOffset, self::PERFORMANCE_PAGE_SIZE),
             'queryPage' => $queryPage,
             'pagePage' => $pagePage,
-            'hasMoreQueries' => count($queries) > self::PERFORMANCE_PAGE_SIZE,
-            'hasMorePages' => count($landingPages) > self::PERFORMANCE_PAGE_SIZE,
+            'querySort' => $querySort,
+            'queryDirection' => $queryDirection,
+            'pageSort' => $pageSort,
+            'pageDirection' => $pageDirection,
+            'hasMoreQueries' => count($queries) > $queryOffset + self::PERFORMANCE_PAGE_SIZE,
+            'hasMorePages' => count($landingPages) > $pageOffset + self::PERFORMANCE_PAGE_SIZE,
             'pageSize' => self::PERFORMANCE_PAGE_SIZE,
             'period' => ['start' => now()->subDays(29), 'end' => now()->subDay()],
         ]);
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $rows
+     * @return array<int, array<string, mixed>>
+     */
+    protected function sortPerformanceRows(array $rows, string $column, string $direction): array
+    {
+        return collect($rows)
+            ->sortBy($column, SORT_NATURAL | SORT_FLAG_CASE, $direction === 'desc')
+            ->values()
+            ->all();
     }
 
     public function storeProperty(StoreSearchConsolePropertyRequest $request, Website $website): RedirectResponse
