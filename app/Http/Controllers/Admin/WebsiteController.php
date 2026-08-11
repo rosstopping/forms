@@ -30,6 +30,7 @@ class WebsiteController extends Controller
         }
 
         $websites = $query
+            ->with('latestHealthReport')
             ->withCount('forms')
             ->withCount('submissions')
             ->latest('created_at')

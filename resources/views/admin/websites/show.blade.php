@@ -11,10 +11,57 @@
     <div class="flex items-center justify-between">
         <div>
             <h1 class="text-2xl font-semibold">{{ e($website->name) }}</h1>
-            <p class="text-sm text-slate-600">Website details and recent activity.</p>
+            <p class="text-sm text-slate-600">Audit health, search visibility, content activity, forms, and submissions.</p>
         </div>
         <a href="{{ route('admin.websites.index') }}" class="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Back to websites</a>
     </div>
+
+    <nav class="flex gap-1 overflow-x-auto border-b border-slate-200" aria-label="Website sections">
+        <a href="#health" class="shrink-0 border-b-2 border-slate-900 px-3 py-2 text-sm font-medium text-slate-950">Health reports</a>
+        @if (Auth::user()?->isAdmin())
+            <a href="#search" class="shrink-0 border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500 hover:text-slate-950">Search</a>
+            <a href="#content" class="shrink-0 border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500 hover:text-slate-950">Content</a>
+        @endif
+        <a href="#forms" class="shrink-0 border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500 hover:text-slate-950">Forms & submissions</a>
+        <a href="#settings" class="shrink-0 border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500 hover:text-slate-950">Settings</a>
+    </nav>
+
+    @php($latestReport = $website->healthReports->first())
+    <section id="health" class="rounded-lg border border-slate-200 bg-white" aria-labelledby="health-title">
+        <div class="flex flex-col gap-4 border-b border-slate-200 p-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+                <p class="text-xs font-medium uppercase tracking-widest text-slate-500">Website monitoring</p>
+                <h2 id="health-title" class="mt-1 text-lg font-semibold text-slate-950">Health reports</h2>
+                <p class="mt-1 text-sm text-slate-600">Availability, on-page SEO, security headers, discoverability, and form delivery.</p>
+            </div>
+            @if (Auth::user()?->isAdmin())
+                <form method="POST" action="{{ route('admin.website-health-reports.store', $website) }}">
+                    @csrf
+                    <button type="submit" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900">Run report now</button>
+                </form>
+            @endif
+        </div>
+        @if ($latestReport)
+            <dl class="grid grid-cols-2 gap-px bg-slate-200 @container sm:grid-cols-4">
+                <div class="bg-white p-4"><dt class="truncate text-sm text-slate-500">Latest status</dt><dd class="mt-1 text-xl font-semibold capitalize">{{ str_replace('_', ' ', $latestReport->overall_status ?: $latestReport->status) }}</dd></div>
+                <div class="bg-white p-4"><dt class="truncate text-sm text-slate-500">Passed</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-emerald-700">{{ $latestReport->passed_checks }}</dd></div>
+                <div class="bg-white p-4"><dt class="truncate text-sm text-slate-500">Warnings</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-amber-700">{{ $latestReport->warning_checks }}</dd></div>
+                <div class="bg-white p-4"><dt class="truncate text-sm text-slate-500">Failed</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-red-700">{{ $latestReport->failed_checks }}</dd></div>
+            </dl>
+        @endif
+        <div class="overflow-x-auto p-4">
+            <table class="min-w-full divide-y divide-slate-200 text-sm">
+                <thead><tr class="text-left text-xs font-medium uppercase tracking-wide text-slate-500"><th class="px-3 py-2">Created</th><th class="px-3 py-2">Status</th><th class="px-3 py-2">Passed</th><th class="px-3 py-2">Warnings</th><th class="px-3 py-2">Failed</th></tr></thead>
+                <tbody class="divide-y divide-slate-100">
+                    @forelse ($website->healthReports as $report)
+                        <tr><td class="px-3 py-3"><a class="font-medium text-slate-950 hover:text-slate-600" href="{{ route('admin.website-health-reports.show', [$website, $report]) }}">{{ $report->created_at->toDayDateTimeString() }}</a></td><td class="px-3 py-3 capitalize text-slate-600">{{ str_replace('_', ' ', $report->overall_status ?: $report->status) }}</td><td class="px-3 py-3 tabular-nums text-emerald-700">{{ $report->passed_checks }}</td><td class="px-3 py-3 tabular-nums text-amber-700">{{ $report->warning_checks }}</td><td class="px-3 py-3 tabular-nums text-red-700">{{ $report->failed_checks }}</td></tr>
+                    @empty
+                        <tr><td colspan="5" class="px-3 py-6 text-center text-slate-500">No health reports have been generated.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </section>
 
     @if (Auth::user()?->isAdmin())
         <div class="rounded-lg border bg-white p-4 shadow-sm">
@@ -48,7 +95,7 @@
             </div>
         </div>
 
-        <div class="rounded-lg border bg-white p-4 shadow-sm">
+        <div id="search" class="rounded-lg border bg-white p-4 shadow-sm">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
                     <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Content intelligence</p>
@@ -90,7 +137,7 @@
         </div>
 
         @php($contentPlan = $website->contentPlan)
-        <div class="rounded-lg border bg-white p-4 shadow-sm">
+        <div id="content" class="rounded-lg border bg-white p-4 shadow-sm">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div><p class="text-xs font-medium uppercase tracking-wide text-slate-500">AI content</p><h2 class="mt-1 font-semibold">Weekly content generation</h2><p class="mt-1 text-sm text-slate-600">Copilot chooses a blog post, landing page, or page improvement and opens a pull request for review.</p></div>
                 @if ($website->repository && $website->searchConsoleConnection?->property_url)
@@ -173,7 +220,7 @@
         </div>
     </section>
 
-    <div class="grid gap-6 lg:grid-cols-2">
+    <div id="settings" class="grid gap-6 lg:grid-cols-2">
         <div class="rounded-lg border bg-white p-4 shadow-sm">
             <h2 class="font-semibold">Overview</h2>
             <dl class="mt-3 space-y-2 text-sm">
@@ -226,49 +273,7 @@
         </div>
     </div>
 
-    <div class="rounded-lg border bg-white p-4 shadow-sm">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-            <div>
-                <h2 class="font-semibold">Website health reports</h2>
-                <p class="text-sm text-slate-600">Availability, on-page SEO, security headers, discoverability, and form delivery.</p>
-            </div>
-            @if (Auth::user()?->isAdmin())
-                <form method="POST" action="{{ route('admin.website-health-reports.store', $website) }}">
-                    @csrf
-                    <button type="submit" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">Run report now</button>
-                </form>
-            @endif
-        </div>
-
-        <div class="mt-4 overflow-x-auto">
-            <table class="min-w-full divide-y divide-slate-200 text-sm">
-                <thead>
-                    <tr class="text-left text-xs font-medium uppercase tracking-wide text-slate-500">
-                        <th class="px-3 py-2">Created</th>
-                        <th class="px-3 py-2">Status</th>
-                        <th class="px-3 py-2">Passed</th>
-                        <th class="px-3 py-2">Warnings</th>
-                        <th class="px-3 py-2">Failed</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                    @forelse ($website->healthReports as $report)
-                        <tr>
-                            <td class="px-3 py-3"><a class="font-medium text-slate-900 hover:text-slate-600" href="{{ route('admin.website-health-reports.show', [$website, $report]) }}">{{ $report->created_at->toDayDateTimeString() }}</a></td>
-                            <td class="px-3 py-3 capitalize text-slate-600">{{ str_replace('_', ' ', $report->overall_status ?: $report->status) }}</td>
-                            <td class="px-3 py-3 text-emerald-700">{{ $report->passed_checks }}</td>
-                            <td class="px-3 py-3 text-amber-700">{{ $report->warning_checks }}</td>
-                            <td class="px-3 py-3 text-red-700">{{ $report->failed_checks }}</td>
-                        </tr>
-                    @empty
-                        <tr><td colspan="5" class="px-3 py-6 text-center text-slate-500">No health reports have been generated.</td></tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <div class="grid gap-6 lg:grid-cols-2">
+    <div id="forms" class="grid gap-6 lg:grid-cols-2">
         <div class="rounded-lg border bg-white p-4 shadow-sm">
             <h2 class="font-semibold">Forms</h2>
             <ul class="mt-3 space-y-2 text-sm">

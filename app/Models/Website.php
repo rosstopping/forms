@@ -66,6 +66,11 @@ class Website extends Model
         return $this->hasMany(WebsiteHealthReport::class);
     }
 
+    public function latestHealthReport(): HasOne
+    {
+        return $this->hasOne(WebsiteHealthReport::class)->latestOfMany();
+    }
+
     public function repository(): HasOne
     {
         return $this->hasOne(WebsiteRepository::class);
