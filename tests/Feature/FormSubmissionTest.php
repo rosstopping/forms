@@ -191,6 +191,21 @@ it('sends the configured website acknowledgement to a genuine lead', function ()
     expect(FormSubmission::query()->latest('id')->firstOrFail()->autoresponder_sent_at)->not->toBeNull();
 });
 
+it('renders an acknowledgement without Sitewell branding', function (): void {
+    $submission = FormSubmission::factory()->create();
+    $message = new FormSubmissionAcknowledgement(
+        $submission,
+        'We received your enquiry',
+        "Hello Ada,\n\nWe will be in touch soon.",
+    );
+
+    $message->assertSeeInHtml('Hello Ada,')
+        ->assertSeeInHtml('We will be in touch soon.')
+        ->assertDontSeeInHtml('Sitewell')
+        ->assertSeeInText('Hello Ada,')
+        ->assertDontSeeInText('Sitewell');
+});
+
 it('allows a form to disable the website acknowledgement', function (): void {
     $website = Website::factory()->create(['autoresponder_enabled' => true]);
     $website->domains()->create(['domain' => 'no-reply.example', 'is_primary' => true]);

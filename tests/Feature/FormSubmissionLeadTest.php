@@ -258,7 +258,11 @@ it('lets a website owner configure the site wide automatic reply', function () {
     $owner = User::factory()->create();
     $website = Website::factory()->create(['user_id' => $owner->id]);
 
-    $this->actingAs($owner)->put(route('admin.websites.autoresponder.update', $website), [
+    $this->actingAs($owner)->get(route('admin.websites.show', $website))
+        ->assertOk()
+        ->assertSeeInOrder(['website-panel-settings', 'website-panel-forms', 'Automatic customer reply'], false);
+
+    $this->put(route('admin.websites.autoresponder.update', $website), [
         'autoresponder_enabled' => true,
         'autoresponder_subject' => 'We received your enquiry',
         'autoresponder_body' => 'Thanks {name}. We will be in touch.',
@@ -266,4 +270,14 @@ it('lets a website owner configure the site wide automatic reply', function () {
 
     expect($website->refresh()->autoresponder_enabled)->toBeTrue()
         ->and($website->autoresponder_subject)->toBe('We received your enquiry');
+});
+
+it('links form settings back to the parent website forms tab', function () {
+    $owner = User::factory()->create();
+    $website = Website::factory()->create(['user_id' => $owner->id]);
+    $form = Form::factory()->create(['website_id' => $website->id]);
+
+    $this->actingAs($owner)->get(route('admin.forms.show', $form))
+        ->assertOk()
+        ->assertSee('href="'.route('admin.websites.show', [$website, 'tab' => 'forms']).'"', false);
 });

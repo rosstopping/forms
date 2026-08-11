@@ -21,7 +21,7 @@
         <button type="button" id="website-tab-search" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-search" tabindex="-1" data-tab="search">Search</button>
         <button type="button" id="website-tab-content" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-content" tabindex="-1" data-tab="content">Content</button>
         <button type="button" id="website-tab-business-profile" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-business-profile" tabindex="-1" data-tab="business-profile">Business Profile</button>
-        <button type="button" id="website-tab-forms" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-forms" tabindex="-1" data-tab="forms">Forms & submissions</button>
+        <button type="button" id="website-tab-forms" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-forms" tabindex="-1" data-tab="forms">Forms</button>
         <button type="button" id="website-tab-settings" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-settings" tabindex="-1" data-tab="settings">Settings</button>
     </div>
 
@@ -141,30 +141,6 @@
                     @endif
                 </div>
             </div>
-        </div>
-
-        <div class="rounded-lg border border-blue-200 bg-blue-50 p-4 shadow-sm">
-            <h2 class="font-semibold text-blue-950">Automatic customer reply</h2>
-            <p class="mt-1 text-sm text-blue-800">Set the website-wide acknowledgement. Individual forms can inherit or override it.</p>
-            <form method="POST" action="{{ route('admin.websites.autoresponder.update', $website) }}" class="mt-4 space-y-4">
-                @csrf
-                @method('PUT')
-                <input type="hidden" name="autoresponder_enabled" value="0">
-                <label class="flex items-start gap-3 rounded-lg border border-blue-200 bg-white p-3">
-                    <input type="checkbox" name="autoresponder_enabled" value="1" class="mt-1 rounded border-slate-300" @checked(old('autoresponder_enabled', $website->autoresponder_enabled))>
-                    <span><span class="block text-sm font-medium text-slate-900">Automatically acknowledge new enquiries</span><span class="block text-xs text-slate-500">Only sends when a valid customer email is present and the submission passes spam checks.</span></span>
-                </label>
-                <div>
-                    <label class="text-sm font-medium text-slate-700" for="autoresponder_subject">Email subject</label>
-                    <input id="autoresponder_subject" name="autoresponder_subject" value="{{ old('autoresponder_subject', $website->autoresponder_subject) }}" placeholder="We've received your {form_name} enquiry" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
-                </div>
-                <div>
-                    <label class="text-sm font-medium text-slate-700" for="autoresponder_body">Email message</label>
-                    <textarea id="autoresponder_body" name="autoresponder_body" rows="7" placeholder="Hi {name},&#10;&#10;Thanks for contacting {website_name}. We've received your enquiry and someone from our team will get back to you soon." class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">{{ old('autoresponder_body', $website->autoresponder_body) }}</textarea>
-                    <p class="mt-1 text-xs text-slate-500">Available placeholders: {name}, {form_name}, {website_name}, {website_domain}, {submission_id}</p>
-                </div>
-                <button class="rounded-md bg-blue-900 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800">Save automatic reply</button>
-            </form>
         </div>
 
         @if ($website->repository)
@@ -469,32 +445,43 @@
             </div>
         </section>
 
-        <div class="rounded-lg border bg-white p-4 shadow-sm">
-            <h2 class="font-semibold">Forms</h2>
-            <ul class="mt-3 space-y-2 text-sm">
-                @forelse ($website->forms as $form)
-                    <li class="flex items-center justify-between">
-                        <a href="{{ route('admin.forms.show', $form) }}" class="font-medium text-slate-900 hover:text-slate-700">{{ e($form->name) }}</a>
-                        <span class="text-slate-500">{{ $form->is_active ? 'Active' : 'Disabled' }}</span>
-                    </li>
-                @empty
-                    <li class="text-slate-500">No forms registered for this website.</li>
-                @endforelse
-            </ul>
+        <div class="rounded-lg border border-blue-200 bg-blue-50 p-4 shadow-sm lg:col-span-2">
+            <h2 class="font-semibold text-blue-950">Automatic customer reply</h2>
+            <p class="mt-1 text-sm text-blue-800">Set the website-wide acknowledgement. Individual forms can inherit or override it.</p>
+            <form method="POST" action="{{ route('admin.websites.autoresponder.update', $website) }}" class="mt-4 space-y-4">
+                @csrf
+                @method('PUT')
+                <input type="hidden" name="autoresponder_enabled" value="0">
+                <label class="flex items-start gap-3 rounded-lg border border-blue-200 bg-white p-3">
+                    <input type="checkbox" name="autoresponder_enabled" value="1" class="mt-1 rounded border-slate-300" @checked(old('autoresponder_enabled', $website->autoresponder_enabled))>
+                    <span><span class="block text-sm font-medium text-slate-900">Automatically acknowledge new enquiries</span><span class="block text-xs text-slate-500">Only sends when a valid customer email is present and the submission passes spam checks.</span></span>
+                </label>
+                <div class="grid gap-4 lg:grid-cols-2">
+                    <div>
+                        <label class="text-sm font-medium text-slate-700" for="autoresponder_subject">Email subject</label>
+                        <input id="autoresponder_subject" name="autoresponder_subject" value="{{ old('autoresponder_subject', $website->autoresponder_subject) }}" placeholder="We've received your {form_name} enquiry" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                    </div>
+                    <div class="lg:row-span-2">
+                        <label class="text-sm font-medium text-slate-700" for="autoresponder_body">Email message</label>
+                        <textarea id="autoresponder_body" name="autoresponder_body" rows="7" placeholder="Hi {name},&#10;&#10;Thanks for contacting {website_name}. We've received your enquiry and someone from our team will get back to you soon." class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">{{ old('autoresponder_body', $website->autoresponder_body) }}</textarea>
+                        <p class="mt-1 text-xs text-slate-500">Available placeholders: {name}, {form_name}, {website_name}, {website_domain}, {submission_id}</p>
+                    </div>
+                    <div><button class="rounded-md bg-blue-900 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800">Save automatic reply</button></div>
+                </div>
+            </form>
         </div>
 
-        <div class="rounded-lg border bg-white p-4 shadow-sm">
-            <h2 class="font-semibold">Recent submissions</h2>
-            <ul class="mt-3 space-y-2 text-sm">
-                @forelse ($website->submissions as $submission)
-                    <li class="flex items-center justify-between">
-                        <a href="{{ route('admin.form-submissions.show', $submission) }}" class="font-medium text-slate-900 hover:text-slate-700">{{ e($submission->source_domain ?: 'Unknown') }}</a>
-                        <span class="text-slate-500">{{ $submission->created_at?->diffForHumans() }}</span>
-                    </li>
+        <div class="overflow-hidden rounded-lg border bg-white shadow-sm lg:col-span-2">
+            <table class="min-w-full divide-y divide-slate-200">
+                <thead class="bg-slate-50"><tr><th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Name</th><th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Website</th><th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Status</th><th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Submissions</th><th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Seen</th></tr></thead>
+                <tbody class="divide-y divide-slate-100">
+                @forelse ($website->forms as $form)
+                    <tr class="hover:bg-slate-50"><td class="px-4 py-3"><a href="{{ route('admin.forms.show', $form) }}" class="font-medium text-slate-900 hover:text-slate-700">{{ e($form->name) }}</a></td><td class="px-4 py-3 text-sm text-slate-600">{{ e($website->name) }}</td><td class="px-4 py-3 text-sm text-slate-600">{{ $form->is_active ? 'Active' : 'Disabled' }}</td><td class="px-4 py-3 text-sm tabular-nums text-slate-600">{{ $form->submissions_count }}</td><td class="px-4 py-3 text-sm text-slate-500">{{ $form->created_at?->diffForHumans() }}</td></tr>
                 @empty
-                    <li class="text-slate-500">No submissions yet.</li>
+                    <tr><td colspan="5" class="px-4 py-6 text-center text-sm text-slate-500">No forms registered for this website.</td></tr>
                 @endforelse
-            </ul>
+                </tbody>
+            </table>
         </div>
     </div>
 </div>

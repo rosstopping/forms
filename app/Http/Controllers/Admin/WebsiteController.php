@@ -100,7 +100,7 @@ class WebsiteController extends Controller
             'domains',
             'owner:id,name,email',
             'members' => fn ($query) => $query->select('users.id', 'users.name', 'users.email')->orderBy('name'),
-            'forms' => fn ($query) => $query->latest('created_at'),
+            'forms' => fn ($query) => $query->withCount('submissions')->latest('created_at'),
             'healthReports' => fn ($query) => $query->latest('created_at')->limit(8),
             'repository.installation',
             'searchConsoleConnection',
@@ -110,7 +110,6 @@ class WebsiteController extends Controller
             'businessProfileConnection.reviews' => fn ($query) => $query->latest('reviewed_at')->limit(20),
             'contentPlan.generations' => fn ($query) => $query->latest('created_at')->limit(8),
             'contentRequests' => fn ($query) => $query->with('creator')->latest('created_at')->limit(20),
-            'submissions' => fn ($query) => $query->latest('created_at')->limit(10),
         ]);
         $users = $user?->isAdmin() ? User::query()->orderBy('name')->get(['id', 'name', 'email']) : collect();
         $canManageMembers = $user?->can('manageMembers', $website) === true;

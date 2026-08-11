@@ -7,7 +7,7 @@
             <h1 class="text-2xl font-semibold">{{ e($form->name) }}</h1>
             <p class="text-sm text-slate-600">Form details and notification settings.</p>
         </div>
-        <a href="{{ route('admin.forms.index') }}" class="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Back to forms</a>
+        <a href="{{ route('admin.websites.show', [$form->website, 'tab' => 'forms']) }}" class="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Back to forms</a>
     </div>
 
     @if (session('status'))
@@ -99,18 +99,5 @@
         </div>
     </form>
 
-    <div class="rounded-lg border bg-white p-4 shadow-sm">
-        <h2 class="font-semibold">Recent submissions</h2>
-        <ul class="mt-3 space-y-2 text-sm">
-            @forelse ($form->submissions as $submission)
-                <li class="flex items-center justify-between">
-                    <a href="{{ route('admin.form-submissions.show', $submission) }}" class="font-medium text-slate-900 hover:text-slate-700">{{ e($submission->source_domain ?: 'Unknown') }}</a>
-                    <span class="text-slate-500">{{ $submission->created_at?->diffForHumans() }}</span>
-                </li>
-            @empty
-                <li class="text-slate-500">No submissions for this form yet.</li>
-            @endforelse
-        </ul>
-    </div>
 </div>
 @endsection

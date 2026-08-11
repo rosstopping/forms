@@ -32,7 +32,7 @@ class FormController extends Controller
     {
         abort_unless($form->website?->isAccessibleBy(Auth::user()), 403);
 
-        $form->load(['website', 'submissions' => fn ($query) => $query->latest('created_at')->limit(10)]);
+        $form->load('website');
 
         return view('admin.forms.show', compact('form'));
     }

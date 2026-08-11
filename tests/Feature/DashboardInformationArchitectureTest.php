@@ -50,7 +50,7 @@ it('keeps forms and submissions inside the website workspace', function (): void
         ->assertSee('data-tab-panel="content"', false)
         ->assertSee('Connect GitHub')
         ->assertDontSee('Manual content requests')
-        ->assertSee('Forms & submissions', false)
+        ->assertSee('>Forms</button>', false)
         ->assertSee('role="tablist"', false)
         ->assertSee('data-tab-panel="health"', false)
         ->assertSee('data-tab-panel="forms" hidden', false)
@@ -61,7 +61,8 @@ it('keeps forms and submissions inside the website workspace', function (): void
         ->assertSee('name="_honeypot"', false)
         ->assertSee('data-copy-target="form-onboarding-example"', false)
         ->assertSee('Contact form')
-        ->assertSee('Recent submissions');
+        ->assertSee('Submissions')
+        ->assertDontSee('Recent submissions');
 });
 
 it('shows content tools when the website has a GitHub repository', function (): void {

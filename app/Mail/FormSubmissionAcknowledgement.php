@@ -35,8 +35,9 @@ class FormSubmissionAcknowledgement extends Mailable
     public function content(): Content
     {
         return new Content(
-            markdown: 'emails.form-submission-acknowledgement',
-            with: ['paragraphs' => preg_split('/\R{2,}/', trim($this->emailBody)) ?: []],
+            view: 'emails.form-submission-acknowledgement',
+            text: 'emails.form-submission-acknowledgement-text',
+            with: ['lines' => preg_split('/\R/', $this->emailBody) ?: []],
         );
     }
 

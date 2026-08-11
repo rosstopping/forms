@@ -1,6 +1,8 @@
-<x-mail::message>
-@foreach ($paragraphs as $paragraph)
-{{ $paragraph }}
-
+<!DOCTYPE html>
+<html lang="en">
+<body>
+@foreach ($lines as $line)
+{{ $line }}@unless ($loop->last)<br>@endunless
 @endforeach
-</x-mail::message>
+</body>
+</html>
