@@ -30,6 +30,7 @@ use App\Http\Controllers\FormSubmissionSpamController;
 use App\Http\Controllers\GithubWebhookController;
 use App\Http\Controllers\MarketingController;
 use App\Http\Controllers\OnboardingEnquiryController;
+use App\Http\Controllers\ProspectReportController;
 use App\Http\Controllers\WebsiteHealthReportController as PublicWebsiteHealthReportController;
 use App\Http\Middleware\AllowFormSubmissionCors;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
@@ -78,6 +79,8 @@ Route::middleware(['web', 'signed', 'throttle:20,1'])->group(function () {
         ->name('form-submissions.spam.confirm');
     Route::post('/form-submissions/{formSubmission}/spam', [FormSubmissionSpamController::class, 'store'])
         ->name('form-submissions.spam.store');
+    Route::get('/prospect-reports/{prospect}', ProspectReportController::class)
+        ->name('prospect-reports.show');
 });
 
 Route::middleware(['web', 'auth'])->prefix('admin')->name('admin.')->group(function () {

@@ -6,6 +6,7 @@ use App\Models\Prospect;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\URL;
 
 it('adds a prospect and automatically queues website research', function () {
     Queue::fake();
@@ -73,4 +74,41 @@ it('will not send to a suppressed prospect', function () {
 
     $this->actingAs($user)->post(route('admin.prospects.send', $prospect))->assertUnprocessable();
     Mail::assertNothingSent();
+});
+
+it('shares a time-limited website review with the prospect', function () {
+    $prospect = Prospect::factory()->create([
+        'business_name' => 'Acme Plumbing',
+        'website_url' => 'https://example.com',
+        'opportunity_score' => 24,
+        'analysed_at' => now(),
+        'findings' => [[
+            'key' => 'meta_description',
+            'title' => 'Meta description',
+            'severity' => 'warning',
+            'message' => 'The homepage has no meta description.',
+        ]],
+    ]);
+
+    $this->get(URL::temporarySignedRoute('prospect-reports.show', now()->addDays(30), $prospect))
+        ->assertSuccessful()
+        ->assertSee('Website review')
+        ->assertSee('Acme Plumbing')
+        ->assertSee('The homepage has no meta description.');
+    $this->get(route('prospect-reports.show', $prospect))->assertForbidden();
+});
+
+it('makes the outreach email warmer and includes the private report link', function () {
+    $prospect = Prospect::factory()->create([
+        'business_name' => 'Acme Plumbing',
+        'outreach_subject' => 'A quick website review for Acme Plumbing',
+        'outreach_body' => "Hi Alex,\n\nI had a look at your website and included a short review.",
+    ]);
+
+    (new ProspectOutreach($prospect))
+        ->assertHasSubject('A quick website review for Acme Plumbing')
+        ->assertSeeInHtml('View your website review')
+        ->assertSeeInHtml('This private link expires in 30 days')
+        ->assertSeeInHtml('signature=')
+        ->assertSeeInHtml('I had a look at your website');
 });

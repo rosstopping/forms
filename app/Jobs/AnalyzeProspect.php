@@ -49,7 +49,7 @@ class AnalyzeProspect implements ShouldQueue
     protected function draft(ProspectOutreachWriter $writer, array $findings): array
     {
         if ($findings === []) {
-            return ['subject' => 'A quick question about '.$this->prospect->business_name, 'body' => 'Hi '.($this->prospect->contact_name ?: 'there').",\n\nI took a look at your website and it appears to cover the essentials well. I help businesses keep their websites healthy and conversion-ready. Would a short, no-obligation review be useful?\n\nBest regards"];
+            return ['subject' => 'A quick website review for '.$this->prospect->business_name, 'body' => 'Hi '.($this->prospect->contact_name ?: 'there').",\n\nI had a look at your website and it appears to cover the essentials well. I have put together a short review in case it is useful.\n\nThere is no obligation at all—if you would like to talk through any ideas afterwards, just reply to this email.\n\nBest wishes"];
         }
 
         try {
@@ -61,8 +61,8 @@ class AnalyzeProspect implements ShouldQueue
             $name = $this->prospect->contact_name ?: 'there';
 
             return [
-                'subject' => 'A quick website observation for '.$this->prospect->business_name,
-                'body' => "Hi {$name},\n\nI was looking at your website and noticed a couple of opportunities that may be worth reviewing: {$issues}\n\nI help businesses improve issues like these. Would you like me to send over a short breakdown?\n\nBest regards",
+                'subject' => 'A quick website review for '.$this->prospect->business_name,
+                'body' => "Hi {$name},\n\nI had a look at your website and noticed a couple of things that may be worth reviewing: {$issues}\n\nI have included a short website review below. There is no obligation at all—if you would like to talk through any of it, just reply to this email.\n\nBest wishes",
             ];
         }
     }

@@ -9,6 +9,7 @@ use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\URL;
 
 class ProspectOutreach extends Mailable
 {
@@ -36,6 +37,13 @@ class ProspectOutreach extends Mailable
     {
         return new Content(
             view: 'mail.prospects.outreach',
+            with: [
+                'reportUrl' => URL::temporarySignedRoute(
+                    'prospect-reports.show',
+                    now()->addDays(30),
+                    $this->prospect,
+                ),
+            ],
         );
     }
 
