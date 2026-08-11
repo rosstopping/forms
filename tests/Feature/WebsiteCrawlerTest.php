@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\Website;
+use App\Models\WebsiteHealthReport;
+use App\Models\WebsiteHealthReportPage;
 use App\Services\WebsiteCrawler;
 use Illuminate\Support\Facades\Http;
 
@@ -65,6 +67,36 @@ it('preserves trailing slashes from sitemaps and internal links', function (): v
         'https://example.com/about',
         'https://example.com/contact',
     ], true));
+});
+
+it('prioritises pages that were not included in the previous audit', function (): void {
+    config()->set('forms.health_reports.max_pages', 3);
+    config()->set('forms.health_reports.max_depth', 2);
+    config()->set('forms.health_reports.crawl_delay_ms', 0);
+
+    $website = Website::factory()->create();
+    $website->domains()->create(['domain' => 'example.com', 'is_primary' => true]);
+    $previousReport = WebsiteHealthReport::factory()->for($website)->create(['completed_at' => now()->subWeek()]);
+
+    foreach (['https://example.com/', 'https://example.com/a', 'https://example.com/b'] as $url) {
+        WebsiteHealthReportPage::factory()->for($previousReport, 'report')->create([
+            'url' => $url,
+            'url_hash' => hash('sha256', $url),
+        ]);
+    }
+
+    Http::fake([
+        'https://example.com/sitemap.xml' => Http::response('<urlset><url><loc>https://example.com/a</loc></url><url><loc>https://example.com/b</loc></url><url><loc>https://example.com/c</loc></url><url><loc>https://example.com/d</loc></url></urlset>', 200, ['Content-Type' => 'application/xml']),
+        'https://example.com/*' => Http::response('<html><head><title>Page</title></head><body><h1>Page</h1></body></html>', 200, ['Content-Type' => 'text/html']),
+    ]);
+
+    $pages = app(WebsiteCrawler::class)->crawl($website);
+
+    expect(collect($pages)->pluck('url')->all())->toBe([
+        'https://example.com/',
+        'https://example.com/c',
+        'https://example.com/d',
+    ]);
 });
 
 it('explains why long search metadata is worth improving', function (): void {

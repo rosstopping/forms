@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Website;
+use App\Models\WebsiteHealthReport;
 use DOMDocument;
 use DOMXPath;
 use Illuminate\Http\Client\ConnectionException;
@@ -33,7 +34,8 @@ class WebsiteCrawler
         }
 
         $queue = [['url' => $baseUrl, 'depth' => 0]];
-        $queue = [...$queue, ...$this->sitemapUrls($baseUrl, $allowedHosts)];
+        $lastAuditedAt = $this->lastAuditedAt($website);
+        $queue = [...$queue, ...$this->prioritiseByAuditHistory($this->sitemapUrls($baseUrl, $allowedHosts), $lastAuditedAt)];
         $seen = [];
         $pages = [];
         $maximumPages = (int) config('forms.health_reports.max_pages', 25);
@@ -63,6 +65,8 @@ class WebsiteCrawler
                     $queue[] = ['url' => $link, 'depth' => $candidate['depth'] + 1];
                 }
 
+                $queue = $this->prioritiseByAuditHistory($queue, $lastAuditedAt);
+
                 unset($analysis['discovered_links']);
                 $pages[] = [
                     ...$analysis,
@@ -85,6 +89,47 @@ class WebsiteCrawler
         }
 
         return $pages;
+    }
+
+    /** @return array<string, int> */
+    protected function lastAuditedAt(Website $website): array
+    {
+        $reports = $website->healthReports()
+            ->where('status', WebsiteHealthReport::STATUS_COMPLETED)
+            ->latest('completed_at')
+            ->limit(12)
+            ->with('pages:id,website_health_report_id,url')
+            ->get();
+        $lastAuditedAt = [];
+
+        foreach ($reports as $report) {
+            foreach ($report->pages as $page) {
+                $url = $this->normaliseUrl($page->url);
+
+                if ($url && ! isset($lastAuditedAt[$url])) {
+                    $lastAuditedAt[$url] = $report->completed_at?->timestamp ?? $report->created_at->timestamp;
+                }
+            }
+        }
+
+        return $lastAuditedAt;
+    }
+
+    /**
+     * @param  array<int, array{url: string, depth: int}>  $queue
+     * @param  array<string, int>  $lastAuditedAt
+     * @return array<int, array{url: string, depth: int}>
+     */
+    protected function prioritiseByAuditHistory(array $queue, array $lastAuditedAt): array
+    {
+        usort($queue, function (array $left, array $right) use ($lastAuditedAt): int {
+            $leftUrl = $this->normaliseUrl($left['url']);
+            $rightUrl = $this->normaliseUrl($right['url']);
+
+            return ($lastAuditedAt[(string) $leftUrl] ?? 0) <=> ($lastAuditedAt[(string) $rightUrl] ?? 0);
+        });
+
+        return $queue;
     }
 
     /** @return array<string, mixed> */

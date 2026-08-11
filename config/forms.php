@@ -16,7 +16,7 @@ return [
         'connect_timeout' => (int) env('FORMS_HEALTH_REPORT_CONNECT_TIMEOUT', 5),
         'max_response_kb' => (int) env('FORMS_HEALTH_REPORT_MAX_RESPONSE_KB', 1024),
         'frequency_days' => (int) env('FORMS_HEALTH_REPORT_FREQUENCY_DAYS', 7),
-        'max_pages' => (int) env('FORMS_HEALTH_REPORT_MAX_PAGES', 25),
+        'max_pages' => (int) env('FORMS_HEALTH_REPORT_MAX_PAGES', 40),
         'max_depth' => (int) env('FORMS_HEALTH_REPORT_MAX_DEPTH', 2),
         'crawl_delay_ms' => (int) env('FORMS_HEALTH_REPORT_CRAWL_DELAY_MS', 100),
         'blocked_paths' => ['/admin', '/login', '/logout', '/cart', '/checkout', '/search', '/wp-admin', '/feed'],
