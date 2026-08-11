@@ -15,6 +15,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\FormSubmissionController;
 use App\Http\Controllers\FormSubmissionSpamController;
 use App\Http\Controllers\GithubWebhookController;
+use App\Http\Controllers\WebsiteHealthReportController as PublicWebsiteHealthReportController;
 use App\Http\Middleware\AllowFormSubmissionCors;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Http\Request;
@@ -43,6 +44,8 @@ Route::middleware('web')->group(function () {
 });
 
 Route::middleware(['web', 'signed', 'throttle:20,1'])->group(function () {
+    Route::get('/website-health-reports/{websiteHealthReport}', PublicWebsiteHealthReportController::class)
+        ->name('website-health-reports.show');
     Route::get('/form-submissions/{formSubmission}/spam', [FormSubmissionSpamController::class, 'show'])
         ->name('form-submissions.spam.confirm');
     Route::post('/form-submissions/{formSubmission}/spam', [FormSubmissionSpamController::class, 'store'])

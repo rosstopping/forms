@@ -59,7 +59,8 @@
                 </ol>
             @endif
         @endif
-        <p style="margin-top:24px;"><a href="{{ route('admin.website-health-reports.show', [$report->website, $report]) }}" style="display:inline-block;background:#0f172a;color:white;text-decoration:none;padding:10px 16px;border-radius:6px;">View the full report</a></p>
+        <p style="margin-top:24px;"><a href="{{ $reportUrl }}" style="display:inline-block;background:#0f172a;color:white;text-decoration:none;padding:10px 16px;border-radius:6px;">View the full report</a></p>
+        <p style="color:#64748b;font-size:12px;">This secure report link works for 30 days and does not require you to log in.</p>
     </div>
 </body>
 </html>

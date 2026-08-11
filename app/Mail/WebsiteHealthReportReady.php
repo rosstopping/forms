@@ -9,6 +9,7 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\URL;
 
 class WebsiteHealthReportReady extends Mailable implements ShouldQueue
 {
@@ -30,7 +31,14 @@ class WebsiteHealthReportReady extends Mailable implements ShouldQueue
     {
         return new Content(
             view: 'emails.website-health-report',
-            with: ['report' => $this->report],
+            with: [
+                'report' => $this->report,
+                'reportUrl' => URL::temporarySignedRoute(
+                    'website-health-reports.show',
+                    now()->addDays(30),
+                    $this->report,
+                ),
+            ],
         );
     }
 }

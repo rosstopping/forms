@@ -18,6 +18,7 @@ use App\Services\WebsiteHealthAuditor;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\URL;
 
 function websiteWithDomain(array $attributes = [], string $domain = 'example.com'): Website
 {
@@ -105,6 +106,39 @@ it('allows an owner to view only reports for their website', function (): void {
     $this->actingAs($owner)
         ->get(route('admin.website-health-reports.show', [$otherWebsite, $otherReport]))
         ->assertForbidden();
+});
+
+it('shows a friendly report through a signed link without authentication', function (): void {
+    $website = websiteWithDomain();
+    $report = WebsiteHealthReport::factory()->for($website)->create([
+        'checks' => [
+            ['category' => 'security', 'key' => 'content_security_policy', 'label' => 'Content Security Policy', 'status' => 'warning', 'message' => 'The security header is missing.', 'details' => []],
+            ['category' => 'availability', 'key' => 'https', 'label' => 'HTTPS enabled', 'status' => 'passed', 'message' => 'HTTPS is enabled.', 'details' => []],
+        ],
+    ]);
+    WebsiteHealthReportPage::factory()->for($report, 'report')->create([
+        'url' => 'https://example.com/services',
+        'url_hash' => hash('sha256', 'https://example.com/services'),
+        'title' => 'Our services',
+        'checks' => [
+            ['key' => 'meta_description', 'label' => 'Meta description', 'status' => 'failed', 'message' => 'No meta description was found.'],
+            ['key' => 'h1', 'label' => 'Primary heading', 'status' => 'passed', 'message' => 'The page has one H1.'],
+        ],
+    ]);
+
+    $signedUrl = URL::temporarySignedRoute('website-health-reports.show', now()->addDays(30), $report);
+
+    $this->get($signedUrl)
+        ->assertSuccessful()
+        ->assertSee('Your website health report')
+        ->assertSee('What needs attention')
+        ->assertSee('Content Security Policy')
+        ->assertSee('No meta description was found.')
+        ->assertDontSee('HTTPS enabled')
+        ->assertDontSee('AI remediation prompt')
+        ->assertDontSee('Copilot');
+
+    $this->get(route('website-health-reports.show', $report))->assertForbidden();
 });
 
 it('shows administrators a copyable AI prompt containing every report issue', function (): void {
@@ -238,7 +272,9 @@ it('audits a website and queues the completed report for admins and the owner', 
         ->assertSeeInHtml('resources/views/guides/event-forms.blade.php')
         ->assertSeeInHtml('Google Search Console')
         ->assertSeeInHtml('example services')
-        ->assertSeeInHtml('View the full report');
+        ->assertSeeInHtml('View the full report')
+        ->assertSeeInHtml('does not require you to log in')
+        ->assertSeeInHtml('signature=');
 });
 
 it('omits form submission details from audit emails for websites without forms', function (): void {
