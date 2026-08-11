@@ -29,7 +29,7 @@ class AnalyzeProspect implements ShouldQueue
 
         try {
             $analysis = $analyzer->analyze($this->prospect->website_url);
-            $draft = $this->draft($writer, $analysis['findings']);
+            $draft = $this->draft($writer, collect($analysis['findings'])->whereIn('severity', ['warning', 'failed'])->take(2)->all());
             $this->prospect->update([
                 'analysis_status' => 'completed', 'opportunity_score' => $analysis['score'], 'findings' => $analysis['findings'],
                 'analysed_at' => now(), 'outreach_subject' => $draft['subject'], 'outreach_body' => $draft['body'], 'status' => 'drafted',

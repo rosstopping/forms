@@ -10,6 +10,16 @@
             </p>
             <p style="margin:18px 0 0;font-size:13px;color:#64748b;">The review summarises a few publicly visible website checks. This private link expires in 30 days and does not require a login.</p>
         </section>
+        <section style="margin-top:16px;background:#ffffff;border:1px solid #e2e8f0;border-radius:14px;padding:28px 32px;">
+            <h2 style="margin:0;font-size:18px;line-height:1.3;color:#0f172a;">What is Sitewell?</h2>
+            <p style="margin:10px 0 0;font-size:14px;color:#475569;">Sitewell is a website care platform for businesses that want their website to stay healthy, visible, and better at turning visits into enquiries.</p>
+            <ul style="margin:18px 0 0;padding-left:20px;font-size:14px;color:#334155;">
+                <li style="margin-top:8px;">Website health checks, clear reports, and practical fixes</li>
+                <li style="margin-top:8px;">Forms, automatic acknowledgements, and a simple lead CRM</li>
+                <li style="margin-top:8px;">Google Search Console insights and reviewable content improvements</li>
+                <li style="margin-top:8px;">Google Business Profile posts and review replies on the complete plan</li>
+            </ul>
+        </section>
     </main>
 </body>
 </html>

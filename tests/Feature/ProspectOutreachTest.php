@@ -109,6 +109,9 @@ it('makes the outreach email warmer and includes the private report link', funct
         ->assertHasSubject('A quick website review for Acme Plumbing')
         ->assertSeeInHtml('View your website review')
         ->assertSeeInHtml('This private link expires in 30 days')
+        ->assertSeeInHtml('What is Sitewell?')
+        ->assertSeeInHtml('Forms, automatic acknowledgements, and a simple lead CRM')
+        ->assertSeeInHtml('Google Business Profile posts and review replies')
         ->assertSeeInHtml('signature=')
         ->assertSeeInHtml('I had a look at your website');
 });

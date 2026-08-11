@@ -7,21 +7,34 @@
     @vite(['resources/css/app.css'])
 </head>
 <body class="min-h-dvh bg-slate-50 text-slate-900">
+    @php
+        $checks = collect($prospect->findings ?? []);
+        $passedChecks = $checks->where('severity', 'passed')->count();
+        $warningChecks = $checks->where('severity', 'warning')->count();
+        $failedChecks = $checks->where('severity', 'failed')->count();
+        $categories = $checks->groupBy(fn (array $check): string => $check['category'] ?? 'Website review');
+    @endphp
     <main class="mx-auto max-w-4xl space-y-6 p-5 sm:p-10">
         <header class="rounded-2xl bg-slate-950 p-6 text-white shadow-sm sm:p-8">
             <p class="text-sm font-medium text-teal-300">Website review</p>
             <h1 class="mt-2 text-3xl font-semibold tracking-tight">{{ $prospect->business_name }}</h1>
-            <p class="mt-4 max-w-2xl text-sm leading-6 text-slate-300">We reviewed a small number of publicly visible website checks. The findings below are intended as helpful opportunities to consider, not a diagnosis or a list of urgent problems.</p>
+            <p class="mt-4 max-w-2xl text-sm leading-6 text-slate-300">We reviewed publicly visible website signals across availability, speed, search essentials, accessibility, structured data, security, and discoverability. This is a helpful starting point, not a diagnosis or a replacement for private analytics.</p>
             @if ($prospect->analysed_at)<p class="mt-4 text-xs text-slate-400">Prepared {{ $prospect->analysed_at->format('j F Y') }}</p>@endif
         </header>
 
+        <section class="grid gap-4 sm:grid-cols-4">
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:col-span-2"><p class="text-sm font-medium text-slate-500">At a glance</p><p class="mt-2 text-2xl font-semibold">{{ $failedChecks > 0 ? $failedChecks.' '.Str::plural('item', $failedChecks).' to prioritise' : ($warningChecks > 0 ? $warningChecks.' '.Str::plural('opportunity', $warningChecks).' worth reviewing' : 'The checks look healthy') }}</p><p class="mt-2 text-sm leading-6 text-slate-600">{{ $checks->count() }} public website checks completed across six key areas.</p></div>
+            <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-5"><p class="text-sm font-medium text-emerald-800">Looking good</p><p class="mt-2 text-3xl font-semibold text-emerald-900">{{ $passedChecks }}</p><p class="mt-1 text-xs text-emerald-800">checks passed</p></div>
+            <div class="rounded-2xl border border-amber-200 bg-amber-50 p-5"><p class="text-sm font-medium text-amber-800">To review</p><p class="mt-2 text-3xl font-semibold text-amber-900">{{ $warningChecks + $failedChecks }}</p><p class="mt-1 text-xs text-amber-800">opportunities found</p></div>
+        </section>
+
         <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-            <div class="flex flex-wrap items-start justify-between gap-4"><div><h2 class="text-xl font-semibold">What we found</h2><p class="mt-1 text-sm text-slate-600">A few clear opportunities from the homepage review.</p></div>@if ($prospect->opportunity_score !== null)<div class="rounded-xl bg-amber-50 px-4 py-2 text-center"><p class="text-2xl font-semibold text-amber-800">{{ $prospect->opportunity_score }}</p><p class="text-[10px] font-semibold uppercase tracking-wide text-amber-700">Opportunity score</p></div>@endif</div>
-            <div class="mt-6 space-y-4">
-                @forelse ($prospect->findings ?? [] as $finding)
-                    <article class="rounded-xl border border-slate-200 p-4"><div class="flex items-center gap-2"><span class="size-2 rounded-full {{ $finding['severity'] === 'failed' ? 'bg-red-500' : 'bg-amber-400' }}"></span><h3 class="font-semibold">{{ $finding['title'] }}</h3></div><p class="mt-2 text-sm leading-6 text-slate-600">{{ $finding['message'] }}</p></article>
+            <h2 class="text-xl font-semibold">Your website audit</h2><p class="mt-1 text-sm text-slate-600">Each area shows what is working well alongside the opportunities we found.</p>
+            <div class="mt-6 space-y-8">
+                @forelse ($categories as $category => $categoryChecks)
+                    <section><div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3"><h3 class="font-semibold">{{ $category }}</h3><p class="text-xs text-slate-500">{{ $categoryChecks->where('severity', 'passed')->count() }} passed · {{ $categoryChecks->whereIn('severity', ['warning', 'failed'])->count() }} to review</p></div><div class="mt-4 grid gap-3 sm:grid-cols-2">@foreach ($categoryChecks as $finding)<article class="rounded-xl border p-4 {{ $finding['severity'] === 'passed' ? 'border-emerald-100 bg-emerald-50/50' : ($finding['severity'] === 'failed' ? 'border-red-200 bg-red-50/50' : 'border-amber-200 bg-amber-50/50') }}"><div class="flex items-center gap-2"><span class="size-2 rounded-full {{ $finding['severity'] === 'passed' ? 'bg-emerald-500' : ($finding['severity'] === 'failed' ? 'bg-red-500' : 'bg-amber-400') }}"></span><h4 class="text-sm font-semibold">{{ $finding['title'] }}</h4></div><p class="mt-2 text-sm leading-6 text-slate-600">{{ $finding['message'] }}</p></article>@endforeach</div></section>
                 @empty
-                    <p class="rounded-xl bg-emerald-50 p-4 text-sm leading-6 text-emerald-900">The homepage covers the checks in this short review well. There may still be useful opportunities elsewhere on the website.</p>
+                    <p class="rounded-xl bg-slate-50 p-4 text-sm leading-6 text-slate-600">The website review is still being prepared. Please try this link again shortly.</p>
                 @endforelse
             </div>
         </section>
