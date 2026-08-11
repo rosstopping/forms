@@ -111,6 +111,10 @@ it('allows an owner to view only reports for their website', function (): void {
 it('shows a friendly report through a signed link without authentication', function (): void {
     $website = websiteWithDomain();
     $report = WebsiteHealthReport::factory()->for($website)->create([
+        'metrics' => [
+            'pages_analyzed' => 1,
+            'search_console' => searchConsoleReportData(),
+        ],
         'checks' => [
             ['category' => 'security', 'key' => 'content_security_policy', 'label' => 'Content Security Policy', 'status' => 'warning', 'message' => 'The security header is missing.', 'details' => []],
             ['category' => 'availability', 'key' => 'https', 'label' => 'HTTPS enabled', 'status' => 'passed', 'message' => 'HTTPS is enabled.', 'details' => []],
@@ -119,9 +123,11 @@ it('shows a friendly report through a signed link without authentication', funct
     WebsiteHealthReportPage::factory()->for($report, 'report')->create([
         'url' => 'https://example.com/services',
         'url_hash' => hash('sha256', 'https://example.com/services'),
-        'title' => 'Our services',
+        'title' => str_repeat('Long services title ', 5),
+        'meta_description' => str_repeat('Long services description ', 8),
         'checks' => [
-            ['key' => 'meta_description', 'label' => 'Meta description', 'status' => 'failed', 'message' => 'No meta description was found.'],
+            ['key' => 'page_title', 'label' => 'Page title', 'status' => 'warning', 'message' => 'Title: present'],
+            ['key' => 'meta_description', 'label' => 'Meta description', 'status' => 'warning', 'message' => 'Meta description is present.'],
             ['key' => 'h1', 'label' => 'Primary heading', 'status' => 'passed', 'message' => 'The page has one H1.'],
         ],
     ]);
@@ -131,14 +137,29 @@ it('shows a friendly report through a signed link without authentication', funct
     $this->get($signedUrl)
         ->assertSuccessful()
         ->assertSee('Your website health report')
+        ->assertSeeTextInOrder(['How people found the website', 'What needs attention'])
+        ->assertSee('Top search terms')
+        ->assertSee('example services')
+        ->assertSee('Top landing pages')
+        ->assertSee('/services')
+        ->assertSee('500')
         ->assertSee('What needs attention')
         ->assertSee('Content Security Policy')
-        ->assertSee('No meta description was found.')
+        ->assertSee('Aim for 65 or fewer')
+        ->assertSee('Aim for 170 or fewer')
+        ->assertDontSee('Meta description is present.')
         ->assertDontSee('HTTPS enabled')
         ->assertDontSee('AI remediation prompt')
         ->assertDontSee('Copilot');
 
     $this->get(route('website-health-reports.show', $report))->assertForbidden();
+
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $this->actingAs($admin)
+        ->get(route('admin.website-health-reports.show', [$website, $report]))
+        ->assertSuccessful()
+        ->assertSee('Aim for 65 or fewer')
+        ->assertSee('Aim for 170 or fewer');
 });
 
 it('shows administrators a copyable AI prompt containing every report issue', function (): void {

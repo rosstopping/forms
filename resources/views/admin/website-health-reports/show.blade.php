@@ -37,8 +37,10 @@
             <textarea id="health-report-ai-prompt" class="mt-4 h-72 w-full resize-y rounded-md border border-violet-200 bg-white p-3 font-mono text-xs leading-5 text-slate-800 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200" readonly>{{ $aiPrompt }}</textarea>
         </section>
 
-        @php($remediationRun = $report->remediationRuns->first())
-        @php($hasRemediableFindings = collect($report->checks)->whereIn('status', ['warning', 'failed'])->isNotEmpty() || $report->pages->contains(fn ($page) => collect($page->checks)->whereIn('status', ['warning', 'failed'])->isNotEmpty()))
+        @php
+            $remediationRun = $report->remediationRuns->first();
+            $hasRemediableFindings = collect($report->checks)->whereIn('status', ['warning', 'failed'])->isNotEmpty() || $report->pages->contains(fn ($page) => collect($page->checks)->whereIn('status', ['warning', 'failed'])->isNotEmpty());
+        @endphp
         @if ($remediationRun)
             <section class="rounded-lg border border-blue-200 bg-blue-50 p-4 text-blue-900">
                 <p class="text-xs font-medium uppercase tracking-wide text-blue-700">GitHub remediation</p>
@@ -146,7 +148,9 @@
                 </div>
                 <div class="divide-y divide-slate-200">
                     @foreach ($report->pages as $page)
-                        @php($issues = collect($page->checks)->whereNotIn('status', ['passed']))
+                        @php
+                            $issues = collect($page->checks)->whereNotIn('status', ['passed']);
+                        @endphp
                         <details class="group p-4">
                             <summary class="flex cursor-pointer list-none flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                 <div class="min-w-0">
@@ -174,8 +178,16 @@
                                 </dl>
                                 <div class="space-y-3 lg:col-span-2">
                                     @foreach ($page->checks as $check)
+                                        @php
+                                            $message = $check['message'];
+                                            if ($check['status'] === 'warning' && $check['key'] === 'page_title' && Str::length((string) $page->title) > 65) {
+                                                $message = 'The title is '.Str::length($page->title).' characters long. Aim for 65 or fewer so it is less likely to be truncated in search results. Current title: '.$page->title;
+                                            } elseif ($check['status'] === 'warning' && $check['key'] === 'meta_description' && Str::length((string) $page->meta_description) > 170) {
+                                                $message = 'The meta description is '.Str::length($page->meta_description).' characters long. Aim for 170 or fewer so it is less likely to be truncated in search results.';
+                                            }
+                                        @endphp
                                         <div class="flex items-start justify-between gap-3 text-sm">
-                                            <div><p class="font-medium text-slate-900">{{ $check['label'] }}</p><p class="text-slate-600">{{ $check['message'] }}</p></div>
+                                            <div><p class="font-medium text-slate-900">{{ $check['label'] }}</p><p class="text-slate-600">{{ $message }}</p></div>
                                             <span @class(['shrink-0 rounded-full px-2 py-0.5 text-xs font-medium capitalize', 'bg-emerald-100 text-emerald-800' => $check['status'] === 'passed', 'bg-amber-100 text-amber-800' => $check['status'] === 'warning', 'bg-red-100 text-red-800' => $check['status'] === 'failed'])>{{ $check['status'] }}</span>
                                         </div>
                                     @endforeach

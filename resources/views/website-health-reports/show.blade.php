@@ -5,6 +5,17 @@
     $siteIssues = collect($report->checks)->whereIn('status', ['warning', 'failed']);
     $pagesWithIssues = $report->pages->filter(fn ($page) => collect($page->checks)->whereIn('status', ['warning', 'failed'])->isNotEmpty());
     $issueCount = $siteIssues->count() + $pagesWithIssues->sum(fn ($page) => collect($page->checks)->whereIn('status', ['warning', 'failed'])->count());
+    $pageFindingMessage = function ($page, array $check): string {
+        if ($check['status'] === 'warning' && $check['key'] === 'page_title' && Str::length((string) $page->title) > 65) {
+            return 'The title is '.Str::length($page->title).' characters long. Aim for 65 or fewer so it is less likely to be truncated in search results. Current title: '.$page->title;
+        }
+
+        if ($check['status'] === 'warning' && $check['key'] === 'meta_description' && Str::length((string) $page->meta_description) > 170) {
+            return 'The meta description is '.Str::length($page->meta_description).' characters long. Aim for 170 or fewer so it is less likely to be truncated in search results.';
+        }
+
+        return $check['message'];
+    };
 @endphp
 
 <main class="mx-auto max-w-5xl space-y-6">
@@ -40,6 +51,55 @@
             </div>
         </section>
 
+        @if (data_get($report->metrics, 'search_console'))
+            <section class="rounded-xl border bg-white p-5 shadow-sm sm:p-6">
+                <h2 class="text-xl font-semibold text-slate-900">How people found the website</h2>
+                <p class="mt-2 text-sm text-slate-600">Google Search Console activity for {{ \Illuminate\Support\Carbon::parse(data_get($report->metrics, 'search_console.period.start'))->format('j M') }}–{{ \Illuminate\Support\Carbon::parse(data_get($report->metrics, 'search_console.period.end'))->format('j M Y') }}. These figures cover Google search visibility, not all website visits.</p>
+                <dl class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <div class="rounded-lg bg-slate-50 p-4"><dt class="text-xs text-slate-500">Search clicks</dt><dd class="mt-1 text-xl font-semibold">{{ number_format(data_get($report->metrics, 'search_console.totals.clicks', 0)) }}</dd></div>
+                    <div class="rounded-lg bg-slate-50 p-4"><dt class="text-xs text-slate-500">Times shown</dt><dd class="mt-1 text-xl font-semibold">{{ number_format(data_get($report->metrics, 'search_console.totals.impressions', 0)) }}</dd></div>
+                    <div class="rounded-lg bg-slate-50 p-4"><dt class="text-xs text-slate-500">Click-through rate</dt><dd class="mt-1 text-xl font-semibold">{{ number_format(data_get($report->metrics, 'search_console.totals.ctr', 0) * 100, 1) }}%</dd></div>
+                    <div class="rounded-lg bg-slate-50 p-4"><dt class="text-xs text-slate-500">Average position</dt><dd class="mt-1 text-xl font-semibold">{{ number_format(data_get($report->metrics, 'search_console.totals.position', 0), 1) }}</dd></div>
+                </dl>
+
+                <div class="mt-6 grid gap-6 lg:grid-cols-2">
+                    <div>
+                        <h3 class="font-semibold text-slate-900">Top search terms</h3>
+                        <p class="mt-1 text-xs leading-5 text-slate-500">What people searched for before seeing or visiting the website.</p>
+                        <div class="mt-3 overflow-x-auto rounded-lg border border-slate-200">
+                            <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+                                <thead class="bg-slate-50 text-xs text-slate-500"><tr><th class="px-3 py-2 font-medium">Search term</th><th class="px-3 py-2 text-right font-medium">Clicks</th><th class="px-3 py-2 text-right font-medium">Shown</th></tr></thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    @forelse (data_get($report->metrics, 'search_console.queries', []) as $query)
+                                        <tr><td class="max-w-64 px-3 py-2.5 font-medium text-slate-800">{{ $query['query'] }}</td><td class="px-3 py-2.5 text-right text-slate-600">{{ number_format($query['clicks']) }}</td><td class="px-3 py-2.5 text-right text-slate-600">{{ number_format($query['impressions']) }}</td></tr>
+                                    @empty
+                                        <tr><td colspan="3" class="px-3 py-4 text-center text-slate-500">No search terms were reported for this period.</td></tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="font-semibold text-slate-900">Top landing pages</h3>
+                        <p class="mt-1 text-xs leading-5 text-slate-500">Pages people reached from Google search.</p>
+                        <div class="mt-3 overflow-x-auto rounded-lg border border-slate-200">
+                            <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+                                <thead class="bg-slate-50 text-xs text-slate-500"><tr><th class="px-3 py-2 font-medium">Landing page</th><th class="px-3 py-2 text-right font-medium">Clicks</th><th class="px-3 py-2 text-right font-medium">Shown</th></tr></thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    @forelse (data_get($report->metrics, 'search_console.pages', []) as $page)
+                                        <tr><td class="max-w-64 px-3 py-2.5"><a class="block truncate font-medium text-blue-700 hover:underline" href="{{ $page['page'] }}" target="_blank" rel="noreferrer" title="{{ $page['page'] }}">{{ parse_url($page['page'], PHP_URL_PATH) ?: '/' }}</a></td><td class="px-3 py-2.5 text-right text-slate-600">{{ number_format($page['clicks']) }}</td><td class="px-3 py-2.5 text-right text-slate-600">{{ number_format($page['impressions']) }}</td></tr>
+                                    @empty
+                                        <tr><td colspan="3" class="px-3 py-4 text-center text-slate-500">No landing pages were reported for this period.</td></tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        @endif
+
         <section class="rounded-xl border bg-white p-5 shadow-sm sm:p-6">
             <h2 class="text-xl font-semibold text-slate-900">What needs attention</h2>
             <p class="mt-2 text-sm text-slate-600">The most useful findings are listed below, with the affected page where applicable.</p>
@@ -67,26 +127,13 @@
                                     <a class="break-all text-xs font-medium text-blue-700 hover:underline" href="{{ $page->url }}" target="_blank" rel="noreferrer">{{ parse_url($page->url, PHP_URL_PATH) ?: '/' }}</a>
                                 </div>
                                 <h3 class="mt-3 font-semibold text-slate-900">{{ $check['label'] }}</h3>
-                                <p class="mt-1 text-sm leading-6 text-slate-600">{{ $check['message'] }}</p>
+                                <p class="mt-1 text-sm leading-6 text-slate-600">{{ $pageFindingMessage($page, $check) }}</p>
                             </article>
                         @endforeach
                     @endforeach
                 </div>
             @endif
         </section>
-
-        @if (data_get($report->metrics, 'search_console'))
-            <section class="rounded-xl border bg-white p-5 shadow-sm sm:p-6">
-                <h2 class="text-xl font-semibold text-slate-900">How people found the website</h2>
-                <p class="mt-2 text-sm text-slate-600">Google Search Console activity for the reporting period. These figures show visibility in Google search, not all website visits.</p>
-                <dl class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                    <div class="rounded-lg bg-slate-50 p-4"><dt class="text-xs text-slate-500">Search clicks</dt><dd class="mt-1 text-xl font-semibold">{{ number_format(data_get($report->metrics, 'search_console.totals.clicks', 0)) }}</dd></div>
-                    <div class="rounded-lg bg-slate-50 p-4"><dt class="text-xs text-slate-500">Times shown</dt><dd class="mt-1 text-xl font-semibold">{{ number_format(data_get($report->metrics, 'search_console.totals.impressions', 0)) }}</dd></div>
-                    <div class="rounded-lg bg-slate-50 p-4"><dt class="text-xs text-slate-500">Click-through rate</dt><dd class="mt-1 text-xl font-semibold">{{ number_format(data_get($report->metrics, 'search_console.totals.ctr', 0) * 100, 1) }}%</dd></div>
-                    <div class="rounded-lg bg-slate-50 p-4"><dt class="text-xs text-slate-500">Average position</dt><dd class="mt-1 text-xl font-semibold">{{ number_format(data_get($report->metrics, 'search_console.totals.position', 0), 1) }}</dd></div>
-                </dl>
-            </section>
-        @endif
 
         @if (data_get($report->metrics, 'forms_count', 0) > 0)
             <section class="rounded-xl border bg-white p-5 shadow-sm sm:p-6">

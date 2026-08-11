@@ -66,3 +66,25 @@ it('preserves trailing slashes from sitemaps and internal links', function (): v
         'https://example.com/contact',
     ], true));
 });
+
+it('explains why long search metadata is worth improving', function (): void {
+    config()->set('forms.health_reports.max_pages', 1);
+    config()->set('forms.health_reports.crawl_delay_ms', 0);
+
+    $website = Website::factory()->create();
+    $website->domains()->create(['domain' => 'example.com', 'is_primary' => true]);
+    $title = str_repeat('Long title ', 8);
+    $description = str_repeat('Long description ', 12);
+
+    Http::fake([
+        'https://example.com/sitemap.xml' => Http::response('', 404),
+        'https://example.com/' => Http::response('<html><head><title>'.$title.'</title><meta name="description" content="'.$description.'"></head><body><h1>Home</h1></body></html>', 200, ['Content-Type' => 'text/html']),
+    ]);
+
+    $checks = collect(app(WebsiteCrawler::class)->crawl($website)[0]['checks'])->keyBy('key');
+
+    expect($checks['page_title']['status'])->toBe('warning')
+        ->and($checks['page_title']['message'])->toContain('characters long', 'Aim for 65 or fewer', 'truncated in search results')
+        ->and($checks['meta_description']['status'])->toBe('warning')
+        ->and($checks['meta_description']['message'])->toContain('characters long', 'Aim for 170 or fewer', 'truncated in search results');
+});

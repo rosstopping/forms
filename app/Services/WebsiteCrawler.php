@@ -137,8 +137,8 @@ class WebsiteCrawler
             'images_count' => $images,
             'missing_alt_count' => $missingAlt,
             'checks' => [
-                $this->check('page_title', 'Page title', $title === '' ? 'failed' : (Str::length($title) > 65 ? 'warning' : 'passed'), $title === '' ? 'No page title was found.' : 'Title: '.$title),
-                $this->check('meta_description', 'Meta description', $description === '' || Str::length($description) > 170 ? 'warning' : 'passed', $description === '' ? 'No meta description was found.' : 'Meta description is present.'),
+                $this->check('page_title', 'Page title', $title === '' ? 'failed' : (Str::length($title) > 65 ? 'warning' : 'passed'), $title === '' ? 'No page title was found.' : (Str::length($title) > 65 ? 'The title is '.Str::length($title).' characters long. Aim for 65 or fewer so it is less likely to be truncated in search results. Current title: '.$title : 'Title: '.$title)),
+                $this->check('meta_description', 'Meta description', $description === '' || Str::length($description) > 170 ? 'warning' : 'passed', $description === '' ? 'No meta description was found.' : (Str::length($description) > 170 ? 'The meta description is '.Str::length($description).' characters long. Aim for 170 or fewer so it is less likely to be truncated in search results.' : 'Meta description is present.')),
                 $this->check('h1', 'Primary heading', $h1Count === 1 ? 'passed' : 'warning', "The page has {$h1Count} H1 elements."),
                 $this->check('canonical', 'Canonical URL', $canonical === '' || ($canonicalHost !== '' && $canonicalHost !== $expectedHost) ? 'warning' : 'passed', $canonical === '' ? 'No canonical URL was found.' : 'Canonical: '.$canonical),
                 $this->check('indexable', 'Indexing directive', $isIndexable ? 'passed' : 'failed', $isIndexable ? 'No noindex directive was found.' : 'The page contains a noindex directive.'),
