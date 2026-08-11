@@ -59,6 +59,11 @@
                     </select>
                 </div> --}}
                 <div>
+                    <label class="block text-sm font-medium text-slate-700" for="follow_up_at">Follow up</label>
+                    <input id="follow_up_at" name="follow_up_at" type="datetime-local" value="{{ old('follow_up_at', $formSubmission->follow_up_at?->format('Y-m-d\\TH:i')) }}" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                    <p class="mt-1 text-xs text-slate-500">Leave blank to clear the reminder.</p>
+                </div>
+                <div>
                     <label class="block text-sm font-medium text-slate-700" for="notes">Notes</label>
                     <textarea id="notes" name="notes" rows="4" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">{{ old('notes', $formSubmission->notes) }}</textarea>
                 </div>
@@ -79,6 +84,25 @@
                 <div class="flex justify-between"><dt class="text-slate-500">Customer reply</dt><dd>{{ $formSubmission->autoresponder_sent_at ? 'Sent '.$formSubmission->autoresponder_sent_at->diffForHumans() : ($formSubmission->autoresponder_failed_at ? 'Failed' : 'Not sent') }}</dd></div>
                 <div class="flex justify-between"><dt class="text-slate-500">Webhook</dt><dd>{{ $formSubmission->webhook_sent_at ? 'Sent '.$formSubmission->webhook_sent_at->diffForHumans() : ($formSubmission->webhook_failed_at ? 'Failed' : 'Not sent') }}</dd></div>
             </dl>
+        </div>
+    </div>
+
+    <div class="rounded-lg border bg-white p-4 shadow-sm">
+        <h2 class="font-semibold">Activity</h2>
+        <div class="mt-4 flow-root">
+            <ol class="space-y-4">
+                @forelse ($formSubmission->activities as $activity)
+                    <li class="flex gap-3">
+                        <span class="mt-1.5 size-2 shrink-0 rounded-full bg-slate-400"></span>
+                        <div class="min-w-0">
+                            <p class="text-sm text-slate-800">{{ $activity->description }}</p>
+                            <p class="mt-0.5 text-xs text-slate-500">{{ $activity->user?->name ?: 'System' }} · {{ $activity->created_at->diffForHumans() }}</p>
+                        </div>
+                    </li>
+                @empty
+                    <li class="text-sm text-slate-500">No activity recorded yet.</li>
+                @endforelse
+            </ol>
         </div>
     </div>
 

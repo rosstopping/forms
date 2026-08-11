@@ -16,7 +16,7 @@ class FormSubmissionController extends Controller
 {
     public function index(Request $request)
     {
-        $filterKeys = ['search', 'status', 'website_id', 'assigned_to', 'spam'];
+        $filterKeys = ['search', 'status', 'website_id', 'assigned_to', 'follow_up', 'spam'];
         $sessionKey = 'admin.lead_filters.'.$request->user()->id;
 
         if ($request->boolean('reset_filters')) {
@@ -38,6 +38,10 @@ class FormSubmissionController extends Controller
 
         $summary = (clone $query)->where('is_spam', false)
             ->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
+        $followUpSummary = [
+            'overdue' => (clone $query)->filtered(['follow_up' => 'overdue', 'spam' => 'exclude'])->count(),
+            'today' => (clone $query)->filtered(['follow_up' => 'today', 'spam' => 'exclude'])->count(),
+        ];
 
         $query->filtered($request->only($filterKeys));
 
@@ -55,14 +59,14 @@ class FormSubmissionController extends Controller
         $bulkPageSelectableCount = $submissions->getCollection()->whereIn('website_id', $manageableWebsiteIds)->count();
         $users = $request->user()?->isAdmin() ? User::query()->orderBy('name')->get(['id', 'name']) : collect([$request->user()]);
 
-        return view('admin.form-submissions.index', compact('submissions', 'summary', 'websites', 'manageableWebsiteIds', 'bulkSelectableCount', 'bulkPageSelectableCount', 'users'));
+        return view('admin.form-submissions.index', compact('submissions', 'summary', 'followUpSummary', 'websites', 'manageableWebsiteIds', 'bulkSelectableCount', 'bulkPageSelectableCount', 'users'));
     }
 
     public function show(Request $request, FormSubmission $formSubmission)
     {
         abort_unless($formSubmission->website?->isAccessibleBy($request->user()), 403);
 
-        $formSubmission->load(['website', 'form', 'assignee']);
+        $formSubmission->load(['website', 'form', 'assignee', 'activities.user']);
 
         $users = $request->user()?->isAdmin() ? User::query()->orderBy('name')->get(['id', 'name']) : collect([$request->user()]);
         $canManage = $formSubmission->website?->isManageableBy($request->user()) === true;
@@ -79,6 +83,26 @@ class FormSubmissionController extends Controller
         }
 
         $formSubmission->fill($data)->save();
+
+        if ($formSubmission->wasChanged('status')) {
+            $formSubmission->recordActivity('status_changed', 'Status changed to '.$formSubmission->resolvedStatusLabel().'.', $request->user());
+        }
+
+        if ($formSubmission->wasChanged('assigned_to')) {
+            $assigneeName = $formSubmission->assigned_to ? User::query()->whereKey($formSubmission->assigned_to)->value('name') : null;
+            $formSubmission->recordActivity('assignment_changed', $assigneeName ? 'Assigned to '.$assigneeName.'.' : 'Lead unassigned.', $request->user());
+        }
+
+        if ($formSubmission->wasChanged('follow_up_at')) {
+            $description = $formSubmission->follow_up_at
+                ? 'Follow-up scheduled for '.$formSubmission->follow_up_at->format('j M Y, H:i').'.'
+                : 'Follow-up reminder cleared.';
+            $formSubmission->recordActivity('follow_up_changed', $description, $request->user());
+        }
+
+        if ($formSubmission->wasChanged('notes')) {
+            $formSubmission->recordActivity('notes_updated', 'Lead notes updated.', $request->user());
+        }
 
         $redirectTo = $request->input('return_to');
 
@@ -100,6 +124,7 @@ class FormSubmissionController extends Controller
         abort_unless($formSubmission->website?->isManageableBy($request->user()), 403);
 
         $formSubmission->update(['is_spam' => true]);
+        $formSubmission->recordActivity('marked_spam', 'Lead marked as spam.', $request->user());
 
         return Redirect::route('admin.form-submissions.index')->with('status', 'Lead marked as spam.');
     }

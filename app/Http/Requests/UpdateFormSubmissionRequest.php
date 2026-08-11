@@ -30,6 +30,7 @@ class UpdateFormSubmissionRequest extends FormRequest
             'status' => ['required', 'string', Rule::in(FormSubmission::STATUSES)],
             'notes' => ['nullable', 'string', 'max:10000'],
             'assigned_to' => ['nullable', 'integer', Rule::exists('users', 'id')],
+            'follow_up_at' => ['nullable', 'date'],
             'return_to' => ['nullable', 'string', 'max:2048'],
         ];
     }

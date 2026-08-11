@@ -12,6 +12,7 @@ class NavigationComposer
     {
         $user = Auth::user();
         $newLeadCount = 0;
+        $followUpReminderCount = 0;
 
         if ($user) {
             $query = FormSubmission::query()
@@ -23,8 +24,20 @@ class NavigationComposer
             }
 
             $newLeadCount = $query->count();
+
+            $followUpQuery = FormSubmission::query()
+                ->where('is_spam', false)
+                ->whereNotIn('status', ['won', 'lost'])
+                ->whereNotNull('follow_up_at')
+                ->where('follow_up_at', '<=', today()->endOfDay());
+
+            if (! $user->isAdmin()) {
+                $followUpQuery->whereHas('website', fn ($query) => $query->accessibleTo($user));
+            }
+
+            $followUpReminderCount = $followUpQuery->count();
         }
 
-        $view->with('newLeadCount', $newLeadCount);
+        $view->with(compact('newLeadCount', 'followUpReminderCount'));
     }
 }

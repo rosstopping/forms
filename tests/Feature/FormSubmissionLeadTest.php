@@ -24,6 +24,7 @@ it('allows an admin to update a lead status and assignment', function () {
             'status' => 'qualified',
             'notes' => 'Follow up next week.',
             'assigned_to' => $assignee->id,
+            'follow_up_at' => now()->addWeek()->format('Y-m-d H:i:s'),
         ])
         ->assertRedirect(route('admin.form-submissions.show', $submission));
 
@@ -31,7 +32,48 @@ it('allows an admin to update a lead status and assignment', function () {
 
     expect($submission->status)->toBe('qualified')
         ->and($submission->notes)->toBe('Follow up next week.')
-        ->and($submission->assigned_to)->toBe($assignee->id);
+        ->and($submission->assigned_to)->toBe($assignee->id)
+        ->and($submission->follow_up_at)->not->toBeNull()
+        ->and($submission->activities()->pluck('type'))->toContain('status_changed', 'assignment_changed', 'follow_up_changed', 'notes_updated');
+});
+
+it('filters scheduled follow-ups and shows their reminder count', function () {
+    $owner = User::factory()->create();
+    $website = Website::factory()->create(['user_id' => $owner->id]);
+    $form = Form::factory()->create(['website_id' => $website->id]);
+    FormSubmission::factory()->create([
+        'website_id' => $website->id,
+        'form_id' => $form->id,
+        'data' => ['name' => 'Overdue Person'],
+        'follow_up_at' => now()->subHour(),
+    ]);
+    FormSubmission::factory()->create([
+        'website_id' => $website->id,
+        'form_id' => $form->id,
+        'data' => ['name' => 'Future Person'],
+        'follow_up_at' => now()->addDays(3),
+    ]);
+
+    $this->actingAs($owner)->get(route('admin.form-submissions.index', ['follow_up' => 'overdue']))
+        ->assertOk()
+        ->assertSee('Overdue Person')
+        ->assertDontSee('Future Person')
+        ->assertSee('aria-label="1 lead follow-ups due"', false);
+});
+
+it('shows the activity timeline on a lead', function () {
+    $owner = User::factory()->create();
+    $website = Website::factory()->create(['user_id' => $owner->id]);
+    $form = Form::factory()->create(['website_id' => $website->id]);
+    $submission = FormSubmission::factory()->create(['website_id' => $website->id, 'form_id' => $form->id]);
+    $submission->recordActivity('created', 'Lead received from example.com.');
+
+    $this->actingAs($owner)->get(route('admin.form-submissions.show', $submission))
+        ->assertOk()
+        ->assertSee('Follow up')
+        ->assertSee('Activity')
+        ->assertSee('Lead received from example.com.')
+        ->assertSee('System');
 });
 
 it('redirects back to the dashboard after a quick lead status update', function () {

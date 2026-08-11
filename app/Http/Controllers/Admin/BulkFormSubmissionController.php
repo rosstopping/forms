@@ -24,6 +24,7 @@ class BulkFormSubmissionController extends Controller
                 'status' => $data['filter_status'] ?? null,
                 'website_id' => $data['website_id'] ?? null,
                 'assigned_to' => $data['assigned_to'] ?? null,
+                'follow_up' => $data['follow_up'] ?? null,
                 'spam' => $data['spam'] ?? 'exclude',
             ]);
         }
@@ -38,10 +39,16 @@ class BulkFormSubmissionController extends Controller
             abort_if((clone $authorizedQuery)->doesntExist(), 422, 'No leads match this selection.');
         }
 
-        DB::transaction(function () use ($authorizedQuery, $data): void {
+        DB::transaction(function () use ($authorizedQuery, $data, $request): void {
             match ($data['action']) {
-                'update_status' => $authorizedQuery->update(['status' => $data['status']]),
-                'mark_spam' => $authorizedQuery->update(['is_spam' => true]),
+                'update_status' => $authorizedQuery->lazyById()->each(function (FormSubmission $submission) use ($data, $request): void {
+                    $submission->update(['status' => $data['status']]);
+                    $submission->recordActivity('status_changed', 'Status changed to '.$submission->resolvedStatusLabel().'.', $request->user());
+                }),
+                'mark_spam' => $authorizedQuery->lazyById()->each(function (FormSubmission $submission) use ($request): void {
+                    $submission->update(['is_spam' => true]);
+                    $submission->recordActivity('marked_spam', 'Lead marked as spam.', $request->user());
+                }),
                 'delete' => $authorizedQuery->delete(),
             };
         });

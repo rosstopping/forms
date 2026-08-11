@@ -164,6 +164,7 @@ class FormSubmissionController extends Controller
             'user_agent' => $request->userAgent(),
             'is_spam' => $isSpam,
         ]);
+        $submission->recordActivity('created', 'Lead received'.($submission->source_domain ? ' from '.$submission->source_domain : '').'.');
 
         if ($form) {
             $form->update(['last_submission_at' => now()]);
@@ -189,11 +190,13 @@ class FormSubmissionController extends Controller
             try {
                 Mail::to($recipients)->send(new FormSubmissionReceived($submission));
                 $submission->update(['email_sent_at' => now()]);
+                $submission->recordActivity('team_email_sent', 'New lead notification sent to the team.');
             } catch (\Throwable $e) {
                 $submission->update([
                     'email_failed_at' => now(),
                     'email_error' => $e->getMessage(),
                 ]);
+                $submission->recordActivity('team_email_failed', 'New lead notification could not be sent.');
                 logger()->warning('Form email failed', ['error' => $e->getMessage()]);
             }
         }
@@ -208,8 +211,10 @@ class FormSubmissionController extends Controller
                     $this->formSettingsResolver->resolveAutoresponderBody($form, $submission),
                 ));
                 $submission->update(['autoresponder_sent_at' => now()]);
+                $submission->recordActivity('autoresponder_sent', 'Automatic acknowledgement sent to the customer.');
             } catch (\Throwable $e) {
                 $submission->update(['autoresponder_failed_at' => now(), 'autoresponder_error' => $e->getMessage()]);
+                $submission->recordActivity('autoresponder_failed', 'Automatic acknowledgement could not be sent.');
                 logger()->warning('Form autoresponder failed', ['error' => $e->getMessage()]);
             }
         }
