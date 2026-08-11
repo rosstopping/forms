@@ -102,6 +102,7 @@ class WebsiteController extends Controller
             'repository.installation',
             'searchConsoleConnection',
             'contentPlan.generations' => fn ($query) => $query->latest('created_at')->limit(8),
+            'contentRequests' => fn ($query) => $query->with('creator')->latest('created_at')->limit(20),
             'submissions' => fn ($query) => $query->latest('created_at')->limit(10),
         ]);
         $users = $user?->isAdmin() ? User::query()->orderBy('name')->get(['id', 'name', 'email']) : collect();

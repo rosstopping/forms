@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\ContentPlanController;
+use App\Http\Controllers\Admin\ContentRequestController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\FormController;
 use App\Http\Controllers\Admin\FormSubmissionController as AdminFormSubmissionController;
@@ -70,6 +71,8 @@ Route::middleware(['web', 'auth'])->prefix('admin')->name('admin.')->group(funct
     Route::delete('websites/{website}/search-console', [SearchConsoleController::class, 'destroy'])->name('search-console.destroy');
     Route::put('websites/{website}/content-plan', [ContentPlanController::class, 'update'])->name('content-plans.update');
     Route::post('websites/{website}/content-generations', [ContentPlanController::class, 'generate'])->name('content-generations.store');
+    Route::post('websites/{website}/content-requests', [ContentRequestController::class, 'store'])->name('content-requests.store');
+    Route::delete('websites/{website}/content-requests/{contentRequest}', [ContentRequestController::class, 'destroy'])->name('content-requests.destroy');
     Route::resource('forms', FormController::class);
     Route::resource('form-submissions', AdminFormSubmissionController::class);
     Route::resource('users', UserController::class)->only(['index', 'create', 'store']);

@@ -4,6 +4,7 @@ use App\Jobs\StartContentGeneration;
 use App\Jobs\SyncContentGeneration;
 use App\Models\ContentGeneration;
 use App\Models\ContentPlan;
+use App\Models\ContentRequest;
 use App\Models\GithubInstallation;
 use App\Models\GithubUserAuthorization;
 use App\Models\SearchConsoleConnection;
@@ -156,7 +157,39 @@ test('updating the website owner does not overwrite saved content plan settings'
         ->assertSee('Use a practical and direct tone');
 });
 
-test('content generation uses search performance to start a copilot pull request task', function () {
+test('website owners can queue and remove manual content requests', function () {
+    $owner = User::factory()->create();
+    $otherOwner = User::factory()->create();
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $instructions = 'Create a Love Island inspired villa landing page while clearly stating that this is not the official villa.';
+
+    $this->actingAs($owner)
+        ->post(route('admin.content-requests.store', $website), ['instructions' => $instructions])
+        ->assertRedirect(route('admin.websites.show', $website));
+
+    $contentRequest = $website->contentRequests()->sole();
+    expect($contentRequest->instructions)->toBe($instructions)
+        ->and($contentRequest->created_by)->toBe($owner->id);
+
+    $this->actingAs($owner)
+        ->get(route('admin.websites.show', $website))
+        ->assertSuccessful()
+        ->assertSee('Manual content requests')
+        ->assertSee($instructions)
+        ->assertSee('Pending');
+
+    $this->actingAs($otherOwner)
+        ->post(route('admin.content-requests.store', $website), ['instructions' => 'Should not be saved.'])
+        ->assertForbidden();
+
+    $this->actingAs($owner)
+        ->delete(route('admin.content-requests.destroy', [$website, $contentRequest]))
+        ->assertRedirect(route('admin.websites.show', $website));
+
+    $this->assertModelMissing($contentRequest);
+});
+
+test('content generation uses search performance and pending requests to start a copilot pull request task', function () {
     Queue::fake();
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     GithubUserAuthorization::factory()->create(['user_id' => $admin->id]);
@@ -169,17 +202,42 @@ test('content generation uses search performance to start a copilot pull request
         'website_repository_id' => $repository->id,
         'requested_by' => $admin->id,
     ]);
+    $firstRequest = ContentRequest::factory()->for($website)->create([
+        'created_by' => $admin->id,
+        'instructions' => 'Create a landing page targeting love island villa tenerife.',
+        'created_at' => now()->subMinutes(3),
+    ]);
+    $secondRequest = ContentRequest::factory()->for($website)->create([
+        'created_by' => $admin->id,
+        'instructions' => 'State clearly that this is not the official Love Island villa.',
+        'created_at' => now()->subMinutes(2),
+    ]);
+    $thirdRequest = ContentRequest::factory()->for($website)->create([
+        'created_by' => $admin->id,
+        'instructions' => 'Create a separate guide in a later run.',
+        'created_at' => now()->subMinute(),
+    ]);
     $this->mock(SearchConsoleClient::class)->shouldReceive('performance')->once()->andReturn([
         ['query' => 'useful service', 'page' => 'https://example.test/', 'clicks' => 4.0, 'impressions' => 100.0, 'ctr' => 0.04, 'position' => 8.2],
     ]);
     $this->mock(CopilotAgentClient::class)->shouldReceive('startTask')->once()
-        ->withArgs(fn ($authorization, $passedRepository, string $prompt) => $passedRepository->is($repository) && str_contains($prompt, 'useful service'))
+        ->withArgs(fn ($authorization, $passedRepository, string $prompt) => $passedRepository->is($repository)
+            && str_contains($prompt, 'useful service')
+            && str_contains($prompt, $firstRequest->instructions)
+            && str_contains($prompt, $secondRequest->instructions)
+            && ! str_contains($prompt, $thirdRequest->instructions))
         ->andReturn(['id' => '11111111-1111-4111-8111-111111111111', 'state' => 'queued']);
 
     app()->call([new StartContentGeneration($generation), 'handle']);
 
     expect($generation->fresh()->status)->toBe(ContentGeneration::STATUS_RUNNING)
-        ->and($generation->fresh()->search_performance[0]['query'])->toBe('useful service');
+        ->and($generation->fresh()->search_performance[0]['query'])->toBe('useful service')
+        ->and($firstRequest->fresh()->content_generation_id)->toBe($generation->id)
+        ->and($firstRequest->fresh()->picked_up_at)->not->toBeNull()
+        ->and($secondRequest->fresh()->content_generation_id)->toBe($generation->id)
+        ->and($secondRequest->fresh()->picked_up_at)->not->toBeNull()
+        ->and($thirdRequest->fresh()->content_generation_id)->toBeNull()
+        ->and($thirdRequest->fresh()->picked_up_at)->toBeNull();
     Queue::assertPushed(SyncContentGeneration::class);
 });
 
@@ -216,6 +274,26 @@ test('content generation prompts keep every section within the Copilot request b
         ->and($prompt)->toContain('It may touch multiple pages and files')
         ->and($prompt)->toContain('Requirements:')
         ->and($prompt)->toContain('Search Console top query/page rows');
+});
+
+test('manual content requests remain pending when copilot does not accept the task', function () {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    GithubUserAuthorization::factory()->for($admin)->create();
+    $website = Website::factory()->create();
+    $repository = WebsiteRepository::factory()->for($website)->create();
+    SearchConsoleConnection::factory()->for($website)->create(['connected_by' => $admin->id]);
+    $plan = ContentPlan::factory()->for($website)->create(['created_by' => $admin->id]);
+    $generation = ContentGeneration::factory()->for($plan, 'plan')->for($repository, 'repository')->for($admin, 'requester')->create();
+    $contentRequest = ContentRequest::factory()->for($website)->for($admin, 'creator')->create();
+
+    $this->mock(SearchConsoleClient::class)->shouldReceive('performance')->once()->andReturn([]);
+    $this->mock(CopilotAgentClient::class)->shouldReceive('startTask')->once()->andThrow(new RuntimeException('GitHub unavailable.'));
+
+    expect(fn () => app()->call([new StartContentGeneration($generation), 'handle']))
+        ->toThrow(RuntimeException::class, 'GitHub unavailable.');
+
+    expect($contentRequest->fresh()->picked_up_at)->toBeNull()
+        ->and($contentRequest->fresh()->content_generation_id)->toBeNull();
 });
 
 test('starting a Copilot task is never automatically replayed', function () {

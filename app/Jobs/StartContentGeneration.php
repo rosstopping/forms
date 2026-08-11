@@ -52,7 +52,14 @@ class StartContentGeneration implements ShouldBeEncrypted, ShouldBeUnique, Shoul
 
         $performance = $searchConsole->performance($connection);
         $this->generation->update(['search_performance' => $performance]);
-        $prompt = $prompts->generate($this->generation->fresh());
+        $contentRequests = $this->generation->plan->website->contentRequests()
+            ->whereNull('picked_up_at')
+            ->oldest()
+            ->limit(2)
+            ->get();
+        $this->generation->setRelation('contentRequests', $contentRequests);
+        $this->generation->setRelation('contentRequests', $contentRequests);
+        $prompt = $prompts->generate($this->generation);
         $this->generation->update(['status' => ContentGeneration::STATUS_RUNNING, 'prompt' => $prompt, 'started_at' => now(), 'error' => null]);
         $task = $copilot->startTask($authorization, $this->generation->repository, $prompt);
         $this->generation->update([
@@ -60,6 +67,13 @@ class StartContentGeneration implements ShouldBeEncrypted, ShouldBeUnique, Shoul
             'copilot_task_url' => $task['html_url'] ?? null,
             'copilot_task_state' => $task['state'] ?? 'queued',
         ]);
+        $this->generation->plan->website->contentRequests()
+            ->whereKey($contentRequests->modelKeys())
+            ->whereNull('picked_up_at')
+            ->update([
+                'content_generation_id' => $this->generation->id,
+                'picked_up_at' => now(),
+            ]);
         SyncContentGeneration::dispatch($this->generation)->delay(now()->addMinute());
     }
 

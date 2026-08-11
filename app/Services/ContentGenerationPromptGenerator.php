@@ -17,11 +17,14 @@ class ContentGenerationPromptGenerator
 
     public function generate(ContentGeneration $generation): string
     {
-        $generation->loadMissing(['plan.website', 'repository']);
+        $generation->loadMissing(['plan.website', 'repository', 'contentRequests']);
         $audience = Str::limit((string) $generation->plan->audience, self::AUDIENCE_LIMIT, PHP_EOL.'[Audience truncated for Copilot.]');
         $guidance = Str::limit((string) $generation->plan->guidance, self::GUIDANCE_LIMIT, PHP_EOL.'[Editorial guidance truncated for Copilot.]');
         $performance = $this->performanceForPrompt($generation->search_performance ?? []);
         $projectPath = $generation->repository->project_path ?: 'repository root';
+        $manualRequests = $generation->contentRequests->isEmpty()
+            ? 'No manual content requests were queued for this run.'
+            : $generation->contentRequests->values()->map(fn ($request, int $index): string => ($index + 1).'. '.$request->instructions)->implode(PHP_EOL.PHP_EOL);
 
         $prompt = <<<PROMPT
 You are preparing one high-quality, reviewable content initiative for {$generation->plan->website->name}.
@@ -29,6 +32,11 @@ You are preparing one high-quality, reviewable content initiative for {$generati
 Inspect the existing repository, content architecture, and conventions before editing. Work in {$projectPath}. Choose the scope that best serves a clear search intent and user need. This may be a substantial improvement to one or more existing pages, a focused landing page, one or more closely related blog posts or pages, or a lightweight blog or content section when none exists and the opportunity genuinely justifies it. Do not force a blog when improving an existing page or adding a landing page would be stronger. Base the decision on existing coverage, internal-link opportunities, and the Search Console data below. Avoid keyword cannibalization and do not create near-duplicate pages.
 
 If the site needs a new blog or content section, follow the framework and repository's established patterns and add only the minimum supporting structure needed for the content to work well, such as routes, templates, an index, detail pages, navigation, internal links, and sitemap integration where appropriate. Do not introduce a CMS, admin area, authentication, database schema, new dependencies, a broad redesign, or unrelated architecture unless the repository already has a clear convention that makes it necessary and safe.
+
+Manual requests from the website team:
+{$manualRequests}
+
+When manual requests are present, treat them as the primary editorial objectives for this run and satisfy them as one coherent, reviewable initiative where possible. Preserve important qualifications in the request and do not imply an official affiliation, endorsement, product, service, or factual claim that the request does not support. If a request conflicts with the repository, verified website facts, or the safety requirements below, choose the safest accurate interpretation and explain the constraint in the pull request.
 
 Audience: {$audience}
 Editorial guidance: {$guidance}

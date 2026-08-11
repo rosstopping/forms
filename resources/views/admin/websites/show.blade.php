@@ -124,6 +124,55 @@
         </div>
     @endif
 
+    <section class="rounded-lg border bg-white p-4 shadow-sm" aria-labelledby="content-requests-title">
+        <div>
+            <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Ideas for Copilot</p>
+            <h2 id="content-requests-title" class="mt-1 font-semibold">Manual content requests</h2>
+            <p class="mt-1 text-sm text-slate-600">Suggest a landing page, blog post, or other useful content change. The two oldest pending requests will be prioritised in the next weekly or manually started content run.</p>
+        </div>
+
+        <form method="POST" action="{{ route('admin.content-requests.store', $website) }}" class="mt-4">
+            @csrf
+            <label class="block text-sm font-medium text-slate-900" for="content-request-instructions">What would you like Copilot to create or change?</label>
+            <textarea id="content-request-instructions" name="instructions" rows="5" maxlength="3000" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" placeholder="For example: We are getting traffic for ‘love island villa tenerife’. Create a landing page under the villa navigation that answers this search while making clear we are not the official villa.">{{ old('instructions') }}</textarea>
+            <div class="mt-2 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <p class="text-xs text-slate-500">Include the audience, useful keywords, desired location in the site, and any claims or qualifications Copilot must preserve. Up to 3,000 characters.</p>
+                    @error('instructions')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror
+                </div>
+                <button type="submit" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">Add content request</button>
+            </div>
+        </form>
+
+        <div class="mt-5 border-t border-slate-200 pt-4">
+            <h3 class="text-sm font-semibold text-slate-900">Recent requests</h3>
+            <div class="mt-3 space-y-3">
+                @forelse ($website->contentRequests as $contentRequest)
+                    <article class="rounded-lg border border-slate-200 p-3">
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                            <div class="min-w-0">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <span @class(['rounded-full px-2.5 py-1 text-xs font-medium', 'bg-amber-100 text-amber-800' => ! $contentRequest->picked_up_at, 'bg-emerald-100 text-emerald-800' => $contentRequest->picked_up_at])>{{ $contentRequest->picked_up_at ? 'Picked up' : 'Pending' }}</span>
+                                    <span class="text-xs text-slate-500">Added {{ $contentRequest->created_at->diffForHumans() }}{{ $contentRequest->creator ? ' by '.$contentRequest->creator->name : '' }}</span>
+                                </div>
+                                <p class="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700">{{ $contentRequest->instructions }}</p>
+                            </div>
+                            @if (! $contentRequest->picked_up_at)
+                                <form method="POST" action="{{ route('admin.content-requests.destroy', [$website, $contentRequest]) }}" class="shrink-0">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="rounded-md border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50">Remove</button>
+                                </form>
+                            @endif
+                        </div>
+                    </article>
+                @empty
+                    <p class="rounded-lg bg-slate-50 p-3 text-sm text-slate-500">No manual content requests have been added yet.</p>
+                @endforelse
+            </div>
+        </div>
+    </section>
+
     <div class="grid gap-6 lg:grid-cols-2">
         <div class="rounded-lg border bg-white p-4 shadow-sm">
             <h2 class="font-semibold">Overview</h2>

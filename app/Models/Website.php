@@ -81,6 +81,11 @@ class Website extends Model
         return $this->hasOne(ContentPlan::class);
     }
 
+    public function contentRequests(): HasMany
+    {
+        return $this->hasMany(ContentRequest::class);
+    }
+
     public function primaryDomain(): ?WebsiteDomain
     {
         return $this->domains()->where('is_primary', true)->first() ?: $this->domains()->first();
