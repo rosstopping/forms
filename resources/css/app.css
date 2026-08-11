@@ -40,11 +40,62 @@
     }
 
     .admin-content :is(input:not([type='checkbox']):not([type='radio']), select, textarea) {
-        @apply rounded-lg border-0 bg-white px-3 py-2.5 text-base text-slate-900 shadow-sm ring-1 ring-slate-950/10 placeholder:text-slate-400 focus:outline-2 focus:-outline-offset-1 focus:outline-teal-600 sm:py-2 sm:text-sm;
+        @apply rounded-xl border-0 bg-white px-3.5 py-3 text-base text-slate-950 shadow-sm ring-1 ring-slate-950/10 placeholder:text-slate-400 hover:ring-slate-950/20 focus:outline-2 focus:-outline-offset-1 focus:outline-teal-600 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 sm:py-2.5 sm:text-sm;
+    }
+
+    .admin-content select {
+        @apply appearance-none pr-10;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='m6 8 4 4 4-4' stroke='%2364758b' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+        background-position: right 0.75rem center;
+        background-repeat: no-repeat;
+        background-size: 1.25rem;
+    }
+
+    .admin-content textarea {
+        @apply min-h-28 resize-y;
+    }
+
+    .admin-content :is(input, select, textarea)[aria-invalid='true'] {
+        @apply ring-red-500 focus:outline-red-600;
+    }
+
+    .admin-content :is(input, textarea)[readonly] {
+        @apply bg-slate-50 text-slate-700 shadow-none;
+    }
+
+    .admin-content label[for] {
+        @apply text-base font-medium text-slate-800 sm:text-sm;
+    }
+
+    .admin-content label[for] + :is(input, select, textarea, div) {
+        @apply mt-2;
     }
 
     .admin-content :is(input[type='checkbox'], input[type='radio']) {
-        @apply size-5 border-slate-300 text-teal-600 accent-teal-600 focus:ring-teal-600 sm:size-4;
+        @apply size-5 shrink-0 appearance-none border-0 bg-white shadow-sm ring-1 ring-slate-950/15 hover:ring-slate-950/25 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600 checked:bg-teal-700 checked:ring-teal-700 disabled:cursor-not-allowed disabled:bg-slate-100 sm:size-4;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: 75%;
+    }
+
+    .admin-content input[type='checkbox'] {
+        @apply rounded-md;
+    }
+
+    .admin-content input[type='checkbox']:checked {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14' fill='none'%3E%3Cpath d='m3 7 2.5 2.5L11 4' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    }
+
+    .admin-content input[type='radio'] {
+        @apply rounded-full;
+    }
+
+    .admin-content input[type='radio']:checked {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Ccircle cx='7' cy='7' r='3' fill='white'/%3E%3C/svg%3E");
+    }
+
+    .admin-content label:has(> input[type='checkbox']) {
+        @apply cursor-pointer rounded-xl border-slate-950/10 bg-slate-50/60 hover:bg-slate-50;
     }
 
     .admin-content table {
@@ -81,16 +132,26 @@
         @apply border-slate-950/10 shadow-sm shadow-slate-950/5;
     }
 
-    .admin-content [role='tablist'] {
-        @apply rounded-xl bg-slate-200/65 p-1;
+    .admin-content .website-tabs {
+        @apply flex max-w-full gap-1 overflow-x-auto rounded-2xl bg-white p-1.5 shadow-sm ring-1 ring-slate-950/10;
+        scrollbar-width: none;
     }
 
-    .admin-content [role='tab'] {
-        @apply rounded-lg border-0 px-3 py-2.5 text-base text-slate-600 focus-visible:outline-offset-0 sm:py-2 sm:text-sm;
+    .admin-content .website-tabs::-webkit-scrollbar {
+        display: none;
     }
 
-    .admin-content [role='tab'][aria-selected='true'] {
-        @apply bg-white text-slate-950 shadow-sm ring-1 ring-slate-950/5;
+    .admin-content .website-tab {
+        @apply relative shrink-0 rounded-xl px-3.5 py-2.5 text-base font-medium text-slate-500 hover:bg-slate-100/80 hover:text-slate-900 focus-visible:outline-offset-0 sm:px-4 sm:py-2 sm:text-sm;
+    }
+
+    .admin-content .website-tab[aria-selected='true'] {
+        @apply bg-teal-50 text-teal-900 shadow-sm ring-1 ring-teal-700/10;
+    }
+
+    .admin-content .website-tab[aria-selected='true']::after {
+        @apply absolute inset-x-4 bottom-0 h-0.5 rounded-full bg-teal-600;
+        content: '';
     }
 
     .admin-content [role='tabpanel'] {

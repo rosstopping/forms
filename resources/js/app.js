@@ -42,10 +42,6 @@ document.querySelectorAll('[data-tabs]').forEach((tabs) => {
 
             button.setAttribute('aria-selected', selected.toString());
             button.tabIndex = selected ? 0 : -1;
-            button.classList.toggle('border-slate-900', selected);
-            button.classList.toggle('text-slate-950', selected);
-            button.classList.toggle('border-transparent', !selected);
-            button.classList.toggle('text-slate-500', !selected);
 
             if (selected && focus) {
                 button.focus();
