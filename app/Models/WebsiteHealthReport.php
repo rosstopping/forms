@@ -58,4 +58,9 @@ class WebsiteHealthReport extends Model
     {
         return $this->hasMany(WebsiteHealthReportPage::class);
     }
+
+    public function remediationRuns(): HasMany
+    {
+        return $this->hasMany(RemediationRun::class);
+    }
 }

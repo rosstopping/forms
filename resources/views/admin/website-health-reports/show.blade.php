@@ -5,6 +5,15 @@
     @if (session('status'))
         <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{{ session('status') }}</div>
     @endif
+    @if ($errors->any())
+        <div class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+            <ul class="list-disc space-y-1 pl-5">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
 
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -27,6 +36,53 @@
             </div>
             <textarea id="health-report-ai-prompt" class="mt-4 h-72 w-full resize-y rounded-md border border-violet-200 bg-white p-3 font-mono text-xs leading-5 text-slate-800 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200" readonly>{{ $aiPrompt }}</textarea>
         </section>
+
+        @php($remediationRun = $report->remediationRuns->first())
+        @php($hasRemediableFindings = collect($report->checks)->whereIn('status', ['warning', 'failed'])->isNotEmpty() || $report->pages->contains(fn ($page) => collect($page->checks)->whereIn('status', ['warning', 'failed'])->isNotEmpty()))
+        @if ($remediationRun)
+            <section class="rounded-lg border border-blue-200 bg-blue-50 p-4 text-blue-900">
+                <p class="text-xs font-medium uppercase tracking-wide text-blue-700">GitHub remediation</p>
+                <h2 class="mt-1 font-semibold">{{ str_replace('_', ' ', ucfirst($remediationRun->status)) }}</h2>
+                <p class="mt-1 text-sm">{{ count($remediationRun->findings) }} selected {{ Str::plural('finding', count($remediationRun->findings)) }} for {{ $remediationRun->repository->full_name }}.</p>
+                @if ($remediationRun->copilot_task_url || $remediationRun->pull_request_url)
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        @if ($remediationRun->copilot_task_url)
+                            <a href="{{ $remediationRun->copilot_task_url }}" class="inline-flex rounded-md border border-blue-300 bg-white px-3 py-2 text-sm font-medium text-blue-800 hover:bg-blue-100" target="_blank" rel="noreferrer">View Copilot task</a>
+                        @endif
+                        @if ($remediationRun->pull_request_url)
+                            <a href="{{ $remediationRun->pull_request_url }}" class="inline-flex rounded-md bg-blue-700 px-3 py-2 text-sm font-medium text-white hover:bg-blue-800" target="_blank" rel="noreferrer">View pull request</a>
+                        @endif
+                    </div>
+                @endif
+                @if ($remediationRun->error)
+                    <p class="mt-3 text-sm text-red-700">{{ $remediationRun->error }}</p>
+                @endif
+            </section>
+        @elseif ($report->website->repository && $hasRemediableFindings)
+            <section class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+                <p class="text-xs font-medium uppercase tracking-wide text-slate-500">GitHub remediation</p>
+                <h2 class="mt-1 font-semibold">Prepare repository fix</h2>
+                <p class="mt-1 text-sm text-slate-600">Send the current warnings and failures to GitHub Copilot. Copilot will work in its cloud environment and open a pull request for review; it will not merge or deploy code.</p>
+                <form method="POST" action="{{ route('admin.remediation-runs.store', [$report->website, $report]) }}" class="mt-4">
+                    @csrf
+                    @foreach (collect($report->checks)->whereIn('status', ['warning', 'failed']) as $finding)
+                        <input type="hidden" name="findings[]" value="site:{{ $finding['category'] }}:{{ $finding['key'] }}">
+                    @endforeach
+                    @foreach ($report->pages as $page)
+                        @foreach (collect($page->checks)->whereIn('status', ['warning', 'failed']) as $finding)
+                            <input type="hidden" name="findings[]" value="page:{{ $page->id }}:{{ $finding['key'] }}">
+                        @endforeach
+                    @endforeach
+                    <button type="submit" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">Start Copilot remediation</button>
+                </form>
+            </section>
+        @elseif (! $report->website->repository)
+            <section class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <h2 class="font-semibold text-slate-900">Connect GitHub to prepare fixes</h2>
+                <p class="mt-1 text-sm text-slate-600">Choose the source repository from the website settings before creating a remediation.</p>
+                <a href="{{ route('admin.website-repositories.create', $report->website) }}" class="mt-3 inline-flex rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">Connect GitHub</a>
+            </section>
+        @endif
     @endif
 
     @if ($report->status === 'failed')

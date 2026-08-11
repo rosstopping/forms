@@ -35,4 +35,15 @@ return [
         ],
     ],
 
+    'github' => [
+        'app_id' => env('GITHUB_APP_ID'),
+        'app_slug' => env('GITHUB_APP_SLUG'),
+        'client_id' => env('GITHUB_CLIENT_ID'),
+        'client_secret' => env('GITHUB_CLIENT_SECRET'),
+        'private_key' => env('GITHUB_APP_PRIVATE_KEY'),
+        'webhook_secret' => env('GITHUB_WEBHOOK_SECRET'),
+        'api_url' => env('GITHUB_API_URL', 'https://api.github.com'),
+        'oauth_url' => env('GITHUB_OAUTH_URL', 'https://github.com/login/oauth'),
+    ],
+
 ];

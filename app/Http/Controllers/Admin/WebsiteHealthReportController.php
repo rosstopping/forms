@@ -42,7 +42,11 @@ class WebsiteHealthReportController extends Controller
         abort_unless($request->user()?->isAdmin() || $website->user_id === $request->user()?->id, 403);
         abort_unless($websiteHealthReport->website_id === $website->id, 404);
 
-        $websiteHealthReport->load(['website', 'pages' => fn ($query) => $query->orderBy('depth')->orderBy('url')]);
+        $websiteHealthReport->load([
+            'website.repository',
+            'remediationRuns' => fn ($query) => $query->with('repository')->latest(),
+            'pages' => fn ($query) => $query->orderBy('depth')->orderBy('url'),
+        ]);
 
         return view('admin.website-health-reports.show', [
             'report' => $websiteHealthReport,

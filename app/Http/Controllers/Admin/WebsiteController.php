@@ -95,6 +95,7 @@ class WebsiteController extends Controller
             'domains',
             'forms' => fn ($query) => $query->latest('created_at'),
             'healthReports' => fn ($query) => $query->latest('created_at')->limit(8),
+            'repository.installation',
             'submissions' => fn ($query) => $query->latest('created_at')->limit(10),
         ]);
         $users = $user?->isAdmin() ? User::query()->orderBy('name')->get(['id', 'name', 'email']) : collect();

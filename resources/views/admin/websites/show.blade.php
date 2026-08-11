@@ -5,6 +5,9 @@
     @if (session('status'))
         <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{{ session('status') }}</div>
     @endif
+    @if (session('error'))
+        <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{{ session('error') }}</div>
+    @endif
     <div class="flex items-center justify-between">
         <div>
             <h1 class="text-2xl font-semibold">{{ e($website->name) }}</h1>
@@ -12,6 +15,39 @@
         </div>
         <a href="{{ route('admin.websites.index') }}" class="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Back to websites</a>
     </div>
+
+    @if (Auth::user()?->isAdmin())
+        <div class="rounded-lg border bg-white p-4 shadow-sm">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                    <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Automated remediation</p>
+                    <h2 class="mt-1 font-semibold">GitHub repository</h2>
+                    @if ($website->repository)
+                        <p class="mt-1 text-sm text-slate-600">
+                            <span class="font-medium text-slate-900">{{ $website->repository->full_name }}</span>
+                            on {{ $website->repository->default_branch }}
+                            @if ($website->repository->project_path)
+                                · {{ $website->repository->project_path }}
+                            @endif
+                        </p>
+                        <p class="mt-1 text-xs text-slate-500">Installed for {{ $website->repository->installation->account_login }}.</p>
+                    @else
+                        <p class="mt-1 text-sm text-slate-600">Connect the source repository to prepare tracked fixes from health-report findings.</p>
+                    @endif
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <a href="{{ route('admin.website-repositories.create', $website) }}" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">{{ $website->repository ? 'Change repository' : 'Connect GitHub' }}</a>
+                    @if ($website->repository)
+                        <form method="POST" action="{{ route('admin.website-repositories.destroy', $website) }}">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Disconnect</button>
+                        </form>
+                    @endif
+                </div>
+            </div>
+        </div>
+    @endif
 
     <div class="grid gap-6 lg:grid-cols-2">
         <div class="rounded-lg border bg-white p-4 shadow-sm">
