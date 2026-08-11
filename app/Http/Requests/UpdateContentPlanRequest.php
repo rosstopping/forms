@@ -29,7 +29,7 @@ class UpdateContentPlanRequest extends FormRequest
             'hour' => ['required', 'integer', 'between:0,23'],
             'timezone' => ['required', 'string', Rule::in(timezone_identifiers_list())],
             'audience' => ['nullable', 'string', 'max:5000'],
-            'guidance' => ['nullable', 'string', 'max:5000'],
+            'guidance' => ['nullable', 'string', 'max:20000'],
         ];
     }
 }

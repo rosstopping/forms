@@ -90,6 +90,64 @@ test('content plan settings remain saved when activation requirements are missin
         ->assertSee('America/New_York');
 });
 
+test('content plans accept substantial editorial guidance', function () {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $website = Website::factory()->create();
+    $guidance = rtrim(str_repeat('Write confidently, show the guest experience, and avoid generic luxury clichés. ', 100));
+
+    expect(mb_strlen($guidance))->toBeGreaterThan(5000);
+
+    $this->actingAs($admin)
+        ->put(route('admin.content-plans.update', $website), [
+            'enabled' => false,
+            'weekday' => 4,
+            'hour' => 15,
+            'timezone' => 'Europe/London',
+            'audience' => 'Luxury group travellers',
+            'guidance' => $guidance,
+        ])
+        ->assertSessionDoesntHaveErrors()
+        ->assertRedirect(route('admin.websites.show', $website));
+
+    expect($website->contentPlan()->firstOrFail()->guidance)->toBe($guidance);
+});
+
+test('updating the website owner does not overwrite saved content plan settings', function () {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $owner = User::factory()->create();
+    $website = Website::factory()->create();
+
+    $this->actingAs($admin)
+        ->put(route('admin.content-plans.update', $website), [
+            'enabled' => false,
+            'weekday' => 4,
+            'hour' => 15,
+            'timezone' => 'Europe/London',
+            'audience' => 'Independent venue owners',
+            'guidance' => 'Use a practical and direct tone',
+        ])
+        ->assertRedirect(route('admin.websites.show', $website));
+
+    $this->actingAs($admin)
+        ->put(route('admin.websites.update', $website), [
+            'user_id' => $owner->id,
+            'health_reports_enabled' => false,
+        ])
+        ->assertRedirect(route('admin.websites.show', $website));
+
+    $plan = $website->contentPlan()->firstOrFail();
+
+    expect($website->fresh()->user_id)->toBe($owner->id)
+        ->and($plan->audience)->toBe('Independent venue owners')
+        ->and($plan->guidance)->toBe('Use a practical and direct tone');
+
+    $this->actingAs($admin)
+        ->get(route('admin.websites.show', $website))
+        ->assertSuccessful()
+        ->assertSee('Independent venue owners')
+        ->assertSee('Use a practical and direct tone');
+});
+
 test('content generation uses search performance to start a copilot pull request task', function () {
     Queue::fake();
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);

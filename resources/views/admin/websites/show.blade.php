@@ -104,8 +104,17 @@
                 <div><label class="block text-sm font-medium" for="weekday">Day</label><select id="weekday" name="weekday" class="mt-1 w-full rounded-md border px-3 py-2 text-sm">@foreach (['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'] as $value => $day)<option value="{{ $value }}" @selected((int) old('weekday', $contentPlan?->weekday ?? 1) === $value)>{{ $day }}</option>@endforeach</select></div>
                 <div><label class="block text-sm font-medium" for="hour">Hour</label><select id="hour" name="hour" class="mt-1 w-full rounded-md border px-3 py-2 text-sm">@for ($hour = 0; $hour < 24; $hour++)<option value="{{ $hour }}" @selected((int) old('hour', $contentPlan?->hour ?? 8) === $hour)>{{ str_pad($hour, 2, '0', STR_PAD_LEFT) }}:00</option>@endfor</select></div>
                 <div class="md:col-span-2"><label class="block text-sm font-medium" for="timezone">Timezone</label><input id="timezone" name="timezone" value="{{ old('timezone', $contentPlan?->timezone ?? 'Europe/London') }}" class="mt-1 w-full rounded-md border px-3 py-2 text-sm"></div>
-                <div><label class="block text-sm font-medium" for="audience">Audience</label><textarea id="audience" name="audience" rows="3" class="mt-1 w-full rounded-md border px-3 py-2 text-sm">{{ old('audience', $contentPlan?->audience) }}</textarea></div>
-                <div><label class="block text-sm font-medium" for="guidance">Editorial guidance</label><textarea id="guidance" name="guidance" rows="3" class="mt-1 w-full rounded-md border px-3 py-2 text-sm">{{ old('guidance', $contentPlan?->guidance) }}</textarea></div>
+                <div>
+                    <label class="block text-sm font-medium" for="audience">Audience</label>
+                    <textarea id="audience" name="audience" rows="3" maxlength="5000" class="mt-1 w-full rounded-md border px-3 py-2 text-sm">{{ old('audience', $contentPlan?->audience) }}</textarea>
+                    @error('audience')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror
+                </div>
+                <div>
+                    <label class="block text-sm font-medium" for="guidance">Editorial guidance</label>
+                    <textarea id="guidance" name="guidance" rows="8" maxlength="20000" class="mt-1 w-full rounded-md border px-3 py-2 text-sm">{{ old('guidance', $contentPlan?->guidance) }}</textarea>
+                    <p class="mt-1 text-xs text-slate-500">Up to 20,000 characters.</p>
+                    @error('guidance')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror
+                </div>
                 <div class="md:col-span-2"><button class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white">Save content plan</button></div>
             </form>
             @if ($contentPlan?->generations->isNotEmpty())
