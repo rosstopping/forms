@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('business_profile_connections', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('website_id')->unique()->constrained()->cascadeOnDelete();
-            $table->foreignId('connected_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('website_id')->unique()->constrained(indexName: 'bp_connections_website_fk')->cascadeOnDelete();
+            $table->foreignId('connected_by')->nullable()->constrained('users', indexName: 'bp_connections_connector_fk')->nullOnDelete();
             $table->string('account_name')->nullable();
             $table->string('location_name')->nullable();
             $table->string('location_title')->nullable();

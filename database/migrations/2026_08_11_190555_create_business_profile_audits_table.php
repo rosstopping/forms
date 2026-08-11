@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('business_profile_audits', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('business_profile_connection_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('business_profile_connection_id')->constrained(indexName: 'bp_audits_connection_fk')->cascadeOnDelete();
             $table->string('status')->default('pending')->index();
             $table->string('overall_status')->nullable()->index();
             $table->json('snapshot')->nullable();

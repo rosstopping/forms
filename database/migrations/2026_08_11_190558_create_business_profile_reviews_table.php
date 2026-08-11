@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('business_profile_reviews', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('business_profile_connection_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('business_profile_connection_id')->constrained(indexName: 'bp_reviews_connection_fk')->cascadeOnDelete();
             $table->string('google_review_name')->unique();
             $table->string('reviewer_name')->nullable();
             $table->unsignedTinyInteger('star_rating');
@@ -22,7 +22,7 @@ return new class extends Migration
             $table->text('google_reply')->nullable();
             $table->text('suggested_reply')->nullable();
             $table->string('reply_status')->default('unanswered')->index();
-            $table->foreignId('approved_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('approved_by')->nullable()->constrained('users', indexName: 'bp_reviews_approver_fk')->nullOnDelete();
             $table->timestamp('approved_at')->nullable();
             $table->timestamp('replied_at')->nullable();
             $table->text('error')->nullable();

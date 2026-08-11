@@ -13,14 +13,14 @@ return new class extends Migration
     {
         Schema::create('business_profile_posts', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('business_profile_connection_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('business_profile_connection_id')->constrained(indexName: 'bp_posts_connection_fk')->cascadeOnDelete();
             $table->string('status')->default('generating')->index();
             $table->text('topic')->nullable();
             $table->text('summary')->nullable();
             $table->string('call_to_action_type')->nullable();
             $table->text('call_to_action_url')->nullable();
             $table->string('google_post_name')->nullable()->unique();
-            $table->foreignId('approved_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('approved_by')->nullable()->constrained('users', indexName: 'bp_posts_approver_fk')->nullOnDelete();
             $table->timestamp('approved_at')->nullable();
             $table->timestamp('published_at')->nullable();
             $table->text('error')->nullable();
