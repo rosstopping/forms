@@ -42,7 +42,12 @@ it('keeps forms and submissions inside the website workspace', function (): void
         ->get(route('admin.websites.show', $website))
         ->assertOk()
         ->assertSee('Health reports')
+        ->assertSee('data-tab="content"', false)
         ->assertSee('Forms & submissions', false)
+        ->assertSee('role="tablist"', false)
+        ->assertSee('data-tab-panel="health"', false)
+        ->assertSee('data-tab-panel="forms" hidden', false)
+        ->assertDontSee('href="#health"', false)
         ->assertSee('Contact form')
         ->assertSee('Recent submissions');
 });

@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="space-y-6">
+<div class="space-y-6" data-tabs data-default-tab="{{ $errors->any() ? 'content' : 'health' }}">
     @if (session('status'))
         <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{{ session('status') }}</div>
     @endif
@@ -16,18 +16,19 @@
         <a href="{{ route('admin.websites.index') }}" class="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Back to websites</a>
     </div>
 
-    <nav class="flex gap-1 overflow-x-auto border-b border-slate-200" aria-label="Website sections">
-        <a href="#health" class="shrink-0 border-b-2 border-slate-900 px-3 py-2 text-sm font-medium text-slate-950">Health reports</a>
+    <div class="flex gap-1 overflow-x-auto border-b border-slate-200" role="tablist" aria-label="Website sections">
+        <button type="button" id="website-tab-health" class="shrink-0 border-b-2 border-slate-900 px-3 py-2 text-sm font-medium text-slate-950" role="tab" aria-selected="true" aria-controls="website-panel-health" tabindex="0" data-tab="health">Health reports</button>
         @if (Auth::user()?->isAdmin())
-            <a href="#search" class="shrink-0 border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500 hover:text-slate-950">Search</a>
-            <a href="#content" class="shrink-0 border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500 hover:text-slate-950">Content</a>
+            <button type="button" id="website-tab-search" class="shrink-0 border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500 hover:text-slate-950" role="tab" aria-selected="false" aria-controls="website-panel-search" tabindex="-1" data-tab="search">Search</button>
         @endif
-        <a href="#forms" class="shrink-0 border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500 hover:text-slate-950">Forms & submissions</a>
-        <a href="#settings" class="shrink-0 border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500 hover:text-slate-950">Settings</a>
-    </nav>
+        <button type="button" id="website-tab-content" class="shrink-0 border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500 hover:text-slate-950" role="tab" aria-selected="false" aria-controls="website-panel-content" tabindex="-1" data-tab="content">Content</button>
+        <button type="button" id="website-tab-forms" class="shrink-0 border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500 hover:text-slate-950" role="tab" aria-selected="false" aria-controls="website-panel-forms" tabindex="-1" data-tab="forms">Forms & submissions</button>
+        <button type="button" id="website-tab-settings" class="shrink-0 border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500 hover:text-slate-950" role="tab" aria-selected="false" aria-controls="website-panel-settings" tabindex="-1" data-tab="settings">Settings</button>
+    </div>
 
-    @php($latestReport = $website->healthReports->first())
-    <section id="health" class="rounded-lg border border-slate-200 bg-white" aria-labelledby="health-title">
+    <div id="website-panel-health" class="space-y-6" role="tabpanel" aria-labelledby="website-tab-health" data-tab-panel="health">
+        @php($latestReport = $website->healthReports->first())
+        <section class="rounded-lg border border-slate-200 bg-white" aria-labelledby="health-title">
         <div class="flex flex-col gap-4 border-b border-slate-200 p-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
                 <p class="text-xs font-medium uppercase tracking-widest text-slate-500">Website monitoring</p>
@@ -61,9 +62,9 @@
                 </tbody>
             </table>
         </div>
-    </section>
+        </section>
 
-    @if (Auth::user()?->isAdmin())
+        @if (Auth::user()?->isAdmin())
         <div class="rounded-lg border bg-white p-4 shadow-sm">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
@@ -94,8 +95,11 @@
                 </div>
             </div>
         </div>
+        @endif
+    </div>
 
-        <div id="search" class="rounded-lg border bg-white p-4 shadow-sm">
+    @if (Auth::user()?->isAdmin())
+        <div id="website-panel-search" class="rounded-lg border bg-white p-4 shadow-sm" role="tabpanel" aria-labelledby="website-tab-search" data-tab-panel="search" hidden>
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
                     <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Content intelligence</p>
@@ -135,9 +139,12 @@
                 <p class="mt-4 border-t border-slate-200 pt-4 text-sm text-amber-700">Search performance is temporarily unavailable. The rest of the dashboard is unaffected.</p>
             @endif
         </div>
+    @endif
 
+    <div id="website-panel-content" class="space-y-6" role="tabpanel" aria-labelledby="website-tab-content" data-tab-panel="content" hidden>
+        @if (Auth::user()?->isAdmin())
         @php($contentPlan = $website->contentPlan)
-        <div id="content" class="rounded-lg border bg-white p-4 shadow-sm">
+        <div class="rounded-lg border bg-white p-4 shadow-sm">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div><p class="text-xs font-medium uppercase tracking-wide text-slate-500">AI content</p><h2 class="mt-1 font-semibold">Weekly content generation</h2><p class="mt-1 text-sm text-slate-600">Copilot chooses a blog post, landing page, or page improvement and opens a pull request for review.</p></div>
                 @if ($website->repository && $website->searchConsoleConnection?->property_url)
@@ -169,9 +176,9 @@
                 <div class="mt-5 overflow-x-auto"><table class="min-w-full text-sm"><thead><tr class="border-b text-left text-xs uppercase text-slate-500"><th class="py-2">Date</th><th>Status</th><th>Pull request</th></tr></thead><tbody>@foreach ($contentPlan->generations as $generation)<tr class="border-b"><td class="py-2">{{ $generation->scheduled_for->toFormattedDateString() }}</td><td>{{ str_replace('_', ' ', $generation->status) }}</td><td>@if ($generation->pull_request_url)<a class="font-medium underline" href="{{ $generation->pull_request_url }}">#{{ $generation->pull_request_number }}</a>@else — @endif</td></tr>@endforeach</tbody></table></div>
             @endif
         </div>
-    @endif
+        @endif
 
-    <section class="rounded-lg border bg-white p-4 shadow-sm" aria-labelledby="content-requests-title">
+        <section class="rounded-lg border bg-white p-4 shadow-sm" aria-labelledby="content-requests-title">
         <div>
             <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Ideas for Copilot</p>
             <h2 id="content-requests-title" class="mt-1 font-semibold">Manual content requests</h2>
@@ -218,9 +225,10 @@
                 @endforelse
             </div>
         </div>
-    </section>
+        </section>
+    </div>
 
-    <div id="settings" class="grid gap-6 lg:grid-cols-2">
+    <div id="website-panel-settings" class="grid gap-6 lg:grid-cols-2" role="tabpanel" aria-labelledby="website-tab-settings" data-tab-panel="settings" hidden>
         <div class="rounded-lg border bg-white p-4 shadow-sm">
             <h2 class="font-semibold">Overview</h2>
             <dl class="mt-3 space-y-2 text-sm">
@@ -273,7 +281,7 @@
         </div>
     </div>
 
-    <div id="forms" class="grid gap-6 lg:grid-cols-2">
+    <div id="website-panel-forms" class="grid gap-6 lg:grid-cols-2" role="tabpanel" aria-labelledby="website-tab-forms" data-tab-panel="forms" hidden>
         <div class="rounded-lg border bg-white p-4 shadow-sm">
             <h2 class="font-semibold">Forms</h2>
             <ul class="mt-3 space-y-2 text-sm">
