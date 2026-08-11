@@ -1,5 +1,9 @@
 <?php
 
+use App\Http\Controllers\Admin\BusinessProfileController;
+use App\Http\Controllers\Admin\BusinessProfilePostController;
+use App\Http\Controllers\Admin\BusinessProfileRecommendationController;
+use App\Http\Controllers\Admin\BusinessProfileReviewController;
 use App\Http\Controllers\Admin\ContentPlanController;
 use App\Http\Controllers\Admin\ContentRequestController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -85,6 +89,20 @@ Route::middleware(['web', 'auth'])->prefix('admin')->name('admin.')->group(funct
     Route::post('websites/{website}/search-console/property', [SearchConsoleController::class, 'storeProperty'])->name('search-console.property.store');
     Route::get('websites/{website}/search-console/performance', [SearchConsoleController::class, 'performance'])->name('search-console.performance');
     Route::delete('websites/{website}/search-console', [SearchConsoleController::class, 'destroy'])->name('search-console.destroy');
+    Route::get('websites/{website}/business-profile/connect', [BusinessProfileController::class, 'connect'])->name('business-profile.connect');
+    Route::get('business-profile/callback', [BusinessProfileController::class, 'callback'])->name('business-profile.callback');
+    Route::get('websites/{website}/business-profile/locations', [BusinessProfileController::class, 'locations'])->name('business-profile.locations');
+    Route::post('websites/{website}/business-profile/location', [BusinessProfileController::class, 'storeLocation'])->name('business-profile.location.store');
+    Route::put('websites/{website}/business-profile', [BusinessProfileController::class, 'update'])->name('business-profile.update');
+    Route::delete('websites/{website}/business-profile', [BusinessProfileController::class, 'destroy'])->name('business-profile.destroy');
+    Route::post('websites/{website}/business-profile/audits', [BusinessProfileController::class, 'audit'])->name('business-profile.audits.store');
+    Route::post('websites/{website}/business-profile/reviews/sync', [BusinessProfileController::class, 'syncReviews'])->name('business-profile.reviews.sync');
+    Route::put('websites/{website}/business-profile/recommendations/{recommendation}', [BusinessProfileRecommendationController::class, 'update'])->name('business-profile.recommendations.update');
+    Route::delete('websites/{website}/business-profile/recommendations/{recommendation}', [BusinessProfileRecommendationController::class, 'destroy'])->name('business-profile.recommendations.destroy');
+    Route::post('websites/{website}/business-profile/posts', [BusinessProfilePostController::class, 'store'])->name('business-profile.posts.store');
+    Route::put('websites/{website}/business-profile/posts/{post}', [BusinessProfilePostController::class, 'update'])->name('business-profile.posts.update');
+    Route::post('websites/{website}/business-profile/reviews/{review}/draft', [BusinessProfileReviewController::class, 'store'])->name('business-profile.reviews.draft');
+    Route::put('websites/{website}/business-profile/reviews/{review}', [BusinessProfileReviewController::class, 'update'])->name('business-profile.reviews.update');
     Route::put('websites/{website}/content-plan', [ContentPlanController::class, 'update'])->name('content-plans.update');
     Route::post('websites/{website}/content-generations', [ContentPlanController::class, 'generate'])->name('content-generations.store');
     Route::post('websites/{website}/content-requests', [ContentRequestController::class, 'store'])->name('content-requests.store');

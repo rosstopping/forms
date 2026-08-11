@@ -52,6 +52,9 @@ return [
         'oauth_url' => env('GOOGLE_OAUTH_URL', 'https://accounts.google.com/o/oauth2/v2/auth'),
         'token_url' => env('GOOGLE_TOKEN_URL', 'https://oauth2.googleapis.com/token'),
         'search_console_url' => env('GOOGLE_SEARCH_CONSOLE_URL', 'https://www.googleapis.com/webmasters/v3'),
+        'business_profile_account_url' => env('GOOGLE_BUSINESS_PROFILE_ACCOUNT_URL', 'https://mybusinessaccountmanagement.googleapis.com/v1'),
+        'business_profile_information_url' => env('GOOGLE_BUSINESS_PROFILE_INFORMATION_URL', 'https://mybusinessbusinessinformation.googleapis.com/v1'),
+        'business_profile_v4_url' => env('GOOGLE_BUSINESS_PROFILE_V4_URL', 'https://mybusiness.googleapis.com/v4'),
     ],
 
 ];

@@ -15,3 +15,7 @@ Schedule::command('health-reports:dispatch')
 Schedule::command('content:dispatch')
     ->hourly()
     ->withoutOverlapping();
+
+Schedule::command('business-profiles:dispatch-audits')
+    ->hourly()
+    ->withoutOverlapping();

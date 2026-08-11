@@ -81,6 +81,11 @@ class Website extends Model
         return $this->hasOne(SearchConsoleConnection::class);
     }
 
+    public function businessProfileConnection(): HasOne
+    {
+        return $this->hasOne(BusinessProfileConnection::class);
+    }
+
     public function contentPlan(): HasOne
     {
         return $this->hasOne(ContentPlan::class);
