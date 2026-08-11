@@ -15,6 +15,7 @@ use App\Models\WebsiteRepository;
 use App\Services\GithubAppClient;
 use App\Services\SearchConsoleClient;
 use App\Services\WebsiteHealthAuditor;
+use App\Services\WebsiteHealthReportPromptGenerator;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
@@ -160,6 +161,11 @@ it('shows a friendly report through a signed link without authentication', funct
         ->assertSuccessful()
         ->assertSee('Aim for 65 or fewer')
         ->assertSee('Aim for 170 or fewer');
+
+    expect(app(WebsiteHealthReportPromptGenerator::class)->generate($report->fresh(['website', 'pages'])))
+        ->toContain('Aim for 65 or fewer')
+        ->toContain('Aim for 170 or fewer')
+        ->not->toContain('[WARNING] Meta description: Meta description is present.');
 });
 
 it('shows administrators a copyable AI prompt containing every report issue', function (): void {
