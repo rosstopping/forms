@@ -1,14 +1,14 @@
 @extends('layouts.marketing')
 
 @section('title', 'Journal')
-@section('meta_description', 'Practical notes from Sitewell on website operations, forms, search performance, and client care.')
+@section('meta_description', 'Practical notes from Sitewell on website health, forms, search performance, and business growth.')
 
 @section('content')
     <section class="py-16 sm:py-24">
         <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
             <p class="font-mono text-sm uppercase tracking-wide text-garden">The Sitewell journal</p>
             <h1 class="mt-5 max-w-[20ch] font-display text-5xl font-semibold tracking-tight text-balance sm:text-6xl">Practical notes on looking after websites</h1>
-            <p class="mt-6 max-w-[48ch] text-pretty text-lg text-ink/65 sm:text-base">Clear guidance for agencies and teams who want calmer handovers, more reliable operations, and better client conversations.</p>
+            <p class="mt-6 max-w-[48ch] text-pretty text-lg text-ink/65 sm:text-base">Clear guidance for business owners who want a healthier website, more reliable lead handling, and better online visibility.</p>
         </div>
     </section>
 

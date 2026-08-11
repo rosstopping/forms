@@ -4,8 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#f4f1e8">
-    <meta name="description" content="@yield('meta_description', 'Sitewell keeps every client website healthy, visible, and converting.')">
-    <title>@yield('title', 'Sitewell') · Every client site, well looked after</title>
+    <meta name="description" content="@yield('meta_description', 'Sitewell keeps your website healthy, visible, and ready to turn visitors into customers.')">
+    <title>@yield('title', 'Sitewell') · Your website, well looked after</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-dvh bg-paper font-sans text-ink">
@@ -48,7 +48,7 @@
                 <div class="grid gap-10 md:grid-cols-[2fr_1fr_1fr]">
                     <div>
                         <a href="{{ route('marketing.home') }}" aria-label="Homepage" class="font-display text-2xl font-semibold tracking-tight">Sitewell</a>
-                        <p class="mt-4 max-w-[42ch] text-pretty text-base text-paper/65 sm:text-sm">The calm care layer for every client website your team looks after.</p>
+                        <p class="mt-4 max-w-[42ch] text-pretty text-base text-paper/65 sm:text-sm">The calm care layer for the website your business depends on.</p>
                     </div>
                     <nav class="grid content-start gap-3 text-base text-paper/70 sm:text-sm" aria-label="Product">
                         <p class="font-medium text-paper">Product</p>
@@ -63,7 +63,7 @@
                         <a href="{{ route('login') }}" class="font-normal hover:text-paper">Log in</a>
                     </nav>
                 </div>
-                <p class="mt-12 border-t border-paper/10 pt-6 text-base text-paper/50 sm:text-sm">© {{ now()->year }} Sitewell. Every client site, well looked after.</p>
+                <p class="mt-12 border-t border-paper/10 pt-6 text-base text-paper/50 sm:text-sm">© {{ now()->year }} Sitewell. Your website, well looked after.</p>
             </div>
         </footer>
     </div>

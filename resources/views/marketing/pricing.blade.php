@@ -1,14 +1,14 @@
 @extends('layouts.marketing')
 
 @section('title', 'Pricing')
-@section('meta_description', 'Simple Sitewell packages for freelancers, growing studios, and established agency teams.')
+@section('meta_description', 'Straightforward Sitewell plans for businesses that want a healthier website, better lead handling, and sustainable online growth.')
 
 @section('content')
     <section class="py-16 sm:py-24">
         <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
             <p class="font-mono text-sm uppercase tracking-wide text-garden">Straightforward monthly plans</p>
-            <h1 class="mt-5 max-w-[20ch] font-display text-5xl font-semibold tracking-tight text-balance sm:text-6xl">Care that scales with your client list</h1>
-            <p class="mt-6 max-w-[48ch] text-pretty text-lg text-ink/65 sm:text-base">Start with the sites you manage today. Move plans whenever your portfolio grows.</p>
+            <h1 class="mt-5 max-w-[20ch] font-display text-5xl font-semibold tracking-tight text-balance sm:text-6xl">Everything your website needs to work harder</h1>
+            <p class="mt-6 max-w-[48ch] text-pretty text-lg text-ink/65 sm:text-base">Start with a healthier website and a better way to handle leads. Add search, content, and local business automation as your business grows.</p>
         </div>
     </section>
 
@@ -17,13 +17,13 @@
             <div class="@container">
                 <div class="grid divide-y divide-ink/10 border-y border-ink/10 @3xl:grid-cols-3 @3xl:divide-x @3xl:divide-y-0">
                     @foreach ([
-                        ['Foundation', 'For freelancers and small teams.', '49', 'Up to 3 sites', ['Unlimited form submissions', 'Spam protection', 'Website health monitoring', 'Search Console reporting', 'Basic content planner', 'Email reports'], false],
-                        ['Studio', 'For growing agencies and web studios.', '129', 'Up to 15 sites', ['Everything in Foundation', 'Webhook delivery', 'Advanced health checks', 'Content planner and calendar', 'Performance history', 'GitHub-based fixes', 'Priority support'], true],
-                        ['Partner', 'For agencies with larger portfolios.', '249', 'Up to 40 sites', ['Everything in Studio', 'Client roles and permissions', 'White-label reports', 'API access', 'Custom onboarding', 'Dedicated support', 'Early access features'], false],
+                        ['Essential', 'For a business that needs its website and leads properly looked after.', '149', 'One website included', ['Free website included if you need one', 'Website health checks and practical fixes', 'Weekly email health reports', 'Forms, spam protection, and automatic replies', 'Lead inbox, CRM, notes, and follow-up reminders'], false],
+                        ['Growth', 'For businesses ready to turn search visibility into a steady growth channel.', '249', 'Everything in Essential', ['Google Search Console performance', 'Search opportunities and recommendations', 'Automated, reviewable content generation', 'Content planning and improvement workflow', 'Priority support'], true],
+                        ['Complete', 'For businesses that want their website and local presence working together.', '399', 'Everything in Growth', ['Google Business Profile management', 'Profile health checks and recommended changes', 'Generated Google post drafts', 'Review replies in approval mode', 'Advanced automations and dedicated support'], false],
                     ] as [$name, $description, $price, $capacity, $features, $recommended])
                         <div class="flex flex-col justify-between gap-10 px-0 py-10 @3xl:px-8 @3xl:first:pl-0 @3xl:last:pr-0">
                             <div>
-                                <div class="flex items-baseline justify-between gap-4"><h2 class="font-display text-2xl font-semibold tracking-tight">{{ $name }}</h2>@if ($recommended)<p class="font-mono text-sm text-garden">Best for agencies</p>@endif</div>
+                                <div class="flex items-baseline justify-between gap-4"><h2 class="font-display text-2xl font-semibold tracking-tight">{{ $name }}</h2>@if ($recommended)<p class="font-mono text-sm text-garden">Most popular</p>@endif</div>
                                 <p class="mt-3 text-pretty text-base text-ink/55 sm:text-sm">{{ $description }}</p>
                                 <div class="mt-8 flex items-baseline gap-1"><p class="font-display text-5xl font-semibold tracking-tight tabular-nums">£{{ $price }}</p><p class="text-base text-ink/50 sm:text-sm">/month</p></div>
                                 <p class="mt-3 font-mono text-sm text-ink/65">{{ $capacity }}</p>
@@ -36,15 +36,15 @@
                     @endforeach
                 </div>
             </div>
-            <p class="mt-5 text-pretty text-base text-ink/50 sm:text-sm">Prices exclude VAT. Need more than 40 sites or a tailored handover? We’ll shape a Partner plan around your portfolio.</p>
+            <p class="mt-5 text-pretty text-base text-ink/50 sm:text-sm">Prices exclude VAT. Each plan is designed around one business website. Need a tailored setup? We can help.</p>
         </div>
     </section>
 
     <section class="border-t border-ink/10 bg-lichen/45 py-20 sm:py-28">
         <div class="mx-auto grid max-w-7xl gap-12 px-5 sm:px-8 lg:grid-cols-[2fr_3fr] lg:px-10">
-            <div><p class="font-mono text-sm uppercase tracking-wide text-garden">Included in every plan</p><h2 class="mt-4 max-w-[24ch] font-display text-4xl font-semibold tracking-tight text-balance sm:text-5xl">No paid add-ons for the basics</h2></div>
+            <div><p class="font-mono text-sm uppercase tracking-wide text-garden">Included in every plan</p><h2 class="mt-4 max-w-[24ch] font-display text-4xl font-semibold tracking-tight text-balance sm:text-5xl">A solid foundation, without the extras</h2></div>
             <dl class="grid gap-8 sm:grid-cols-2">
-                @foreach ([['Guided onboarding', 'We help connect each site, its forms, Search Console property, and repository.'], ['Unlimited users', 'Bring in the people who own the relationship or approve the work.'], ['Human review', 'Content and fixes stay reviewable before anything reaches a live site.'], ['Clear portability', 'Your websites, repositories, and connected accounts remain yours.']] as [$title, $copy])
+                @foreach ([['A website if you need one', 'Essential includes a new website for businesses that do not already have one.'], ['Guided setup', 'We set up your website, forms, notifications, and reporting rhythm.'], ['Human review', 'Content, fixes, posts, and review replies remain under your control.'], ['Clear portability', 'Your website and connected accounts remain yours.']] as [$title, $copy])
                     <div class="border-t border-ink/15 pt-4"><dt class="text-base font-medium sm:text-sm">{{ $title }}</dt><dd class="mt-2 text-pretty text-base text-ink/55 sm:text-sm">{{ $copy }}</dd></div>
                 @endforeach
             </dl>
@@ -56,7 +56,7 @@
             <p class="font-mono text-sm uppercase tracking-wide text-garden">Questions before you start</p>
             <h2 class="mt-4 max-w-[24ch] font-display text-4xl font-semibold tracking-tight text-balance sm:text-5xl">Pricing, plainly answered</h2>
             <div class="mt-12 max-w-4xl divide-y divide-ink/10 border-y border-ink/10">
-                @foreach ([['Can I change plans later?', 'Yes. Move up or down as the number of websites you actively manage changes.'], ['Does every client need a Copilot licence?', 'No. Sitewell can coordinate reviewable repository work through the agreed agency workflow; clients do not need their own Copilot subscription.'], ['Are form submissions limited?', 'No. Every plan includes unlimited form submissions, subject to fair-use and spam controls.'], ['What does onboarding include?', 'We connect the first websites, verify forms and notifications, connect Search Console and repositories, and agree your reporting rhythm.']] as [$question, $answer])
+                @foreach ([['Is a website really included?', 'Yes. Essential includes a website for businesses starting without one. We will agree the scope during onboarding.'], ['Can I change plans later?', 'Yes. Move up as you are ready for search, content, and Google Business Profile automation.'], ['Are form submissions limited?', 'No. Every plan includes unlimited form submissions, subject to fair-use and spam controls.'], ['What does setup include?', 'We set up your website, verify forms and notifications, and agree a clear reporting rhythm. Growth and Complete add the relevant Google connections.']] as [$question, $answer])
                     <details class="group py-5"><summary class="flex list-none items-center justify-between gap-6 text-base font-medium sm:text-sm">{{ $question }}<span class="shrink-0 font-mono text-garden group-open:hidden">+</span><span class="hidden shrink-0 font-mono text-garden group-open:inline">−</span></summary><p class="mt-4 max-w-[70ch] text-pretty text-base text-ink/60 sm:text-sm">{{ $answer }}</p></details>
                 @endforeach
             </div>

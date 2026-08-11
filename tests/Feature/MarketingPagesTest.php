@@ -9,11 +9,11 @@ it('shows each public marketing page', function (string $route, string $copy): v
         ->assertSee('Sitewell')
         ->assertSee($copy);
 })->with([
-    'home' => ['marketing.home', 'Every client site, well looked after'],
+    'home' => ['marketing.home', 'Your website, well looked after'],
     'features' => ['marketing.features', 'Everything you need after a website goes live'],
-    'pricing' => ['marketing.pricing', 'Care that scales with your client list'],
+    'pricing' => ['marketing.pricing', 'Everything your website needs to work harder'],
     'journal' => ['marketing.journal', 'Practical notes on looking after websites'],
-    'contact' => ['marketing.contact', 'A clean handover starts here'],
+    'contact' => ['marketing.contact', 'A better website starts here'],
 ]);
 
 it('shows journal articles and returns not found for unknown slugs', function (): void {
