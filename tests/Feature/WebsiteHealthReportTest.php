@@ -225,13 +225,13 @@ it('audits a website and queues the completed report for admins and the owner', 
         'full_name' => 'acme/example-site',
     ]);
     $contentPlan = ContentPlan::factory()->for($website)->create(['created_by' => $admin->id, 'enabled' => true]);
-    ContentGeneration::factory()->for($contentPlan, 'plan')->for($repository, 'repository')->create([
-        'status' => ContentGeneration::STATUS_COMPLETED,
+    $generation = ContentGeneration::factory()->for($contentPlan, 'plan')->for($repository, 'repository')->create([
+        'status' => ContentGeneration::STATUS_PULL_REQUEST_OPEN,
         'pull_request_number' => 42,
         'pull_request_url' => 'https://github.com/acme/example-site/pull/42',
-        'pull_request_state' => 'closed',
-        'merged_at' => now()->subDay(),
-        'completed_at' => now()->subDay(),
+        'pull_request_state' => 'open',
+        'merged_at' => null,
+        'completed_at' => null,
     ]);
     $report = WebsiteHealthReport::factory()->for($website)->create([
         'status' => WebsiteHealthReport::STATUS_PENDING,
@@ -287,6 +287,10 @@ it('audits a website and queues the completed report for admins and the owner', 
         ->and($report->metrics['content_updates'][0]['changed_files'])->toBe(2)
         ->and($report->completed_at)->not->toBeNull();
 
+    expect($generation->fresh()->status)->toBe(ContentGeneration::STATUS_COMPLETED)
+        ->and($generation->fresh()->pull_request_state)->toBe('closed')
+        ->and($generation->fresh()->merged_at)->not->toBeNull();
+
     Mail::assertQueued(WebsiteHealthReportReady::class, 2);
     Mail::assertQueued(WebsiteHealthReportReady::class, fn ($mail) => $mail->hasTo($admin->email));
     Mail::assertQueued(WebsiteHealthReportReady::class, fn ($mail) => $mail->hasTo($owner->email));
@@ -302,6 +306,13 @@ it('audits a website and queues the completed report for admins and the owner', 
         ->assertSeeInHtml('View the full report')
         ->assertSeeInHtml('does not require you to log in')
         ->assertSeeInHtml('signature=');
+
+    $this->get(URL::temporarySignedRoute('website-health-reports.show', now()->addDays(30), $report))
+        ->assertSuccessful()
+        ->assertSee('Content changes this week')
+        ->assertSee('Publish a guide to choosing event forms')
+        ->assertSee('Added a practical guide based on this week’s search demand.')
+        ->assertSee('resources/views/guides/event-forms.blade.php');
 });
 
 it('omits form submission details from audit emails for websites without forms', function (): void {

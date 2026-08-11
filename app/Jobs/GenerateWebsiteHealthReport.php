@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Mail\WebsiteHealthReportReady;
+use App\Models\ContentGeneration;
 use App\Models\User;
 use App\Models\WebsiteHealthReport;
 use App\Services\GithubAppClient;
@@ -11,6 +12,7 @@ use App\Services\WebsiteHealthAuditor;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Throwable;
@@ -86,20 +88,37 @@ class GenerateWebsiteHealthReport implements ShouldBeUnique, ShouldQueue
         return $plan->generations()
             ->with('repository.installation')
             ->whereNotNull('pull_request_number')
-            ->whereNotNull('merged_at')
-            ->where('merged_at', '>=', $this->report->created_at->copy()->subDays((int) config('forms.health_reports.frequency_days')))
-            ->oldest('merged_at')
+            ->where(function ($query): void {
+                $query->where('status', ContentGeneration::STATUS_PULL_REQUEST_OPEN)
+                    ->orWhere('merged_at', '>=', $this->contentUpdatesStartDate());
+            })
             ->get()
-            ->map(function ($generation) use ($github): array {
+            ->map(function ($generation) use ($github): ?array {
                 try {
                     $details = $github->pullRequestDetails($generation->repository, $generation->pull_request_number);
                     $pullRequest = $details['pull_request'];
+                    $mergedAt = filled($pullRequest['merged_at'] ?? null)
+                        ? Carbon::parse($pullRequest['merged_at'])
+                        : $generation->merged_at;
+
+                    if ($mergedAt && ($generation->status !== ContentGeneration::STATUS_COMPLETED || ! $generation->merged_at)) {
+                        $generation->update([
+                            'status' => ContentGeneration::STATUS_COMPLETED,
+                            'pull_request_state' => 'closed',
+                            'completed_at' => $mergedAt,
+                            'merged_at' => $mergedAt,
+                        ]);
+                    }
+
+                    if (! $mergedAt || $mergedAt->isBefore($this->contentUpdatesStartDate())) {
+                        return null;
+                    }
 
                     return [
                         'title' => (string) ($pullRequest['title'] ?? "Content update #{$generation->pull_request_number}"),
                         'summary' => Str::limit(trim((string) ($pullRequest['body'] ?? '')), 600),
                         'url' => (string) ($pullRequest['html_url'] ?? $generation->pull_request_url),
-                        'merged_at' => (string) ($pullRequest['merged_at'] ?? $generation->merged_at?->toIso8601String()),
+                        'merged_at' => $mergedAt->toIso8601String(),
                         'additions' => (int) ($pullRequest['additions'] ?? 0),
                         'deletions' => (int) ($pullRequest['deletions'] ?? 0),
                         'changed_files' => (int) ($pullRequest['changed_files'] ?? count($details['files'])),
@@ -111,6 +130,10 @@ class GenerateWebsiteHealthReport implements ShouldBeUnique, ShouldQueue
                         ])->all(),
                     ];
                 } catch (Throwable) {
+                    if (! $generation->merged_at || $generation->merged_at->isBefore($this->contentUpdatesStartDate())) {
+                        return null;
+                    }
+
                     return [
                         'title' => "Content update #{$generation->pull_request_number}",
                         'summary' => '',
@@ -123,7 +146,15 @@ class GenerateWebsiteHealthReport implements ShouldBeUnique, ShouldQueue
                     ];
                 }
             })
+            ->filter()
+            ->sortBy('merged_at')
+            ->values()
             ->all();
+    }
+
+    protected function contentUpdatesStartDate(): Carbon
+    {
+        return $this->report->created_at->copy()->subDays((int) config('forms.health_reports.frequency_days'));
     }
 
     /** @return array<string, mixed>|null */

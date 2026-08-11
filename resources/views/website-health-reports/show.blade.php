@@ -100,6 +100,43 @@
             </section>
         @endif
 
+        @if (data_get($report->metrics, 'content_updates'))
+            <section class="rounded-xl border bg-white p-5 shadow-sm sm:p-6">
+                <h2 class="text-xl font-semibold text-slate-900">Content changes this week</h2>
+                <p class="mt-2 text-sm text-slate-600">These content updates were reviewed and merged into the website’s repository during this reporting period.</p>
+                <div class="mt-5 space-y-4">
+                    @foreach (data_get($report->metrics, 'content_updates', []) as $update)
+                        <article class="rounded-lg border border-slate-200 p-4">
+                            <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                <div>
+                                    <h3 class="font-semibold text-slate-900"><a class="hover:text-blue-700 hover:underline" href="{{ $update['url'] }}" target="_blank" rel="noreferrer">{{ $update['title'] }}</a></h3>
+                                    <p class="mt-1 text-xs text-slate-500">Merged {{ \Illuminate\Support\Carbon::parse($update['merged_at'])->format('j F Y') }}</p>
+                                </div>
+                                <div class="flex flex-wrap gap-2 text-xs">
+                                    <span class="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">{{ number_format($update['changed_files']) }} {{ Str::plural('file', $update['changed_files']) }}</span>
+                                    <span class="rounded-full bg-emerald-100 px-2.5 py-1 text-emerald-800">+{{ number_format($update['additions']) }}</span>
+                                    <span class="rounded-full bg-red-100 px-2.5 py-1 text-red-800">−{{ number_format($update['deletions']) }}</span>
+                                </div>
+                            </div>
+                            @if ($update['summary'])
+                                <p class="mt-3 whitespace-pre-line text-sm leading-6 text-slate-600">{{ $update['summary'] }}</p>
+                            @endif
+                            @if ($update['files'])
+                                <div class="mt-4 border-t border-slate-100 pt-3">
+                                    <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Files changed</p>
+                                    <ul class="mt-2 space-y-1 text-sm text-slate-600">
+                                        @foreach ($update['files'] as $file)
+                                            <li class="break-all"><span class="font-medium capitalize text-slate-500">{{ $file['status'] }}</span> {{ $file['name'] }}</li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endif
+                        </article>
+                    @endforeach
+                </div>
+            </section>
+        @endif
+
         <section class="rounded-xl border bg-white p-5 shadow-sm sm:p-6">
             <h2 class="text-xl font-semibold text-slate-900">What needs attention</h2>
             <p class="mt-2 text-sm text-slate-600">The most useful findings are listed below, with the affected page where applicable.</p>
