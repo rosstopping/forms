@@ -106,7 +106,8 @@
                 <div class="md:col-span-2"><label class="block text-sm font-medium" for="timezone">Timezone</label><input id="timezone" name="timezone" value="{{ old('timezone', $contentPlan?->timezone ?? 'Europe/London') }}" class="mt-1 w-full rounded-md border px-3 py-2 text-sm"></div>
                 <div>
                     <label class="block text-sm font-medium" for="audience">Audience</label>
-                    <textarea id="audience" name="audience" rows="3" maxlength="5000" class="mt-1 w-full rounded-md border px-3 py-2 text-sm">{{ old('audience', $contentPlan?->audience) }}</textarea>
+                    <textarea id="audience" name="audience" rows="8" maxlength="20000" class="mt-1 w-full rounded-md border px-3 py-2 text-sm">{{ old('audience', $contentPlan?->audience) }}</textarea>
+                    <p class="mt-1 text-xs text-slate-500">Up to 20,000 characters.</p>
                     @error('audience')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror
                 </div>
                 <div>

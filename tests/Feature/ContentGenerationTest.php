@@ -90,12 +90,14 @@ test('content plan settings remain saved when activation requirements are missin
         ->assertSee('America/New_York');
 });
 
-test('content plans accept substantial editorial guidance', function () {
+test('content plans accept substantial audience and editorial guidance', function () {
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     $website = Website::factory()->create();
+    $audience = rtrim(str_repeat('Large groups planning a special occasion at a fully staffed private villa. ', 100));
     $guidance = rtrim(str_repeat('Write confidently, show the guest experience, and avoid generic luxury clichés. ', 100));
 
-    expect(mb_strlen($guidance))->toBeGreaterThan(5000);
+    expect(mb_strlen($audience))->toBeGreaterThan(5000)
+        ->and(mb_strlen($guidance))->toBeGreaterThan(5000);
 
     $this->actingAs($admin)
         ->put(route('admin.content-plans.update', $website), [
@@ -103,13 +105,16 @@ test('content plans accept substantial editorial guidance', function () {
             'weekday' => 4,
             'hour' => 15,
             'timezone' => 'Europe/London',
-            'audience' => 'Luxury group travellers',
+            'audience' => $audience,
             'guidance' => $guidance,
         ])
         ->assertSessionDoesntHaveErrors()
         ->assertRedirect(route('admin.websites.show', $website));
 
-    expect($website->contentPlan()->firstOrFail()->guidance)->toBe($guidance);
+    $plan = $website->contentPlan()->firstOrFail();
+
+    expect($plan->audience)->toBe($audience)
+        ->and($plan->guidance)->toBe($guidance);
 });
 
 test('updating the website owner does not overwrite saved content plan settings', function () {

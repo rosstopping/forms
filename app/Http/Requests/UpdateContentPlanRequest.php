@@ -28,7 +28,7 @@ class UpdateContentPlanRequest extends FormRequest
             'weekday' => ['required', 'integer', 'between:0,6'],
             'hour' => ['required', 'integer', 'between:0,23'],
             'timezone' => ['required', 'string', Rule::in(timezone_identifiers_list())],
-            'audience' => ['nullable', 'string', 'max:5000'],
+            'audience' => ['nullable', 'string', 'max:20000'],
             'guidance' => ['nullable', 'string', 'max:20000'],
         ];
     }
