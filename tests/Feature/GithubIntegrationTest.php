@@ -45,6 +45,33 @@ it('retrieves pull request content and changed files with an installation token'
         ->and($details['files'][0]['filename'])->toBe('resources/views/guide.blade.php');
 });
 
+it('retrieves every page of repositories available to an installation', function (): void {
+    config(['services.github.api_url' => 'https://api.github.test']);
+    Http::preventStrayRequests();
+    Http::fake([
+        'api.github.test/installation/repositories*' => Http::sequence()
+            ->push([
+                'total_count' => 101,
+                'repositories' => collect(range(1, 100))
+                    ->map(fn (int $id): array => ['id' => $id, 'full_name' => "acme/repository-{$id}"])
+                    ->all(),
+            ])
+            ->push([
+                'total_count' => 101,
+                'repositories' => [['id' => 101, 'full_name' => 'rosstopping/digizu']],
+            ]),
+    ]);
+    $github = mock(GithubAppClient::class)->makePartial();
+    $github->shouldReceive('installationToken')->once()->with(9876)->andReturn('installation-token');
+
+    $repositories = $github->repositories(9876);
+
+    expect($repositories)->toHaveCount(101)
+        ->and($repositories[100]['full_name'])->toBe('rosstopping/digizu');
+    Http::assertSentCount(2);
+    Http::assertSent(fn ($request): bool => $request->url() === 'https://api.github.test/installation/repositories?per_page=100&page=2');
+});
+
 it('starts a GitHub App installation for an administrator', function (): void {
     config(['services.github.app_slug' => 'website-health-bot']);
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);

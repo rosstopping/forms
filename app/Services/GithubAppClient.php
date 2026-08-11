@@ -20,12 +20,29 @@ class GithubAppClient
     public function repositories(int $installationId): array
     {
         $token = $this->installationToken($installationId);
+        $request = $this->request($token);
+        $repositories = [];
+        $page = 1;
 
-        return $this->request($token)
-            ->get('installation/repositories', ['per_page' => 100])
-            ->throw()
-            ->collect('repositories')
-            ->all();
+        do {
+            $response = $request
+                ->get('installation/repositories', [
+                    'per_page' => 100,
+                    'page' => $page,
+                ])
+                ->throw();
+            $pageRepositories = $response->json('repositories', []);
+
+            if (! is_array($pageRepositories)) {
+                throw new RuntimeException('GitHub did not return a repository list.');
+            }
+
+            $repositories = array_merge($repositories, $pageRepositories);
+            $totalRepositories = (int) $response->json('total_count', count($repositories));
+            $page++;
+        } while ($pageRepositories !== [] && count($repositories) < $totalRepositories);
+
+        return $repositories;
     }
 
     /** @return array{pull_request: array<string, mixed>, files: array<int, array<string, mixed>>} */
