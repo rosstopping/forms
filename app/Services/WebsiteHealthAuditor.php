@@ -208,6 +208,7 @@ class WebsiteHealthAuditor
         $current = $website->submissions()->where('created_at', '>=', now()->subDays(7));
 
         return [
+            'forms_count' => $website->forms()->count(),
             'submissions' => (clone $current)->count(),
             'legitimate_submissions' => (clone $current)->where('is_spam', false)->count(),
             'spam_submissions' => (clone $current)->where('is_spam', true)->count(),

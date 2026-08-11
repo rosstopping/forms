@@ -15,8 +15,10 @@
                 <td style="padding:12px;background:#fef2f2;color:#991b1b;"><strong>{{ $report->failed_checks }}</strong><br>Failed</td>
             </tr>
         </table>
-        <h2 style="font-size:18px;">Forms in the last seven days</h2>
-        <p>{{ data_get($report->metrics, 'legitimate_submissions', 0) }} legitimate submissions, {{ data_get($report->metrics, 'spam_submissions', 0) }} spam submissions, and {{ data_get($report->metrics, 'email_failures', 0) + data_get($report->metrics, 'webhook_failures', 0) }} delivery failures.</p>
+        @if (data_get($report->metrics, 'forms_count', 0) > 0)
+            <h2 style="font-size:18px;">Forms in the last seven days</h2>
+            <p>{{ data_get($report->metrics, 'legitimate_submissions', 0) }} legitimate submissions, {{ data_get($report->metrics, 'spam_submissions', 0) }} spam submissions, and {{ data_get($report->metrics, 'email_failures', 0) + data_get($report->metrics, 'webhook_failures', 0) }} delivery failures.</p>
+        @endif
         @if (data_get($report->metrics, 'search_console'))
             <h2 style="margin-top:24px;font-size:18px;">Google Search Console</h2>
             <p style="color:#64748b;font-size:13px;">{{ \Illuminate\Support\Carbon::parse(data_get($report->metrics, 'search_console.period.start'))->format('j M') }}–{{ \Illuminate\Support\Carbon::parse(data_get($report->metrics, 'search_console.period.end'))->format('j M Y') }}</p>

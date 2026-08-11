@@ -2,6 +2,7 @@
 
 use App\Jobs\GenerateWebsiteHealthReport;
 use App\Mail\WebsiteHealthReportReady;
+use App\Models\Form;
 use App\Models\SearchConsoleConnection;
 use App\Models\User;
 use App\Models\Website;
@@ -150,6 +151,7 @@ it('audits a website and queues the completed report for admins and the owner', 
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     $owner = User::factory()->create();
     $website = websiteWithDomain(['user_id' => $owner->id]);
+    Form::factory()->for($website)->create();
     SearchConsoleConnection::factory()->for($website)->create(['connected_by' => $admin->id]);
     $report = WebsiteHealthReport::factory()->for($website)->create([
         'status' => WebsiteHealthReport::STATUS_PENDING,
@@ -183,6 +185,7 @@ it('audits a website and queues the completed report for admins and the owner', 
         ->and($report->passed_checks)->toBeGreaterThan(0)
         ->and($report->pages)->toHaveCount(1)
         ->and($report->metrics['pages_analyzed'])->toBe(1)
+        ->and($report->metrics['forms_count'])->toBe(1)
         ->and($report->metrics['search_console']['totals']['clicks'])->toBe(125)
         ->and($report->completed_at)->not->toBeNull();
 
@@ -192,9 +195,27 @@ it('audits a website and queues the completed report for admins and the owner', 
 
     (new WebsiteHealthReportReady($report->fresh(['website'])))
         ->assertSeeInHtml('Weekly website health report')
+        ->assertSeeInHtml('Forms in the last seven days')
         ->assertSeeInHtml('Google Search Console')
         ->assertSeeInHtml('example services')
         ->assertSeeInHtml('View the full report');
+});
+
+it('omits form submission details from audit emails for websites without forms', function (): void {
+    $website = websiteWithDomain();
+    $report = WebsiteHealthReport::factory()->for($website)->create([
+        'metrics' => [
+            'forms_count' => 0,
+            'legitimate_submissions' => 0,
+            'spam_submissions' => 0,
+            'email_failures' => 0,
+            'webhook_failures' => 0,
+        ],
+    ]);
+
+    (new WebsiteHealthReportReady($report->fresh(['website'])))
+        ->assertDontSeeInHtml('Forms in the last seven days')
+        ->assertDontSeeInHtml('legitimate submissions');
 });
 
 it('dispatches only due enabled websites from the scheduler command', function (): void {
