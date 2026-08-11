@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\SearchConsoleConnection;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 
 class SearchConsoleClient
@@ -48,6 +49,17 @@ class SearchConsoleClient
             ])->all();
     }
 
+    /** @return array<int, array{query: string, page: string, clicks: float, impressions: float, ctr: float, position: float}> */
+    public function queryPagePerformanceForPeriod(SearchConsoleConnection $connection, Carbon $startDate, Carbon $endDate, int $rowLimit = 25000): array
+    {
+        return collect($this->performanceRows($connection, ['query', 'page'], $rowLimit, dates: ['start' => $startDate, 'end' => $endDate]))
+            ->map(fn (array $row): array => [
+                'query' => (string) data_get($row, 'keys.0'),
+                'page' => (string) data_get($row, 'keys.1'),
+                ...$this->formatRow($row),
+            ])->all();
+    }
+
     /** @return array<int, array{page: string, clicks: float, impressions: float, ctr: float, position: float}> */
     public function pagePerformance(SearchConsoleConnection $connection, int $rowLimit, int $startRow = 0): array
     {
@@ -85,12 +97,14 @@ class SearchConsoleClient
      * @param  array<int, string>  $dimensions
      * @return array<int, array<string, mixed>>
      */
-    protected function performanceRows(SearchConsoleConnection $connection, array $dimensions, int $rowLimit, int $startRow = 0): array
+    protected function performanceRows(SearchConsoleConnection $connection, array $dimensions, int $rowLimit, int $startRow = 0, ?array $dates = null): array
     {
+        $dates ??= ['start' => now()->subDays(29), 'end' => now()->subDay()];
+
         return $this->request($connection)
             ->post('sites/'.rawurlencode((string) $connection->property_url).'/searchAnalytics/query', [
-                'startDate' => now()->subDays(29)->toDateString(),
-                'endDate' => now()->subDay()->toDateString(),
+                'startDate' => $dates['start']->toDateString(),
+                'endDate' => $dates['end']->toDateString(),
                 'dimensions' => $dimensions,
                 'type' => 'web',
                 'rowLimit' => $rowLimit,

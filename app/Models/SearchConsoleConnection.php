@@ -12,7 +12,7 @@ class SearchConsoleConnection extends Model
     /** @use HasFactory<SearchConsoleConnectionFactory> */
     use HasFactory;
 
-    protected $fillable = ['website_id', 'connected_by', 'property_url', 'permission_level', 'access_token', 'access_token_expires_at', 'refresh_token'];
+    protected $fillable = ['website_id', 'connected_by', 'property_url', 'permission_level', 'access_token', 'access_token_expires_at', 'refresh_token', 'opportunities_checked_at', 'opportunities_error'];
 
     protected $hidden = ['access_token', 'refresh_token'];
 
@@ -22,6 +22,7 @@ class SearchConsoleConnection extends Model
             'access_token' => 'encrypted',
             'refresh_token' => 'encrypted',
             'access_token_expires_at' => 'datetime',
+            'opportunities_checked_at' => 'datetime',
         ];
     }
 

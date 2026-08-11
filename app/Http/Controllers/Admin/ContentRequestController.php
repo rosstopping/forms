@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreContentRequestRequest;
 use App\Models\ContentRequest;
+use App\Models\SearchOpportunity;
 use App\Models\Website;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 
 class ContentRequestController extends Controller
@@ -28,7 +30,13 @@ class ContentRequestController extends Controller
         abort_unless($contentRequest->website_id === $website->id, 404);
         abort_if($contentRequest->picked_up_at, 422, 'A content request cannot be removed after Copilot has picked it up.');
 
-        $contentRequest->delete();
+        DB::transaction(function () use ($contentRequest): void {
+            $contentRequest->searchOpportunity?->update([
+                'status' => SearchOpportunity::STATUS_OPEN,
+                'content_request_id' => null,
+            ]);
+            $contentRequest->delete();
+        });
 
         return Redirect::route('admin.websites.show', $website)->with('status', 'Content request removed.');
     }

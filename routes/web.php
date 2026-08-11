@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\FormSubmissionController as AdminFormSubmissionCo
 use App\Http\Controllers\Admin\GithubConnectionController;
 use App\Http\Controllers\Admin\RemediationRunController;
 use App\Http\Controllers\Admin\SearchConsoleController;
+use App\Http\Controllers\Admin\SearchOpportunityController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\WebsiteController;
 use App\Http\Controllers\Admin\WebsiteHealthReportController;
@@ -89,6 +90,9 @@ Route::middleware(['web', 'auth'])->prefix('admin')->name('admin.')->group(funct
     Route::post('websites/{website}/search-console/property', [SearchConsoleController::class, 'storeProperty'])->name('search-console.property.store');
     Route::get('websites/{website}/search-console/performance', [SearchConsoleController::class, 'performance'])->name('search-console.performance');
     Route::delete('websites/{website}/search-console', [SearchConsoleController::class, 'destroy'])->name('search-console.destroy');
+    Route::post('websites/{website}/search-opportunities/refresh', [SearchOpportunityController::class, 'refresh'])->name('search-opportunities.refresh');
+    Route::post('websites/{website}/search-opportunities/{searchOpportunity}/queue', [SearchOpportunityController::class, 'queue'])->name('search-opportunities.queue');
+    Route::delete('websites/{website}/search-opportunities/{searchOpportunity}', [SearchOpportunityController::class, 'dismiss'])->name('search-opportunities.dismiss');
     Route::get('websites/{website}/business-profile/connect', [BusinessProfileController::class, 'connect'])->name('business-profile.connect');
     Route::get('business-profile/callback', [BusinessProfileController::class, 'callback'])->name('business-profile.callback');
     Route::get('websites/{website}/business-profile/locations', [BusinessProfileController::class, 'locations'])->name('business-profile.locations');

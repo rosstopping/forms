@@ -21,6 +21,14 @@ return [
         'crawl_delay_ms' => (int) env('FORMS_HEALTH_REPORT_CRAWL_DELAY_MS', 100),
         'blocked_paths' => ['/admin', '/login', '/logout', '/cart', '/checkout', '/search', '/wp-admin', '/feed'],
     ],
+
+    'search_opportunities' => [
+        'minimum_impressions' => (int) env('FORMS_SEARCH_OPPORTUNITIES_MINIMUM_IMPRESSIONS', 100),
+        'minimum_emerging_impressions' => (int) env('FORMS_SEARCH_OPPORTUNITIES_MINIMUM_EMERGING_IMPRESSIONS', 50),
+        'maximum_ctr' => (float) env('FORMS_SEARCH_OPPORTUNITIES_MAXIMUM_CTR', 0.02),
+        'decline_ratio' => (float) env('FORMS_SEARCH_OPPORTUNITIES_DECLINE_RATIO', 0.30),
+        'per_type_limit' => (int) env('FORMS_SEARCH_OPPORTUNITIES_PER_TYPE_LIMIT', 5),
+    ],
     'spam' => [
         'threshold' => (int) env('FORMS_SPAM_THRESHOLD', 3),
         'max_links' => (int) env('FORMS_SPAM_MAX_LINKS', 3),

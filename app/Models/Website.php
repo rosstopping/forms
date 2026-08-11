@@ -96,6 +96,11 @@ class Website extends Model
         return $this->hasMany(ContentRequest::class);
     }
 
+    public function searchOpportunities(): HasMany
+    {
+        return $this->hasMany(SearchOpportunity::class);
+    }
+
     public function primaryDomain(): ?WebsiteDomain
     {
         return $this->domains()->where('is_primary', true)->first() ?: $this->domains()->first();

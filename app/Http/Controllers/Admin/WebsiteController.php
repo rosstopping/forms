@@ -102,6 +102,7 @@ class WebsiteController extends Controller
             'healthReports' => fn ($query) => $query->latest('created_at')->limit(8),
             'repository.installation',
             'searchConsoleConnection',
+            'searchOpportunities' => fn ($query) => $query->whereIn('status', ['open', 'queued'])->orderByDesc('priority_score')->limit(20),
             'businessProfileConnection.audits' => fn ($query) => $query->with('recommendations')->latest()->limit(8),
             'businessProfileConnection.posts' => fn ($query) => $query->latest()->limit(8),
             'businessProfileConnection.reviews' => fn ($query) => $query->latest('reviewed_at')->limit(20),

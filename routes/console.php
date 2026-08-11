@@ -19,3 +19,7 @@ Schedule::command('content:dispatch')
 Schedule::command('business-profiles:dispatch-audits')
     ->hourly()
     ->withoutOverlapping();
+
+Schedule::command('search-opportunities:dispatch')
+    ->hourly()
+    ->withoutOverlapping();

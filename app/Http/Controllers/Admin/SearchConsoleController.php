@@ -120,7 +120,12 @@ class SearchConsoleController extends Controller
         $connection = $website->searchConsoleConnection()->firstOrFail();
         $property = collect($this->searchConsole->sites($connection))->firstWhere('siteUrl', $request->validated('property_url'));
         abort_unless($property, 422, 'That Search Console property is not available to this Google account.');
-        $connection->update(['property_url' => $property['siteUrl'], 'permission_level' => $property['permissionLevel'] ?? null]);
+        $connection->update([
+            'property_url' => $property['siteUrl'],
+            'permission_level' => $property['permissionLevel'] ?? null,
+            'opportunities_checked_at' => null,
+            'opportunities_error' => null,
+        ]);
 
         return Redirect::route('admin.websites.show', $website)->with('status', 'Google Search Console connected.');
     }

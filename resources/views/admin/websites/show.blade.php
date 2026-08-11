@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="space-y-6" data-tabs data-default-tab="{{ $errors->any() && $website->repository ? 'content' : 'health' }}">
+<div class="space-y-6" data-tabs data-default-tab="{{ request('tab', $errors->any() && $website->repository ? 'content' : 'health') }}">
     @if (session('status'))
         <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{{ session('status') }}</div>
     @endif
@@ -63,7 +63,8 @@
 
     </div>
 
-    <div id="website-panel-search" class="rounded-lg border bg-white p-4 shadow-sm" role="tabpanel" aria-labelledby="website-tab-search" data-tab-panel="search" hidden>
+    <div id="website-panel-search" class="space-y-6" role="tabpanel" aria-labelledby="website-tab-search" data-tab-panel="search" hidden>
+        <section class="rounded-lg border bg-white p-4 shadow-sm">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
                     <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Content intelligence</p>
@@ -105,7 +106,10 @@
             @elseif ($searchConsoleReportUnavailable)
                 <p class="mt-4 border-t border-slate-200 pt-4 text-sm text-amber-700">Search performance is temporarily unavailable. The rest of the dashboard is unaffected.</p>
             @endif
-        </div>
+        </section>
+
+        @include('admin.websites.partials.search-opportunities')
+    </div>
 
     <div id="website-panel-content" class="space-y-6" role="tabpanel" aria-labelledby="website-tab-content" data-tab-panel="content" hidden>
         <div class="rounded-lg border bg-white p-4 shadow-sm">

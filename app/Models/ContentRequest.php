@@ -6,6 +6,7 @@ use Database\Factories\ContentRequestFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class ContentRequest extends Model
 {
@@ -32,5 +33,10 @@ class ContentRequest extends Model
     public function generation(): BelongsTo
     {
         return $this->belongsTo(ContentGeneration::class, 'content_generation_id');
+    }
+
+    public function searchOpportunity(): HasOne
+    {
+        return $this->hasOne(SearchOpportunity::class);
     }
 }
