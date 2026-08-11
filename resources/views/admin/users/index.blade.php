@@ -20,6 +20,7 @@
                     <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Email</th>
                     <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Role</th>
                     <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Created</th>
+                    <th class="px-4 py-3 text-right text-sm font-semibold text-slate-700"><span class="sr-only">Actions</span></th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
@@ -29,10 +30,11 @@
                         <td class="px-4 py-3 text-sm text-slate-600">{{ e($user->email) }}</td>
                         <td class="px-4 py-3 text-sm text-slate-600">{{ $user->isAdmin() ? 'Admin' : 'User' }}</td>
                         <td class="px-4 py-3 text-sm text-slate-500">{{ $user->created_at?->diffForHumans() }}</td>
+                        <td class="px-4 py-3 text-right"><a href="{{ route('admin.users.edit', $user) }}" class="text-sm font-medium text-slate-700 hover:text-slate-950">Edit</a></td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="4" class="px-4 py-6 text-center text-sm text-slate-500">No users yet.</td>
+                        <td colspan="5" class="px-4 py-6 text-center text-sm text-slate-500">No users yet.</td>
                     </tr>
                 @endforelse
             </tbody>

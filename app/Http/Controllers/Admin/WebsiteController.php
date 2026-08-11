@@ -130,6 +130,7 @@ class WebsiteController extends Controller
         abort_unless($user?->isAdmin(), 403);
 
         $data = $request->validate([
+            'name' => ['sometimes', 'required', 'string', 'max:255'],
             'user_id' => ['nullable', 'exists:users,id'],
             'health_reports_enabled' => ['sometimes', 'boolean'],
         ]);
@@ -137,6 +138,15 @@ class WebsiteController extends Controller
         $website->fill($data)->save();
 
         return Redirect::route('admin.websites.show', $website)->with('status', 'Website settings updated.');
+    }
+
+    public function destroy(Request $request, Website $website): RedirectResponse
+    {
+        abort_unless($request->user()?->isAdmin(), 403);
+
+        $website->delete();
+
+        return Redirect::route('admin.websites.index')->with('status', 'Website deleted.');
     }
 
     protected function normalizeDomain(string $value): string

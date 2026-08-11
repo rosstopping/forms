@@ -75,7 +75,7 @@ Route::middleware(['web', 'auth'])->prefix('admin')->name('admin.')->group(funct
     Route::delete('websites/{website}/content-requests/{contentRequest}', [ContentRequestController::class, 'destroy'])->name('content-requests.destroy');
     Route::resource('forms', FormController::class);
     Route::resource('form-submissions', AdminFormSubmissionController::class);
-    Route::resource('users', UserController::class)->only(['index', 'create', 'store']);
+    Route::resource('users', UserController::class)->only(['index', 'create', 'store', 'edit', 'update']);
 });
 
 Route::post('/github/webhook', GithubWebhookController::class)

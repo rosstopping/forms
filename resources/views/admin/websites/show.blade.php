@@ -240,6 +240,11 @@
                     @csrf
                     @method('PUT')
                     <div>
+                        <label class="block text-sm font-medium text-slate-700" for="name">Website name</label>
+                        <input id="name" name="name" type="text" required value="{{ old('name', $website->name) }}" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                        @error('name')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror
+                    </div>
+                    <div>
                         <label class="block text-sm font-medium text-slate-700" for="user_id">Assign owner</label>
                         <select id="user_id" name="user_id" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
                             <option value="">Unassigned</option>
@@ -258,6 +263,16 @@
                     </label>
                     <button type="submit" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">Save settings</button>
                 </form>
+
+                <div class="mt-6 border-t border-red-200 pt-5">
+                    <h3 class="text-sm font-semibold text-red-900">Delete website</h3>
+                    <p class="mt-1 text-sm text-red-700">This permanently deletes the website, its forms, submissions, reports, and content settings.</p>
+                    <form method="POST" action="{{ route('admin.websites.destroy', $website) }}" class="mt-3" onsubmit="return confirm('Delete this website and all of its data? This cannot be undone.')">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="rounded-md border border-red-300 bg-white px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50">Delete website</button>
+                    </form>
+                </div>
             @endif
         </div>
 
