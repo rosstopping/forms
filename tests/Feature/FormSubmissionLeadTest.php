@@ -90,11 +90,30 @@ it('remembers lead filters for the signed in user', function () {
 
 it('shows leads in the primary navigation', function () {
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $website = Website::factory()->create(['user_id' => $admin->id]);
+    $form = Form::factory()->create(['website_id' => $website->id]);
+    FormSubmission::factory()->count(3)->create(['website_id' => $website->id, 'form_id' => $form->id, 'status' => 'new']);
+    FormSubmission::factory()->create(['website_id' => $website->id, 'form_id' => $form->id, 'status' => 'contacted']);
+    FormSubmission::factory()->create(['website_id' => $website->id, 'form_id' => $form->id, 'status' => 'new', 'is_spam' => true]);
 
     $this->actingAs($admin)->get(route('admin.dashboard'))
         ->assertOk()
         ->assertSee(route('admin.form-submissions.index'), false)
-        ->assertSee('Leads');
+        ->assertSee('Leads')
+        ->assertSee('aria-label="3 new leads"', false);
+});
+
+it('scopes the new lead navigation count to accessible websites', function () {
+    $owner = User::factory()->create();
+    $website = Website::factory()->create(['user_id' => $owner->id]);
+    $form = Form::factory()->create(['website_id' => $website->id]);
+    FormSubmission::factory()->count(2)->create(['website_id' => $website->id, 'form_id' => $form->id, 'status' => 'new']);
+    FormSubmission::factory()->create(['status' => 'new']);
+
+    $this->actingAs($owner)->get(route('admin.dashboard'))
+        ->assertOk()
+        ->assertSee('aria-label="2 new leads"', false)
+        ->assertDontSee('aria-label="3 new leads"', false);
 });
 
 it('bulk updates statuses marks spam and deletes selected leads', function () {
