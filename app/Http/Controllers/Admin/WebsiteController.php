@@ -110,7 +110,7 @@ class WebsiteController extends Controller
         $searchConsoleReport = null;
         $searchConsoleReportUnavailable = false;
 
-        if ($user?->isAdmin() && $website->searchConsoleConnection?->property_url) {
+        if ($website->searchConsoleConnection?->property_url) {
             try {
                 $connection = $website->searchConsoleConnection;
                 $cacheKey = 'search-console-report:'.$connection->id.':'.hash('sha256', $connection->property_url).':'.$connection->updated_at->timestamp;

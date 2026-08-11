@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Website;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -23,7 +24,10 @@ class StoreWebsiteRepositoryRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()?->isAdmin() === true;
+        $website = $this->route('website');
+
+        return $website instanceof Website
+            && ($this->user()?->isAdmin() === true || $website->user_id === $this->user()?->id);
     }
 
     /**

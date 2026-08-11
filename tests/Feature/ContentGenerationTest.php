@@ -39,6 +39,44 @@ test('google authorization requests offline read only search console access', fu
     ]);
 });
 
+test('website owners can connect Search Console to their website', function () {
+    $owner = User::factory()->create();
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $oauth = $this->mock(GoogleOAuthClient::class);
+    $oauth->shouldReceive('authorizationUrl')->once()->andReturn('https://accounts.google.test/authorize');
+
+    $this->actingAs($owner)
+        ->get(route('admin.search-console.connect', $website))
+        ->assertRedirect('https://accounts.google.test/authorize');
+
+    $connection = SearchConsoleConnection::factory()->for($website)->for($owner, 'connector')->create([
+        'property_url' => null,
+        'permission_level' => null,
+    ]);
+    $this->mock(SearchConsoleClient::class)
+        ->shouldReceive('sites')
+        ->once()
+        ->withArgs(fn (SearchConsoleConnection $selectedConnection): bool => $selectedConnection->is($connection))
+        ->andReturn([['siteUrl' => 'sc-domain:client.test', 'permissionLevel' => 'siteOwner']]);
+
+    $this->actingAs($owner)
+        ->post(route('admin.search-console.property.store', $website), [
+            'property_url' => 'sc-domain:client.test',
+        ])
+        ->assertRedirect(route('admin.websites.show', $website));
+
+    expect($connection->fresh()->property_url)->toBe('sc-domain:client.test');
+});
+
+test('website owners cannot connect Search Console to another clients website', function () {
+    $owner = User::factory()->create();
+    $otherWebsite = Website::factory()->create();
+
+    $this->actingAs($owner)
+        ->get(route('admin.search-console.connect', $otherWebsite))
+        ->assertForbidden();
+});
+
 test('a due weekly content plan queues one generation only', function () {
     Queue::fake();
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);

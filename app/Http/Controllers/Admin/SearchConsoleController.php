@@ -20,7 +20,7 @@ class SearchConsoleController extends Controller
 
     public function connect(Request $request, Website $website): RedirectResponse
     {
-        abort_unless($request->user()?->isAdmin(), 403);
+        $this->authorizeWebsite($request, $website);
         $state = Crypt::encryptString(json_encode(['website_id' => $website->id, 'user_id' => $request->user()->id], JSON_THROW_ON_ERROR));
 
         return Redirect::away($this->oauth->authorizationUrl($state));
@@ -28,7 +28,6 @@ class SearchConsoleController extends Controller
 
     public function callback(Request $request): RedirectResponse
     {
-        abort_unless($request->user()?->isAdmin(), 403);
         $data = $request->validate(['code' => ['required', 'string'], 'state' => ['required', 'string']]);
 
         try {
@@ -39,6 +38,7 @@ class SearchConsoleController extends Controller
 
         abort_unless(data_get($state, 'user_id') === $request->user()->id, 403);
         $website = Website::query()->findOrFail(data_get($state, 'website_id'));
+        $this->authorizeWebsite($request, $website);
         $this->oauth->authorize($website, $request->user(), $data['code']);
 
         return Redirect::route('admin.search-console.property', $website);
@@ -46,7 +46,7 @@ class SearchConsoleController extends Controller
 
     public function property(Request $request, Website $website): View
     {
-        abort_unless($request->user()?->isAdmin(), 403);
+        $this->authorizeWebsite($request, $website);
         $connection = $website->searchConsoleConnection()->firstOrFail();
         $properties = $this->searchConsole->sites($connection);
 
@@ -65,10 +65,15 @@ class SearchConsoleController extends Controller
 
     public function destroy(Request $request, Website $website): RedirectResponse
     {
-        abort_unless($request->user()?->isAdmin(), 403);
+        $this->authorizeWebsite($request, $website);
         $website->searchConsoleConnection()->delete();
         $website->contentPlan()->update(['enabled' => false]);
 
         return Redirect::route('admin.websites.show', $website)->with('status', 'Google Search Console disconnected and content generation paused.');
+    }
+
+    protected function authorizeWebsite(Request $request, Website $website): void
+    {
+        abort_unless($request->user()?->isAdmin() || $website->user_id === $request->user()?->id, 403);
     }
 }

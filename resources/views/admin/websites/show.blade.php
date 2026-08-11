@@ -18,9 +18,7 @@
 
     <div class="website-tabs" role="tablist" aria-label="Website sections">
         <button type="button" id="website-tab-health" class="website-tab" role="tab" aria-selected="true" aria-controls="website-panel-health" tabindex="0" data-tab="health">Health reports</button>
-        @if (Auth::user()?->isAdmin())
-            <button type="button" id="website-tab-search" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-search" tabindex="-1" data-tab="search">Search</button>
-        @endif
+        <button type="button" id="website-tab-search" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-search" tabindex="-1" data-tab="search">Search</button>
         <button type="button" id="website-tab-content" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-content" tabindex="-1" data-tab="content">Content</button>
         <button type="button" id="website-tab-forms" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-forms" tabindex="-1" data-tab="forms">Forms & submissions</button>
         <button type="button" id="website-tab-settings" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-settings" tabindex="-1" data-tab="settings">Settings</button>
@@ -64,7 +62,6 @@
         </div>
         </section>
 
-        @if (Auth::user()?->isAdmin())
         <div class="rounded-lg border bg-white p-4 shadow-sm">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
@@ -95,11 +92,9 @@
                 </div>
             </div>
         </div>
-        @endif
     </div>
 
-    @if (Auth::user()?->isAdmin())
-        <div id="website-panel-search" class="rounded-lg border bg-white p-4 shadow-sm" role="tabpanel" aria-labelledby="website-tab-search" data-tab-panel="search" hidden>
+    <div id="website-panel-search" class="rounded-lg border bg-white p-4 shadow-sm" role="tabpanel" aria-labelledby="website-tab-search" data-tab-panel="search" hidden>
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
                     <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Content intelligence</p>
@@ -139,7 +134,6 @@
                 <p class="mt-4 border-t border-slate-200 pt-4 text-sm text-amber-700">Search performance is temporarily unavailable. The rest of the dashboard is unaffected.</p>
             @endif
         </div>
-    @endif
 
     <div id="website-panel-content" class="space-y-6" role="tabpanel" aria-labelledby="website-tab-content" data-tab-panel="content" hidden>
         @if (Auth::user()?->isAdmin())

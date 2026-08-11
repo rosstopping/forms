@@ -22,7 +22,7 @@ class GithubConnectionController extends Controller
 
     public function create(Request $request, Website $website): RedirectResponse
     {
-        abort_unless($request->user()?->isAdmin(), 403);
+        $this->authorizeWebsite($request, $website);
 
         $slug = (string) config('services.github.app_slug');
 
@@ -41,8 +41,6 @@ class GithubConnectionController extends Controller
 
     public function callback(Request $request): RedirectResponse
     {
-        abort_unless($request->user()?->isAdmin(), 403);
-
         if ($request->filled('code')) {
             return $this->completeAuthorization($request);
         }
@@ -60,6 +58,7 @@ class GithubConnectionController extends Controller
 
         abort_unless(data_get($state, 'user_id') === $request->user()->id, 403);
         $website = Website::query()->findOrFail(data_get($state, 'website_id'));
+        $this->authorizeWebsite($request, $website);
         $installation = $this->storeInstallation((int) $data['installation_id'], $request);
 
         $oauthState = Crypt::encryptString(json_encode([
@@ -86,6 +85,7 @@ class GithubConnectionController extends Controller
 
         abort_unless(data_get($state, 'user_id') === $request->user()->id, 403);
         $website = Website::query()->findOrFail(data_get($state, 'website_id'));
+        $this->authorizeWebsite($request, $website);
         $authorization = $this->oauth->authorize($request->user(), $data['code']);
         $installation = data_get($state, 'installation_id')
             ? GithubInstallation::query()->findOrFail(data_get($state, 'installation_id'))
@@ -118,5 +118,10 @@ class GithubConnectionController extends Controller
                 'suspended_at' => null,
             ],
         );
+    }
+
+    protected function authorizeWebsite(Request $request, Website $website): void
+    {
+        abort_unless($request->user()?->isAdmin() || $website->user_id === $request->user()?->id, 403);
     }
 }

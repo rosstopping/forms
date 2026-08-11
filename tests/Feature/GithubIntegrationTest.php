@@ -397,13 +397,39 @@ it('rejects unsigned GitHub webhooks and tracks merged remediation pull requests
         ->and($run->fresh()->merged_at)->not->toBeNull();
 });
 
-it('prevents website owners from changing GitHub repository connections', function (): void {
+it('allows website owners to connect a repository from their GitHub installation', function (): void {
     $owner = User::factory()->create();
     $website = Website::factory()->for($owner, 'owner')->create();
-    $installation = GithubInstallation::factory()->create();
+    $installation = GithubInstallation::factory()->for($owner, 'installer')->create();
+
+    mock(GithubAppClient::class)
+        ->shouldReceive('repositories')
+        ->once()
+        ->with($installation->installation_id)
+        ->andReturn([[
+            'id' => 456,
+            'full_name' => 'client/website',
+            'default_branch' => 'main',
+            'private' => true,
+            'permissions' => ['admin' => true, 'push' => true, 'pull' => true],
+        ]]);
 
     $this->actingAs($owner)
         ->post(route('admin.website-repositories.store', $website), [
+            'repository' => $installation->id.':456',
+        ])
+        ->assertRedirect(route('admin.websites.show', $website));
+
+    expect($website->repository()->sole()->full_name)->toBe('client/website');
+});
+
+it('prevents website owners from changing another clients GitHub repository connection', function (): void {
+    $owner = User::factory()->create();
+    $otherWebsite = Website::factory()->create();
+    $installation = GithubInstallation::factory()->for($owner, 'installer')->create();
+
+    $this->actingAs($owner)
+        ->post(route('admin.website-repositories.store', $otherWebsite), [
             'repository' => $installation->id.':456',
         ])
         ->assertForbidden();

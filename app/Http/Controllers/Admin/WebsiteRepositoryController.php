@@ -19,10 +19,11 @@ class WebsiteRepositoryController extends Controller
 
     public function create(Request $request, Website $website): View|RedirectResponse
     {
-        abort_unless($request->user()?->isAdmin(), 403);
+        $this->authorizeWebsite($request, $website);
 
         $installations = GithubInstallation::query()
             ->where('status', GithubInstallation::STATUS_ACTIVE)
+            ->when(! $request->user()->isAdmin(), fn ($query) => $query->where('installed_by', $request->user()->id))
             ->latest()
             ->get();
 
@@ -47,6 +48,7 @@ class WebsiteRepositoryController extends Controller
         $data = $request->validated();
         $installation = GithubInstallation::query()
             ->where('status', GithubInstallation::STATUS_ACTIVE)
+            ->when(! $request->user()->isAdmin(), fn ($query) => $query->where('installed_by', $request->user()->id))
             ->findOrFail($data['github_installation_id']);
         $repository = collect($this->github->repositories($installation->installation_id))
             ->firstWhere('id', (int) $data['repository_id']);
@@ -73,12 +75,17 @@ class WebsiteRepositoryController extends Controller
 
     public function destroy(Request $request, Website $website): RedirectResponse
     {
-        abort_unless($request->user()?->isAdmin(), 403);
+        $this->authorizeWebsite($request, $website);
         abort_if($website->repository?->remediationRuns()->exists(), 422, 'The repository has remediation history and cannot be disconnected.');
 
         $website->repository?->delete();
 
         return Redirect::route('admin.websites.show', $website)
             ->with('status', 'The repository was disconnected.');
+    }
+
+    protected function authorizeWebsite(Request $request, Website $website): void
+    {
+        abort_unless($request->user()?->isAdmin() || $website->user_id === $request->user()?->id, 403);
     }
 }
