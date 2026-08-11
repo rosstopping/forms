@@ -24,7 +24,7 @@
         <a href="{{ route('admin.websites.show', $report->website) }}" class="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Back to website</a>
     </div>
 
-    @if ($aiPrompt)
+    @if ($aiPrompt && ! $report->website->repository)
         <section class="rounded-lg border border-violet-200 bg-violet-50 p-4 shadow-sm" aria-labelledby="ai-remediation-prompt-title">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
@@ -36,7 +36,9 @@
             </div>
             <textarea id="health-report-ai-prompt" class="mt-4 h-72 w-full resize-y rounded-md border border-violet-200 bg-white p-3 font-mono text-xs leading-5 text-slate-800 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200" readonly>{{ $aiPrompt }}</textarea>
         </section>
+    @endif
 
+    @if ($aiPrompt)
         @php
             $remediationRun = $report->remediationRuns->first();
             $hasRemediableFindings = collect($report->checks)->whereIn('status', ['warning', 'failed'])->isNotEmpty() || $report->pages->contains(fn ($page) => collect($page->checks)->whereIn('status', ['warning', 'failed'])->isNotEmpty());

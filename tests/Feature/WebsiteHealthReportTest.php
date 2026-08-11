@@ -227,6 +227,25 @@ it('shows administrators a copyable AI prompt containing every report issue', fu
         ->assertDontSee('[PASSED] Primary heading');
 });
 
+it('hides the manual AI prompt when a GitHub repository is connected', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $website = websiteWithDomain();
+    WebsiteRepository::factory()->for($website)->create(['full_name' => 'acme/example-site']);
+    $report = WebsiteHealthReport::factory()->for($website)->create([
+        'checks' => [
+            ['category' => 'security', 'key' => 'content_security_policy', 'label' => 'Content Security Policy', 'status' => 'warning', 'message' => 'The security header is missing.', 'details' => []],
+        ],
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.website-health-reports.show', [$website, $report]))
+        ->assertSuccessful()
+        ->assertDontSee('AI remediation prompt')
+        ->assertDontSee('Copy prompt')
+        ->assertSee('Prepare repository fix')
+        ->assertSee('Start Copilot remediation');
+});
+
 it('stores page titles longer than the varchar limit', function (): void {
     $report = WebsiteHealthReport::factory()->create();
     $longRedirectTitle = 'Redirecting to https://example.com/search?months='.str_repeat('September%202026%2C', 30);
