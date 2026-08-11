@@ -211,6 +211,36 @@ it('binds only a repository returned by the selected installation', function ():
         ->and($repository->project_path)->toBe('apps/site');
 });
 
+it('renders repository choices as a searchable select', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $website = Website::factory()->create();
+    $installation = GithubInstallation::factory()->create([
+        'installation_id' => 9876,
+        'account_login' => 'acme',
+    ]);
+
+    mock(GithubAppClient::class)
+        ->shouldReceive('repositories')
+        ->once()
+        ->with(9876)
+        ->andReturn([[
+            'id' => 456,
+            'full_name' => 'acme/marketing',
+            'default_branch' => 'main',
+            'private' => true,
+            'permissions' => ['admin' => true, 'push' => true, 'pull' => true],
+        ]]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.website-repositories.create', $website))
+        ->assertOk()
+        ->assertSee('role="combobox"', false)
+        ->assertSee('data-searchable-select-option', false)
+        ->assertSee('acme/marketing')
+        ->assertSee('name="repository"', false)
+        ->assertSee('value="'.$installation->id.':456"', false);
+});
+
 it('snapshots selected audit findings into one remediation request', function (): void {
     Queue::fake();
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);

@@ -107,3 +107,88 @@ document.addEventListener('keydown', (event) => {
         mobileNavigationToggle?.focus();
     }
 });
+
+document.querySelectorAll('[data-searchable-select]').forEach((combobox) => {
+    const input = combobox.querySelector('[data-searchable-select-input]');
+    const nativeSelect = combobox.querySelector('[data-searchable-select-native]');
+    const optionsPanel = combobox.querySelector('[data-searchable-select-options]');
+    const options = [...combobox.querySelectorAll('[data-searchable-select-option]')];
+    const emptyMessage = combobox.querySelector('[data-searchable-select-empty]');
+    const errorMessage = combobox.parentElement.querySelector('[data-searchable-select-error]');
+    let activeIndex = -1;
+
+    const visibleOptions = () => options.filter((option) => !option.hidden);
+    const setOpen = (open) => {
+        optionsPanel.classList.toggle('hidden', !open);
+        input.setAttribute('aria-expanded', open.toString());
+    };
+    const setActiveOption = (index) => {
+        const availableOptions = visibleOptions();
+
+        activeIndex = availableOptions.length === 0 ? -1 : (index + availableOptions.length) % availableOptions.length;
+        options.forEach((option) => option.classList.remove('bg-teal-50'));
+
+        if (activeIndex >= 0) {
+            availableOptions[activeIndex].classList.add('bg-teal-50');
+            availableOptions[activeIndex].scrollIntoView({ block: 'nearest' });
+        }
+    };
+    const selectOption = (option) => {
+        nativeSelect.value = option.dataset.value;
+        input.value = option.dataset.label;
+        input.setAttribute('aria-invalid', 'false');
+        errorMessage.classList.add('hidden');
+        options.forEach((candidate) => candidate.setAttribute('aria-selected', (candidate === option).toString()));
+        nativeSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        setOpen(false);
+    };
+    const filterOptions = () => {
+        const query = input.value.trim().toLocaleLowerCase();
+        let matches = 0;
+
+        options.forEach((option) => {
+            option.hidden = !option.dataset.label.toLocaleLowerCase().includes(query);
+            matches += option.hidden ? 0 : 1;
+        });
+
+        emptyMessage?.classList.toggle('hidden', matches > 0);
+        activeIndex = -1;
+        setOpen(true);
+    };
+
+    input.addEventListener('focus', () => setOpen(true));
+    input.addEventListener('input', () => {
+        nativeSelect.value = '';
+        options.forEach((option) => option.setAttribute('aria-selected', 'false'));
+        filterOptions();
+    });
+    input.addEventListener('keydown', (event) => {
+        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+            event.preventDefault();
+            setOpen(true);
+            setActiveOption(activeIndex + (event.key === 'ArrowDown' ? 1 : -1));
+        } else if (event.key === 'Enter' && activeIndex >= 0) {
+            event.preventDefault();
+            selectOption(visibleOptions()[activeIndex]);
+        } else if (event.key === 'Escape') {
+            setOpen(false);
+        }
+    });
+    options.forEach((option) => option.addEventListener('click', () => selectOption(option)));
+    combobox.closest('form').addEventListener('submit', (event) => {
+        if (nativeSelect.value !== '') {
+            return;
+        }
+
+        event.preventDefault();
+        input.setAttribute('aria-invalid', 'true');
+        errorMessage.classList.remove('hidden');
+        input.focus();
+        filterOptions();
+    });
+    document.addEventListener('click', (event) => {
+        if (!combobox.contains(event.target)) {
+            setOpen(false);
+        }
+    });
+});

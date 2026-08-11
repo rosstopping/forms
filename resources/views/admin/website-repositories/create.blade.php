@@ -21,14 +21,53 @@
     <form method="POST" action="{{ route('admin.website-repositories.store', $website) }}" class="space-y-5 rounded-lg border bg-white p-5 shadow-sm">
         @csrf
         <div>
-            <label for="repository" class="block text-sm font-medium text-slate-700">Repository</label>
-            <select id="repository" name="repository" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" required>
+            @php
+                $selectedRepositoryValue = old('repository');
+                $selectedRepository = collect($repositories)->first(function (array $repository) use ($selectedRepositoryValue): bool {
+                    return $selectedRepositoryValue === $repository['github_installation_id'].':'.$repository['id'];
+                });
+            @endphp
+            <label for="repository-search" class="block text-sm font-medium text-slate-700">Repository</label>
+            <div class="relative mt-1" data-searchable-select>
+                <input
+                    id="repository-search"
+                    type="search"
+                    value="{{ $selectedRepository ? $selectedRepository['full_name'].' · '.$selectedRepository['account_login'] : '' }}"
+                    placeholder="Search repositories or accounts"
+                    autocomplete="off"
+                    role="combobox"
+                    aria-autocomplete="list"
+                    aria-controls="repository-options"
+                    aria-expanded="false"
+                    data-searchable-select-input
+                >
+                <select id="repository" name="repository" class="sr-only" tabindex="-1" aria-hidden="true" data-searchable-select-native>
                 <option value="">Select a repository</option>
                 @foreach ($repositories as $repository)
                     @php($value = $repository['github_installation_id'].':'.$repository['id'])
                     <option value="{{ $value }}" @selected(old('repository') === $value)>{{ $repository['full_name'] }} · {{ $repository['account_login'] }}</option>
                 @endforeach
-            </select>
+                </select>
+                <div id="repository-options" class="absolute z-20 mt-2 hidden max-h-72 w-full overflow-y-auto rounded-xl bg-white p-1 shadow-xl ring-1 ring-slate-950/10" role="listbox" data-searchable-select-options>
+                    @forelse ($repositories as $repository)
+                        @php($value = $repository['github_installation_id'].':'.$repository['id'])
+                        <button type="button" class="flex w-full items-center justify-between gap-4 rounded-lg px-3 py-2.5 text-left hover:bg-teal-50 aria-selected:bg-teal-50" role="option" aria-selected="{{ $selectedRepositoryValue === $value ? 'true' : 'false' }}" data-searchable-select-option data-value="{{ $value }}" data-label="{{ $repository['full_name'] }} · {{ $repository['account_login'] }}">
+                            <span class="min-w-0">
+                                <span class="flex truncate text-sm font-medium text-slate-900">{{ $repository['full_name'] }}</span>
+                                <span class="flex truncate text-xs text-slate-500">{{ $repository['account_login'] }}</span>
+                            </span>
+                            @if ($repository['private'] ?? false)
+                                <span class="shrink-0 rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">Private</span>
+                            @endif
+                        </button>
+                    @empty
+                        <p class="px-3 py-4 text-sm text-slate-500">No repositories are available.</p>
+                    @endforelse
+                    <p class="hidden px-3 py-4 text-sm text-slate-500" data-searchable-select-empty>No repositories match your search.</p>
+                </div>
+            </div>
+            <p class="mt-2 text-sm text-slate-500">Start typing a repository or GitHub account name.</p>
+            <p class="mt-2 hidden text-sm text-red-700" data-searchable-select-error>Please select a repository from the results.</p>
         </div>
 
         <div>
