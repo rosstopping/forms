@@ -11,6 +11,10 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\FormController;
 use App\Http\Controllers\Admin\FormSubmissionController as AdminFormSubmissionController;
 use App\Http\Controllers\Admin\GithubConnectionController;
+use App\Http\Controllers\Admin\ProspectAnalysisController;
+use App\Http\Controllers\Admin\ProspectApprovalController;
+use App\Http\Controllers\Admin\ProspectController;
+use App\Http\Controllers\Admin\ProspectSendController;
 use App\Http\Controllers\Admin\RemediationRunController;
 use App\Http\Controllers\Admin\SearchConsoleController;
 use App\Http\Controllers\Admin\SearchOpportunityController;
@@ -122,6 +126,10 @@ Route::middleware(['web', 'auth'])->prefix('admin')->name('admin.')->group(funct
     Route::patch('form-submissions/bulk', BulkFormSubmissionController::class)->name('form-submissions.bulk');
     Route::patch('form-submissions/{form_submission}/spam', [AdminFormSubmissionController::class, 'markSpam'])->name('form-submissions.spam');
     Route::resource('form-submissions', AdminFormSubmissionController::class);
+    Route::post('prospects/{prospect}/analyse', ProspectAnalysisController::class)->name('prospects.analyse');
+    Route::post('prospects/{prospect}/approve', ProspectApprovalController::class)->name('prospects.approve');
+    Route::post('prospects/{prospect}/send', ProspectSendController::class)->name('prospects.send');
+    Route::resource('prospects', ProspectController::class);
     Route::resource('users', UserController::class)->only(['index', 'create', 'store', 'edit', 'update']);
 });
 
