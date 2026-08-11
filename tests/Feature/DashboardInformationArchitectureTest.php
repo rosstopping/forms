@@ -4,6 +4,7 @@ use App\Models\Form;
 use App\Models\User;
 use App\Models\Website;
 use App\Models\WebsiteHealthReport;
+use App\Models\WebsiteRepository;
 
 it('prioritises website audit health on the dashboard', function (): void {
     $user = User::factory()->create();
@@ -45,7 +46,8 @@ it('keeps forms and submissions inside the website workspace', function (): void
         ->get(route('admin.websites.show', $website))
         ->assertOk()
         ->assertSee('Health reports')
-        ->assertSee('data-tab="content"', false)
+        ->assertDontSee('data-tab="content"', false)
+        ->assertDontSee('Manual content requests')
         ->assertSee('Forms & submissions', false)
         ->assertSee('role="tablist"', false)
         ->assertSee('data-tab-panel="health"', false)
@@ -53,6 +55,19 @@ it('keeps forms and submissions inside the website workspace', function (): void
         ->assertDontSee('href="#health"', false)
         ->assertSee('Contact form')
         ->assertSee('Recent submissions');
+});
+
+it('shows content tools when the website has a GitHub repository', function (): void {
+    $user = User::factory()->create();
+    $website = Website::factory()->for($user, 'owner')->create();
+    WebsiteRepository::factory()->for($website)->create();
+
+    $this->actingAs($user)
+        ->get(route('admin.websites.show', $website))
+        ->assertOk()
+        ->assertSee('data-tab="content"', false)
+        ->assertSee('data-tab-panel="content"', false)
+        ->assertSee('Manual content requests');
 });
 
 it('shows the latest audit status on the websites index', function (): void {

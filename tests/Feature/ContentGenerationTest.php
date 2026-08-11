@@ -103,6 +103,7 @@ test('a due weekly content plan queues one generation only', function () {
 test('content plan settings remain saved when activation requirements are missing', function () {
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     $website = Website::factory()->create();
+    WebsiteRepository::factory()->for($website)->create();
 
     $this->actingAs($admin)
         ->put(route('admin.content-plans.update', $website), [
@@ -163,6 +164,7 @@ test('updating the website owner does not overwrite saved content plan settings'
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     $owner = User::factory()->create();
     $website = Website::factory()->create();
+    WebsiteRepository::factory()->for($website)->create();
 
     $this->actingAs($admin)
         ->put(route('admin.content-plans.update', $website), [
@@ -199,6 +201,7 @@ test('website owners can queue and remove manual content requests', function () 
     $owner = User::factory()->create();
     $otherOwner = User::factory()->create();
     $website = Website::factory()->for($owner, 'owner')->create();
+    WebsiteRepository::factory()->for($website)->create();
     $instructions = 'Create a Love Island inspired villa landing page while clearly stating that this is not the official villa.';
 
     $this->actingAs($owner)
