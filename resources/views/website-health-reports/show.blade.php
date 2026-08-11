@@ -21,7 +21,7 @@
 <main class="mx-auto max-w-5xl space-y-6">
     <header class="rounded-xl bg-slate-900 p-6 text-white shadow-sm sm:p-8">
         <p class="text-sm font-medium text-slate-300">Weekly website review</p>
-        <h1 class="mt-2 text-3xl font-semibold">Your website health report</h1>
+        <h1 class="mt-2 text-3xl font-semibold text-white">Your website health report</h1>
         <p class="mt-2 text-lg text-slate-200">{{ $report->website->name }}</p>
         <p class="mt-4 max-w-3xl text-sm leading-6 text-slate-300">We checked the website for availability, security, search visibility, content quality and accessibility. This report explains the findings that are worth acting on.</p>
         <p class="mt-4 text-xs text-slate-400">Report created {{ $report->created_at->format('j F Y \a\t g:ia') }}</p>
