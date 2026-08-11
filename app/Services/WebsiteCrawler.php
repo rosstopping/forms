@@ -34,11 +34,11 @@ class WebsiteCrawler
         }
 
         $queue = [['url' => $baseUrl, 'depth' => 0]];
-        $lastAuditedAt = $this->lastAuditedAt($website);
+        ['last_audited_at' => $lastAuditedAt, 'healthy_cooldown' => $healthyCooldown] = $this->auditHistory($website);
         $queue = [...$queue, ...$this->prioritiseByAuditHistory($this->sitemapUrls($baseUrl, $allowedHosts), $lastAuditedAt)];
         $seen = [];
         $pages = [];
-        $maximumPages = (int) config('forms.health_reports.max_pages', 25);
+        $maximumPages = (int) config('forms.health_reports.max_pages', 40);
         $maximumDepth = (int) config('forms.health_reports.max_depth', 2);
 
         while ($queue !== [] && count($pages) < $maximumPages) {
@@ -50,6 +50,11 @@ class WebsiteCrawler
             }
 
             $seen[$url] = true;
+
+            if ($url !== $this->normaliseUrl($baseUrl) && isset($healthyCooldown[$url])) {
+                continue;
+            }
+
             $startedAt = microtime(true);
 
             try {
@@ -91,28 +96,42 @@ class WebsiteCrawler
         return $pages;
     }
 
-    /** @return array<string, int> */
-    protected function lastAuditedAt(Website $website): array
+    /** @return array{last_audited_at: array<string, int>, healthy_cooldown: array<string, true>} */
+    protected function auditHistory(Website $website): array
     {
         $reports = $website->healthReports()
             ->where('status', WebsiteHealthReport::STATUS_COMPLETED)
             ->latest('completed_at')
             ->limit(12)
-            ->with('pages:id,website_health_report_id,url')
+            ->with('pages:id,website_health_report_id,url,status_code,checks')
             ->get();
         $lastAuditedAt = [];
+        $healthyCooldown = [];
 
-        foreach ($reports as $report) {
+        foreach ($reports as $reportIndex => $report) {
             foreach ($report->pages as $page) {
                 $url = $this->normaliseUrl($page->url);
 
                 if ($url && ! isset($lastAuditedAt[$url])) {
                     $lastAuditedAt[$url] = $report->completed_at?->timestamp ?? $report->created_at->timestamp;
                 }
+
+                $checks = collect($page->checks);
+                $wasHealthy = $page->status_code >= 200
+                    && $page->status_code < 300
+                    && $checks->isNotEmpty()
+                    && $checks->every(fn (array $check): bool => $check['status'] === 'passed');
+
+                if ($reportIndex === 0 && $url && $wasHealthy) {
+                    $healthyCooldown[$url] = true;
+                }
             }
         }
 
-        return $lastAuditedAt;
+        return [
+            'last_audited_at' => $lastAuditedAt,
+            'healthy_cooldown' => $healthyCooldown,
+        ];
     }
 
     /**

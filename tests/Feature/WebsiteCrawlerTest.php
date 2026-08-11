@@ -99,6 +99,40 @@ it('prioritises pages that were not included in the previous audit', function ()
     ]);
 });
 
+it('gives healthy pages a one audit cooldown while rechecking pages with issues', function (): void {
+    config()->set('forms.health_reports.max_pages', 5);
+    config()->set('forms.health_reports.max_depth', 2);
+    config()->set('forms.health_reports.crawl_delay_ms', 0);
+
+    $website = Website::factory()->create();
+    $website->domains()->create(['domain' => 'example.com', 'is_primary' => true]);
+    $previousReport = WebsiteHealthReport::factory()->for($website)->create(['completed_at' => now()->subWeek()]);
+    WebsiteHealthReportPage::factory()->for($previousReport, 'report')->create([
+        'url' => 'https://example.com/healthy',
+        'url_hash' => hash('sha256', 'https://example.com/healthy'),
+        'checks' => [['key' => 'page_title', 'label' => 'Page title', 'status' => 'passed', 'message' => 'A title is present.']],
+    ]);
+    WebsiteHealthReportPage::factory()->for($previousReport, 'report')->create([
+        'url' => 'https://example.com/warning',
+        'url_hash' => hash('sha256', 'https://example.com/warning'),
+        'checks' => [['key' => 'meta_description', 'label' => 'Meta description', 'status' => 'warning', 'message' => 'No meta description was found.']],
+    ]);
+
+    Http::fake([
+        'https://example.com/sitemap.xml' => Http::response('<urlset><url><loc>https://example.com/healthy</loc></url><url><loc>https://example.com/warning</loc></url><url><loc>https://example.com/new-page</loc></url></urlset>', 200, ['Content-Type' => 'application/xml']),
+        'https://example.com/*' => Http::response('<html><head><title>Page</title></head><body><h1>Page</h1></body></html>', 200, ['Content-Type' => 'text/html']),
+    ]);
+
+    $pages = app(WebsiteCrawler::class)->crawl($website);
+
+    expect(collect($pages)->pluck('url')->all())->toBe([
+        'https://example.com/',
+        'https://example.com/new-page',
+        'https://example.com/warning',
+    ]);
+    Http::assertNotSent(fn ($request): bool => $request->url() === 'https://example.com/healthy');
+});
+
 it('explains why long search metadata is worth improving', function (): void {
     config()->set('forms.health_reports.max_pages', 1);
     config()->set('forms.health_reports.crawl_delay_ms', 0);
