@@ -29,6 +29,22 @@ class SearchConsoleClient
         ])->all();
     }
 
+    /** @return array<int, array{query: string, clicks: float, impressions: float, ctr: float, position: float}> */
+    public function queryPerformance(SearchConsoleConnection $connection, int $rowLimit, int $startRow = 0): array
+    {
+        return collect($this->performanceRows($connection, ['query'], $rowLimit, $startRow))
+            ->map(fn (array $row): array => ['query' => (string) data_get($row, 'keys.0'), ...$this->formatRow($row)])
+            ->all();
+    }
+
+    /** @return array<int, array{page: string, clicks: float, impressions: float, ctr: float, position: float}> */
+    public function pagePerformance(SearchConsoleConnection $connection, int $rowLimit, int $startRow = 0): array
+    {
+        return collect($this->performanceRows($connection, ['page'], $rowLimit, $startRow))
+            ->map(fn (array $row): array => ['page' => (string) data_get($row, 'keys.0'), ...$this->formatRow($row)])
+            ->all();
+    }
+
     /**
      * @return array{
      *     period: array{start: string, end: string},
@@ -40,12 +56,8 @@ class SearchConsoleClient
     public function report(SearchConsoleConnection $connection): array
     {
         $totals = $this->formatRow($this->performanceRows($connection, [], 1)[0] ?? []);
-        $queries = collect($this->performanceRows($connection, ['query'], 10))
-            ->map(fn (array $row): array => ['query' => (string) data_get($row, 'keys.0'), ...$this->formatRow($row)])
-            ->all();
-        $pages = collect($this->performanceRows($connection, ['page'], 10))
-            ->map(fn (array $row): array => ['page' => (string) data_get($row, 'keys.0'), ...$this->formatRow($row)])
-            ->all();
+        $queries = $this->queryPerformance($connection, 10);
+        $pages = $this->pagePerformance($connection, 10);
 
         return [
             'period' => [
@@ -62,7 +74,7 @@ class SearchConsoleClient
      * @param  array<int, string>  $dimensions
      * @return array<int, array<string, mixed>>
      */
-    protected function performanceRows(SearchConsoleConnection $connection, array $dimensions, int $rowLimit): array
+    protected function performanceRows(SearchConsoleConnection $connection, array $dimensions, int $rowLimit, int $startRow = 0): array
     {
         return $this->request($connection)
             ->post('sites/'.rawurlencode((string) $connection->property_url).'/searchAnalytics/query', [
@@ -71,6 +83,7 @@ class SearchConsoleClient
                 'dimensions' => $dimensions,
                 'type' => 'web',
                 'rowLimit' => $rowLimit,
+                'startRow' => $startRow,
             ])->throw()->json('rows', []);
     }
 

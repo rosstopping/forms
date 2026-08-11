@@ -9,6 +9,7 @@ use App\Services\GoogleOAuthClient;
 use App\Services\SearchConsoleClient;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\View\View;
@@ -16,6 +17,8 @@ use Throwable;
 
 class SearchConsoleController extends Controller
 {
+    protected const PERFORMANCE_PAGE_SIZE = 100;
+
     public function __construct(protected GoogleOAuthClient $oauth, protected SearchConsoleClient $searchConsole) {}
 
     public function connect(Request $request, Website $website): RedirectResponse
@@ -51,6 +54,35 @@ class SearchConsoleController extends Controller
         $properties = $this->searchConsole->sites($connection);
 
         return view('admin.websites.search-console-property', compact('website', 'properties'));
+    }
+
+    public function performance(Request $request, Website $website): View
+    {
+        $this->authorizeWebsite($request, $website);
+        $connection = $website->searchConsoleConnection()->firstOrFail();
+        $pages = $request->validate([
+            'queries_page' => ['sometimes', 'integer', 'min:1'],
+            'pages_page' => ['sometimes', 'integer', 'min:1'],
+        ]);
+        $queryPage = (int) ($pages['queries_page'] ?? 1);
+        $pagePage = (int) ($pages['pages_page'] ?? 1);
+        $limit = self::PERFORMANCE_PAGE_SIZE + 1;
+        $cacheKey = 'search-console-performance:'.$connection->id.':'.$connection->updated_at->timestamp.':';
+        $queries = Cache::remember($cacheKey.'queries:'.$queryPage, now()->addMinutes(15), fn (): array => $this->searchConsole->queryPerformance($connection, $limit, ($queryPage - 1) * self::PERFORMANCE_PAGE_SIZE));
+        $landingPages = Cache::remember($cacheKey.'pages:'.$pagePage, now()->addMinutes(15), fn (): array => $this->searchConsole->pagePerformance($connection, $limit, ($pagePage - 1) * self::PERFORMANCE_PAGE_SIZE));
+
+        return view('admin.websites.search-console-performance', [
+            'website' => $website,
+            'connection' => $connection,
+            'queries' => array_slice($queries, 0, self::PERFORMANCE_PAGE_SIZE),
+            'landingPages' => array_slice($landingPages, 0, self::PERFORMANCE_PAGE_SIZE),
+            'queryPage' => $queryPage,
+            'pagePage' => $pagePage,
+            'hasMoreQueries' => count($queries) > self::PERFORMANCE_PAGE_SIZE,
+            'hasMorePages' => count($landingPages) > self::PERFORMANCE_PAGE_SIZE,
+            'pageSize' => self::PERFORMANCE_PAGE_SIZE,
+            'period' => ['start' => now()->subDays(29), 'end' => now()->subDay()],
+        ]);
     }
 
     public function storeProperty(StoreSearchConsolePropertyRequest $request, Website $website): RedirectResponse

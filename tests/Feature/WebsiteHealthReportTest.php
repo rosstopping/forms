@@ -59,7 +59,47 @@ it('shows Search Console reporting on the website dashboard', function (): void 
         ->assertSee('2,500')
         ->assertSee('5.0%')
         ->assertSee('example services')
-        ->assertSee('example.com/services');
+        ->assertSee('example.com/services')
+        ->assertSee('Position')
+        ->assertSee('3.2')
+        ->assertSee('View all data')
+        ->assertSee(route('admin.search-console.performance', $website));
+});
+
+it('shows paginated Search Console queries and landing pages to website users', function (): void {
+    $owner = User::factory()->create();
+    $otherUser = User::factory()->create();
+    $website = websiteWithDomain(['user_id' => $owner->id]);
+    $connection = SearchConsoleConnection::factory()->for($website)->create([
+        'connected_by' => $owner->id,
+        'property_url' => 'https://example.com/',
+    ]);
+
+    $this->mock(SearchConsoleClient::class)
+        ->shouldReceive('queryPerformance')
+        ->once()
+        ->withArgs(fn (SearchConsoleConnection $requestedConnection, int $limit, int $offset): bool => $requestedConnection->is($connection) && $limit === 101 && $offset === 100)
+        ->andReturn([['query' => 'second page query', 'clicks' => 18.0, 'impressions' => 240.0, 'ctr' => 0.075, 'position' => 12.4]])
+        ->shouldReceive('pagePerformance')
+        ->once()
+        ->withArgs(fn (SearchConsoleConnection $requestedConnection, int $limit, int $offset): bool => $requestedConnection->is($connection) && $limit === 101 && $offset === 0)
+        ->andReturn([['page' => 'https://example.com/landing', 'clicks' => 12.0, 'impressions' => 200.0, 'ctr' => 0.06, 'position' => 8.7]]);
+
+    $url = route('admin.search-console.performance', [$website, 'queries_page' => 2, 'pages_page' => 1]);
+
+    $this->actingAs($owner)
+        ->get($url)
+        ->assertSuccessful()
+        ->assertSee('All available queries')
+        ->assertSee('All available landing pages')
+        ->assertSee('Average position')
+        ->assertSee('second page query')
+        ->assertSee('12.4')
+        ->assertSee('example.com/landing');
+
+    $this->actingAs($otherUser)
+        ->get($url)
+        ->assertForbidden();
 });
 
 it('lets an administrator enable reports and queue one immediately', function (): void {

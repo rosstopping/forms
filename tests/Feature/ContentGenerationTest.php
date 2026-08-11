@@ -426,5 +426,11 @@ test('search console reporting returns totals and top queries and pages', functi
 
     expect($report['totals'])->toMatchArray(['clicks' => 125.0, 'impressions' => 2500.0, 'ctr' => 0.05, 'position' => 6.4])
         ->and($report['queries'][0]['query'])->toBe('example services')
-        ->and($report['pages'][0]['page'])->toBe('https://example.com/services');
+        ->and($report['queries'][0]['position'])->toBe(3.2)
+        ->and($report['pages'][0]['page'])->toBe('https://example.com/services')
+        ->and($report['pages'][0]['position'])->toBe(3.2);
+
+    Http::assertSent(fn ($request): bool => $request['dimensions'] === ['query']
+        && $request['rowLimit'] === 10
+        && $request['startRow'] === 0);
 });

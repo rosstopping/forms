@@ -68,6 +68,7 @@ Route::middleware(['web', 'auth'])->prefix('admin')->name('admin.')->group(funct
     Route::get('search-console/callback', [SearchConsoleController::class, 'callback'])->name('search-console.callback');
     Route::get('websites/{website}/search-console/property', [SearchConsoleController::class, 'property'])->name('search-console.property');
     Route::post('websites/{website}/search-console/property', [SearchConsoleController::class, 'storeProperty'])->name('search-console.property.store');
+    Route::get('websites/{website}/search-console/performance', [SearchConsoleController::class, 'performance'])->name('search-console.performance');
     Route::delete('websites/{website}/search-console', [SearchConsoleController::class, 'destroy'])->name('search-console.destroy');
     Route::put('websites/{website}/content-plan', [ContentPlanController::class, 'update'])->name('content-plans.update');
     Route::post('websites/{website}/content-generations', [ContentPlanController::class, 'generate'])->name('content-generations.store');

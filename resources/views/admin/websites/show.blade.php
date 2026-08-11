@@ -79,7 +79,10 @@
                 <div class="mt-5 border-t border-slate-200 pt-5">
                     <div class="flex flex-wrap items-end justify-between gap-2">
                         <h3 class="font-medium text-slate-900">Search performance</h3>
-                        <p class="text-xs text-slate-500">{{ \Illuminate\Support\Carbon::parse($searchConsoleReport['period']['start'])->format('j M') }}–{{ \Illuminate\Support\Carbon::parse($searchConsoleReport['period']['end'])->format('j M Y') }}</p>
+                        <div class="flex items-center gap-3 text-xs">
+                            <p class="text-slate-500">{{ \Illuminate\Support\Carbon::parse($searchConsoleReport['period']['start'])->format('j M') }}–{{ \Illuminate\Support\Carbon::parse($searchConsoleReport['period']['end'])->format('j M Y') }}</p>
+                            <a href="{{ route('admin.search-console.performance', $website) }}" class="font-medium text-slate-900 underline decoration-slate-300 underline-offset-4 hover:decoration-slate-900">View all data</a>
+                        </div>
                     </div>
                     <dl class="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
                         <div class="rounded-lg bg-slate-50 p-3"><dt class="text-xs text-slate-500">Clicks</dt><dd class="mt-1 text-xl font-semibold">{{ number_format($searchConsoleReport['totals']['clicks']) }}</dd></div>
@@ -90,11 +93,11 @@
                     <div class="mt-5 grid gap-5 lg:grid-cols-2">
                         <div class="overflow-x-auto">
                             <h4 class="text-sm font-medium text-slate-900">Top queries</h4>
-                            <table class="mt-2 min-w-full text-sm"><thead><tr class="border-b text-left text-xs uppercase text-slate-500"><th class="py-2 pr-3">Query</th><th class="py-2 text-right">Clicks</th></tr></thead><tbody>@forelse ($searchConsoleReport['queries'] as $query)<tr class="border-b border-slate-100"><td class="max-w-64 truncate py-2 pr-3" title="{{ $query['query'] }}">{{ $query['query'] }}</td><td class="py-2 text-right">{{ number_format($query['clicks']) }}</td></tr>@empty<tr><td colspan="2" class="py-3 text-slate-500">No query data yet.</td></tr>@endforelse</tbody></table>
+                            <table class="mt-2 min-w-full text-sm"><thead><tr class="border-b text-left text-xs uppercase text-slate-500"><th class="py-2 pr-3">Query</th><th class="py-2 text-right">Clicks</th><th class="py-2 pl-3 text-right">Position</th></tr></thead><tbody>@forelse ($searchConsoleReport['queries'] as $query)<tr class="border-b border-slate-100"><td class="max-w-64 truncate py-2 pr-3" title="{{ $query['query'] }}">{{ $query['query'] }}</td><td class="py-2 text-right tabular-nums">{{ number_format($query['clicks']) }}</td><td class="py-2 pl-3 text-right tabular-nums">{{ number_format($query['position'], 1) }}</td></tr>@empty<tr><td colspan="3" class="py-3 text-slate-500">No query data yet.</td></tr>@endforelse</tbody></table>
                         </div>
                         <div class="overflow-x-auto">
                             <h4 class="text-sm font-medium text-slate-900">Top pages</h4>
-                            <table class="mt-2 min-w-full text-sm"><thead><tr class="border-b text-left text-xs uppercase text-slate-500"><th class="py-2 pr-3">Page</th><th class="py-2 text-right">Clicks</th></tr></thead><tbody>@forelse ($searchConsoleReport['pages'] as $page)<tr class="border-b border-slate-100"><td class="max-w-64 truncate py-2 pr-3" title="{{ $page['page'] }}">{{ \Illuminate\Support\Str::after($page['page'], '://') }}</td><td class="py-2 text-right">{{ number_format($page['clicks']) }}</td></tr>@empty<tr><td colspan="2" class="py-3 text-slate-500">No page data yet.</td></tr>@endforelse</tbody></table>
+                            <table class="mt-2 min-w-full text-sm"><thead><tr class="border-b text-left text-xs uppercase text-slate-500"><th class="py-2 pr-3">Page</th><th class="py-2 text-right">Clicks</th><th class="py-2 pl-3 text-right">Position</th></tr></thead><tbody>@forelse ($searchConsoleReport['pages'] as $page)<tr class="border-b border-slate-100"><td class="max-w-64 truncate py-2 pr-3" title="{{ $page['page'] }}">{{ \Illuminate\Support\Str::after($page['page'], '://') }}</td><td class="py-2 text-right tabular-nums">{{ number_format($page['clicks']) }}</td><td class="py-2 pl-3 text-right tabular-nums">{{ number_format($page['position'], 1) }}</td></tr>@empty<tr><td colspan="3" class="py-3 text-slate-500">No page data yet.</td></tr>@endforelse</tbody></table>
                         </div>
                     </div>
                 </div>
