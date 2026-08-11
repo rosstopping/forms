@@ -209,6 +209,10 @@ test('content generation prompts keep every section within the Copilot request b
         ->and($prompt)->toContain('[Audience truncated for Copilot.]')
         ->and($prompt)->toContain('[Editorial guidance truncated for Copilot.]')
         ->and($prompt)->toContain('Search Console rows included.]')
+        ->and($prompt)->toContain('one high-quality, reviewable content initiative')
+        ->and($prompt)->toContain('a lightweight blog or content section when none exists')
+        ->and($prompt)->toContain('Do not force a blog')
+        ->and($prompt)->toContain('It may touch multiple pages and files')
         ->and($prompt)->toContain('Requirements:')
         ->and($prompt)->toContain('Search Console top query/page rows');
 });
