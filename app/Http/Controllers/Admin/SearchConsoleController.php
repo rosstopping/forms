@@ -68,7 +68,7 @@ class SearchConsoleController extends Controller
         $pagePage = (int) ($pages['pages_page'] ?? 1);
         $limit = self::PERFORMANCE_PAGE_SIZE + 1;
         $cacheKey = 'search-console-performance:'.$connection->id.':'.$connection->updated_at->timestamp.':';
-        $queries = Cache::remember($cacheKey.'queries:'.$queryPage, now()->addMinutes(15), fn (): array => $this->searchConsole->queryPerformance($connection, $limit, ($queryPage - 1) * self::PERFORMANCE_PAGE_SIZE));
+        $queries = Cache::remember($cacheKey.'query-pages:'.$queryPage, now()->addMinutes(15), fn (): array => $this->searchConsole->queryPagePerformance($connection, $limit, ($queryPage - 1) * self::PERFORMANCE_PAGE_SIZE));
         $landingPages = Cache::remember($cacheKey.'pages:'.$pagePage, now()->addMinutes(15), fn (): array => $this->searchConsole->pagePerformance($connection, $limit, ($pagePage - 1) * self::PERFORMANCE_PAGE_SIZE));
 
         return view('admin.websites.search-console-performance', [

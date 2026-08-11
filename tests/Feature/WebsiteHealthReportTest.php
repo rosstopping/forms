@@ -76,10 +76,10 @@ it('shows paginated Search Console queries and landing pages to website users', 
     ]);
 
     $this->mock(SearchConsoleClient::class)
-        ->shouldReceive('queryPerformance')
+        ->shouldReceive('queryPagePerformance')
         ->once()
         ->withArgs(fn (SearchConsoleConnection $requestedConnection, int $limit, int $offset): bool => $requestedConnection->is($connection) && $limit === 101 && $offset === 100)
-        ->andReturn([['query' => 'second page query', 'clicks' => 18.0, 'impressions' => 240.0, 'ctr' => 0.075, 'position' => 12.4]])
+        ->andReturn([['query' => 'second page query', 'page' => 'https://example.com/ranking-page', 'clicks' => 18.0, 'impressions' => 240.0, 'ctr' => 0.075, 'position' => 12.4]])
         ->shouldReceive('pagePerformance')
         ->once()
         ->withArgs(fn (SearchConsoleConnection $requestedConnection, int $limit, int $offset): bool => $requestedConnection->is($connection) && $limit === 101 && $offset === 0)
@@ -93,7 +93,9 @@ it('shows paginated Search Console queries and landing pages to website users', 
         ->assertSee('All available queries')
         ->assertSee('All available landing pages')
         ->assertSee('Average position')
+        ->assertSee('Ranking page')
         ->assertSee('second page query')
+        ->assertSee('example.com/ranking-page')
         ->assertSee('12.4')
         ->assertSee('example.com/landing');
 

@@ -37,6 +37,17 @@ class SearchConsoleClient
             ->all();
     }
 
+    /** @return array<int, array{query: string, page: string, clicks: float, impressions: float, ctr: float, position: float}> */
+    public function queryPagePerformance(SearchConsoleConnection $connection, int $rowLimit, int $startRow = 0): array
+    {
+        return collect($this->performanceRows($connection, ['query', 'page'], $rowLimit, $startRow))
+            ->map(fn (array $row): array => [
+                'query' => (string) data_get($row, 'keys.0'),
+                'page' => (string) data_get($row, 'keys.1'),
+                ...$this->formatRow($row),
+            ])->all();
+    }
+
     /** @return array<int, array{page: string, clicks: float, impressions: float, ctr: float, position: float}> */
     public function pagePerformance(SearchConsoleConnection $connection, int $rowLimit, int $startRow = 0): array
     {
