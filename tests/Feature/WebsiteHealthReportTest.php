@@ -2,10 +2,12 @@
 
 use App\Jobs\GenerateWebsiteHealthReport;
 use App\Mail\WebsiteHealthReportReady;
+use App\Models\SearchConsoleConnection;
 use App\Models\User;
 use App\Models\Website;
 use App\Models\WebsiteHealthReport;
 use App\Models\WebsiteHealthReportPage;
+use App\Services\SearchConsoleClient;
 use App\Services\WebsiteHealthAuditor;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
@@ -18,6 +20,37 @@ function websiteWithDomain(array $attributes = [], string $domain = 'example.com
 
     return $website;
 }
+
+/** @return array<string, mixed> */
+function searchConsoleReportData(): array
+{
+    return [
+        'period' => ['start' => '2026-07-13', 'end' => '2026-08-10'],
+        'totals' => ['clicks' => 125.0, 'impressions' => 2500.0, 'ctr' => 0.05, 'position' => 6.4],
+        'queries' => [['query' => 'example services', 'clicks' => 40.0, 'impressions' => 500.0, 'ctr' => 0.08, 'position' => 3.2]],
+        'pages' => [['page' => 'https://example.com/services', 'clicks' => 40.0, 'impressions' => 500.0, 'ctr' => 0.08, 'position' => 3.2]],
+    ];
+}
+
+it('shows Search Console reporting on the website dashboard', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $website = websiteWithDomain();
+    SearchConsoleConnection::factory()->for($website)->create(['connected_by' => $admin->id]);
+
+    $this->mock(SearchConsoleClient::class)
+        ->shouldReceive('report')
+        ->once()
+        ->andReturn(searchConsoleReportData());
+
+    $this->actingAs($admin)
+        ->get(route('admin.websites.show', $website))
+        ->assertSuccessful()
+        ->assertSee('Search performance')
+        ->assertSee('2,500')
+        ->assertSee('5.0%')
+        ->assertSee('example services')
+        ->assertSee('example.com/services');
+});
 
 it('lets an administrator enable reports and queue one immediately', function (): void {
     Queue::fake();
@@ -117,6 +150,7 @@ it('audits a website and queues the completed report for admins and the owner', 
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     $owner = User::factory()->create();
     $website = websiteWithDomain(['user_id' => $owner->id]);
+    SearchConsoleConnection::factory()->for($website)->create(['connected_by' => $admin->id]);
     $report = WebsiteHealthReport::factory()->for($website)->create([
         'status' => WebsiteHealthReport::STATUS_PENDING,
         'completed_at' => null,
@@ -139,13 +173,17 @@ it('audits a website and queues the completed report for admins and the owner', 
         'https://example.com/sitemap.xml' => Http::response('<?xml version="1.0"?><urlset></urlset>', 200),
     ]);
 
-    (new GenerateWebsiteHealthReport($report))->handle(app(WebsiteHealthAuditor::class));
+    $searchConsole = $this->mock(SearchConsoleClient::class);
+    $searchConsole->shouldReceive('report')->once()->andReturn(searchConsoleReportData());
+
+    (new GenerateWebsiteHealthReport($report))->handle(app(WebsiteHealthAuditor::class), $searchConsole);
 
     $report->refresh();
     expect($report->status)->toBe(WebsiteHealthReport::STATUS_COMPLETED)
         ->and($report->passed_checks)->toBeGreaterThan(0)
         ->and($report->pages)->toHaveCount(1)
         ->and($report->metrics['pages_analyzed'])->toBe(1)
+        ->and($report->metrics['search_console']['totals']['clicks'])->toBe(125)
         ->and($report->completed_at)->not->toBeNull();
 
     Mail::assertQueued(WebsiteHealthReportReady::class, 2);
@@ -154,6 +192,8 @@ it('audits a website and queues the completed report for admins and the owner', 
 
     (new WebsiteHealthReportReady($report->fresh(['website'])))
         ->assertSeeInHtml('Weekly website health report')
+        ->assertSeeInHtml('Google Search Console')
+        ->assertSeeInHtml('example services')
         ->assertSeeInHtml('View the full report');
 });
 

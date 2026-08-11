@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Website;
 use App\Models\WebsiteDomain;
+use App\Services\SearchConsoleClient;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Str;
@@ -17,6 +19,8 @@ use Illuminate\View\View;
 
 class WebsiteController extends Controller
 {
+    public function __construct(protected SearchConsoleClient $searchConsole) {}
+
     public function index(Request $request): View
     {
         $query = Website::query();
@@ -101,8 +105,20 @@ class WebsiteController extends Controller
             'submissions' => fn ($query) => $query->latest('created_at')->limit(10),
         ]);
         $users = $user?->isAdmin() ? User::query()->orderBy('name')->get(['id', 'name', 'email']) : collect();
+        $searchConsoleReport = null;
+        $searchConsoleReportUnavailable = false;
 
-        return view('admin.websites.show', compact('website', 'users'));
+        if ($user?->isAdmin() && $website->searchConsoleConnection?->property_url) {
+            try {
+                $connection = $website->searchConsoleConnection;
+                $cacheKey = 'search-console-report:'.$connection->id.':'.hash('sha256', $connection->property_url).':'.$connection->updated_at->timestamp;
+                $searchConsoleReport = Cache::remember($cacheKey, now()->addMinutes(15), fn (): array => $this->searchConsole->report($connection));
+            } catch (\Throwable) {
+                $searchConsoleReportUnavailable = true;
+            }
+        }
+
+        return view('admin.websites.show', compact('website', 'users', 'searchConsoleReport', 'searchConsoleReportUnavailable'));
     }
 
     public function update(Request $request, Website $website): RedirectResponse

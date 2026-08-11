@@ -61,6 +61,32 @@
                     <a href="{{ route('admin.search-console.connect', $website) }}" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white">Connect Google</a>
                 @endif
             </div>
+            @if ($searchConsoleReport)
+                <div class="mt-5 border-t border-slate-200 pt-5">
+                    <div class="flex flex-wrap items-end justify-between gap-2">
+                        <h3 class="font-medium text-slate-900">Search performance</h3>
+                        <p class="text-xs text-slate-500">{{ \Illuminate\Support\Carbon::parse($searchConsoleReport['period']['start'])->format('j M') }}–{{ \Illuminate\Support\Carbon::parse($searchConsoleReport['period']['end'])->format('j M Y') }}</p>
+                    </div>
+                    <dl class="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
+                        <div class="rounded-lg bg-slate-50 p-3"><dt class="text-xs text-slate-500">Clicks</dt><dd class="mt-1 text-xl font-semibold">{{ number_format($searchConsoleReport['totals']['clicks']) }}</dd></div>
+                        <div class="rounded-lg bg-slate-50 p-3"><dt class="text-xs text-slate-500">Impressions</dt><dd class="mt-1 text-xl font-semibold">{{ number_format($searchConsoleReport['totals']['impressions']) }}</dd></div>
+                        <div class="rounded-lg bg-slate-50 p-3"><dt class="text-xs text-slate-500">Average CTR</dt><dd class="mt-1 text-xl font-semibold">{{ number_format($searchConsoleReport['totals']['ctr'] * 100, 1) }}%</dd></div>
+                        <div class="rounded-lg bg-slate-50 p-3"><dt class="text-xs text-slate-500">Average position</dt><dd class="mt-1 text-xl font-semibold">{{ number_format($searchConsoleReport['totals']['position'], 1) }}</dd></div>
+                    </dl>
+                    <div class="mt-5 grid gap-5 lg:grid-cols-2">
+                        <div class="overflow-x-auto">
+                            <h4 class="text-sm font-medium text-slate-900">Top queries</h4>
+                            <table class="mt-2 min-w-full text-sm"><thead><tr class="border-b text-left text-xs uppercase text-slate-500"><th class="py-2 pr-3">Query</th><th class="py-2 text-right">Clicks</th></tr></thead><tbody>@forelse ($searchConsoleReport['queries'] as $query)<tr class="border-b border-slate-100"><td class="max-w-64 truncate py-2 pr-3" title="{{ $query['query'] }}">{{ $query['query'] }}</td><td class="py-2 text-right">{{ number_format($query['clicks']) }}</td></tr>@empty<tr><td colspan="2" class="py-3 text-slate-500">No query data yet.</td></tr>@endforelse</tbody></table>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <h4 class="text-sm font-medium text-slate-900">Top pages</h4>
+                            <table class="mt-2 min-w-full text-sm"><thead><tr class="border-b text-left text-xs uppercase text-slate-500"><th class="py-2 pr-3">Page</th><th class="py-2 text-right">Clicks</th></tr></thead><tbody>@forelse ($searchConsoleReport['pages'] as $page)<tr class="border-b border-slate-100"><td class="max-w-64 truncate py-2 pr-3" title="{{ $page['page'] }}">{{ \Illuminate\Support\Str::after($page['page'], '://') }}</td><td class="py-2 text-right">{{ number_format($page['clicks']) }}</td></tr>@empty<tr><td colspan="2" class="py-3 text-slate-500">No page data yet.</td></tr>@endforelse</tbody></table>
+                        </div>
+                    </div>
+                </div>
+            @elseif ($searchConsoleReportUnavailable)
+                <p class="mt-4 border-t border-slate-200 pt-4 text-sm text-amber-700">Search performance is temporarily unavailable. The rest of the dashboard is unaffected.</p>
+            @endif
         </div>
 
         @php($contentPlan = $website->contentPlan)

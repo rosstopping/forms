@@ -16,9 +16,20 @@ class ContentPlanController extends Controller
     public function update(UpdateContentPlanRequest $request, Website $website): RedirectResponse
     {
         $data = $request->validated();
+
         if ($data['enabled']) {
-            $this->ensureReady($request, $website);
+            try {
+                $this->ensureReady($request, $website);
+            } catch (ValidationException $exception) {
+                $website->contentPlan()->updateOrCreate(
+                    ['website_id' => $website->id],
+                    [...$data, 'enabled' => false, 'created_by' => $request->user()->id],
+                );
+
+                throw $exception;
+            }
         }
+
         $website->contentPlan()->updateOrCreate(['website_id' => $website->id], [...$data, 'created_by' => $request->user()->id]);
 
         return Redirect::route('admin.websites.show', $website)->with('status', 'Weekly content plan updated.');

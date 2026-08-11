@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Mail\WebsiteHealthReportReady;
 use App\Models\User;
 use App\Models\WebsiteHealthReport;
+use App\Services\SearchConsoleClient;
 use App\Services\WebsiteHealthAuditor;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -34,7 +35,7 @@ class GenerateWebsiteHealthReport implements ShouldBeUnique, ShouldQueue
         return (string) $this->report->website_id;
     }
 
-    public function handle(WebsiteHealthAuditor $auditor): void
+    public function handle(WebsiteHealthAuditor $auditor, SearchConsoleClient $searchConsole): void
     {
         $this->report->update([
             'status' => WebsiteHealthReport::STATUS_RUNNING,
@@ -47,6 +48,7 @@ class GenerateWebsiteHealthReport implements ShouldBeUnique, ShouldQueue
             $pages = $result['pages'];
             unset($result['pages']);
             $result['metrics']['changes'] = $this->changesSincePreviousReport($result['checks']);
+            $result['metrics']['search_console'] = $this->searchConsoleReport($searchConsole);
 
             $this->report->pages()->delete();
             $this->report->pages()->createMany($pages);
@@ -66,6 +68,22 @@ class GenerateWebsiteHealthReport implements ShouldBeUnique, ShouldQueue
             ]);
 
             throw $exception;
+        }
+    }
+
+    /** @return array<string, mixed>|null */
+    protected function searchConsoleReport(SearchConsoleClient $searchConsole): ?array
+    {
+        $connection = $this->report->website->searchConsoleConnection;
+
+        if (! $connection?->property_url) {
+            return null;
+        }
+
+        try {
+            return $searchConsole->report($connection);
+        } catch (Throwable) {
+            return null;
         }
     }
 

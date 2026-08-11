@@ -14,6 +14,7 @@ use App\Services\CopilotAgentClient;
 use App\Services\GoogleOAuthClient;
 use App\Services\SearchConsoleClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 
 uses(RefreshDatabase::class);
@@ -57,6 +58,38 @@ test('a due weekly content plan queues one generation only', function () {
     Queue::assertPushed(StartContentGeneration::class, 1);
 });
 
+test('content plan settings remain saved when activation requirements are missing', function () {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $website = Website::factory()->create();
+
+    $this->actingAs($admin)
+        ->put(route('admin.content-plans.update', $website), [
+            'enabled' => true,
+            'weekday' => 4,
+            'hour' => 15,
+            'timezone' => 'America/New_York',
+            'audience' => 'Saved audience details',
+            'guidance' => 'Saved editorial guidance',
+        ])
+        ->assertSessionHasErrors('enabled');
+
+    $plan = $website->contentPlan()->firstOrFail();
+
+    expect($plan->enabled)->toBeFalse()
+        ->and($plan->weekday)->toBe(4)
+        ->and($plan->hour)->toBe(15)
+        ->and($plan->timezone)->toBe('America/New_York')
+        ->and($plan->audience)->toBe('Saved audience details')
+        ->and($plan->guidance)->toBe('Saved editorial guidance');
+
+    $this->actingAs($admin)
+        ->get(route('admin.websites.show', $website))
+        ->assertSuccessful()
+        ->assertSee('Saved audience details')
+        ->assertSee('Saved editorial guidance')
+        ->assertSee('America/New_York');
+});
+
 test('content generation uses search performance to start a copilot pull request task', function () {
     Queue::fake();
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
@@ -90,4 +123,21 @@ test('search console access and refresh tokens are encrypted at rest', function 
 
     expect($raw->access_token)->not->toContain('plain-access')
         ->and($raw->refresh_token)->not->toContain('plain-refresh');
+});
+
+test('search console reporting returns totals and top queries and pages', function () {
+    $connection = SearchConsoleConnection::factory()->create([
+        'access_token' => 'valid-access-token',
+        'access_token_expires_at' => now()->addHour(),
+    ]);
+    Http::fakeSequence()
+        ->push(['rows' => [['clicks' => 125, 'impressions' => 2500, 'ctr' => 0.05, 'position' => 6.4]]])
+        ->push(['rows' => [['keys' => ['example services'], 'clicks' => 40, 'impressions' => 500, 'ctr' => 0.08, 'position' => 3.2]]])
+        ->push(['rows' => [['keys' => ['https://example.com/services'], 'clicks' => 40, 'impressions' => 500, 'ctr' => 0.08, 'position' => 3.2]]]);
+
+    $report = app(SearchConsoleClient::class)->report($connection);
+
+    expect($report['totals'])->toMatchArray(['clicks' => 125.0, 'impressions' => 2500.0, 'ctr' => 0.05, 'position' => 6.4])
+        ->and($report['queries'][0]['query'])->toBe('example services')
+        ->and($report['pages'][0]['page'])->toBe('https://example.com/services');
 });

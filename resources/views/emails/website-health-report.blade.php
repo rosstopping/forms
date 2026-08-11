@@ -17,6 +17,26 @@
         </table>
         <h2 style="font-size:18px;">Forms in the last seven days</h2>
         <p>{{ data_get($report->metrics, 'legitimate_submissions', 0) }} legitimate submissions, {{ data_get($report->metrics, 'spam_submissions', 0) }} spam submissions, and {{ data_get($report->metrics, 'email_failures', 0) + data_get($report->metrics, 'webhook_failures', 0) }} delivery failures.</p>
+        @if (data_get($report->metrics, 'search_console'))
+            <h2 style="margin-top:24px;font-size:18px;">Google Search Console</h2>
+            <p style="color:#64748b;font-size:13px;">{{ \Illuminate\Support\Carbon::parse(data_get($report->metrics, 'search_console.period.start'))->format('j M') }}–{{ \Illuminate\Support\Carbon::parse(data_get($report->metrics, 'search_console.period.end'))->format('j M Y') }}</p>
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:12px;text-align:center;">
+                <tr>
+                    <td style="padding:12px;background:#f8fafc;"><strong>{{ number_format(data_get($report->metrics, 'search_console.totals.clicks', 0)) }}</strong><br>Clicks</td>
+                    <td style="padding:12px;background:#f8fafc;"><strong>{{ number_format(data_get($report->metrics, 'search_console.totals.impressions', 0)) }}</strong><br>Impressions</td>
+                    <td style="padding:12px;background:#f8fafc;"><strong>{{ number_format(data_get($report->metrics, 'search_console.totals.ctr', 0) * 100, 1) }}%</strong><br>CTR</td>
+                    <td style="padding:12px;background:#f8fafc;"><strong>{{ number_format(data_get($report->metrics, 'search_console.totals.position', 0), 1) }}</strong><br>Position</td>
+                </tr>
+            </table>
+            @if (data_get($report->metrics, 'search_console.queries'))
+                <p style="margin-bottom:6px;"><strong>Top searches</strong></p>
+                <ol style="margin-top:0;padding-left:22px;">
+                    @foreach (array_slice(data_get($report->metrics, 'search_console.queries', []), 0, 5) as $query)
+                        <li>{{ $query['query'] }} — {{ number_format($query['clicks']) }} clicks</li>
+                    @endforeach
+                </ol>
+            @endif
+        @endif
         <p style="margin-top:24px;"><a href="{{ route('admin.website-health-reports.show', [$report->website, $report]) }}" style="display:inline-block;background:#0f172a;color:white;text-decoration:none;padding:10px 16px;border-radius:6px;">View the full report</a></p>
     </div>
 </body>
