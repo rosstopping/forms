@@ -71,6 +71,16 @@ class Website extends Model
         return $this->hasOne(WebsiteRepository::class);
     }
 
+    public function searchConsoleConnection(): HasOne
+    {
+        return $this->hasOne(SearchConsoleConnection::class);
+    }
+
+    public function contentPlan(): HasOne
+    {
+        return $this->hasOne(ContentPlan::class);
+    }
+
     public function primaryDomain(): ?WebsiteDomain
     {
         return $this->domains()->where('is_primary', true)->first() ?: $this->domains()->first();

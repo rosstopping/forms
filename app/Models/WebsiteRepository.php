@@ -46,4 +46,9 @@ class WebsiteRepository extends Model
     {
         return $this->hasMany(RemediationRun::class);
     }
+
+    public function contentGenerations(): HasMany
+    {
+        return $this->hasMany(ContentGeneration::class);
+    }
 }

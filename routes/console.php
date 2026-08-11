@@ -11,3 +11,7 @@ Artisan::command('inspire', function () {
 Schedule::command('health-reports:dispatch')
     ->dailyAt('06:00')
     ->withoutOverlapping();
+
+Schedule::command('content:dispatch')
+    ->hourly()
+    ->withoutOverlapping();

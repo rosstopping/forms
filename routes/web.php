@@ -1,10 +1,12 @@
 <?php
 
+use App\Http\Controllers\Admin\ContentPlanController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\FormController;
 use App\Http\Controllers\Admin\FormSubmissionController as AdminFormSubmissionController;
 use App\Http\Controllers\Admin\GithubConnectionController;
 use App\Http\Controllers\Admin\RemediationRunController;
+use App\Http\Controllers\Admin\SearchConsoleController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\WebsiteController;
 use App\Http\Controllers\Admin\WebsiteHealthReportController;
@@ -58,6 +60,13 @@ Route::middleware(['web', 'auth'])->prefix('admin')->name('admin.')->group(funct
     Route::get('websites/{website}/repository/create', [WebsiteRepositoryController::class, 'create'])->name('website-repositories.create');
     Route::post('websites/{website}/repository', [WebsiteRepositoryController::class, 'store'])->name('website-repositories.store');
     Route::delete('websites/{website}/repository', [WebsiteRepositoryController::class, 'destroy'])->name('website-repositories.destroy');
+    Route::get('websites/{website}/search-console/connect', [SearchConsoleController::class, 'connect'])->name('search-console.connect');
+    Route::get('search-console/callback', [SearchConsoleController::class, 'callback'])->name('search-console.callback');
+    Route::get('websites/{website}/search-console/property', [SearchConsoleController::class, 'property'])->name('search-console.property');
+    Route::post('websites/{website}/search-console/property', [SearchConsoleController::class, 'storeProperty'])->name('search-console.property.store');
+    Route::delete('websites/{website}/search-console', [SearchConsoleController::class, 'destroy'])->name('search-console.destroy');
+    Route::put('websites/{website}/content-plan', [ContentPlanController::class, 'update'])->name('content-plans.update');
+    Route::post('websites/{website}/content-generations', [ContentPlanController::class, 'generate'])->name('content-generations.store');
     Route::resource('forms', FormController::class);
     Route::resource('form-submissions', AdminFormSubmissionController::class);
     Route::resource('users', UserController::class)->only(['index', 'create', 'store']);

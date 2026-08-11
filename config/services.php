@@ -46,4 +46,12 @@ return [
         'oauth_url' => env('GITHUB_OAUTH_URL', 'https://github.com/login/oauth'),
     ],
 
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'oauth_url' => env('GOOGLE_OAUTH_URL', 'https://accounts.google.com/o/oauth2/v2/auth'),
+        'token_url' => env('GOOGLE_TOKEN_URL', 'https://oauth2.googleapis.com/token'),
+        'search_console_url' => env('GOOGLE_SEARCH_CONSOLE_URL', 'https://www.googleapis.com/webmasters/v3'),
+    ],
+
 ];

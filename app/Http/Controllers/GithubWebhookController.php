@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ContentGeneration;
 use App\Models\GithubInstallation;
 use App\Models\RemediationRun;
 use App\Models\WebsiteRepository;
@@ -59,16 +60,27 @@ class GithubWebhookController extends Controller
             ->where('pull_request_number', $request->integer('pull_request.number'))
             ->first();
 
-        if (! $run) {
-            return;
+        $merged = $request->boolean('pull_request.merged');
+        if ($run) {
+            $run->update([
+                'pull_request_state' => $request->string('pull_request.state')->toString(),
+                'status' => $merged ? RemediationRun::STATUS_COMPLETED : $run->status,
+                'completed_at' => $merged ? now() : $run->completed_at,
+                'merged_at' => $merged ? now() : $run->merged_at,
+            ]);
         }
 
-        $merged = $request->boolean('pull_request.merged');
-        $run->update([
-            'pull_request_state' => $request->string('pull_request.state')->toString(),
-            'status' => $merged ? RemediationRun::STATUS_COMPLETED : $run->status,
-            'completed_at' => $merged ? now() : $run->completed_at,
-            'merged_at' => $merged ? now() : $run->merged_at,
-        ]);
+        $generation = ContentGeneration::query()
+            ->where('website_repository_id', $repository->id)
+            ->where('pull_request_number', $request->integer('pull_request.number'))
+            ->first();
+        if ($generation) {
+            $generation->update([
+                'pull_request_state' => $request->string('pull_request.state')->toString(),
+                'status' => $merged ? ContentGeneration::STATUS_COMPLETED : $generation->status,
+                'completed_at' => $merged ? now() : $generation->completed_at,
+                'merged_at' => $merged ? now() : $generation->merged_at,
+            ]);
+        }
     }
 }

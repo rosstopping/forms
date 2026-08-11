@@ -47,6 +47,45 @@
                 </div>
             </div>
         </div>
+
+        <div class="rounded-lg border bg-white p-4 shadow-sm">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                    <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Content intelligence</p>
+                    <h2 class="mt-1 font-semibold">Google Search Console</h2>
+                    <p class="mt-1 text-sm text-slate-600">{{ $website->searchConsoleConnection?->property_url ?: 'Connect a property to use real search queries, clicks, impressions, and rankings.' }}</p>
+                </div>
+                @if ($website->searchConsoleConnection)
+                    <form method="POST" action="{{ route('admin.search-console.destroy', $website) }}">@csrf @method('DELETE')<button class="rounded-md border px-3 py-2 text-sm font-medium text-slate-700">Disconnect</button></form>
+                @else
+                    <a href="{{ route('admin.search-console.connect', $website) }}" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white">Connect Google</a>
+                @endif
+            </div>
+        </div>
+
+        @php($contentPlan = $website->contentPlan)
+        <div class="rounded-lg border bg-white p-4 shadow-sm">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+                <div><p class="text-xs font-medium uppercase tracking-wide text-slate-500">AI content</p><h2 class="mt-1 font-semibold">Weekly content generation</h2><p class="mt-1 text-sm text-slate-600">Copilot chooses a blog post, landing page, or page improvement and opens a pull request for review.</p></div>
+                @if ($website->repository && $website->searchConsoleConnection?->property_url)
+                    <form method="POST" action="{{ route('admin.content-generations.store', $website) }}">@csrf<button class="rounded-md border px-3 py-2 text-sm font-medium text-slate-700">Generate now</button></form>
+                @endif
+            </div>
+            @if ($errors->has('enabled'))<p class="mt-3 text-sm text-red-700">{{ $errors->first('enabled') }}</p>@endif
+            <form method="POST" action="{{ route('admin.content-plans.update', $website) }}" class="mt-4 grid gap-4 md:grid-cols-2">
+                @csrf @method('PUT')
+                <label class="flex items-center gap-2 md:col-span-2"><input type="hidden" name="enabled" value="0"><input type="checkbox" name="enabled" value="1" @checked(old('enabled', $contentPlan?->enabled))><span class="text-sm font-medium">Generate one content PR each week</span></label>
+                <div><label class="block text-sm font-medium" for="weekday">Day</label><select id="weekday" name="weekday" class="mt-1 w-full rounded-md border px-3 py-2 text-sm">@foreach (['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'] as $value => $day)<option value="{{ $value }}" @selected((int) old('weekday', $contentPlan?->weekday ?? 1) === $value)>{{ $day }}</option>@endforeach</select></div>
+                <div><label class="block text-sm font-medium" for="hour">Hour</label><select id="hour" name="hour" class="mt-1 w-full rounded-md border px-3 py-2 text-sm">@for ($hour = 0; $hour < 24; $hour++)<option value="{{ $hour }}" @selected((int) old('hour', $contentPlan?->hour ?? 8) === $hour)>{{ str_pad($hour, 2, '0', STR_PAD_LEFT) }}:00</option>@endfor</select></div>
+                <div class="md:col-span-2"><label class="block text-sm font-medium" for="timezone">Timezone</label><input id="timezone" name="timezone" value="{{ old('timezone', $contentPlan?->timezone ?? 'Europe/London') }}" class="mt-1 w-full rounded-md border px-3 py-2 text-sm"></div>
+                <div><label class="block text-sm font-medium" for="audience">Audience</label><textarea id="audience" name="audience" rows="3" class="mt-1 w-full rounded-md border px-3 py-2 text-sm">{{ old('audience', $contentPlan?->audience) }}</textarea></div>
+                <div><label class="block text-sm font-medium" for="guidance">Editorial guidance</label><textarea id="guidance" name="guidance" rows="3" class="mt-1 w-full rounded-md border px-3 py-2 text-sm">{{ old('guidance', $contentPlan?->guidance) }}</textarea></div>
+                <div class="md:col-span-2"><button class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white">Save content plan</button></div>
+            </form>
+            @if ($contentPlan?->generations->isNotEmpty())
+                <div class="mt-5 overflow-x-auto"><table class="min-w-full text-sm"><thead><tr class="border-b text-left text-xs uppercase text-slate-500"><th class="py-2">Date</th><th>Status</th><th>Pull request</th></tr></thead><tbody>@foreach ($contentPlan->generations as $generation)<tr class="border-b"><td class="py-2">{{ $generation->scheduled_for->toFormattedDateString() }}</td><td>{{ str_replace('_', ' ', $generation->status) }}</td><td>@if ($generation->pull_request_url)<a class="font-medium underline" href="{{ $generation->pull_request_url }}">#{{ $generation->pull_request_number }}</a>@else — @endif</td></tr>@endforeach</tbody></table></div>
+            @endif
+        </div>
     @endif
 
     <div class="grid gap-6 lg:grid-cols-2">
