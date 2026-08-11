@@ -7,3 +7,111 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+@layer base {
+    button,
+    a,
+    input,
+    select,
+    textarea,
+    summary {
+        @apply focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600;
+    }
+
+    button,
+    summary,
+    select {
+        @apply cursor-pointer;
+    }
+}
+
+@layer components {
+    .admin-content h1 {
+        @apply text-balance text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl;
+    }
+
+    .admin-content h2,
+    .admin-content h3 {
+        @apply text-balance text-slate-950;
+    }
+
+    .admin-content p {
+        @apply text-pretty;
+    }
+
+    .admin-content :is(input:not([type='checkbox']):not([type='radio']), select, textarea) {
+        @apply rounded-lg border-0 bg-white px-3 py-2.5 text-base text-slate-900 shadow-sm ring-1 ring-slate-950/10 placeholder:text-slate-400 focus:outline-2 focus:-outline-offset-1 focus:outline-teal-600 sm:py-2 sm:text-sm;
+    }
+
+    .admin-content :is(input[type='checkbox'], input[type='radio']) {
+        @apply size-5 border-slate-300 text-teal-600 accent-teal-600 focus:ring-teal-600 sm:size-4;
+    }
+
+    .admin-content table {
+        @apply text-left text-base sm:text-sm;
+    }
+
+    .admin-content thead {
+        @apply bg-slate-50/80;
+    }
+
+    .admin-content th {
+        @apply whitespace-nowrap text-xs font-medium uppercase tracking-wider text-slate-500;
+    }
+
+    .admin-content tbody tr {
+        @apply border-slate-950/5;
+    }
+
+    .admin-content tbody tr:hover {
+        @apply bg-teal-50/40;
+    }
+
+    .admin-content .bg-slate-900 {
+        @apply bg-teal-700 hover:bg-teal-800 focus-visible:outline-teal-700;
+    }
+
+    .admin-content .rounded-lg.border.bg-white,
+    .admin-content .rounded-xl.border.bg-white {
+        @apply border-slate-950/10 shadow-sm shadow-slate-950/5;
+    }
+
+    .admin-content a[class*='border'][class*='bg-white'],
+    .admin-content button[class*='border'][class*='bg-white'] {
+        @apply border-slate-950/10 shadow-sm shadow-slate-950/5;
+    }
+
+    .admin-content [role='tablist'] {
+        @apply rounded-xl bg-slate-200/65 p-1;
+    }
+
+    .admin-content [role='tab'] {
+        @apply rounded-lg border-0 px-3 py-2.5 text-base text-slate-600 focus-visible:outline-offset-0 sm:py-2 sm:text-sm;
+    }
+
+    .admin-content [role='tab'][aria-selected='true'] {
+        @apply bg-white text-slate-950 shadow-sm ring-1 ring-slate-950/5;
+    }
+
+    .admin-content [role='tabpanel'] {
+        @apply animate-[admin-panel-in_160ms_ease-out];
+    }
+}
+
+@keyframes admin-panel-in {
+    from {
+        opacity: 0;
+        transform: translateY(0.25rem);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .admin-content [role='tabpanel'] {
+        animation: none;
+    }
+}

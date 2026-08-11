@@ -188,7 +188,7 @@
         <form method="POST" action="{{ route('admin.content-requests.store', $website) }}" class="mt-4">
             @csrf
             <label class="block text-sm font-medium text-slate-900" for="content-request-instructions">What would you like Copilot to create or change?</label>
-            <textarea id="content-request-instructions" name="instructions" rows="5" maxlength="3000" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" placeholder="For example: We are getting traffic for ‘love island villa tenerife’. Create a landing page under the villa navigation that answers this search while making clear we are not the official villa.">{{ old('instructions') }}</textarea>
+            <textarea id="content-request-instructions" name="instructions" rows="5" maxlength="3000" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" placeholder="For example: Create a new landing page or blog post for x category.">{{ old('instructions') }}</textarea>
             <div class="mt-2 flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <p class="text-xs text-slate-500">Include the audience, useful keywords, desired location in the site, and any claims or qualifications Copilot must preserve. Up to 3,000 characters.</p>

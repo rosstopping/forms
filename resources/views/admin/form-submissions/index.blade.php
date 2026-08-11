@@ -4,8 +4,8 @@
 <div class="space-y-6">
     <div class="flex items-center justify-between">
         <div>
-            <h1 class="text-2xl font-semibold">Leads</h1>
-            <p class="text-sm text-slate-600">Track submissions as leads with simple CRM status updates.</p>
+            <h1 class="text-2xl font-semibold">Submissions</h1>
+            <p class="text-sm text-slate-600">Review form enquiries and track the follow-up status for this website.</p>
         </div>
     </div>
 

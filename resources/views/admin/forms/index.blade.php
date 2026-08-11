@@ -7,7 +7,6 @@
             <h1 class="text-2xl font-semibold">Forms</h1>
             <p class="text-sm text-slate-600">Browse the forms discovered for each website.</p>
         </div>
-        <a href="{{ route('admin.dashboard') }}" class="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Back to dashboard</a>
     </div>
 
     <div class="overflow-hidden rounded-lg border bg-white shadow-sm">

@@ -83,3 +83,27 @@ document.querySelectorAll('[data-tabs]').forEach((tabs) => {
 
     selectTab(defaultTab !== 'health' ? defaultTab : storedTab || defaultTab);
 });
+
+const mobileNavigation = document.querySelector('[data-mobile-nav]');
+const mobileNavigationToggle = document.querySelector('[data-mobile-nav-toggle]');
+const mobileNavigationCloseButtons = document.querySelectorAll('[data-mobile-nav-close]');
+
+const setMobileNavigationOpen = (open) => {
+    if (!mobileNavigation || !mobileNavigationToggle) {
+        return;
+    }
+
+    mobileNavigation.classList.toggle('hidden', !open);
+    mobileNavigationToggle.setAttribute('aria-expanded', open.toString());
+    document.body.classList.toggle('overflow-hidden', open);
+};
+
+mobileNavigationToggle?.addEventListener('click', () => setMobileNavigationOpen(true));
+mobileNavigationCloseButtons.forEach((button) => button.addEventListener('click', () => setMobileNavigationOpen(false)));
+
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && mobileNavigation && !mobileNavigation.classList.contains('hidden')) {
+        setMobileNavigationOpen(false);
+        mobileNavigationToggle?.focus();
+    }
+});
