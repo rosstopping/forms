@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\WebsiteHealthReport;
 use App\Services\CopilotAgentClient;
 use App\Services\GithubAppClient;
+use App\Services\PageSpeedInsightsClient;
 use App\Services\SearchConsoleClient;
 use App\Services\WebsiteHealthAuditor;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -40,7 +41,7 @@ class GenerateWebsiteHealthReport implements ShouldBeUnique, ShouldQueue
         return (string) $this->report->website_id;
     }
 
-    public function handle(WebsiteHealthAuditor $auditor, SearchConsoleClient $searchConsole, GithubAppClient $github, CopilotAgentClient $copilot): void
+    public function handle(WebsiteHealthAuditor $auditor, SearchConsoleClient $searchConsole, GithubAppClient $github, CopilotAgentClient $copilot, PageSpeedInsightsClient $pageSpeed): void
     {
         $this->report->update([
             'status' => WebsiteHealthReport::STATUS_RUNNING,
@@ -52,6 +53,14 @@ class GenerateWebsiteHealthReport implements ShouldBeUnique, ShouldQueue
             $result = $auditor->audit($this->report->website);
             $pages = $result['pages'];
             unset($result['pages']);
+            $pageSpeedResult = $pageSpeed->audit(collect($pages)
+                ->whereBetween('status_code', [200, 299])
+                ->where('is_indexable', true)
+                ->sortBy('depth')
+                ->pluck('url')
+                ->all());
+            $result = $this->includeChecks($result, $pageSpeedResult['checks']);
+            $result['metrics']['pagespeed'] = $pageSpeedResult['pages'];
             $result['metrics']['changes'] = $this->changesSincePreviousReport($result['checks']);
             $result['metrics']['search_console'] = $this->searchConsoleReport($searchConsole);
             $result['metrics']['content_updates'] = $this->contentUpdates($github, $copilot);
@@ -75,6 +84,25 @@ class GenerateWebsiteHealthReport implements ShouldBeUnique, ShouldQueue
 
             throw $exception;
         }
+    }
+
+    /**
+     * @param  array<string, mixed>  $result
+     * @param  array<int, array<string, mixed>>  $checks
+     * @return array<string, mixed>
+     */
+    protected function includeChecks(array $result, array $checks): array
+    {
+        foreach ($checks as $check) {
+            $result['checks'][] = $check;
+            $result[$check['status'].'_checks']++;
+            $result['categories'][$check['category']] ??= ['passed' => 0, 'warning' => 0, 'failed' => 0];
+            $result['categories'][$check['category']][$check['status']]++;
+        }
+
+        $result['overall_status'] = $result['failed_checks'] > 0 ? 'critical' : ($result['warning_checks'] > 0 ? 'needs_attention' : 'healthy');
+
+        return $result;
     }
 
     /** @return array<int, array<string, mixed>> */

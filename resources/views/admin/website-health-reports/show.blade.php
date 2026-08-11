@@ -109,6 +109,8 @@
             <strong>{{ data_get($report->metrics, 'changes.new_issues', 0) }} new issues</strong> and <strong>{{ data_get($report->metrics, 'changes.resolved_issues', 0) }} resolved issues</strong> since the previous completed report.
         </div>
 
+        <x-performance-summary :report="$report" />
+
         @if (data_get($report->metrics, 'forms_count', 0) > 0)
             <div class="rounded-lg border bg-white p-4 shadow-sm">
                 <h2 class="font-semibold">Last seven days of forms</h2>

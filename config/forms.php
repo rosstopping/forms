@@ -22,6 +22,13 @@ return [
         'blocked_paths' => ['/admin', '/login', '/logout', '/cart', '/checkout', '/search', '/wp-admin', '/feed'],
     ],
 
+    'pagespeed' => [
+        'api_key' => env('GOOGLE_PAGESPEED_API_KEY'),
+        'timeout' => (int) env('FORMS_PAGESPEED_TIMEOUT', 90),
+        'connect_timeout' => (int) env('FORMS_PAGESPEED_CONNECT_TIMEOUT', 10),
+        'max_pages' => (int) env('FORMS_PAGESPEED_MAX_PAGES', 3),
+    ],
+
     'search_opportunities' => [
         'minimum_impressions' => (int) env('FORMS_SEARCH_OPPORTUNITIES_MINIMUM_IMPRESSIONS', 100),
         'minimum_emerging_impressions' => (int) env('FORMS_SEARCH_OPPORTUNITIES_MINIMUM_EMERGING_IMPRESSIONS', 50),

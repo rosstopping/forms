@@ -15,6 +15,7 @@ use App\Models\WebsiteHealthReportPage;
 use App\Models\WebsiteRepository;
 use App\Services\CopilotAgentClient;
 use App\Services\GithubAppClient;
+use App\Services\PageSpeedInsightsClient;
 use App\Services\SearchConsoleClient;
 use App\Services\WebsiteHealthAuditor;
 use App\Services\WebsiteHealthReportPromptGenerator;
@@ -386,8 +387,13 @@ it('audits a website and queues the completed report for admins and the owner', 
     $copilot->shouldReceive('task')->once()->andReturn([
         'sessions' => [['head_ref' => 'copilot/content-update']],
     ]);
+    $pageSpeed = $this->mock(PageSpeedInsightsClient::class);
+    $pageSpeed->shouldReceive('audit')->once()->andReturn([
+        'pages' => [['url' => 'https://example.com/', 'strategy' => 'mobile', 'available' => false]],
+        'checks' => [],
+    ]);
 
-    (new GenerateWebsiteHealthReport($report))->handle(app(WebsiteHealthAuditor::class), $searchConsole, $github, $copilot);
+    (new GenerateWebsiteHealthReport($report))->handle(app(WebsiteHealthAuditor::class), $searchConsole, $github, $copilot, $pageSpeed);
 
     $report->refresh();
     expect($report->status)->toBe(WebsiteHealthReport::STATUS_COMPLETED)
@@ -395,6 +401,7 @@ it('audits a website and queues the completed report for admins and the owner', 
         ->and($report->pages)->toHaveCount(1)
         ->and($report->metrics['pages_analyzed'])->toBe(1)
         ->and($report->metrics['forms_count'])->toBe(1)
+        ->and($report->metrics['pagespeed'][0]['strategy'])->toBe('mobile')
         ->and($report->metrics['search_console']['totals']['clicks'])->toBe(125)
         ->and($report->metrics['content_updates'][0]['title'])->toBe('Publish a guide to choosing event forms')
         ->and($report->metrics['content_updates'][0]['changed_files'])->toBe(2)
