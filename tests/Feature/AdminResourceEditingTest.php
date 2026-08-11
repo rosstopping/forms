@@ -98,6 +98,46 @@ it('allows an administrator to rename and delete a website', function (): void {
     $this->assertModelMissing($form);
 });
 
+it('allows an administrator to configure website webhook settings', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $website = Website::factory()->create();
+
+    $this->actingAs($admin)
+        ->get(route('admin.websites.show', $website))
+        ->assertSuccessful()
+        ->assertSee('Send submissions to a webhook')
+        ->assertSee('Webhook URL')
+        ->assertSee('Webhook secret');
+
+    $this->actingAs($admin)
+        ->put(route('admin.websites.update', $website), [
+            'name' => $website->name,
+            'user_id' => $website->user_id,
+            'health_reports_enabled' => false,
+            'webhook_enabled' => true,
+            'webhook_url' => 'https://hooks.example.com/submissions',
+            'webhook_secret' => 'signing-secret',
+        ])
+        ->assertSessionDoesntHaveErrors()
+        ->assertRedirect(route('admin.websites.show', $website));
+
+    expect($website->fresh())
+        ->webhook_enabled->toBeTrue()
+        ->webhook_url->toBe('https://hooks.example.com/submissions')
+        ->webhook_secret->toBe('signing-secret');
+
+    $this->actingAs($admin)
+        ->put(route('admin.websites.update', $website), [
+            'name' => 'Renamed without changing webhook settings',
+        ])
+        ->assertSessionDoesntHaveErrors();
+
+    expect($website->fresh())
+        ->webhook_enabled->toBeTrue()
+        ->webhook_url->toBe('https://hooks.example.com/submissions')
+        ->webhook_secret->toBe('signing-secret');
+});
+
 it('prevents website owners from deleting websites', function (): void {
     $owner = User::factory()->create();
     $website = Website::factory()->for($owner, 'owner')->create();

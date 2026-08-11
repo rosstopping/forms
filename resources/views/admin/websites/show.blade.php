@@ -261,6 +261,27 @@
                             <span class="block text-xs text-slate-500">Reports are emailed to administrators and the assigned owner.</span>
                         </span>
                     </label>
+                    <div class="space-y-3 rounded-lg border border-slate-200 p-3">
+                        <label class="flex items-start gap-3">
+                            <input type="hidden" name="webhook_enabled" value="0">
+                            <input type="checkbox" name="webhook_enabled" value="1" class="mt-1 rounded border-slate-300" @checked(old('webhook_enabled', $website->webhook_enabled))>
+                            <span>
+                                <span class="block text-sm font-medium text-slate-900">Send submissions to a webhook</span>
+                                <span class="block text-xs text-slate-500">New form submissions will be posted to the URL below unless a form has its own override.</span>
+                            </span>
+                        </label>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700" for="webhook_url">Webhook URL</label>
+                            <input id="webhook_url" name="webhook_url" type="url" value="{{ old('webhook_url', $website->webhook_url) }}" placeholder="https://example.com/webhooks/forms" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                            @error('webhook_url')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700" for="webhook_secret">Webhook secret</label>
+                            <input id="webhook_secret" name="webhook_secret" type="text" value="{{ old('webhook_secret', $website->webhook_secret) }}" autocomplete="off" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                            <p class="mt-1 text-xs text-slate-500">Optional secret used to sign webhook requests.</p>
+                            @error('webhook_secret')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror
+                        </div>
+                    </div>
                     <button type="submit" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">Save settings</button>
                 </form>
 

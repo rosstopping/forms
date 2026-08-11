@@ -133,6 +133,9 @@ class WebsiteController extends Controller
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'user_id' => ['nullable', 'exists:users,id'],
             'health_reports_enabled' => ['sometimes', 'boolean'],
+            'webhook_enabled' => ['sometimes', 'boolean'],
+            'webhook_url' => ['nullable', 'url', 'max:255'],
+            'webhook_secret' => ['nullable', 'string', 'max:255'],
         ]);
 
         $website->fill($data)->save();
