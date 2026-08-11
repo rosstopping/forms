@@ -6,6 +6,15 @@
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-display: 'Fraunces', ui-serif, Georgia, serif;
+    --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+    --color-paper: #f4f1e8;
+    --color-ink: #17201d;
+    --color-garden: #167a53;
+    --color-lichen: #dce9d9;
+    --color-apricot: #f2a66f;
+    --color-mist: #e7ebe7;
+    --color-moss: #315a46;
 }
 
 @layer base {
@@ -26,6 +35,39 @@
 }
 
 @layer components {
+    .prose {
+        color: var(--color-ink);
+        font-size: var(--text-base);
+        line-height: --spacing(7);
+    }
+
+    .prose > * + * {
+        margin-top: --spacing(6);
+    }
+
+    .prose :is(h1, h2, h3, h4, h5, h6) {
+        color: var(--color-ink);
+        font-family: var(--font-display);
+        font-weight: var(--font-weight-semibold);
+        letter-spacing: var(--tracking-tight);
+    }
+
+    .prose h1 { font-size: var(--text-4xl); }
+    .prose h2 { margin-top: --spacing(12); font-size: var(--text-2xl); }
+    .prose h3 { margin-top: --spacing(10); font-size: var(--text-xl); }
+    .prose :is(h4, h5, h6) { margin-top: --spacing(8); font-size: var(--text-lg); }
+    .prose a { color: var(--color-garden); text-decoration: underline; text-underline-offset: 0.2em; }
+    .prose :is(ul, ol) { padding-left: --spacing(6); }
+    .prose ul { list-style: disc; }
+    .prose ol { list-style: decimal; }
+    .prose li + li { margin-top: --spacing(2); }
+    .prose strong { font-weight: var(--font-weight-semibold); }
+    .prose blockquote { border-left: 2px solid var(--color-garden); padding-left: --spacing(6); color: --alpha(var(--color-ink) / 65%); font-family: var(--font-display); font-size: var(--text-xl); }
+    .prose code { border-radius: var(--radius-sm); background: var(--color-lichen); padding-inline: --spacing(1); font-family: var(--font-mono); font-size: var(--text-sm); }
+    .prose pre { overflow-x: auto; border-radius: var(--radius-md); background: var(--color-ink); padding: --spacing(5); color: var(--color-paper); }
+    .prose pre code { background: transparent; padding: 0; color: inherit; }
+    .prose img { border-radius: min(1vw, var(--radius-lg)); outline: 1px solid --alpha(var(--color-ink) / 10%); outline-offset: -1px; }
+
     .admin-content h1 {
         @apply text-balance text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl;
     }

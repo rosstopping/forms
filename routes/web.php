@@ -16,11 +16,26 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\FormSubmissionController;
 use App\Http\Controllers\FormSubmissionSpamController;
 use App\Http\Controllers\GithubWebhookController;
+use App\Http\Controllers\MarketingController;
+use App\Http\Controllers\OnboardingEnquiryController;
 use App\Http\Controllers\WebsiteHealthReportController as PublicWebsiteHealthReportController;
 use App\Http\Middleware\AllowFormSubmissionCors;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+
+Route::controller(MarketingController::class)->group(function () {
+    Route::get('/', 'home')->name('marketing.home');
+    Route::get('/features', 'features')->name('marketing.features');
+    Route::get('/pricing', 'pricing')->name('marketing.pricing');
+    Route::get('/journal', 'journal')->name('marketing.journal');
+    Route::get('/journal/{slug}', 'article')->name('marketing.article');
+    Route::get('/contact', 'contact')->name('marketing.contact');
+});
+
+Route::post('/contact', OnboardingEnquiryController::class)
+    ->middleware('throttle:6,1')
+    ->name('marketing.contact.store');
 
 Route::get('/submitted', function (Request $request) {
     $returnUrl = $request->header('referer') ?: url('/');

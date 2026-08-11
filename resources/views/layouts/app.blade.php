@@ -12,9 +12,9 @@
         <div class="isolate min-h-dvh lg:grid lg:grid-cols-[17rem_minmax(0,1fr)]">
             <aside class="hidden min-h-dvh flex-col bg-slate-950 px-4 py-5 text-white lg:flex">
                 <a href="{{ route('admin.dashboard') }}" aria-label="Homepage" class="flex items-center gap-3 px-2">
-                    <span class="grid size-9 shrink-0 place-items-center rounded-xl bg-teal-400 text-sm font-semibold text-slate-950">SH</span>
+                    <span class="grid size-9 shrink-0 place-items-center rounded-xl bg-teal-400 text-sm font-semibold text-slate-950">S</span>
                     <span class="min-w-0">
-                        <span class="flex text-sm font-semibold tracking-tight">Site Health</span>
+                        <span class="flex text-sm font-semibold tracking-tight">Sitewell</span>
                         <span class="flex text-xs text-slate-400">Audit workspace</span>
                     </span>
                 </a>
@@ -63,7 +63,7 @@
 
             <div class="min-w-0">
                 <header class="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-950/10 bg-white/90 px-4 backdrop-blur lg:hidden">
-                    <a href="{{ route('admin.dashboard') }}" aria-label="Homepage" class="flex items-center gap-2 text-sm font-semibold tracking-tight text-slate-950"><span class="grid size-8 place-items-center rounded-lg bg-slate-950 text-xs text-teal-300">SH</span> Site Health</a>
+                    <a href="{{ route('admin.dashboard') }}" aria-label="Homepage" class="flex items-center gap-2 text-sm font-semibold tracking-tight text-slate-950"><span class="grid size-8 place-items-center rounded-lg bg-slate-950 text-xs text-teal-300">S</span> Sitewell</a>
                     <button type="button" class="relative rounded-lg p-2 text-slate-600 hover:bg-slate-100" aria-label="Open navigation" aria-expanded="false" aria-controls="mobile-navigation" data-mobile-nav-toggle>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="size-6" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke-linecap="round"/></svg>
                         <span class="absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2" aria-hidden="true"></span>
