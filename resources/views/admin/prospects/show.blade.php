@@ -60,5 +60,16 @@
             <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"><h2 class="font-semibold">Activity</h2><ol class="mt-4 space-y-4">@forelse ($prospect->activities as $activity)<li class="flex gap-3"><span class="mt-1.5 size-2 shrink-0 rounded-full bg-slate-400"></span><div><p class="text-sm">{{ $activity->description }}</p><p class="text-xs text-slate-500">{{ $activity->user?->name ?: 'System' }} · {{ $activity->created_at->diffForHumans() }}</p></div></li>@empty<li class="text-sm text-slate-500">No activity yet.</li>@endforelse</ol></section>
         </div>
     </div>
+
+    <dialog data-confirm-action-dialog class="m-auto w-[min(30rem,calc(100%-2rem))] rounded-xl border border-slate-200 bg-white p-0 shadow-2xl backdrop:bg-slate-950/50">
+        <div class="p-6">
+            <h2 data-confirm-action-title class="text-lg font-semibold text-slate-950">Confirm action</h2>
+            <p data-confirm-action-message class="mt-2 text-sm leading-6 text-slate-600"></p>
+            <div class="mt-6 flex justify-end gap-3">
+                <button type="button" data-confirm-action-cancel class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
+                <button type="button" data-confirm-action-submit class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">Confirm</button>
+            </div>
+        </div>
+    </dialog>
 </div>
 @endsection

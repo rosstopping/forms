@@ -46,7 +46,10 @@ it('allows an administrator to delete a prospect after confirmation in the inter
 
     $this->actingAs($user)->get(route('admin.prospects.show', $prospect))
         ->assertSuccessful()
-        ->assertSee('Delete this prospect?');
+        ->assertSee('Delete this prospect?')
+        ->assertSee('data-confirm-action-form', false)
+        ->assertSee('data-confirm-action-dialog', false)
+        ->assertSee('data-confirm-action-submit', false);
 
     $this->delete(route('admin.prospects.destroy', $prospect))
         ->assertRedirectToRoute('admin.prospects.index')
