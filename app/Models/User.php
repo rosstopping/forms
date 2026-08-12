@@ -64,4 +64,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(Prospect::class);
     }
+
+    public function prospectDiscoveries(): HasMany
+    {
+        return $this->hasMany(ProspectDiscovery::class);
+    }
 }

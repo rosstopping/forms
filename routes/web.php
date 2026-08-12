@@ -11,9 +11,11 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\FormController;
 use App\Http\Controllers\Admin\FormSubmissionController as AdminFormSubmissionController;
 use App\Http\Controllers\Admin\GithubConnectionController;
+use App\Http\Controllers\Admin\ImportProspectDiscoveryCandidatesController;
 use App\Http\Controllers\Admin\ProspectAnalysisController;
 use App\Http\Controllers\Admin\ProspectApprovalController;
 use App\Http\Controllers\Admin\ProspectController;
+use App\Http\Controllers\Admin\ProspectDiscoveryController;
 use App\Http\Controllers\Admin\ProspectSendController;
 use App\Http\Controllers\Admin\RemediationRunController;
 use App\Http\Controllers\Admin\SearchConsoleController;
@@ -131,6 +133,10 @@ Route::middleware(['web', 'auth'])->prefix('admin')->name('admin.')->group(funct
     Route::patch('form-submissions/{form_submission}/spam', [AdminFormSubmissionController::class, 'markSpam'])->name('form-submissions.spam');
     Route::resource('form-submissions', AdminFormSubmissionController::class);
     Route::middleware(EnsureAdmin::class)->group(function (): void {
+        Route::get('prospect-discoveries', [ProspectDiscoveryController::class, 'index'])->name('prospect-discoveries.index');
+        Route::post('prospect-discoveries', [ProspectDiscoveryController::class, 'store'])->name('prospect-discoveries.store');
+        Route::get('prospect-discoveries/{prospectDiscovery}', [ProspectDiscoveryController::class, 'show'])->name('prospect-discoveries.show');
+        Route::post('prospect-discoveries/{prospectDiscovery}/import', ImportProspectDiscoveryCandidatesController::class)->name('prospect-discoveries.import');
         Route::post('prospects/{prospect}/analyse', ProspectAnalysisController::class)->name('prospects.analyse');
         Route::post('prospects/{prospect}/approve', ProspectApprovalController::class)->name('prospects.approve');
         Route::post('prospects/{prospect}/send', ProspectSendController::class)->name('prospects.send');

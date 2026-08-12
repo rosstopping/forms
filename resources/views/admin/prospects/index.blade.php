@@ -4,7 +4,7 @@
 <div class="space-y-6">
     <div class="flex flex-wrap items-end justify-between gap-4">
         <div><p class="text-sm font-medium text-teal-700">Lead generation</p><h1 class="text-3xl font-semibold tracking-tight">Outreach</h1><p class="mt-1 text-sm text-slate-600">Research prospects, review evidence-based drafts, and track every conversation.</p></div>
-        <a href="{{ route('admin.prospects.create') }}" class="rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">Add prospect</a>
+        <div class="flex items-center gap-3"><a href="{{ route('admin.prospect-discoveries.index') }}" class="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50">Find prospects</a><a href="{{ route('admin.prospects.create') }}" class="rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">Add prospect</a></div>
     </div>
     @if (session('status'))<div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{{ session('status') }}</div>@endif
     <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
