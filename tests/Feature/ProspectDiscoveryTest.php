@@ -44,6 +44,21 @@ it('imports selected candidates and queues research without sending outreach', f
     Queue::assertPushed(AnalyzeProspect::class, fn (AnalyzeProspect $job): bool => $job->prospect->is($candidate->prospect));
 });
 
+it('renders completed discovery results for review', function () {
+    $user = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $discovery = ProspectDiscovery::factory()->for($user, 'owner')->create(['status' => 'completed', 'candidate_count' => 1]);
+    ProspectDiscoveryCandidate::factory()->for($discovery, 'discovery')->create([
+        'business_name' => 'Acme Plumbing',
+        'website_url' => 'https://acme.example',
+        'address' => 'High Street, Bristol',
+    ]);
+
+    $this->actingAs($user)->get(route('admin.prospect-discoveries.show', $discovery))
+        ->assertSuccessful()
+        ->assertSee('Acme Plumbing')
+        ->assertSee('Import selected for research');
+});
+
 it('maps public OpenStreetMap listings with websites and caches the search', function () {
     Cache::flush();
     Http::preventStrayRequests();

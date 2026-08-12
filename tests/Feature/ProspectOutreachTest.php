@@ -38,6 +38,21 @@ it('restricts outreach to Sitewell administrators', function () {
     $this->get(route('admin.dashboard'))->assertDontSee('Outreach');
 });
 
+it('allows an administrator to delete a prospect after confirmation in the interface', function () {
+    $user = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $prospect = Prospect::factory()->for($user, 'owner')->create();
+
+    $this->actingAs($user)->get(route('admin.prospects.show', $prospect))
+        ->assertSuccessful()
+        ->assertSee('Delete this prospect?');
+
+    $this->delete(route('admin.prospects.destroy', $prospect))
+        ->assertRedirectToRoute('admin.prospects.index')
+        ->assertSessionHas('status', 'Prospect deleted.');
+
+    $this->assertModelMissing($prospect);
+});
+
 it('requires approval before sending outreach and schedules a follow-up', function () {
     Mail::fake();
     $user = User::factory()->create(['role' => User::ROLE_ADMIN]);

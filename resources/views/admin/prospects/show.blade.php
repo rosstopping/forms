@@ -3,7 +3,16 @@
 @section('content')
 <div class="space-y-6">
     <div class="flex flex-wrap items-start justify-between gap-4"><div><a href="{{ route('admin.prospects.index') }}" class="text-sm font-medium text-slate-600">← Outreach</a><div class="mt-3 flex flex-wrap items-center gap-3"><h1 class="text-3xl font-semibold tracking-tight">{{ $prospect->business_name }}</h1><span class="rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700">{{ str($prospect->status)->replace('_', ' ')->title() }}</span></div><a href="{{ $prospect->website_url }}" target="_blank" rel="noopener noreferrer" class="mt-1 inline-flex text-sm text-teal-700 hover:underline">{{ $prospect->website_url }} ↗</a></div>
-        <div class="flex flex-wrap gap-2">@if (! in_array($prospect->analysis_status, ['pending', 'running']))<form method="POST" action="{{ route('admin.prospects.analyse', $prospect) }}">@csrf<button class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium">Research again</button></form>@endif @if ($prospect->outreach_body && ! $prospect->approved_at)<form method="POST" action="{{ route('admin.prospects.approve', $prospect) }}">@csrf<button class="rounded-lg bg-teal-600 px-3 py-2 text-sm font-semibold text-white hover:bg-teal-700">Approve draft</button></form>@endif @if ($prospect->approved_at && ! $prospect->sent_at)<form method="POST" action="{{ route('admin.prospects.send', $prospect) }}">@csrf<button class="rounded-lg bg-slate-950 px-3 py-2 text-sm font-semibold text-white">Send approved email</button></form>@endif</div>
+        <div class="flex flex-wrap gap-2">
+            @if (! in_array($prospect->analysis_status, ['pending', 'running']))<form method="POST" action="{{ route('admin.prospects.analyse', $prospect) }}">@csrf<button class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium">Research again</button></form>@endif
+            @if ($prospect->outreach_body && ! $prospect->approved_at)<form method="POST" action="{{ route('admin.prospects.approve', $prospect) }}">@csrf<button class="rounded-lg bg-teal-600 px-3 py-2 text-sm font-semibold text-white hover:bg-teal-700">Approve draft</button></form>@endif
+            @if ($prospect->approved_at && ! $prospect->sent_at)<form method="POST" action="{{ route('admin.prospects.send', $prospect) }}">@csrf<button class="rounded-lg bg-slate-950 px-3 py-2 text-sm font-semibold text-white">Send approved email</button></form>@endif
+            <form method="POST" action="{{ route('admin.prospects.destroy', $prospect) }}" data-confirm-action-form>
+                @csrf
+                @method('DELETE')
+                <button type="button" data-confirm-action data-confirm-title="Delete this prospect?" data-confirm-message="The prospect, website research, outreach draft, and activity history will be permanently deleted. This cannot be undone." data-confirm-label="Delete prospect" data-confirm-danger class="rounded-lg border border-red-300 bg-white px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50">Delete</button>
+            </form>
+        </div>
     </div>
     @if (session('status'))<div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{{ session('status') }}</div>@endif
     @if ($prospect->analysis_status === 'failed')<div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"><strong>Research failed:</strong> {{ $prospect->analysis_error }}</div>@endif
