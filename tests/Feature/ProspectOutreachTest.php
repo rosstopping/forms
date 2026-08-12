@@ -1,9 +1,11 @@
 <?php
 
+use App\Ai\Agents\ProspectOutreachWriter;
 use App\Jobs\AnalyzeProspect;
 use App\Mail\ProspectOutreach;
 use App\Models\Prospect;
 use App\Models\User;
+use App\Services\ProspectWebsiteAnalyzer;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\URL;
@@ -51,6 +53,48 @@ it('allows an administrator to delete a prospect after confirmation in the inter
         ->assertSessionHas('status', 'Prospect deleted.');
 
     $this->assertModelMissing($prospect);
+});
+
+it('shows discovered public contact details with their source', function () {
+    $user = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $prospect = Prospect::factory()->for($user, 'owner')->create([
+        'analysis_status' => 'completed',
+        'contact_details' => [
+            'emails' => [['value' => 'hello@example.com', 'source_url' => 'https://example.com/contact']],
+            'phones' => [['value' => '+441171234567', 'source_url' => 'https://example.com/contact']],
+            'contact_page_url' => 'https://example.com/contact',
+            'contact_form_url' => 'https://example.com/contact',
+        ],
+    ]);
+
+    $this->actingAs($user)->get(route('admin.prospects.show', $prospect))
+        ->assertSuccessful()
+        ->assertSee('Public contact details')
+        ->assertSee('hello@example.com')
+        ->assertSee('+441171234567')
+        ->assertSee('View source');
+});
+
+it('fills an empty prospect email from published website contact details', function () {
+    $prospect = Prospect::factory()->create(['email' => null]);
+    $analyzer = Mockery::mock(ProspectWebsiteAnalyzer::class);
+    $analyzer->shouldReceive('analyze')->once()->with($prospect->website_url)->andReturn([
+        'score' => 0,
+        'findings' => [],
+        'contacts' => [
+            'emails' => [['value' => 'hello@example.com', 'source_url' => 'https://example.com/contact']],
+            'phones' => [],
+            'contact_page_url' => 'https://example.com/contact',
+            'contact_form_url' => null,
+        ],
+    ]);
+
+    (new AnalyzeProspect($prospect))->handle($analyzer, app(ProspectOutreachWriter::class));
+
+    expect($prospect->refresh()->email)->toBe('hello@example.com')
+        ->and(data_get($prospect->contact_details, 'emails.0.source_url'))->toBe('https://example.com/contact')
+        ->and($prospect->approved_at)->toBeNull()
+        ->and($prospect->sent_at)->toBeNull();
 });
 
 it('requires approval before sending outreach and schedules a follow-up', function () {

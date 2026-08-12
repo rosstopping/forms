@@ -9,9 +9,9 @@ use RuntimeException;
 
 class ProspectWebsiteAnalyzer
 {
-    public function __construct(protected WebsiteHealthAuditor $auditor) {}
+    public function __construct(protected WebsiteHealthAuditor $auditor, protected ProspectContactFinder $contactFinder) {}
 
-    /** @return array{score: int, findings: array<int, array<string, mixed>>} */
+    /** @return array{score: int, findings: array<int, array<string, mixed>>, contacts: array<string, mixed>} */
     public function analyze(string $url): array
     {
         $host = parse_url($url, PHP_URL_HOST);
@@ -41,7 +41,7 @@ class ProspectWebsiteAnalyzer
         $findings = collect($checks)->values()->all();
         $score = min(100, collect($findings)->sum(fn (array $finding): int => $finding['severity'] === 'failed' ? 25 : ($finding['severity'] === 'warning' ? 10 : 0)));
 
-        return ['score' => $score, 'findings' => $findings];
+        return ['score' => $score, 'findings' => $findings, 'contacts' => $this->contactFinder->find($url, $response->body())];
     }
 
     protected function isPublicHost(string $host): bool

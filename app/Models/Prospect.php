@@ -16,9 +16,9 @@ class Prospect extends Model
 
     public const STATUSES = ['new', 'researched', 'drafted', 'approved', 'contacted', 'replied', 'converted', 'not_interested'];
 
-    protected $fillable = ['user_id', 'business_name', 'contact_name', 'email', 'website_url', 'status', 'analysis_status', 'opportunity_score', 'findings', 'analysis_error', 'analysed_at', 'outreach_subject', 'outreach_body', 'approved_at', 'approved_by', 'sent_at', 'next_follow_up_at', 'replied_at', 'converted_at', 'suppressed_at', 'notes'];
+    protected $fillable = ['user_id', 'business_name', 'contact_name', 'email', 'website_url', 'status', 'analysis_status', 'opportunity_score', 'findings', 'analysis_error', 'contact_details', 'analysed_at', 'outreach_subject', 'outreach_body', 'approved_at', 'approved_by', 'sent_at', 'next_follow_up_at', 'replied_at', 'converted_at', 'suppressed_at', 'notes'];
 
-    protected $casts = ['findings' => 'array', 'analysed_at' => 'datetime', 'approved_at' => 'datetime', 'sent_at' => 'datetime', 'next_follow_up_at' => 'datetime', 'replied_at' => 'datetime', 'converted_at' => 'datetime', 'suppressed_at' => 'datetime'];
+    protected $casts = ['findings' => 'array', 'contact_details' => 'array', 'analysed_at' => 'datetime', 'approved_at' => 'datetime', 'sent_at' => 'datetime', 'next_follow_up_at' => 'datetime', 'replied_at' => 'datetime', 'converted_at' => 'datetime', 'suppressed_at' => 'datetime'];
 
     public function owner(): BelongsTo
     {

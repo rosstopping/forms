@@ -31,6 +31,26 @@
             </section>
         </div>
         <div class="space-y-6">
+            <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div><h2 class="font-semibold">Public contact details</h2><p class="text-sm text-slate-500">Published details found on the business website. Check the linked source before using them.</p></div>
+                @if ($prospect->analysis_status === 'pending' || $prospect->analysis_status === 'running')
+                    <p class="mt-4 rounded-lg bg-slate-50 p-4 text-sm text-slate-600">Contact discovery runs with the website research.</p>
+                @elseif (filled(data_get($prospect->contact_details, 'emails')) || filled(data_get($prospect->contact_details, 'phones')) || data_get($prospect->contact_details, 'contact_form_url'))
+                    <dl class="mt-4 space-y-3 text-sm">
+                        @foreach (data_get($prospect->contact_details, 'emails', []) as $email)
+                            <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Published email</dt><dd class="mt-1"><a href="mailto:{{ $email['value'] }}" class="font-medium text-teal-700 hover:underline">{{ $email['value'] }}</a><a href="{{ $email['source_url'] }}" target="_blank" rel="noopener noreferrer" class="ml-2 text-xs text-slate-500 hover:underline">View source ↗</a></dd></div>
+                        @endforeach
+                        @foreach (data_get($prospect->contact_details, 'phones', []) as $phone)
+                            <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Published phone</dt><dd class="mt-1"><a href="tel:{{ $phone['value'] }}" class="font-medium text-teal-700 hover:underline">{{ $phone['value'] }}</a><a href="{{ $phone['source_url'] }}" target="_blank" rel="noopener noreferrer" class="ml-2 text-xs text-slate-500 hover:underline">View source ↗</a></dd></div>
+                        @endforeach
+                        @if (data_get($prospect->contact_details, 'contact_form_url'))
+                            <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Contact form</dt><dd class="mt-1"><a href="{{ data_get($prospect->contact_details, 'contact_form_url') }}" target="_blank" rel="noopener noreferrer" class="font-medium text-teal-700 hover:underline">Open contact form ↗</a></dd></div>
+                        @endif
+                    </dl>
+                @else
+                    <p class="mt-4 rounded-lg bg-slate-50 p-4 text-sm text-slate-600">No clearly published email address, phone number, or contact form was found.</p>
+                @endif
+            </section>
             <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"><h2 class="font-semibold">Prospect details</h2><form method="POST" action="{{ route('admin.prospects.update', $prospect) }}" class="mt-4 space-y-4">@csrf @method('PUT')
                 <input type="hidden" name="outreach_subject" value="{{ $prospect->outreach_subject }}"><input type="hidden" name="outreach_body" value="{{ $prospect->outreach_body }}">
                 <div><label class="text-sm font-medium">Business</label><input name="business_name" value="{{ $prospect->business_name }}" required class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"></div><div><label class="text-sm font-medium">Contact</label><input name="contact_name" value="{{ $prospect->contact_name }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"></div><div><label class="text-sm font-medium">Email</label><input type="email" name="email" value="{{ $prospect->email }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"></div><div><label class="text-sm font-medium">Website</label><input type="url" name="website_url" value="{{ $prospect->website_url }}" required class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"></div>

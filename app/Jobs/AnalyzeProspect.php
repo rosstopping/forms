@@ -32,6 +32,7 @@ class AnalyzeProspect implements ShouldQueue
             $draft = $this->draft($writer, collect($analysis['findings'])->whereIn('severity', ['warning', 'failed'])->take(2)->all());
             $this->prospect->update([
                 'analysis_status' => 'completed', 'opportunity_score' => $analysis['score'], 'findings' => $analysis['findings'],
+                'contact_details' => $analysis['contacts'], 'email' => $this->prospect->email ?: data_get($analysis, 'contacts.emails.0.value'),
                 'analysed_at' => now(), 'outreach_subject' => $draft['subject'], 'outreach_body' => $draft['body'], 'status' => 'drafted',
                 'approved_at' => null, 'approved_by' => null,
             ]);
