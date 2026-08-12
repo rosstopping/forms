@@ -86,7 +86,7 @@ class Website extends Model
             ->where('user_id', $user->id)
             ->orWhereHas('members', fn (Builder $query) => $query
                 ->whereKey($user->id)
-                ->wherePivot('role', self::MEMBER_ROLE_MANAGER)));
+                ->where('user_website.role', self::MEMBER_ROLE_MANAGER)));
     }
 
     public function isAccessibleBy(?User $user): bool

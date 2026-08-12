@@ -38,7 +38,10 @@ it('allows managers to work with a shared website and its leads', function (): v
 
     $this->actingAs($manager)->get(route('admin.websites.index'))->assertOk()->assertSee($website->name);
     $this->get(route('admin.websites.show', $website))->assertOk();
-    $this->get(route('admin.form-submissions.index'))->assertOk()->assertSee($submission->displayName());
+    $this->get(route('admin.form-submissions.index'))
+        ->assertOk()
+        ->assertSee($submission->displayName())
+        ->assertSee('data-bulk-leads-total="1"', false);
     $this->put(route('admin.form-submissions.update', $submission), ['status' => 'contacted'])->assertRedirect();
 
     expect($submission->refresh()->status)->toBe('contacted');
