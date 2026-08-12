@@ -44,6 +44,32 @@ it('imports selected candidates and queues research without sending outreach', f
     Queue::assertPushed(AnalyzeProspect::class, fn (AnalyzeProspect $job): bool => $job->prospect->is($candidate->prospect));
 });
 
+it('imports businesses without websites as website opportunities and skips the audit', function () {
+    Queue::fake();
+    $user = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $discovery = ProspectDiscovery::factory()->for($user, 'owner')->create(['status' => 'completed']);
+    $candidate = ProspectDiscoveryCandidate::factory()->for($discovery, 'discovery')->create([
+        'business_name' => 'Bristol Builders',
+        'website_url' => null,
+        'phone' => '0117 123 4567',
+        'address' => 'High Street, Bristol',
+        'source_key' => 'node/43',
+        'source_data' => ['tags' => ['contact:email' => 'hello@bristol-builders.example']],
+    ]);
+
+    $this->actingAs($user)->post(route('admin.prospect-discoveries.import', $discovery), ['candidate_ids' => [$candidate->id]])->assertRedirect();
+
+    $prospect = $candidate->refresh()->prospect;
+    expect($prospect->website_url)->toBeNull()
+        ->and($prospect->analysis_status)->toBe('skipped')
+        ->and($prospect->status)->toBe('drafted')
+        ->and($prospect->email)->toBe('hello@bristol-builders.example')
+        ->and(data_get($prospect->contact_details, 'phones.0.value'))->toBe('0117 123 4567')
+        ->and(data_get($prospect->contact_details, 'addresses.0.value'))->toBe('High Street, Bristol')
+        ->and($prospect->outreach_body)->toContain("couldn't find a website linked from the public business listing");
+    Queue::assertNotPushed(AnalyzeProspect::class);
+});
+
 it('renders completed discovery results for review', function () {
     $user = User::factory()->create(['role' => User::ROLE_ADMIN]);
     $discovery = ProspectDiscovery::factory()->for($user, 'owner')->create(['status' => 'completed', 'candidate_count' => 1]);
@@ -56,21 +82,23 @@ it('renders completed discovery results for review', function () {
     $this->actingAs($user)->get(route('admin.prospect-discoveries.show', $discovery))
         ->assertSuccessful()
         ->assertSee('Acme Plumbing')
-        ->assertSee('Import selected for research');
+        ->assertSee('Import selected');
 });
 
-it('maps public OpenStreetMap listings with websites and caches the search', function () {
+it('maps public OpenStreetMap listings with and without websites and caches the search', function () {
     Cache::flush();
     Http::preventStrayRequests();
     Http::fake(['https://overpass-api.de/api/interpreter' => Http::response(['elements' => [
         ['type' => 'node', 'id' => 42, 'tags' => ['name' => 'Acme Plumbing', 'website' => 'acme.example', 'phone' => '0117 123 4567', 'addr:street' => 'High Street', 'addr:city' => 'Bristol']],
-        ['type' => 'node', 'id' => 43, 'tags' => ['name' => 'No Website Ltd']],
+        ['type' => 'node', 'id' => 43, 'tags' => ['name' => 'No Website Ltd', 'phone' => '0117 555 0101']],
     ]])]);
 
     $finder = app(OpenStreetMapProspectFinder::class);
     $candidates = $finder->find('Bristol', 'tradespeople');
     $finder->find('Bristol', 'tradespeople');
 
-    expect($candidates)->toHaveCount(1)->and($candidates[0])->toMatchArray(['source_key' => 'node/42', 'business_name' => 'Acme Plumbing', 'website_url' => 'https://acme.example', 'address' => 'High Street, Bristol']);
+    expect($candidates)->toHaveCount(2)
+        ->and($candidates[0])->toMatchArray(['source_key' => 'node/42', 'business_name' => 'Acme Plumbing', 'website_url' => 'https://acme.example', 'address' => 'High Street, Bristol'])
+        ->and($candidates[1])->toMatchArray(['source_key' => 'node/43', 'business_name' => 'No Website Ltd', 'website_url' => null, 'phone' => '0117 555 0101']);
     Http::assertSentCount(1);
 });

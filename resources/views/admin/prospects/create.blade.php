@@ -2,13 +2,13 @@
 
 @section('content')
 <div class="mx-auto max-w-3xl space-y-6">
-    <div><a href="{{ route('admin.prospects.index') }}" class="text-sm font-medium text-slate-600 hover:text-slate-900">← Back to outreach</a><h1 class="mt-3 text-3xl font-semibold tracking-tight">Add a prospect</h1><p class="mt-1 text-sm text-slate-600">Their public homepage will be researched and an outreach draft prepared automatically.</p></div>
+    <div><a href="{{ route('admin.prospects.index') }}" class="text-sm font-medium text-slate-600 hover:text-slate-900">← Back to outreach</a><h1 class="mt-3 text-3xl font-semibold tracking-tight">Add a prospect</h1><p class="mt-1 text-sm text-slate-600">Add a website to run research, or leave it blank to create a website opportunity.</p></div>
     <form method="POST" action="{{ route('admin.prospects.store') }}" class="space-y-5 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">@csrf
         <div><label for="business_name" class="text-sm font-medium">Business name</label><input id="business_name" name="business_name" value="{{ old('business_name') }}" required class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2">@error('business_name')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror</div>
         <div class="grid gap-4 sm:grid-cols-2"><div><label for="contact_name" class="text-sm font-medium">Contact name</label><input id="contact_name" name="contact_name" value="{{ old('contact_name') }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"></div><div><label for="email" class="text-sm font-medium">Email</label><input id="email" type="email" name="email" value="{{ old('email') }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2">@error('email')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror</div></div>
-        <div><label for="website_url" class="text-sm font-medium">Website URL</label><input id="website_url" type="url" name="website_url" value="{{ old('website_url') }}" placeholder="https://example.com" required class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2">@error('website_url')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror</div>
+        <div><label for="website_url" class="text-sm font-medium">Website URL <span class="font-normal text-slate-500">(optional)</span></label><input id="website_url" type="url" name="website_url" value="{{ old('website_url') }}" placeholder="https://example.com" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"><p class="mt-1 text-xs text-slate-500">Leave blank when no website is listed; Sitewell will create a website-sales draft and skip the audit.</p>@error('website_url')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror</div>
         <div><label for="notes" class="text-sm font-medium">Research notes <span class="font-normal text-slate-500">(optional)</span></label><textarea id="notes" name="notes" rows="4" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2">{{ old('notes') }}</textarea></div>
-        <button class="rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white">Add and research prospect</button>
+        <button class="rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white">Add prospect</button>
     </form>
 </div>
 @endsection

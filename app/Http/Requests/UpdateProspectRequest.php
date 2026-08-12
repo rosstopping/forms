@@ -30,7 +30,7 @@ class UpdateProspectRequest extends FormRequest
             'business_name' => ['required', 'string', 'max:255'],
             'contact_name' => ['nullable', 'string', 'max:255'],
             'email' => ['nullable', 'email:rfc', 'max:255'],
-            'website_url' => ['required', 'url:http,https', 'max:255'],
+            'website_url' => ['nullable', 'url:http,https', 'max:255'],
             'status' => ['required', 'string', Rule::in(Prospect::STATUSES)],
             'outreach_subject' => ['nullable', 'string', 'max:255'],
             'outreach_body' => ['nullable', 'string', 'max:10000'],

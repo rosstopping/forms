@@ -41,12 +41,18 @@ class ProspectController extends Controller
     public function store(StoreProspectRequest $request): RedirectResponse
     {
         $data = $request->validated();
-        $data['website_url'] = rtrim($data['website_url'], '/');
+        $data['website_url'] = filled($data['website_url'] ?? null) ? rtrim($data['website_url'], '/') : null;
+        if (! $data['website_url']) {
+            $data = array_merge($data, $this->websiteOpportunityDraft($data['business_name']));
+        }
         $prospect = $request->user()->prospects()->create($data);
-        $prospect->recordActivity('created', 'Prospect added and queued for research.', $request->user());
-        AnalyzeProspect::dispatch($prospect);
+        $prospect->recordActivity('created', $prospect->website_url ? 'Prospect added and queued for research.' : 'Prospect added as a website opportunity; website research skipped.', $request->user());
 
-        return redirect()->route('admin.prospects.show', $prospect)->with('status', 'Prospect added. Website research has been queued.');
+        if ($prospect->website_url) {
+            AnalyzeProspect::dispatch($prospect);
+        }
+
+        return redirect()->route('admin.prospects.show', $prospect)->with('status', $prospect->website_url ? 'Prospect added. Website research has been queued.' : 'Prospect added as a website opportunity. No research or email has been sent.');
     }
 
     /**
@@ -96,5 +102,16 @@ class ProspectController extends Controller
         $prospect->delete();
 
         return redirect()->route('admin.prospects.index')->with('status', 'Prospect deleted.');
+    }
+
+    /** @return array{analysis_status: string, status: string, outreach_subject: string, outreach_body: string} */
+    protected function websiteOpportunityDraft(string $businessName): array
+    {
+        return [
+            'analysis_status' => 'skipped',
+            'status' => 'drafted',
+            'outreach_subject' => 'A website idea for '.$businessName,
+            'outreach_body' => "Hi there,\n\nI came across {$businessName} and couldn't find a website linked from the public business listing. I wanted to check whether a new website might be useful.\n\nSitewell includes a professionally built website alongside ongoing website management, forms, lead tracking, health checks, fixes, and email reports.\n\nThere is no obligation at all—if you already have a website, or this is not relevant, please feel free to disregard this message.\n\nBest wishes",
+        ];
     }
 }

@@ -22,7 +22,7 @@
             @forelse ($prospects as $prospect)
                 <a href="{{ route('admin.prospects.show', $prospect) }}" class="grid gap-3 p-4 hover:bg-slate-50 md:grid-cols-[2fr_1fr_1fr_auto] md:items-center">
                     <div><p class="font-semibold text-slate-900">{{ $prospect->business_name }}</p><p class="text-sm text-slate-500">{{ $prospect->contact_name ?: 'No contact' }} · {{ $prospect->email ?: 'No email yet' }}</p></div>
-                    <div class="text-sm text-slate-600">{{ parse_url($prospect->website_url, PHP_URL_HOST) }}</div>
+                    <div class="text-sm text-slate-600">@if ($prospect->website_url){{ parse_url($prospect->website_url, PHP_URL_HOST) }}@else<span class="font-medium text-violet-700">Website opportunity</span>@endif</div>
                     <div><span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">{{ str($prospect->status)->replace('_', ' ')->title() }}</span></div>
                     <div class="text-right">@if ($prospect->opportunity_score !== null)<span class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">{{ $prospect->opportunity_score }} opportunity</span>@else<span class="text-xs text-slate-500">{{ str($prospect->analysis_status)->title() }}</span>@endif</div>
                 </a>

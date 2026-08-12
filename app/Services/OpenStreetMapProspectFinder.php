@@ -22,7 +22,7 @@ class OpenStreetMapProspectFinder
     /** @return array<int, array<string, mixed>> */
     public function find(string $area, string $businessType): array
     {
-        $key = 'osm-prospect-finder:'.sha1($area.'|'.$businessType);
+        $key = 'osm-prospect-finder:v2:'.sha1($area.'|'.$businessType);
 
         return Cache::remember($key, now()->addDays(7), fn (): array => $this->request($area, $businessType));
     }
@@ -50,7 +50,7 @@ class OpenStreetMapProspectFinder
             'dental_practices' => ['["amenity"="dentist"]'],
             'gyms' => ['["leisure"="fitness_centre"]', '["amenity"="gym"]'],
         };
-        $conditions = collect($tags)->map(fn (string $tag): string => "nwr[\"name\"]{$tag}[\"website\"](area.searchArea);");
+        $conditions = collect($tags)->map(fn (string $tag): string => "nwr[\"name\"]{$tag}(area.searchArea);");
         $safeArea = str_replace(['\\', '"'], ['\\\\', '\\"'], $area);
 
         return "[out:json][timeout:25];\narea[\"name\"=\"{$safeArea}\"][\"boundary\"=\"administrative\"]->.searchArea;\n(\n"
@@ -65,7 +65,7 @@ class OpenStreetMapProspectFinder
         $tags = Arr::get($element, 'tags', []);
         $website = $this->website(Arr::get($tags, 'website') ?: Arr::get($tags, 'contact:website'));
 
-        if (! is_array($tags) || ! $website || ! is_string(Arr::get($tags, 'name'))) {
+        if (! is_array($tags) || ! is_string(Arr::get($tags, 'name'))) {
             return null;
         }
 

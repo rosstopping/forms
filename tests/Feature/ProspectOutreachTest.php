@@ -28,6 +28,24 @@ it('adds a prospect and automatically queues website research', function () {
     Queue::assertPushed(AnalyzeProspect::class, fn (AnalyzeProspect $job): bool => $job->prospect->is($prospect));
 });
 
+it('adds a website opportunity without queueing website research', function () {
+    Queue::fake();
+    $user = User::factory()->create(['role' => User::ROLE_ADMIN]);
+
+    $this->actingAs($user)->post(route('admin.prospects.store'), [
+        'business_name' => 'Bristol Builders',
+        'email' => 'hello@example.com',
+        'website_url' => '',
+    ])->assertRedirect();
+
+    $prospect = Prospect::query()->sole();
+    expect($prospect->website_url)->toBeNull()
+        ->and($prospect->analysis_status)->toBe('skipped')
+        ->and($prospect->status)->toBe('drafted')
+        ->and($prospect->outreach_subject)->toBe('A website idea for Bristol Builders');
+    Queue::assertNotPushed(AnalyzeProspect::class);
+});
+
 it('restricts outreach to Sitewell administrators', function () {
     $user = User::factory()->create();
     $prospect = Prospect::factory()->create();
@@ -175,4 +193,19 @@ it('makes the outreach email warmer and includes the private report link', funct
         ->assertSeeInHtml('Google Business Profile posts and review replies')
         ->assertSeeInHtml('signature=')
         ->assertSeeInHtml('I had a look at your website');
+});
+
+it('does not include an audit link when offering a prospect a new website', function () {
+    $prospect = Prospect::factory()->create([
+        'website_url' => null,
+        'outreach_subject' => 'A website idea for Acme Plumbing',
+        'outreach_body' => 'Hi there, I could not find a website linked from your public listing.',
+    ]);
+
+    (new ProspectOutreach($prospect))
+        ->assertHasSubject('A website idea for Acme Plumbing')
+        ->assertSeeInHtml('A website idea for your business')
+        ->assertSeeInHtml('A professionally built website included')
+        ->assertDontSeeInHtml('View your website review')
+        ->assertDontSeeInHtml('signature=');
 });

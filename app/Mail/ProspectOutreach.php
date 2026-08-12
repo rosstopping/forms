@@ -38,11 +38,11 @@ class ProspectOutreach extends Mailable
         return new Content(
             view: 'mail.prospects.outreach',
             with: [
-                'reportUrl' => URL::temporarySignedRoute(
+                'reportUrl' => $this->prospect->website_url ? URL::temporarySignedRoute(
                     'prospect-reports.show',
                     now()->addDays(30),
                     $this->prospect,
-                ),
+                ) : null,
             ],
         );
     }

@@ -26,7 +26,7 @@ class StoreProspectRequest extends FormRequest
             'business_name' => ['required', 'string', 'max:255'],
             'contact_name' => ['nullable', 'string', 'max:255'],
             'email' => ['nullable', 'email:rfc', 'max:255'],
-            'website_url' => ['required', 'url:http,https', 'max:255'],
+            'website_url' => ['nullable', 'url:http,https', 'max:255'],
             'notes' => ['nullable', 'string', 'max:10000'],
         ];
     }
