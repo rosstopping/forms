@@ -33,6 +33,7 @@ use App\Http\Controllers\OnboardingEnquiryController;
 use App\Http\Controllers\ProspectReportController;
 use App\Http\Controllers\WebsiteHealthReportController as PublicWebsiteHealthReportController;
 use App\Http\Middleware\AllowFormSubmissionCors;
+use App\Http\Middleware\EnsureAdmin;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -129,10 +130,12 @@ Route::middleware(['web', 'auth'])->prefix('admin')->name('admin.')->group(funct
     Route::patch('form-submissions/bulk', BulkFormSubmissionController::class)->name('form-submissions.bulk');
     Route::patch('form-submissions/{form_submission}/spam', [AdminFormSubmissionController::class, 'markSpam'])->name('form-submissions.spam');
     Route::resource('form-submissions', AdminFormSubmissionController::class);
-    Route::post('prospects/{prospect}/analyse', ProspectAnalysisController::class)->name('prospects.analyse');
-    Route::post('prospects/{prospect}/approve', ProspectApprovalController::class)->name('prospects.approve');
-    Route::post('prospects/{prospect}/send', ProspectSendController::class)->name('prospects.send');
-    Route::resource('prospects', ProspectController::class);
+    Route::middleware(EnsureAdmin::class)->group(function (): void {
+        Route::post('prospects/{prospect}/analyse', ProspectAnalysisController::class)->name('prospects.analyse');
+        Route::post('prospects/{prospect}/approve', ProspectApprovalController::class)->name('prospects.approve');
+        Route::post('prospects/{prospect}/send', ProspectSendController::class)->name('prospects.send');
+        Route::resource('prospects', ProspectController::class);
+    });
     Route::resource('users', UserController::class)->only(['index', 'create', 'store', 'edit', 'update']);
 });
 

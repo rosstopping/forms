@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\URL;
 
 it('adds a prospect and automatically queues website research', function () {
     Queue::fake();
-    $user = User::factory()->create();
+    $user = User::factory()->create(['role' => User::ROLE_ADMIN]);
 
     $this->actingAs($user)->post(route('admin.prospects.store'), [
         'business_name' => 'Acme Plumbing',
@@ -26,22 +26,21 @@ it('adds a prospect and automatically queues website research', function () {
     Queue::assertPushed(AnalyzeProspect::class, fn (AnalyzeProspect $job): bool => $job->prospect->is($prospect));
 });
 
-it('scopes outreach prospects to their owner', function () {
-    $owner = User::factory()->create();
-    $otherUser = User::factory()->create();
-    Prospect::factory()->for($owner, 'owner')->create(['business_name' => 'Visible Company']);
-    $hidden = Prospect::factory()->for($otherUser, 'owner')->create(['business_name' => 'Private Company']);
+it('restricts outreach to Sitewell administrators', function () {
+    $user = User::factory()->create();
+    $prospect = Prospect::factory()->create();
 
-    $this->actingAs($owner)->get(route('admin.prospects.index'))
-        ->assertOk()
-        ->assertSee('Visible Company')
-        ->assertDontSee('Private Company');
-    $this->get(route('admin.prospects.show', $hidden))->assertForbidden();
+    $this->actingAs($user)->get(route('admin.prospects.index'))->assertForbidden();
+    $this->get(route('admin.prospects.show', $prospect))->assertForbidden();
+    $this->post(route('admin.prospects.analyse', $prospect))->assertForbidden();
+    $this->post(route('admin.prospects.approve', $prospect))->assertForbidden();
+    $this->post(route('admin.prospects.send', $prospect))->assertForbidden();
+    $this->get(route('admin.dashboard'))->assertDontSee('Outreach');
 });
 
 it('requires approval before sending outreach and schedules a follow-up', function () {
     Mail::fake();
-    $user = User::factory()->create();
+    $user = User::factory()->create(['role' => User::ROLE_ADMIN]);
     $prospect = Prospect::factory()->for($user, 'owner')->create([
         'status' => 'drafted',
         'outreach_subject' => 'A website opportunity',
@@ -63,7 +62,7 @@ it('requires approval before sending outreach and schedules a follow-up', functi
 
 it('will not send to a suppressed prospect', function () {
     Mail::fake();
-    $user = User::factory()->create();
+    $user = User::factory()->create(['role' => User::ROLE_ADMIN]);
     $prospect = Prospect::factory()->for($user, 'owner')->create([
         'status' => 'approved',
         'outreach_subject' => 'Hello',

@@ -40,10 +40,12 @@
                                 <span class="min-w-6 rounded-full bg-amber-300 px-1.5 py-0.5 text-center text-xs font-semibold tabular-nums text-slate-950" aria-label="{{ $followUpReminderCount }} lead follow-ups due" title="Follow-ups due">{{ $followUpReminderCount > 99 ? '99+' : $followUpReminderCount }}</span>
                             @endif
                         </a>
-                        <a href="{{ route('admin.prospects.index') }}" @class(['flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium', 'bg-white/10 text-white' => request()->routeIs('admin.prospects.*'), 'text-slate-400 hover:bg-white/5 hover:text-white' => ! request()->routeIs('admin.prospects.*')])>
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="size-5 shrink-0" aria-hidden="true"><path d="M4 19V9m6 10V5m6 14v-7m4 7H2" stroke-linecap="round"/><path d="m4 7 6-4 6 7 4-3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            Outreach
-                        </a>
+                        @if (Auth::user()?->isAdmin())
+                            <a href="{{ route('admin.prospects.index') }}" @class(['flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium', 'bg-white/10 text-white' => request()->routeIs('admin.prospects.*'), 'text-slate-400 hover:bg-white/5 hover:text-white' => ! request()->routeIs('admin.prospects.*')])>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="size-5 shrink-0" aria-hidden="true"><path d="M4 19V9m6 10V5m6 14v-7m4 7H2" stroke-linecap="round"/><path d="m4 7 6-4 6 7-4 3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                Outreach
+                            </a>
+                        @endif
                     </div>
 
                     @if (Auth::user()?->isAdmin())
@@ -95,8 +97,7 @@
                             <a href="{{ route('admin.dashboard') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Overview</a>
                             <a href="{{ route('admin.websites.index') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Websites</a>
                             <a href="{{ route('admin.form-submissions.index') }}" class="flex items-center justify-between gap-3 rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5"><span>Leads</span><span class="flex gap-1">@if ($newLeadCount > 0)<span data-new-leads-count class="min-w-7 rounded-full bg-teal-400 px-2 py-0.5 text-center text-xs font-semibold tabular-nums text-slate-950" aria-label="{{ $newLeadCount }} new leads">{{ $newLeadCount > 99 ? '99+' : $newLeadCount }}</span>@endif @if ($followUpReminderCount > 0)<span class="min-w-7 rounded-full bg-amber-300 px-2 py-0.5 text-center text-xs font-semibold tabular-nums text-slate-950" aria-label="{{ $followUpReminderCount }} lead follow-ups due">{{ $followUpReminderCount > 99 ? '99+' : $followUpReminderCount }}</span>@endif</span></a>
-                            <a href="{{ route('admin.prospects.index') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Outreach</a>
-                            @if (Auth::user()?->isAdmin())<a href="{{ route('admin.users.index') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Users</a>@endif
+                            @if (Auth::user()?->isAdmin())<a href="{{ route('admin.prospects.index') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Outreach</a><a href="{{ route('admin.users.index') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Users</a>@endif
                         </nav>
                         <form method="POST" action="{{ route('logout') }}" class="mt-auto border-t border-white/10 pt-4">
                             @csrf
