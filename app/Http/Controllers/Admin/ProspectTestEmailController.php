@@ -15,7 +15,7 @@ class ProspectTestEmailController extends Controller
     {
         abort_unless($request->user()?->isAdmin() && $prospect->isAccessibleBy($request->user()), 403);
         abort_if(blank($prospect->outreach_subject) || blank($prospect->outreach_body), 422, 'Save the outreach draft before sending a test.');
-        abort_if(blank(config('services.sitewell.showcase_video_url')), 422, 'Configure the showcase video URL before sending a test.');
+        abort_if(blank($prospect->showcase_video_url), 422, 'Add this prospect\'s showcase video URL before sending a test.');
 
         Mail::to($request->user()->email)->send(new ProspectOutreach($prospect));
         $prospect->recordActivity('test_email_sent', 'Outreach test email sent to '.$request->user()->email.'.', $request->user());

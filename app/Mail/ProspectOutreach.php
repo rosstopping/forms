@@ -37,7 +37,7 @@ class ProspectOutreach extends Mailable
         return new Content(
             view: 'mail.prospects.outreach',
             with: [
-                'showcaseVideoUrl' => config('services.sitewell.showcase_video_url'),
+                'showcaseVideoUrl' => $this->prospect->showcase_video_url,
             ],
         );
     }

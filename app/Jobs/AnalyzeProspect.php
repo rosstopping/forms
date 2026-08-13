@@ -2,7 +2,6 @@
 
 namespace App\Jobs;
 
-use App\Ai\Agents\ProspectOutreachWriter;
 use App\Models\Prospect;
 use App\Services\ProspectWebsiteAnalyzer;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -23,13 +22,13 @@ class AnalyzeProspect implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(ProspectWebsiteAnalyzer $analyzer, ProspectOutreachWriter $writer): void
+    public function handle(ProspectWebsiteAnalyzer $analyzer): void
     {
         $this->prospect->update(['analysis_status' => 'running', 'analysis_error' => null]);
 
         try {
             $analysis = $analyzer->analyze($this->prospect->website_url);
-            $draft = $this->draft($writer);
+            $draft = $this->draft();
             $this->prospect->update([
                 'analysis_status' => 'completed', 'opportunity_score' => $analysis['score'], 'findings' => $analysis['findings'],
                 'contact_details' => $analysis['contacts'], 'email' => $this->prospect->email ?: data_get($analysis, 'contacts.emails.0.value'),
@@ -45,19 +44,11 @@ class AnalyzeProspect implements ShouldQueue
     }
 
     /** @return array{subject: string, body: string} */
-    protected function draft(ProspectOutreachWriter $writer): array
+    protected function draft(): array
     {
-        try {
-            $response = $writer->prompt(json_encode(['business' => $this->prospect->business_name, 'contact' => $this->prospect->contact_name, 'website' => $this->prospect->website_url], JSON_THROW_ON_ERROR));
-
-            return ['subject' => $response['subject'], 'body' => $response['body']];
-        } catch (Throwable) {
-            $name = $this->prospect->contact_name ?: 'there';
-
-            return [
-                'subject' => 'Quick one for '.$this->prospect->business_name,
-                'body' => "Hi {$name},\n\nI came across {$this->prospect->business_name} and thought Sitewell might be useful.\n\nI've included a quick video below so you can see what it does. If it looks interesting, just reply and we can have a chat.\n\nCheers",
-            ];
-        }
+        return [
+            'subject' => 'Quick one for '.$this->prospect->business_name,
+            'body' => "Hi there,\n\nI came across {$this->prospect->business_name} on Google and thought Sitewell might be useful for you.\n\nI ran your website through it and recorded a quick video showing what I found.\n\nNo sales pitch — just thought it might be worth a look.\n\nCheers,\nRoss",
+        ];
     }
 }

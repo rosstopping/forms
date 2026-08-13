@@ -10,17 +10,13 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\URL;
 
-beforeEach(function (): void {
-    config()->set('services.sitewell.showcase_video_url', 'https://video.example.com/sitewell-showcase');
-});
-
-it('instructs generated outreach to stay casual and omit audit findings', function () {
+it('instructs generated outreach to use the approved wording and omit audit findings', function () {
     $instructions = (string) app(ProspectOutreachWriter::class)->instructions();
 
     expect($instructions)
-        ->toContain('extremely casual')
-        ->toContain('showcase video')
-        ->toContain('Do not list, summarise, or mention website audit findings or fixes');
+        ->toContain('this exact wording')
+        ->toContain('I ran your website through it and recorded a quick video showing what I found.')
+        ->toContain('do not add website audit findings');
 });
 
 it('adds a prospect and automatically queues website research', function () {
@@ -32,11 +28,13 @@ it('adds a prospect and automatically queues website research', function () {
         'contact_name' => 'Alex',
         'email' => 'alex@example.com',
         'website_url' => 'https://example.com/',
+        'showcase_video_url' => 'https://video.example.com/acme-plumbing',
     ])->assertRedirect();
 
     $prospect = Prospect::query()->sole();
     expect($prospect->user_id)->toBe($user->id)
         ->and($prospect->website_url)->toBe('https://example.com')
+        ->and($prospect->showcase_video_url)->toBe('https://video.example.com/acme-plumbing')
         ->and($prospect->activities()->where('type', 'created')->exists())->toBeTrue();
     Queue::assertPushed(AnalyzeProspect::class, fn (AnalyzeProspect $job): bool => $job->prospect->is($prospect));
 });
@@ -126,12 +124,29 @@ it('fills an empty prospect email from published website contact details', funct
         ],
     ]);
 
-    (new AnalyzeProspect($prospect))->handle($analyzer, app(ProspectOutreachWriter::class));
+    (new AnalyzeProspect($prospect))->handle($analyzer);
 
     expect($prospect->refresh()->email)->toBe('hello@example.com')
         ->and(data_get($prospect->contact_details, 'emails.0.source_url'))->toBe('https://example.com/contact')
         ->and($prospect->approved_at)->toBeNull()
         ->and($prospect->sent_at)->toBeNull();
+});
+
+it('prepares the approved outreach wording with the prospect company name', function () {
+    $prospect = Prospect::factory()->create([
+        'business_name' => 'New Bould Roofing',
+        'website_url' => 'https://newbould.example',
+    ]);
+    $analyzer = Mockery::mock(ProspectWebsiteAnalyzer::class);
+    $analyzer->shouldReceive('analyze')->once()->andReturn([
+        'score' => 0,
+        'findings' => [],
+        'contacts' => ['emails' => [], 'phones' => [], 'addresses' => [], 'contact_page_url' => null, 'contact_form_url' => null],
+    ]);
+
+    (new AnalyzeProspect($prospect))->handle($analyzer);
+
+    expect($prospect->refresh()->outreach_body)->toBe("Hi there,\n\nI came across New Bould Roofing on Google and thought Sitewell might be useful for you.\n\nI ran your website through it and recorded a quick video showing what I found.\n\nNo sales pitch — just thought it might be worth a look.\n\nCheers,\nRoss");
 });
 
 it('requires approval before sending outreach and schedules a follow-up', function () {
@@ -141,6 +156,7 @@ it('requires approval before sending outreach and schedules a follow-up', functi
         'status' => 'drafted',
         'outreach_subject' => 'A website opportunity',
         'outreach_body' => 'Hi Alex, I noticed a missing page description.',
+        'showcase_video_url' => 'https://video.example.com/acme-plumbing',
     ]);
 
     $this->actingAs($user)->post(route('admin.prospects.send', $prospect))->assertUnprocessable();
@@ -164,6 +180,7 @@ it('sends the exact saved draft as a test to the administrator without contactin
         'status' => 'drafted',
         'outreach_subject' => 'Quick one for Acme Plumbing',
         'outreach_body' => "Hi Alex,\n\nI've included a quick video below.",
+        'showcase_video_url' => 'https://video.example.com/acme-plumbing',
         'approved_at' => null,
         'sent_at' => null,
     ]);
@@ -180,7 +197,7 @@ it('sends the exact saved draft as a test to the administrator without contactin
     Mail::assertSent(ProspectOutreach::class, function (ProspectOutreach $mail) use ($admin, $prospect): bool {
         $mail->assertHasSubject($prospect->outreach_subject)
             ->assertSeeInHtml($prospect->outreach_body)
-            ->assertSeeInHtml('https://video.example.com/sitewell-showcase');
+            ->assertSeeInHtml('https://video.example.com/acme-plumbing');
 
         return $mail->hasTo($admin->email) && ! $mail->hasTo($prospect->email);
     });
@@ -188,6 +205,43 @@ it('sends the exact saved draft as a test to the administrator without contactin
     expect($prospect->fresh()->sent_at)->toBeNull()
         ->and($prospect->fresh()->approved_at)->toBeNull()
         ->and($prospect->activities()->where('type', 'test_email_sent')->exists())->toBeTrue();
+});
+
+it('stores a prospect-specific showcase video and resets approval when it changes', function () {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $prospect = Prospect::factory()->for($admin, 'owner')->create([
+        'status' => 'approved',
+        'outreach_subject' => 'Quick one',
+        'outreach_body' => 'Hi there.',
+        'showcase_video_url' => 'https://video.example.com/original',
+        'approved_at' => now(),
+        'approved_by' => $admin->id,
+    ]);
+
+    $this->actingAs($admin)->put(route('admin.prospects.update', $prospect), [
+        'business_name' => $prospect->business_name,
+        'contact_name' => $prospect->contact_name,
+        'email' => $prospect->email,
+        'website_url' => $prospect->website_url,
+        'status' => $prospect->status,
+        'outreach_subject' => $prospect->outreach_subject,
+        'outreach_body' => $prospect->outreach_body,
+        'showcase_video_url' => 'https://video.example.com/personalised',
+    ])->assertRedirect();
+
+    expect($prospect->refresh()->showcase_video_url)->toBe('https://video.example.com/personalised')
+        ->and($prospect->approved_at)->toBeNull()
+        ->and($prospect->approved_by)->toBeNull()
+        ->and($prospect->status)->toBe('drafted');
+});
+
+it('rejects an invalid prospect showcase video URL', function () {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+
+    $this->actingAs($admin)->post(route('admin.prospects.store'), [
+        'business_name' => 'Acme Plumbing',
+        'showcase_video_url' => 'not-a-url',
+    ])->assertInvalid('showcase_video_url');
 });
 
 it('will not send to a suppressed prospect', function () {
@@ -205,9 +259,8 @@ it('will not send to a suppressed prospect', function () {
     Mail::assertNothingSent();
 });
 
-it('will not send test or live outreach without the showcase video configured', function () {
+it('will not send test or live outreach without a prospect showcase video', function () {
     Mail::fake();
-    config()->set('services.sitewell.showcase_video_url');
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     $prospect = Prospect::factory()->for($admin, 'owner')->create([
         'outreach_subject' => 'Quick one',
@@ -250,12 +303,13 @@ it('renders a casual outreach email with the showcase video and no audit details
         'business_name' => 'Acme Plumbing',
         'outreach_subject' => 'Quick one for Acme Plumbing',
         'outreach_body' => "Hi Alex,\n\nI've included a quick video below so you can see what Sitewell does.",
+        'showcase_video_url' => 'https://video.example.com/acme-plumbing',
     ]);
 
     (new ProspectOutreach($prospect))
         ->assertHasSubject('Quick one for Acme Plumbing')
         ->assertSeeInHtml('Watch the quick video')
-        ->assertSeeInHtml('https://video.example.com/sitewell-showcase')
+        ->assertSeeInHtml('https://video.example.com/acme-plumbing')
         ->assertSeeInHtml('quick video below')
         ->assertDontSeeInHtml('View your website review')
         ->assertDontSeeInHtml('What is Sitewell?')
@@ -268,12 +322,13 @@ it('includes the showcase video when offering a prospect a new website', functio
         'website_url' => null,
         'outreach_subject' => 'Quick one for Acme Plumbing',
         'outreach_body' => 'Hi there, I could not see a website linked from the business listing.',
+        'showcase_video_url' => 'https://video.example.com/new-website',
     ]);
 
     (new ProspectOutreach($prospect))
         ->assertHasSubject('Quick one for Acme Plumbing')
         ->assertSeeInHtml('Watch the quick video')
-        ->assertSeeInHtml('https://video.example.com/sitewell-showcase')
+        ->assertSeeInHtml('https://video.example.com/new-website')
         ->assertDontSeeInHtml('View your website review')
         ->assertDontSeeInHtml('signature=');
 });

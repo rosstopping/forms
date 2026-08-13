@@ -81,7 +81,9 @@ class ProspectController extends Controller
         $data = $request->validated();
         $data['suppressed_at'] = $request->boolean('suppressed') ? ($prospect->suppressed_at ?: now()) : null;
         unset($data['suppressed']);
-        $draftChanged = $prospect->outreach_subject !== ($data['outreach_subject'] ?? null) || $prospect->outreach_body !== ($data['outreach_body'] ?? null);
+        $draftChanged = $prospect->outreach_subject !== ($data['outreach_subject'] ?? null)
+            || $prospect->outreach_body !== ($data['outreach_body'] ?? null)
+            || $prospect->showcase_video_url !== ($data['showcase_video_url'] ?? null);
         if ($draftChanged) {
             $data['approved_at'] = null;
             $data['approved_by'] = null;
