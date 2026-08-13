@@ -156,7 +156,7 @@
                                             <form method="POST" action="{{ route('admin.seo-opportunities.queue', [$website, $opportunity]) }}">
                                                 @csrf
                                                 <button type="submit" class="relative rounded-md border border-slate-950/10 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600">
-                                                    Add to content todos
+                                                    Add to action list
                                                     <span class="absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2 pointer-fine:hidden" aria-hidden="true"></span>
                                                 </button>
                                             </form>
