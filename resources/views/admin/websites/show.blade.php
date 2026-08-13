@@ -19,6 +19,7 @@
     <div class="website-tabs" role="tablist" aria-label="Website sections">
         <button type="button" id="website-tab-health" class="website-tab" role="tab" aria-selected="true" aria-controls="website-panel-health" tabindex="0" data-tab="health">Health reports</button>
         <button type="button" id="website-tab-search" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-search" tabindex="-1" data-tab="search">Search</button>
+        <button type="button" id="website-tab-seo" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-seo" tabindex="-1" data-tab="seo">SEO Intelligence</button>
         <button type="button" id="website-tab-content" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-content" tabindex="-1" data-tab="content">Content</button>
         <button type="button" id="website-tab-business-profile" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-business-profile" tabindex="-1" data-tab="business-profile">Business Profile</button>
         <button type="button" id="website-tab-forms" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-forms" tabindex="-1" data-tab="forms">Forms</button>
@@ -110,6 +111,19 @@
 
         @include('admin.websites.partials.search-opportunities')
     </div>
+
+    @include('admin.websites.partials.seo-intelligence', [
+        'website' => $website,
+        'seoGeneration' => $seoGeneration,
+        'seoSnapshot' => $seoSnapshot,
+        'seoKeywords' => $seoKeywords,
+        'seoFilter' => $seoFilter,
+        'seoSort' => $seoSort,
+        'seoDirection' => $seoDirection,
+        'strikingDistanceCount' => $strikingDistanceCount,
+        'canManageWebsite' => $canManageWebsite,
+        'dataForSeoConfigured' => $dataForSeoConfigured,
+    ])
 
     <div id="website-panel-content" class="space-y-6" role="tabpanel" aria-labelledby="website-tab-content" data-tab-panel="content" hidden>
         <div class="rounded-lg border bg-white p-4 shadow-sm">

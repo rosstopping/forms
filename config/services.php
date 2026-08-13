@@ -67,6 +67,9 @@ return [
         'referring_domains_limit' => (int) env('DATAFORSEO_REFERRING_DOMAINS_LIMIT', 250),
         'competitors_limit' => (int) env('DATAFORSEO_COMPETITORS_LIMIT', 25),
         'refresh_days' => (int) env('DATAFORSEO_REFRESH_DAYS', 7),
+        'pending_timeout_minutes' => (int) env('DATAFORSEO_PENDING_TIMEOUT_MINUTES', 30),
+        'location_code' => (int) env('DATAFORSEO_LOCATION_CODE', 2826),
+        'language_code' => env('DATAFORSEO_LANGUAGE_CODE', 'en'),
     ],
 
 ];

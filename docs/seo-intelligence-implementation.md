@@ -41,7 +41,7 @@
 
 - [x] Phase 1: configuration, authenticated DataForSEO client, validated response envelope, safe failures/logging, rate-limit-aware retries, endpoint service boundaries, mocked tests.
 - [x] Phase 2: snapshot, usage, keyword, referring-domain, competitor, and opportunity schema/models/factories/relationships.
-- [ ] Phase 3: endpoint result DTO mapping and snapshot persistence for domain overview and ranked keywords.
+- [x] Phase 3: endpoint result DTO mapping and snapshot persistence for domain overview and ranked keywords.
 - [ ] Phase 4: independently tested DataForSEO opportunity calculation and historical comparisons.
 - [ ] Phase 5: backlink overview/referring-domain and competitor persistence with partial-failure orchestration.
 - [ ] Phase 6: refresh-window lock, unique queued generation job, usage/cost accounting, scheduling/manual refresh protection.
@@ -50,4 +50,13 @@
 
 ## Current status
 
-Phase 2 complete. Next: Phase 3 endpoint result DTO mapping and snapshot persistence for domain overview and ranked keywords.
+Phase 3 complete. Next: Phase 4 independently tested DataForSEO opportunity calculation and historical comparisons.
+
+### Admin vertical slice delivered after Phase 3
+
+- [x] Unique queued core snapshot generation with safe terminal failure state.
+- [x] Atomic manual-refresh lock, active-job reuse, and seven-day completed-snapshot protection.
+- [x] Website-level authorization for paid refresh requests.
+- [x] SEO Intelligence website tab with source labelling, snapshot state, visibility metrics, opportunity count, and paginated keyword filters/sorts.
+- [ ] Backlink, competitor, and generated-opportunity panels remain dependent on Phases 4 and 5.
+- [ ] Scheduled refresh remains part of Phase 6.

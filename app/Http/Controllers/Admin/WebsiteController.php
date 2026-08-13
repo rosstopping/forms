@@ -90,7 +90,7 @@ class WebsiteController extends Controller
         return Redirect::route('admin.websites.show', $website)->with('status', 'Website created.');
     }
 
-    public function show(Website $website): View
+    public function show(Request $request, Website $website): View
     {
         $user = Auth::user();
 
@@ -118,6 +118,39 @@ class WebsiteController extends Controller
             : collect();
         $searchConsoleReport = null;
         $searchConsoleReportUnavailable = false;
+        $seoGeneration = $website->seoSnapshots()->latest('id')->first();
+        $seoSnapshot = $website->seoSnapshots()
+            ->whereIn('status', ['completed', 'completed_with_errors'])
+            ->latest('completed_at')
+            ->first();
+        $seoFilter = $request->string('seo_filter')->toString();
+        $seoFilter = in_array($seoFilter, ['top_3', 'page_1', 'positions_11_20', 'positions_21_50', 'positions_51_100', 'commercial'], true) ? $seoFilter : 'all';
+        $seoSort = $request->string('seo_sort')->toString();
+        $seoSort = in_array($seoSort, ['position', 'search_volume', 'estimated_traffic', 'cpc'], true) ? $seoSort : 'position';
+        $seoDirection = $request->string('seo_direction')->toString() === 'asc' ? 'asc' : 'desc';
+        $seoKeywords = null;
+        $strikingDistanceCount = 0;
+
+        if ($seoSnapshot) {
+            $strikingDistanceCount = $seoSnapshot->keywords()->whereBetween('position', [4, 20])->count();
+            $seoKeywordsQuery = $seoSnapshot->keywords();
+
+            match ($seoFilter) {
+                'top_3' => $seoKeywordsQuery->whereBetween('position', [1, 3]),
+                'page_1' => $seoKeywordsQuery->whereBetween('position', [1, 10]),
+                'positions_11_20' => $seoKeywordsQuery->whereBetween('position', [11, 20]),
+                'positions_21_50' => $seoKeywordsQuery->whereBetween('position', [21, 50]),
+                'positions_51_100' => $seoKeywordsQuery->whereBetween('position', [51, 100]),
+                'commercial' => $seoKeywordsQuery->whereIn('search_intent', ['commercial', 'transactional']),
+                default => null,
+            };
+
+            $seoKeywords = $seoKeywordsQuery
+                ->orderBy($seoSort, $seoDirection)
+                ->orderBy('id')
+                ->simplePaginate(50, pageName: 'seo_page')
+                ->withQueryString();
+        }
 
         if ($website->searchConsoleConnection?->property_url) {
             try {
@@ -129,7 +162,15 @@ class WebsiteController extends Controller
             }
         }
 
-        return view('admin.websites.show', compact('website', 'users', 'availableMembers', 'canManageMembers', 'searchConsoleReport', 'searchConsoleReportUnavailable'));
+        $canManageWebsite = $website->isManageableBy($user);
+        $dataForSeoConfigured = filled(config('services.dataforseo.login')) && filled(config('services.dataforseo.password'));
+
+        return view('admin.websites.show', compact(
+            'website', 'users', 'availableMembers', 'canManageMembers', 'canManageWebsite',
+            'searchConsoleReport', 'searchConsoleReportUnavailable', 'seoGeneration', 'seoSnapshot',
+            'seoKeywords', 'seoFilter', 'seoSort', 'seoDirection', 'strikingDistanceCount',
+            'dataForSeoConfigured',
+        ));
     }
 
     public function update(Request $request, Website $website): RedirectResponse

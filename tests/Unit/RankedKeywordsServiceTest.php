@@ -31,7 +31,7 @@ test('it requests ranked organic keywords using the configured cost limit', func
                 'target' => 'example.com',
                 'items_count' => 1,
                 'items' => [[
-                    'keyword_data' => ['keyword' => 'garden room'],
+                    'keyword_data' => ['keyword' => 'garden room', 'location_code' => 2826, 'language_code' => 'en'],
                     'ranked_serp_element' => ['serp_item' => ['rank_absolute' => 12, 'url' => 'https://example.com/garden-room']],
                 ]],
             ]],
@@ -40,7 +40,9 @@ test('it requests ranked organic keywords using the configured cost limit', func
 
     $response = app(RankedKeywordsService::class)->forDomain('example.com', 2826, 'en');
 
-    expect(data_get($response->results, '0.items.0.keyword_data.keyword'))->toBe('garden room');
+    expect($response->keywords)->toHaveCount(1)
+        ->and($response->keywords[0]->keyword)->toBe('garden room')
+        ->and($response->keywords[0]->position)->toBe(12);
 
     Http::assertSent(function (Request $request): bool {
         return $request->url() === 'https://api.dataforseo.test/v3/dataforseo_labs/google/ranked_keywords/live'
@@ -69,5 +71,5 @@ test('it handles a domain with no ranking keywords', function (): void {
 
     $response = app(RankedKeywordsService::class)->forDomain('offline-example.com', 2826, 'en');
 
-    expect(data_get($response->results, '0.items'))->toBeArray()->toBeEmpty();
+    expect($response->keywords)->toBeEmpty();
 });
