@@ -52,6 +52,7 @@ class StoreOptimisationVersionRequest extends FormRequest
                     $optimisation->url,
                 );
                 $this->merge(['new_value' => $sanitized]);
+                $validator->setData([...$validator->getData(), 'new_value' => $sanitized]);
             } catch (InvalidArgumentException $exception) {
                 $validator->errors()->add('new_value', $exception->getMessage());
             }

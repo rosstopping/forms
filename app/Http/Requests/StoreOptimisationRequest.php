@@ -34,7 +34,7 @@ class StoreOptimisationRequest extends FormRequest
             'type' => ['required', Rule::enum(OptimisationType::class)],
             'selector' => [Rule::requiredIf(fn (): bool => in_array($this->string('type')->toString(), [
                 'text', 'html', 'append_html', 'prepend_html', 'attribute', 'image_alt', 'internal_link',
-            ], true)), 'nullable', 'string', 'max:1000'],
+            ], true)), 'nullable', 'string', 'max:1000', 'regex:/^[^\x00-\x1F\x7F]+$/u'],
             'target_description' => ['nullable', 'string', 'max:255'],
             'attribute' => [Rule::requiredIf($this->string('type')->toString() === 'attribute'), 'nullable', Rule::in(OptimisationValueSanitizer::ALLOWED_CHANGE_ATTRIBUTES)],
             'original_value' => ['nullable', 'string', 'max:100000'],
@@ -60,6 +60,7 @@ class StoreOptimisationRequest extends FormRequest
                     $this->route('websiteHealthReportPage')?->url,
                 );
                 $this->merge(['new_value' => $sanitized]);
+                $validator->setData([...$validator->getData(), 'new_value' => $sanitized]);
             } catch (InvalidArgumentException $exception) {
                 $validator->errors()->add('new_value', $exception->getMessage());
             }

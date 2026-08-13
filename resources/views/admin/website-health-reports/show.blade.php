@@ -201,6 +201,9 @@
                                     @endforeach
                                 </div>
                             </div>
+                            <div class="mt-4 flex justify-end border-t border-slate-100 pt-4">
+                                <a href="{{ route('admin.website-health-report-pages.show', [$report->website, $report, $page]) }}" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">View SEO optimisations</a>
+                            </div>
                         </details>
                     @endforeach
                 </div>

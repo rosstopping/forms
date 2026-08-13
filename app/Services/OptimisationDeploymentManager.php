@@ -111,6 +111,21 @@ class OptimisationDeploymentManager
         return $this->perform($optimisation, DeploymentAction::Rollback, $performer);
     }
 
+    public function rollbackPage(WebsiteHealthReportPage $page, ?User $performer = null): int
+    {
+        $optimisations = $page->optimisations()
+            ->where('status', OptimisationStatus::Deployed)
+            ->where('deployment_method', DeploymentMethod::Pixel)
+            ->orderBy('id')
+            ->get();
+
+        foreach ($optimisations as $optimisation) {
+            $this->rollback($optimisation, $performer);
+        }
+
+        return $optimisations->count();
+    }
+
     private function perform(
         Optimisation $optimisation,
         DeploymentAction $action,

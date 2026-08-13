@@ -6,7 +6,10 @@ use App\Models\Website;
 
 class PixelSiteResolver
 {
-    public function __construct(private PixelUrlNormalizer $urls) {}
+    public function __construct(
+        private PixelUrlNormalizer $urls,
+        private PixelRequestObserver $observer,
+    ) {}
 
     public function resolve(string $siteKey, string $url): ?Website
     {
@@ -17,6 +20,8 @@ class PixelSiteResolver
             ->first();
 
         if (! $website) {
+            $this->observer->rejected('unknown_or_disabled_site', $siteKey, $url);
+
             return null;
         }
 
@@ -25,6 +30,12 @@ class PixelSiteResolver
             fn ($domain): bool => $this->urls->normalizeHost($domain->domain) === $urlHost,
         );
 
-        return $belongsToWebsite ? $website : null;
+        if (! $belongsToWebsite) {
+            $this->observer->rejected('invalid_domain', $siteKey, $url);
+
+            return null;
+        }
+
+        return $website;
     }
 }

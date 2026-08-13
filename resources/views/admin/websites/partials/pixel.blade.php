@@ -13,17 +13,17 @@
             </div>
             <div @class([
                 'inline-flex items-center gap-2 self-start rounded-full px-3 py-1.5 text-sm font-medium',
-                'bg-emerald-50 text-emerald-700' => $pixelIsConnected,
-                'bg-amber-50 text-amber-800' => $pixelWasSeen && ! $pixelIsConnected,
-                'bg-slate-100 text-slate-600' => ! $pixelWasSeen,
+                'bg-emerald-50 text-emerald-700' => $website->pixel_enabled && $pixelIsConnected,
+                'bg-amber-50 text-amber-800' => $website->pixel_enabled && $pixelWasSeen && ! $pixelIsConnected,
+                'bg-slate-100 text-slate-600' => ! $website->pixel_enabled || ! $pixelWasSeen,
             ])>
                 <span @class([
                     'size-2 rounded-full',
-                    'bg-emerald-500' => $pixelIsConnected,
-                    'bg-amber-500' => $pixelWasSeen && ! $pixelIsConnected,
-                    'bg-slate-400' => ! $pixelWasSeen,
+                    'bg-emerald-500' => $website->pixel_enabled && $pixelIsConnected,
+                    'bg-amber-500' => $website->pixel_enabled && $pixelWasSeen && ! $pixelIsConnected,
+                    'bg-slate-400' => ! $website->pixel_enabled || ! $pixelWasSeen,
                 ]) aria-hidden="true"></span>
-                {{ $pixelIsConnected ? 'Connected' : ($pixelWasSeen ? 'Not seen recently' : 'Not detected') }}
+                {{ ! $website->pixel_enabled ? 'Disabled' : ($pixelIsConnected ? 'Connected' : ($pixelWasSeen ? 'Not seen recently' : 'Not detected')) }}
             </div>
         </div>
 
@@ -75,5 +75,22 @@
                 <p class="mt-2 text-sm leading-6 text-slate-600">Restrictive websites must allow the configured Pixel host in <code class="font-mono text-xs">script-src</code> and the API host in <code class="font-mono text-xs">connect-src</code>. Do not weaken other CSP directives.</p>
             </div>
         </div>
+
+        @if ($canManageWebsite)
+            <div class="flex flex-col gap-3 border-t border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div><p class="text-sm font-medium text-slate-900">Site-wide controls</p><p class="mt-1 text-xs text-slate-500">Disabling Pixel immediately removes every Pixel change from public payloads without deleting deployment history.</p></div>
+                <div class="flex shrink-0 flex-wrap gap-2">
+                    <form method="POST" action="{{ route('admin.websites.pixel.update', $website) }}">
+                        @csrf @method('PUT')
+                        <input type="hidden" name="pixel_enabled" value="{{ $website->pixel_enabled ? '0' : '1' }}">
+                        <button class="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">{{ $website->pixel_enabled ? 'Disable all Pixel changes' : 'Enable Pixel' }}</button>
+                    </form>
+                    <form method="POST" action="{{ route('admin.websites.pixel.rotate-key', $website) }}" onsubmit="return confirm('Rotate the public Pixel key? The current installation will stop working until its snippet is replaced.')">
+                        @csrf
+                        <button class="rounded-md border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50">Rotate public key</button>
+                    </form>
+                </div>
+            </div>
+        @endif
     </section>
 </div>

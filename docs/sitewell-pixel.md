@@ -64,26 +64,46 @@ This document is the source of truth for the phased Sitewell Pixel rollout.
 - Invalid keys, wrong hostnames, and disabled Pixels return the same empty `204` heartbeat response and do not write data.
 - Added heartbeat, deduplication, normalization, validation, CORS, UI, configuration, authorization, and runtime throttling tests.
 
-### Phase 1E — next
+### Phase 1E — complete
 
-- Add page-level optimisation creation and history UI within the existing crawled health-report page experience.
-- Add explicit request validation and server-side content safety before values may be approved.
-- Add approve/deploy and individual rollback actions, using the existing lifecycle manager and website authorization rules.
-- Show recommendation, approved version, live Pixel state, deployment timestamps, and append-only version/deployment history distinctly.
+- Added a dedicated optimisation workspace for every crawled health-report page and linked it from page-by-page report analysis.
+- Crawl issues and current title/description are shown as recommendation evidence, separately from draft, approved, live, failed, and rolled-back optimisations.
+- Website managers can create structured drafts, create immutable revisions, approve and deploy through Pixel, and roll back individual optimisations. Read-only website users can inspect the workspace and history without mutation controls.
+- Added strict nested ownership checks across website, report, crawled page, and optimisation routes.
+- Added server-side content safety for initial values and revisions: active elements, scripts, event handlers, inline styles, unsafe URLs, unsupported attributes, external “internal” links, and invalid JSON-LD are rejected.
+- Safe HTML is reduced to the same element/attribute allow-list as the runtime, and JSON-LD is stored in canonical parsed form.
+- The Pixel driver revalidates the exact stored version at deployment time, so content that bypasses HTTP validation cannot become live.
+- The workspace displays original/proposed/live values, timestamps, immutable version history, and the deployment/rollback ledger.
+- Successful deploy/rollback lifecycle changes produce structured application log entries without logging page views or optimisation content.
+- Added workflow, authorization, nested scoping, payload visibility, rollback, history, and security tests.
+
+### Phase 1F — complete
+
+- Added five-minute application caching for public payload changes, partitioned by website payload version and normalized URL hash. Deploy, rollback, site enable/disable, and key rotation invalidate results through the monotonic version.
+- Limited each public payload to 1,000 active changes as a defensive response-size bound.
+- Added throttled observability for unknown/disabled keys, invalid domains, successful payload generation, and payload failures. Logs contain hashes and structured reasons rather than public keys, URLs, or optimisation content.
+- Added a site-wide Pixel kill switch without altering optimisation history or deployment state.
+- Added page-wide rollback that records an individual rollback ledger entry for every live Pixel optimisation.
+- Added public-key rotation, which invalidates the old key and resets connection/last-seen state so the UI cannot imply that the replacement snippet is already installed.
+- Tightened selector validation by rejecting ASCII control characters.
+- Added manager-only emergency controls to the Pixel connection and page optimisation interfaces.
+- Added focused hardening tests covering cache invalidation, controls, history preservation, key rotation, logging privacy/throttling, selector validation, and UI visibility.
+- A controlled external-site production smoke test remains an operator rollout task because it requires the deployed asset/API hosts and a customer-controlled test page.
 
 ### Outstanding phases
 
-- Phase 1E: page optimisation create/approve/deploy/rollback UI and visible history.
-- Phase 1F: sanitisation, selector/attribute allow-lists, JSON-LD validation, caching, CORS/CSP, logging, and abuse hardening.
-- Phase 1G: broader automated tests, JavaScript DOM tests if supported without a large dependency, and operator/customer documentation.
+- Phase 1G: full regression coverage, production smoke-test checklist, operator/customer documentation, and release readiness review.
 
 ## Security and known issues
 
-- No public Pixel endpoint or JavaScript runtime exists yet, so the Phase 1A data layer is not publicly reachable.
-- HTML, attributes, selectors, and JSON-LD are not accepted through an application endpoint yet. Their validation must be implemented before creation UI/API ships.
-- Phase 1B must compare parsed hostnames, never string prefixes, and must define the project rule for `www` aliases from registered `WebsiteDomain` records.
-- Pixel HTML must reject script elements, executable URLs, event attributes, and unsafe elements/attributes. JSON-LD is the sole permitted script element and must contain valid JSON.
-- Customer CSP may need `script-src` permission for the configured Pixel asset host and `connect-src` permission for the API host. Sitewell will document these additions rather than weaken CSP.
+- HTML and JSON-LD are validated and canonicalized on input, revalidated at deployment, and independently sanitized by the runtime. JSON-LD is the sole permitted script element and must contain valid JSON.
+- URL matching uses parsed hostnames and normalized paths; it never uses string-prefix domain checks. Registered domains accept their corresponding `www`/apex form.
+- Public keys are bearer-like lookup identifiers, not authorization credentials. Rotation is available if a key needs replacing, while management operations remain authenticated and policy-authorized.
+- Payload and heartbeat endpoints are intentionally public and CORS-enabled, domain-bound, rate-limited, and return indistinguishable failures for unknown keys, disabled sites, and invalid domains.
+- A restrictive customer CSP may need the configured asset host in `script-src` and API host in `connect-src`. The customer must retain any nonce or integrity requirements imposed by their policy; Sitewell does not weaken CSP.
+- Stale or syntactically invalid runtime selectors fail silently and independently. Phase 1 does not send selector-failure telemetry, avoiding per-view analytics traffic; operators diagnose these through preview/manual verification.
+- Basic SPA navigation remains deferred because safe restoration across route transitions needs router-aware DOM lifecycle handling.
+- Production readiness still requires migration/deployment, configuration of public asset/API URLs, CDN compression/cache verification, and an external-site smoke test in the target environment.
 
 ## WordPress Phase 2 notes
 
