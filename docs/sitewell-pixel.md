@@ -106,6 +106,15 @@ This document is the source of truth for the phased Sitewell Pixel rollout.
 - Run the documented command and browser smoke test against a controlled external website.
 - Confirm production logs, cache, rate limiter, and heartbeat connection state during the initial rollout.
 
+## Automated optimisation workflow
+
+- Manual selector/type/value entry is an advanced fallback, not the primary Sitewell experience.
+- On a crawled page, **Generate fixes with AI** sends the page URL, current title/description, word count, and failed/warning crawl evidence to a structured-output Laravel AI agent.
+- Phase 1 automation generates title and meta-description fixes where the crawler has reliable original values. The agent is instructed to return no change when factual context is insufficient.
+- Sitewell treats AI output as untrusted: it allow-lists types, enforces SEO lengths, sanitizes values, rejects unchanged/duplicate output, and stores accepted results as immutable drafts.
+- **Approve & deploy all** is the single human publication boundary for the reviewed page set. It records an individual approval/deployment and version history for every fix.
+- Expanding one-click generation to body text, links, image alt text, and schema requires the crawler to retain a bounded structured DOM target snapshot so AI can reference verified selectors and original values. It must not guess selectors from aggregate audit counts.
+
 ## Security and known issues
 
 - HTML and JSON-LD are validated and canonicalized on input, revalidated at deployment, and independently sanitized by the runtime. JSON-LD is the sole permitted script element and must contain valid JSON.

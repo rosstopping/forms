@@ -5,6 +5,9 @@
     @if (session('status'))
         <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{{ session('status') }}</div>
     @endif
+    @if (session('error'))
+        <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{{ session('error') }}</div>
+    @endif
 
     <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div class="min-w-0">
@@ -39,10 +42,39 @@
 
     <section class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm" aria-labelledby="optimisations-title">
         <div>
-            <p class="text-xs font-medium uppercase tracking-widest text-teal-700">Structured deployment</p>
-            <h2 id="optimisations-title" class="mt-1 text-lg font-semibold text-slate-950">SEO optimisations</h2>
-            <p class="mt-1 text-sm text-slate-600">Drafts require explicit approval before they become live through Sitewell Pixel.</p>
+            <p class="text-xs font-medium uppercase tracking-widest text-teal-700">Automated deployment</p>
+            <h2 id="optimisations-title" class="mt-1 text-lg font-semibold text-slate-950">Sitewell AI fixes</h2>
+            <p class="mt-1 text-sm text-slate-600">Sitewell converts the crawl findings into safe Pixel changes. Review the before and after, then approve them together.</p>
         </div>
+
+        @if ($canManageWebsite)
+            <div class="mt-4 flex flex-col gap-3 rounded-lg border border-teal-200 bg-teal-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm font-semibold text-teal-950">Let Sitewell prepare the fixes</p>
+                    <p class="mt-1 text-sm text-teal-800">AI uses the page audit to write supported changes. Nothing is published until you approve it.</p>
+                </div>
+                <form method="POST" action="{{ route('admin.optimisations.generate', [$website, $report, $page]) }}" class="shrink-0">
+                    @csrf
+                    <button class="rounded-md bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800">Generate fixes with AI</button>
+                </form>
+            </div>
+        @endif
+
+        @php
+            $reviewableOptimisations = $page->optimisations->whereIn('status', [
+                \App\Enums\OptimisationStatus::Draft,
+                \App\Enums\OptimisationStatus::Approved,
+            ]);
+        @endphp
+        @if ($canManageWebsite && $reviewableOptimisations->isNotEmpty())
+            <div class="mt-4 flex flex-col gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <p class="text-sm text-blue-900"><span class="font-semibold">{{ $reviewableOptimisations->count() }} {{ Str::plural('fix', $reviewableOptimisations->count()) }} ready.</span> One approval publishes this reviewed set through Pixel.</p>
+                <form method="POST" action="{{ route('admin.optimisations.deploy-page', [$website, $report, $page]) }}" class="shrink-0">
+                    @csrf
+                    <button class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">Approve &amp; deploy all</button>
+                </form>
+            </div>
+        @endif
 
         @if ($canManageWebsite && $page->optimisations->where('status', \App\Enums\OptimisationStatus::Deployed)->isNotEmpty())
             <div class="mt-4 flex flex-col gap-3 rounded-lg border border-red-200 bg-red-50 p-3 sm:flex-row sm:items-center sm:justify-between">
@@ -121,9 +153,9 @@
     </section>
 
     @if ($canManageWebsite)
-        <section class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm" aria-labelledby="create-optimisation-title">
-            <h2 id="create-optimisation-title" class="text-lg font-semibold text-slate-950">Create optimisation</h2>
-            <p class="mt-1 text-sm text-slate-600">Only structured, Pixel-supported changes are accepted. HTML and JSON-LD are validated before storage.</p>
+        <details class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+            <summary id="create-optimisation-title" class="cursor-pointer text-sm font-medium text-slate-700">Advanced: Create optimisation manually</summary>
+            <p class="mt-3 text-sm text-slate-600">Use this fallback for a precise change Sitewell cannot yet infer from its crawl evidence. HTML and JSON-LD are validated before storage.</p>
             <form method="POST" action="{{ route('admin.optimisations.store', [$website, $report, $page]) }}" class="mt-5 grid gap-4 lg:grid-cols-2">
                 @csrf
                 <div><label for="type" class="text-sm font-medium text-slate-700">Change type</label><select id="type" name="type" required class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">@foreach ($optimisationTypes as $type)<option value="{{ $type->value }}" @selected(old('type') === $type->value)>{{ str_replace('_', ' ', ucfirst($type->value)) }}</option>@endforeach</select>@error('type')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror</div>
@@ -134,7 +166,7 @@
                 <div><label for="new_value" class="text-sm font-medium text-slate-700">Proposed value</label><textarea id="new_value" name="new_value" rows="4" required maxlength="100000" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 font-mono text-sm">{{ old('new_value') }}</textarea>@error('new_value')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror</div>
                 <div class="lg:col-span-2"><button class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">Create draft optimisation</button></div>
             </form>
-        </section>
+        </details>
     @endif
 </div>
 @endsection
