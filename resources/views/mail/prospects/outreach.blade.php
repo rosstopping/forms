@@ -5,10 +5,19 @@
         <section style="padding:8px 0;">
             <div style="font-size:16px;white-space:pre-line;">{{ $prospect->outreach_body }}</div>
             @if ($showcaseVideoUrl)
-                <p style="margin:28px 0 0;">
-                    <a href="{{ $showcaseVideoUrl }}" style="display:inline-block;border-radius:8px;background:#0f172a;padding:12px 18px;color:#ffffff;font-weight:600;text-decoration:none;">Watch the quick video</a>
-                </p>
+                <div style="margin:28px 0 0;border:1px solid #cbd5e1;border-radius:12px;background:#f8fafc;padding:20px;">
+                    <p style="margin:0;font-size:18px;font-weight:700;color:#0f172a;">Your website video</p>
+                    <p style="margin:6px 0 16px;font-size:14px;color:#475569;">Here’s the quick walkthrough I recorded for you.</p>
+                    <a href="{{ $showcaseVideoUrl }}" style="display:inline-block;border-radius:8px;background:#0f172a;padding:12px 18px;color:#ffffff;font-weight:600;text-decoration:none;">Watch your video</a>
+                    <p style="margin:14px 0 0;font-size:12px;color:#64748b;word-break:break-all;">If the button does not work, open: <a href="{{ $showcaseVideoUrl }}" style="color:#0f766e;">{{ $showcaseVideoUrl }}</a></p>
+                </div>
             @endif
+            <div style="margin:20px 0 0;border:1px solid #cbd5e1;border-radius:12px;padding:20px;">
+                <p style="margin:0;font-size:18px;font-weight:700;color:#0f172a;">Want to have a quick chat?</p>
+                <p style="margin:6px 0 16px;font-size:14px;color:#475569;">Pick any time that works for you.</p>
+                <a href="https://cal.com/ross" style="display:inline-block;border-radius:8px;background:#0f766e;padding:12px 18px;color:#ffffff;font-weight:600;text-decoration:none;">Book a call with Ross</a>
+                <p style="margin:14px 0 0;font-size:12px;color:#64748b;">Or visit <a href="https://cal.com/ross" style="color:#0f766e;">cal.com/ross</a></p>
+            </div>
         </section>
     </main>
 </body>

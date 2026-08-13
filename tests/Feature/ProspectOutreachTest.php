@@ -197,7 +197,9 @@ it('sends the exact saved draft as a test to the administrator without contactin
     Mail::assertSent(ProspectOutreach::class, function (ProspectOutreach $mail) use ($admin, $prospect): bool {
         $mail->assertHasSubject($prospect->outreach_subject)
             ->assertSeeInHtml($prospect->outreach_body)
-            ->assertSeeInHtml('https://video.example.com/acme-plumbing');
+            ->assertSeeInHtml('https://video.example.com/acme-plumbing')
+            ->assertSeeInHtml('Your website video')
+            ->assertSeeInHtml('https://cal.com/ross');
 
         return $mail->hasTo($admin->email) && ! $mail->hasTo($prospect->email);
     });
@@ -308,8 +310,11 @@ it('renders a casual outreach email with the showcase video and no audit details
 
     (new ProspectOutreach($prospect))
         ->assertHasSubject('Quick one for Acme Plumbing')
-        ->assertSeeInHtml('Watch the quick video')
+        ->assertSeeInHtml('Your website video')
+        ->assertSeeInHtml('Watch your video')
         ->assertSeeInHtml('https://video.example.com/acme-plumbing')
+        ->assertSeeInHtml('Book a call with Ross')
+        ->assertSeeInHtml('https://cal.com/ross')
         ->assertSeeInHtml('quick video below')
         ->assertDontSeeInHtml('View your website review')
         ->assertDontSeeInHtml('What is Sitewell?')
@@ -327,8 +332,11 @@ it('includes the showcase video when offering a prospect a new website', functio
 
     (new ProspectOutreach($prospect))
         ->assertHasSubject('Quick one for Acme Plumbing')
-        ->assertSeeInHtml('Watch the quick video')
+        ->assertSeeInHtml('Your website video')
+        ->assertSeeInHtml('Watch your video')
         ->assertSeeInHtml('https://video.example.com/new-website')
+        ->assertSeeInHtml('Book a call with Ross')
+        ->assertSeeInHtml('https://cal.com/ross')
         ->assertDontSeeInHtml('View your website review')
         ->assertDontSeeInHtml('signature=');
 });
