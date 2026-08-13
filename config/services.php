@@ -57,4 +57,16 @@ return [
         'business_profile_v4_url' => env('GOOGLE_BUSINESS_PROFILE_V4_URL', 'https://mybusiness.googleapis.com/v4'),
     ],
 
+    'dataforseo' => [
+        'login' => env('DATAFORSEO_LOGIN'),
+        'password' => env('DATAFORSEO_PASSWORD'),
+        'api_url' => env('DATAFORSEO_API_URL', 'https://api.dataforseo.com/v3'),
+        'connect_timeout' => (int) env('DATAFORSEO_CONNECT_TIMEOUT', 5),
+        'timeout' => (int) env('DATAFORSEO_TIMEOUT', 30),
+        'ranked_keywords_limit' => (int) env('DATAFORSEO_RANKED_KEYWORDS_LIMIT', 500),
+        'referring_domains_limit' => (int) env('DATAFORSEO_REFERRING_DOMAINS_LIMIT', 250),
+        'competitors_limit' => (int) env('DATAFORSEO_COMPETITORS_LIMIT', 25),
+        'refresh_days' => (int) env('DATAFORSEO_REFRESH_DAYS', 7),
+    ],
+
 ];

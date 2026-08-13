@@ -163,6 +163,41 @@ class Website extends Model
         return $this->hasMany(SearchOpportunity::class);
     }
 
+    public function seoSnapshots(): HasMany
+    {
+        return $this->hasMany(SeoSnapshot::class);
+    }
+
+    public function latestSeoSnapshot(): HasOne
+    {
+        return $this->hasOne(SeoSnapshot::class)->latestOfMany('snapshot_date');
+    }
+
+    public function seoKeywords(): HasMany
+    {
+        return $this->hasMany(SeoKeyword::class);
+    }
+
+    public function seoReferringDomains(): HasMany
+    {
+        return $this->hasMany(SeoReferringDomain::class);
+    }
+
+    public function seoCompetitors(): HasMany
+    {
+        return $this->hasMany(SeoCompetitor::class);
+    }
+
+    public function seoOpportunities(): HasMany
+    {
+        return $this->hasMany(SeoOpportunity::class);
+    }
+
+    public function externalApiUsages(): HasMany
+    {
+        return $this->hasMany(ExternalApiUsage::class);
+    }
+
     public function primaryDomain(): ?WebsiteDomain
     {
         return $this->domains()->where('is_primary', true)->first() ?: $this->domains()->first();
