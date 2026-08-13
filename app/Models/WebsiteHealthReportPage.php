@@ -6,6 +6,7 @@ use Database\Factories\WebsiteHealthReportPageFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class WebsiteHealthReportPage extends Model
 {
@@ -41,5 +42,10 @@ class WebsiteHealthReportPage extends Model
     public function report(): BelongsTo
     {
         return $this->belongsTo(WebsiteHealthReport::class, 'website_health_report_id');
+    }
+
+    public function optimisations(): HasMany
+    {
+        return $this->hasMany(Optimisation::class);
     }
 }

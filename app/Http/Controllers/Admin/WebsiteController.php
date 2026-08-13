@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Website;
 use App\Models\WebsiteDomain;
+use App\Services\PixelInstallationSnippet;
 use App\Services\SearchConsoleClient;
 use App\Services\WebsiteProspectService;
 use Illuminate\Http\RedirectResponse;
@@ -91,8 +92,12 @@ class WebsiteController extends Controller
         return Redirect::route('admin.websites.show', $website)->with('status', 'Website created.');
     }
 
-    public function show(Request $request, Website $website, WebsiteProspectService $websiteProspects): View
-    {
+    public function show(
+        Request $request,
+        Website $website,
+        WebsiteProspectService $websiteProspects,
+        PixelInstallationSnippet $pixelInstallation,
+    ): View {
         $user = Auth::user();
 
         abort_unless($website->isAccessibleBy($user), 403);
@@ -111,6 +116,12 @@ class WebsiteController extends Controller
             'businessProfileConnection.reviews' => fn ($query) => $query->latest('reviewed_at')->limit(20),
             'contentPlan.generations' => fn ($query) => $query->latest('created_at')->limit(8),
             'contentRequests' => fn ($query) => $query->with('creator')->latest('created_at')->limit(20),
+        ]);
+        $website->loadCount([
+            'pixelPages',
+            'optimisations as active_pixel_optimisations_count' => fn ($query) => $query
+                ->where('status', 'deployed')
+                ->where('deployment_method', 'pixel'),
         ]);
         $users = $user?->isAdmin() ? User::query()->orderBy('name')->get(['id', 'name', 'email']) : collect();
         $canManageMembers = $user?->can('manageMembers', $website) === true;
@@ -185,12 +196,13 @@ class WebsiteController extends Controller
         $canManageWebsite = $website->isManageableBy($user);
         $dataForSeoConfigured = filled(config('services.dataforseo.login')) && filled(config('services.dataforseo.password'));
         $outreachProspect = $user?->isAdmin() ? $websiteProspects->find($website) : null;
+        $pixelInstallationSnippet = $pixelInstallation->for($website);
 
         return view('admin.websites.show', compact(
             'website', 'users', 'availableMembers', 'canManageMembers', 'canManageWebsite',
             'searchConsoleReport', 'searchConsoleReportUnavailable', 'seoGeneration', 'seoSnapshot',
             'seoKeywords', 'seoReferringDomains', 'seoCompetitors', 'seoOpportunities', 'seoFilter', 'seoSort', 'seoDirection', 'strikingDistanceCount',
-            'dataForSeoConfigured', 'outreachProspect',
+            'dataForSeoConfigured', 'outreachProspect', 'pixelInstallationSnippet',
         ));
     }
 

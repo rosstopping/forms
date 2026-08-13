@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Str;
 
 class Website extends Model
 {
@@ -39,6 +40,7 @@ class Website extends Model
         'turnstile_enabled',
         'turnstile_secret_key',
         'first_seen_at',
+        'pixel_enabled',
     ];
 
     protected $casts = [
@@ -51,7 +53,17 @@ class Website extends Model
         'is_active' => 'boolean',
         'email_recipients' => 'array',
         'first_seen_at' => 'datetime',
+        'pixel_last_seen_at' => 'datetime',
+        'pixel_enabled' => 'boolean',
+        'pixel_payload_version' => 'integer',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (Website $website): void {
+            $website->pixel_public_key ??= 'sw_'.Str::lower(Str::random(28));
+        });
+    }
 
     public function owner(): BelongsTo
     {
@@ -191,6 +203,16 @@ class Website extends Model
     public function seoOpportunities(): HasMany
     {
         return $this->hasMany(SeoOpportunity::class);
+    }
+
+    public function optimisations(): HasMany
+    {
+        return $this->hasMany(Optimisation::class);
+    }
+
+    public function pixelPages(): HasMany
+    {
+        return $this->hasMany(PixelPageSighting::class);
     }
 
     public function outreachProspect(): HasOne

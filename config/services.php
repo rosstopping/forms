@@ -46,6 +46,11 @@ return [
         'oauth_url' => env('GITHUB_OAUTH_URL', 'https://github.com/login/oauth'),
     ],
 
+    'sitewell' => [
+        'pixel_asset_url' => env('SITEWELL_PIXEL_ASSET_URL', rtrim((string) env('APP_URL', 'http://localhost'), '/').'/pixel.js'),
+        'pixel_api_url' => env('SITEWELL_PIXEL_API_URL', rtrim((string) env('APP_URL', 'http://localhost'), '/').'/api/pixel'),
+    ],
+
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
