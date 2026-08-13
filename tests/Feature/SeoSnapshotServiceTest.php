@@ -126,8 +126,8 @@ function rankedKeywordsResult(): array
             'search_intent_info' => ['main_intent' => 'commercial'],
         ],
         'ranked_serp_element' => ['serp_item' => [
-            'rank_absolute' => 12, 'url' => 'https://offline-example.com/garden-rooms', 'etv' => 18.4,
-            'rank_changes' => ['previous_rank_absolute' => 15],
+            'rank_group' => 12, 'rank_absolute' => 16, 'url' => 'https://offline-example.com/garden-rooms', 'etv' => 18.4,
+            'rank_changes' => ['previous_rank_group' => 15, 'previous_rank_absolute' => 19],
         ]],
     ]]]];
 }

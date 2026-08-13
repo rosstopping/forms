@@ -40,10 +40,11 @@ test('it maps only fields supplied by a valid ranked keyword item', function ():
             'search_intent_info' => ['main_intent' => 'commercial'],
         ],
         'ranked_serp_element' => ['serp_item' => [
-            'rank_absolute' => 12,
+            'rank_group' => 12,
+            'rank_absolute' => 16,
             'url' => 'https://example.com/garden-rooms',
             'etv' => 18.4,
-            'rank_changes' => ['previous_rank_absolute' => 15],
+            'rank_changes' => ['previous_rank_group' => 15, 'previous_rank_absolute' => 19],
         ]],
     ]);
 
@@ -62,6 +63,6 @@ test('it maps only fields supplied by a valid ranked keyword item', function ():
 test('it rejects incomplete ranked keyword items', function (array $item): void {
     expect(RankedKeywordData::fromArray($item))->toBeNull();
 })->with([
-    'missing keyword' => [['keyword_data' => ['location_code' => 2826, 'language_code' => 'en'], 'ranked_serp_element' => ['serp_item' => ['rank_absolute' => 1]]]],
+    'missing keyword' => [['keyword_data' => ['location_code' => 2826, 'language_code' => 'en'], 'ranked_serp_element' => ['serp_item' => ['rank_group' => 1]]]],
     'missing position' => [['keyword_data' => ['keyword' => 'garden room', 'location_code' => 2826, 'language_code' => 'en']]],
 ]);

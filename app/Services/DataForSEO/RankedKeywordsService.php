@@ -16,8 +16,12 @@ class RankedKeywordsService
             'location_code' => $locationCode,
             'language_code' => $languageCode,
             'item_types' => ['organic'],
+            'filters' => ['ranked_serp_element.serp_item.rank_group', '<=', 100],
             'limit' => min($limit ?? (int) config('services.dataforseo.ranked_keywords_limit'), 1000),
-            'order_by' => ['ranked_serp_element.serp_item.rank_absolute,asc'],
+            'order_by' => [
+                'keyword_data.keyword_info.search_volume,desc',
+                'ranked_serp_element.serp_item.rank_group,asc',
+            ],
         ]);
 
         $items = data_get($response->results, '0.items', []);

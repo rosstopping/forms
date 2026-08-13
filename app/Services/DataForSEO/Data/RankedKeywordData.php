@@ -27,7 +27,7 @@ final readonly class RankedKeywordData
     public static function fromArray(array $item): ?self
     {
         $keyword = data_get($item, 'keyword_data.keyword');
-        $position = data_get($item, 'ranked_serp_element.serp_item.rank_absolute');
+        $position = data_get($item, 'ranked_serp_element.serp_item.rank_group');
         $locationCode = data_get($item, 'keyword_data.location_code');
         $languageCode = data_get($item, 'keyword_data.language_code');
 
@@ -41,7 +41,7 @@ final readonly class RankedKeywordData
             fingerprint: hash('sha256', Str::lower(trim($keyword)).'|'.Str::lower($rankingUrl ?? '')),
             keyword: trim($keyword),
             position: (int) $position,
-            previousPosition: self::nullableInt(data_get($item, 'ranked_serp_element.serp_item.rank_changes.previous_rank_absolute')),
+            previousPosition: self::nullableInt(data_get($item, 'ranked_serp_element.serp_item.rank_changes.previous_rank_group')),
             rankingUrl: $rankingUrl,
             searchVolume: self::nullableInt(data_get($item, 'keyword_data.keyword_info.search_volume')),
             cpc: self::nullableFloat(data_get($item, 'keyword_data.keyword_info.cpc')),

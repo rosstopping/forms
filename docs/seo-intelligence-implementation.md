@@ -60,3 +60,8 @@ Phase 3 complete. Next: Phase 4 independently tested DataForSEO opportunity calc
 - [x] SEO Intelligence website tab with source labelling, snapshot state, visibility metrics, opportunity count, and paginated keyword filters/sorts.
 - [ ] Backlink, competitor, and generated-opportunity panels remain dependent on Phases 4 and 5.
 - [ ] Scheduled refresh remains part of Phase 6.
+
+### Ranked keyword collection correction
+
+- [x] Use DataForSEO organic `rank_group` values for current and previous positions.
+- [x] Limit collection to positions 1–100 and prioritise search volume before position so the 500-row cap does not routinely exclude page-two opportunities.

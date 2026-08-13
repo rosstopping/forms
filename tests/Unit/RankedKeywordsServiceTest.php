@@ -32,7 +32,7 @@ test('it requests ranked organic keywords using the configured cost limit', func
                 'items_count' => 1,
                 'items' => [[
                     'keyword_data' => ['keyword' => 'garden room', 'location_code' => 2826, 'language_code' => 'en'],
-                    'ranked_serp_element' => ['serp_item' => ['rank_absolute' => 12, 'url' => 'https://example.com/garden-room']],
+                    'ranked_serp_element' => ['serp_item' => ['rank_group' => 12, 'rank_absolute' => 16, 'url' => 'https://example.com/garden-room']],
                 ]],
             ]],
         ]],
@@ -51,8 +51,12 @@ test('it requests ranked organic keywords using the configured cost limit', func
                 'location_code' => 2826,
                 'language_code' => 'en',
                 'item_types' => ['organic'],
+                'filters' => ['ranked_serp_element.serp_item.rank_group', '<=', 100],
                 'limit' => 500,
-                'order_by' => ['ranked_serp_element.serp_item.rank_absolute,asc'],
+                'order_by' => [
+                    'keyword_data.keyword_info.search_volume,desc',
+                    'ranked_serp_element.serp_item.rank_group,asc',
+                ],
             ]];
     });
 });
