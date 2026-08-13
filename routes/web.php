@@ -28,6 +28,7 @@ use App\Http\Controllers\Admin\WebsiteAutoresponderController;
 use App\Http\Controllers\Admin\WebsiteController;
 use App\Http\Controllers\Admin\WebsiteHealthReportController;
 use App\Http\Controllers\Admin\WebsiteMemberController;
+use App\Http\Controllers\Admin\WebsiteProspectController;
 use App\Http\Controllers\Admin\WebsiteRepositoryController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\FormSubmissionController;
@@ -138,6 +139,7 @@ Route::middleware(['web', 'auth'])->prefix('admin')->name('admin.')->group(funct
     Route::patch('form-submissions/{form_submission}/spam', [AdminFormSubmissionController::class, 'markSpam'])->name('form-submissions.spam');
     Route::resource('form-submissions', AdminFormSubmissionController::class);
     Route::middleware(EnsureAdmin::class)->group(function (): void {
+        Route::post('websites/{website}/prospect', WebsiteProspectController::class)->name('websites.prospect.store');
         Route::get('prospect-discoveries', [ProspectDiscoveryController::class, 'index'])->name('prospect-discoveries.index');
         Route::post('prospect-discoveries', [ProspectDiscoveryController::class, 'store'])->name('prospect-discoveries.store');
         Route::get('prospect-discoveries/{prospectDiscovery}', [ProspectDiscoveryController::class, 'show'])->name('prospect-discoveries.show');

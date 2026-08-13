@@ -8,12 +8,24 @@
     @if (session('error'))
         <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{{ session('error') }}</div>
     @endif
-    <div class="flex items-center justify-between">
+    <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
             <h1 class="text-2xl font-semibold">{{ e($website->name) }}</h1>
             <p class="text-sm text-slate-600">Audit health, search visibility, content activity, forms, and submissions.</p>
         </div>
-        <a href="{{ route('admin.websites.index') }}" class="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Back to websites</a>
+        <div class="flex flex-wrap items-center gap-2">
+            @if (Auth::user()?->isAdmin())
+                @if ($outreachProspect)
+                    <a href="{{ route('admin.prospects.show', $outreachProspect) }}" class="rounded-md bg-teal-600 px-3 py-2 text-sm font-medium text-white hover:bg-teal-700">View outreach prospect</a>
+                @else
+                    <form method="POST" action="{{ route('admin.websites.prospect.store', $website) }}">
+                        @csrf
+                        <button type="submit" class="rounded-md bg-teal-600 px-3 py-2 text-sm font-medium text-white hover:bg-teal-700">Create outreach prospect</button>
+                    </form>
+                @endif
+            @endif
+            <a href="{{ route('admin.websites.index') }}" class="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Back to websites</a>
+        </div>
     </div>
 
     <div class="website-tabs" role="tablist" aria-label="Website sections">

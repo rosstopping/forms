@@ -193,6 +193,11 @@ class Website extends Model
         return $this->hasMany(SeoOpportunity::class);
     }
 
+    public function outreachProspect(): HasOne
+    {
+        return $this->hasOne(Prospect::class);
+    }
+
     public function externalApiUsages(): HasMany
     {
         return $this->hasMany(ExternalApiUsage::class);

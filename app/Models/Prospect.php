@@ -16,13 +16,18 @@ class Prospect extends Model
 
     public const STATUSES = ['new', 'researched', 'drafted', 'approved', 'contacted', 'replied', 'converted', 'not_interested'];
 
-    protected $fillable = ['user_id', 'business_name', 'contact_name', 'email', 'website_url', 'status', 'analysis_status', 'opportunity_score', 'findings', 'analysis_error', 'contact_details', 'analysed_at', 'outreach_subject', 'outreach_body', 'showcase_video_url', 'showcase_video_thumbnail_url', 'approved_at', 'approved_by', 'sent_at', 'next_follow_up_at', 'replied_at', 'converted_at', 'suppressed_at', 'notes'];
+    protected $fillable = ['user_id', 'website_id', 'business_name', 'contact_name', 'email', 'website_url', 'status', 'analysis_status', 'opportunity_score', 'findings', 'analysis_error', 'contact_details', 'analysed_at', 'outreach_subject', 'outreach_body', 'showcase_video_url', 'showcase_video_thumbnail_url', 'approved_at', 'approved_by', 'sent_at', 'next_follow_up_at', 'replied_at', 'converted_at', 'suppressed_at', 'notes'];
 
     protected $casts = ['findings' => 'array', 'contact_details' => 'array', 'analysed_at' => 'datetime', 'approved_at' => 'datetime', 'sent_at' => 'datetime', 'next_follow_up_at' => 'datetime', 'replied_at' => 'datetime', 'converted_at' => 'datetime', 'suppressed_at' => 'datetime'];
 
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function website(): BelongsTo
+    {
+        return $this->belongsTo(Website::class);
     }
 
     public function approver(): BelongsTo

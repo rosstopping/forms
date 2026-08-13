@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Website;
 use App\Models\WebsiteDomain;
 use App\Services\SearchConsoleClient;
+use App\Services\WebsiteProspectService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -90,7 +91,7 @@ class WebsiteController extends Controller
         return Redirect::route('admin.websites.show', $website)->with('status', 'Website created.');
     }
 
-    public function show(Request $request, Website $website): View
+    public function show(Request $request, Website $website, WebsiteProspectService $websiteProspects): View
     {
         $user = Auth::user();
 
@@ -183,12 +184,13 @@ class WebsiteController extends Controller
 
         $canManageWebsite = $website->isManageableBy($user);
         $dataForSeoConfigured = filled(config('services.dataforseo.login')) && filled(config('services.dataforseo.password'));
+        $outreachProspect = $user?->isAdmin() ? $websiteProspects->find($website) : null;
 
         return view('admin.websites.show', compact(
             'website', 'users', 'availableMembers', 'canManageMembers', 'canManageWebsite',
             'searchConsoleReport', 'searchConsoleReportUnavailable', 'seoGeneration', 'seoSnapshot',
             'seoKeywords', 'seoReferringDomains', 'seoCompetitors', 'seoOpportunities', 'seoFilter', 'seoSort', 'seoDirection', 'strikingDistanceCount',
-            'dataForSeoConfigured',
+            'dataForSeoConfigured', 'outreachProspect',
         ));
     }
 
