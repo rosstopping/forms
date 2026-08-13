@@ -7,6 +7,7 @@ use App\Http\Requests\StoreProspectRequest;
 use App\Http\Requests\UpdateProspectRequest;
 use App\Jobs\AnalyzeProspect;
 use App\Models\Prospect;
+use App\Services\LoomVideoThumbnail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -38,10 +39,11 @@ class ProspectController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreProspectRequest $request): RedirectResponse
+    public function store(StoreProspectRequest $request, LoomVideoThumbnail $loomVideoThumbnail): RedirectResponse
     {
         $data = $request->validated();
         $data['website_url'] = filled($data['website_url'] ?? null) ? rtrim($data['website_url'], '/') : null;
+        $data['showcase_video_thumbnail_url'] = $loomVideoThumbnail->fetch($data['showcase_video_url'] ?? null);
         if (! $data['website_url']) {
             $data = array_merge($data, $this->websiteOpportunityDraft($data['business_name']));
         }
@@ -76,7 +78,7 @@ class ProspectController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateProspectRequest $request, Prospect $prospect): RedirectResponse
+    public function update(UpdateProspectRequest $request, Prospect $prospect, LoomVideoThumbnail $loomVideoThumbnail): RedirectResponse
     {
         $data = $request->validated();
         $data['suppressed_at'] = $request->boolean('suppressed') ? ($prospect->suppressed_at ?: now()) : null;
@@ -84,6 +86,9 @@ class ProspectController extends Controller
         $draftChanged = $prospect->outreach_subject !== ($data['outreach_subject'] ?? null)
             || $prospect->outreach_body !== ($data['outreach_body'] ?? null)
             || $prospect->showcase_video_url !== ($data['showcase_video_url'] ?? null);
+        if ($prospect->showcase_video_url !== ($data['showcase_video_url'] ?? null) || blank($prospect->showcase_video_thumbnail_url)) {
+            $data['showcase_video_thumbnail_url'] = $loomVideoThumbnail->fetch($data['showcase_video_url'] ?? null);
+        }
         if ($draftChanged) {
             $data['approved_at'] = null;
             $data['approved_by'] = null;

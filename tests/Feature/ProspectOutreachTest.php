@@ -5,7 +5,10 @@ use App\Jobs\AnalyzeProspect;
 use App\Mail\ProspectOutreach;
 use App\Models\Prospect;
 use App\Models\User;
+use App\Services\LoomVideoThumbnail;
 use App\Services\ProspectWebsiteAnalyzer;
+use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\URL;
@@ -237,6 +240,42 @@ it('stores a prospect-specific showcase video and resets approval when it change
         ->and($prospect->status)->toBe('drafted');
 });
 
+it('captures a Loom open graph image for the email preview', function () {
+    Http::preventStrayRequests();
+    Http::fake([
+        'https://www.loom.com/share/prospect-video' => Http::response('<html><head><meta property="og:image" content="https://cdn.loom.com/prospect-thumbnail.jpg"></head></html>'),
+    ]);
+
+    $thumbnailUrl = app(LoomVideoThumbnail::class)->fetch('https://www.loom.com/share/prospect-video');
+
+    expect($thumbnailUrl)->toBe('https://cdn.loom.com/prospect-thumbnail.jpg');
+    Http::assertSent(fn (Request $request): bool => $request->url() === 'https://www.loom.com/share/prospect-video');
+});
+
+it('stores the Loom thumbnail when a prospect is created', function () {
+    Queue::fake();
+    Http::preventStrayRequests();
+    Http::fake([
+        'https://www.loom.com/share/prospect-video' => Http::response('<meta property="og:image" content="https://cdn.loom.com/prospect-thumbnail.jpg">'),
+    ]);
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+
+    $this->actingAs($admin)->post(route('admin.prospects.store'), [
+        'business_name' => 'Acme Plumbing',
+        'website_url' => 'https://example.com',
+        'showcase_video_url' => 'https://www.loom.com/share/prospect-video',
+    ])->assertRedirect();
+
+    expect(Prospect::query()->sole()->showcase_video_thumbnail_url)->toBe('https://cdn.loom.com/prospect-thumbnail.jpg');
+});
+
+it('does not request metadata from non-Loom video URLs', function () {
+    Http::preventStrayRequests();
+
+    expect(app(LoomVideoThumbnail::class)->fetch('https://example.com/video'))->toBeNull();
+    Http::assertNothingSent();
+});
+
 it('rejects an invalid prospect showcase video URL', function () {
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
 
@@ -306,6 +345,7 @@ it('renders a casual outreach email with the showcase video and no audit details
         'outreach_subject' => 'Quick one for Acme Plumbing',
         'outreach_body' => "Hi Alex,\n\nI've included a quick video below so you can see what Sitewell does.",
         'showcase_video_url' => 'https://video.example.com/acme-plumbing',
+        'showcase_video_thumbnail_url' => 'https://cdn.loom.com/acme-plumbing.jpg',
     ]);
 
     (new ProspectOutreach($prospect))
@@ -313,6 +353,8 @@ it('renders a casual outreach email with the showcase video and no audit details
         ->assertSeeInHtml('Your website video')
         ->assertSeeInHtml('Watch your video')
         ->assertSeeInHtml('https://video.example.com/acme-plumbing')
+        ->assertSeeInHtml('https://cdn.loom.com/acme-plumbing.jpg')
+        ->assertSeeInHtml('Watch the website video recorded for Acme Plumbing')
         ->assertSeeInHtml('Book a call with Ross')
         ->assertSeeInHtml('https://cal.com/ross')
         ->assertSeeInHtml('quick video below')
