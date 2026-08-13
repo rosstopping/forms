@@ -90,9 +90,21 @@ This document is the source of truth for the phased Sitewell Pixel rollout.
 - Added focused hardening tests covering cache invalidation, controls, history preservation, key rotation, logging privacy/throttling, selector validation, and UI visibility.
 - A controlled external-site production smoke test remains an operator rollout task because it requires the deployed asset/API hosts and a customer-controlled test page.
 
-### Outstanding phases
+### Phase 1G — complete
 
-- Phase 1G: full regression coverage, production smoke-test checklist, operator/customer documentation, and release readiness review.
+- Added a read-only `sitewell:pixel:check` Artisan command for repeatable production verification of the configured Pixel asset and a site/domain-specific payload request.
+- The check validates asset identity, payload shape, public CORS, cache headers, and ETags, uses short connection/request timeouts, and returns a non-zero exit code on failure.
+- Added mocked command tests for successful production checks, rejected payloads, and invalid operator input without making external requests during the test suite.
+- Added customer installation, CSP, detection troubleshooting, emergency-operation, production smoke-test, and release-checklist documentation in `docs/sitewell-pixel-installation.md`.
+- Re-ran the complete PHP and dependency-free JavaScript suites, formatting, diff validation, and production asset build.
+- Phase 1 is code-complete. Deployment migrations/configuration and the controlled external-site smoke test remain environment-specific release steps.
+
+### Outstanding work
+
+- Deploy the Phase 1 migrations and application changes to the target environment.
+- Configure the public HTTPS asset/API URLs and CDN/proxy behavior.
+- Run the documented command and browser smoke test against a controlled external website.
+- Confirm production logs, cache, rate limiter, and heartbeat connection state during the initial rollout.
 
 ## Security and known issues
 
