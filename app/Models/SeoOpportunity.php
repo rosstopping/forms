@@ -9,6 +9,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SeoOpportunity extends Model
 {
+    public const TYPE_STRIKING_DISTANCE = 'striking_distance';
+
+    public const TYPE_HIGH_VOLUME = 'high_volume';
+
+    public const TYPE_COMMERCIAL = 'commercial';
+
+    public const TYPE_DECLINING = 'declining';
+
+    public const TYPE_IMPROVING = 'improving';
+
     public const STATUS_OPEN = 'open';
 
     /** @use HasFactory<SeoOpportunityFactory> */

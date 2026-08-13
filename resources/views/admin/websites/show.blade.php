@@ -118,6 +118,8 @@
         'seoSnapshot' => $seoSnapshot,
         'seoKeywords' => $seoKeywords,
         'seoReferringDomains' => $seoReferringDomains,
+        'seoCompetitors' => $seoCompetitors,
+        'seoOpportunities' => $seoOpportunities,
         'seoFilter' => $seoFilter,
         'seoSort' => $seoSort,
         'seoDirection' => $seoDirection,

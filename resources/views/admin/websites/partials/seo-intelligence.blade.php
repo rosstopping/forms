@@ -92,6 +92,115 @@
     </section>
 
     @if ($seoSnapshot)
+        <section class="rounded-xl border bg-white shadow-sm" aria-labelledby="seo-opportunities-title">
+            <div class="border-b border-slate-950/10 p-4">
+                <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                    <div class="min-w-0">
+                        <h3 id="seo-opportunities-title" class="text-balance text-base font-semibold text-slate-950">Recommended actions</h3>
+                        <p class="max-w-[72ch] text-pretty text-base text-slate-600 sm:text-sm">Prioritised from DataForSEO ranking estimates. Review each recommendation before changing the website.</p>
+                    </div>
+                    <p class="shrink-0 text-base tabular-nums text-slate-500 sm:text-sm">{{ number_format($seoOpportunities->count()) }} shown</p>
+                </div>
+            </div>
+
+            <div class="divide-y divide-slate-950/10">
+                @forelse ($seoOpportunities as $opportunity)
+                    @php($metrics = $opportunity->metrics ?? [])
+                    <article class="@container p-4">
+                        <div class="grid gap-4 @3xl:grid-cols-[2fr_3fr]">
+                            <div class="min-w-0">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <p class="rounded-full bg-teal-50 px-2 py-1 font-medium text-teal-800 ring-1 ring-teal-700/10">{{ str($opportunity->type)->headline() }}</p>
+                                    <p class="tabular-nums text-slate-500">Priority {{ number_format((float) $opportunity->priority_score) }}/100</p>
+                                </div>
+                                <h4 class="mt-3 text-balance font-semibold text-slate-950">{{ $opportunity->title }}</h4>
+                                <p class="mt-1 text-pretty text-base text-slate-600 sm:text-sm">{{ $opportunity->summary }}</p>
+                                <dl class="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-base sm:text-sm">
+                                    <div>
+                                        <dt class="font-medium text-slate-700">Position</dt>
+                                        <dd class="tabular-nums text-slate-500">{{ data_get($metrics, 'position', '—') }}</dd>
+                                    </div>
+                                    <div>
+                                        <dt class="font-medium text-slate-700">Volume</dt>
+                                        <dd class="tabular-nums text-slate-500">{{ is_null(data_get($metrics, 'search_volume')) ? '—' : number_format(data_get($metrics, 'search_volume')) }}</dd>
+                                    </div>
+                                    @if (! is_null(data_get($metrics, 'position_change')))
+                                        <div>
+                                            <dt class="font-medium text-slate-700">Change</dt>
+                                            <dd class="tabular-nums {{ data_get($metrics, 'position_change') > 0 ? 'text-emerald-700' : 'text-red-700' }}">{{ data_get($metrics, 'position_change') > 0 ? '+' : '' }}{{ data_get($metrics, 'position_change') }}</dd>
+                                        </div>
+                                    @endif
+                                    @if (data_get($metrics, 'search_intent'))
+                                        <div>
+                                            <dt class="font-medium text-slate-700">Intent</dt>
+                                            <dd class="capitalize text-slate-500">{{ data_get($metrics, 'search_intent') }}</dd>
+                                        </div>
+                                    @endif
+                                </dl>
+                            </div>
+
+                            <div class="rounded-lg bg-slate-50 p-4">
+                                <h5 class="font-medium text-slate-950">Recommended action</h5>
+                                <p class="mt-1 text-pretty text-base text-slate-600 sm:text-sm">{{ $opportunity->recommendation }}</p>
+                                @if (data_get($metrics, 'ranking_url'))
+                                    <div class="mt-3 text-base font-medium sm:text-sm">
+                                        <a href="{{ data_get($metrics, 'ranking_url') }}" target="_blank" rel="noopener noreferrer" class="text-teal-700 underline decoration-teal-700/30 underline-offset-4 hover:decoration-teal-700">Open ranking page</a>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    </article>
+                @empty
+                    <div class="p-8 text-center">
+                        <h4 class="text-balance font-semibold text-slate-950">No priority actions found</h4>
+                        <p class="mx-auto mt-2 max-w-[60ch] text-pretty text-base text-slate-600 sm:text-sm">The stored keyword sample does not currently meet the configured opportunity thresholds. Future snapshots may reveal ranking movement.</p>
+                    </div>
+                @endforelse
+            </div>
+        </section>
+
+        <section class="rounded-xl border bg-white shadow-sm" aria-labelledby="organic-competitors-title">
+            <div class="border-b border-slate-950/10 p-4">
+                <h3 id="organic-competitors-title" class="text-balance text-base font-semibold text-slate-950">Organic competitors</h3>
+                <p class="mt-1 text-pretty text-base text-slate-600 sm:text-sm">Domains appearing alongside this website for the same organic searches.</p>
+            </div>
+
+            @if (isset($seoSnapshot->errors['organic_competitors']))
+                <div class="border-b border-amber-950/10 bg-amber-50 p-4">
+                    <p class="text-base text-amber-800 sm:text-sm">Organic competitor data was unavailable when this snapshot was generated. Other successful SEO data has been retained.</p>
+                </div>
+            @endif
+
+            <div class="p-4">
+                <div class="-mx-4 -my-2 overflow-x-auto whitespace-nowrap">
+                    <div class="inline-block min-w-full px-4 py-2 align-middle">
+                        <table class="w-full divide-y divide-slate-950/10">
+                            <thead>
+                                <tr>
+                                    <th class="whitespace-nowrap py-3 pr-4 text-left">Domain</th>
+                                    <th class="whitespace-nowrap px-4 py-3 text-right">Shared keywords</th>
+                                    <th class="whitespace-nowrap px-4 py-3 text-right">Ranking keywords</th>
+                                    <th class="whitespace-nowrap py-3 pl-4 text-right">Estimated visits</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-950/5">
+                                @forelse ($seoCompetitors as $competitor)
+                                    <tr>
+                                        <td class="py-3 pr-4 font-medium text-slate-950">{{ $competitor->domain }}</td>
+                                        <td class="px-4 py-3 text-right font-medium tabular-nums text-teal-700">{{ number_format($competitor->common_keywords) }}</td>
+                                        <td class="px-4 py-3 text-right tabular-nums text-slate-700">{{ is_null($competitor->organic_keywords) ? '—' : number_format($competitor->organic_keywords) }}</td>
+                                        <td class="py-3 pl-4 text-right tabular-nums text-slate-700">{{ is_null($competitor->estimated_traffic) ? '—' : '~'.number_format((float) $competitor->estimated_traffic) }}</td>
+                                    </tr>
+                                @empty
+                                    <tr><td colspan="4" class="py-8 text-center text-slate-500">No organic competitors were returned for this snapshot.</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <section class="rounded-xl border bg-white shadow-sm" aria-labelledby="backlinks-title">
             <div class="border-b border-slate-950/10 p-4">
                 <h3 id="backlinks-title" class="text-balance text-base font-semibold text-slate-950">Backlinks</h3>

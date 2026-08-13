@@ -2,6 +2,7 @@
 
 use App\Models\SeoSnapshot;
 use App\Models\Website;
+use App\Services\SeoIntelligence\SeoOpportunityService;
 use App\Services\SeoIntelligence\SeoSnapshotService;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
@@ -15,6 +16,7 @@ beforeEach(function (): void {
         'timeout' => 2,
         'ranked_keywords_limit' => 500,
         'referring_domains_limit' => 250,
+        'competitors_limit' => 25,
     ]);
     Http::preventStrayRequests();
 });
@@ -35,7 +37,11 @@ test('it persists domain metrics and ranked keywords as a historical snapshot', 
             return Http::response(dataForSEOTaskResponse(backlinkOverviewResult(), 0.0105, 'backlinks-task'));
         }
 
-        return Http::response(dataForSEOTaskResponse(referringDomainsResult(), 0.0107, 'referring-domains-task'));
+        if (str_contains($request->url(), 'referring_domains')) {
+            return Http::response(dataForSEOTaskResponse(referringDomainsResult(), 0.0107, 'referring-domains-task'));
+        }
+
+        return Http::response(dataForSEOTaskResponse(organicCompetitorsResult(), 0.0109, 'competitors-task'));
     });
 
     $snapshot = app(SeoSnapshotService::class)->create($website, 2826, 'en');
@@ -57,10 +63,15 @@ test('it persists domain metrics and ranked keywords as a historical snapshot', 
         ->and($snapshot->domain_rank)->toBe(42)
         ->and($snapshot->referringDomains)->toHaveCount(2)
         ->and($snapshot->referringDomains->pluck('domain')->all())->toContain('publisher.example')
-        ->and($snapshot->apiUsages()->sum('cost'))->toEqual(0.0416)
-        ->and($snapshot->apiUsages()->pluck('provider_task_id')->all())->toBe(['overview-task', 'keywords-task', 'backlinks-task', 'referring-domains-task']);
+        ->and($snapshot->competitors)->toHaveCount(2)
+        ->and($snapshot->competitors->firstWhere('domain', 'competitor-one.example')->common_keywords)->toBe(63)
+        ->and($snapshot->opportunities)->toHaveCount(3)
+        ->and($snapshot->opportunities->pluck('type')->all())->toContain('striking_distance', 'high_volume', 'commercial')
+        ->and($snapshot->metadata['datasets'])->toContain('seo_opportunities')
+        ->and($snapshot->apiUsages()->sum('cost'))->toEqual(0.0525)
+        ->and($snapshot->apiUsages()->pluck('provider_task_id')->all())->toBe(['overview-task', 'keywords-task', 'backlinks-task', 'referring-domains-task', 'competitors-task']);
 
-    Http::assertSentCount(4);
+    Http::assertSentCount(5);
 });
 
 test('it stores an empty keyword dataset without inventing keyword rows', function (): void {
@@ -71,6 +82,7 @@ test('it stores an empty keyword dataset without inventing keyword rows', functi
             str_contains($request->url(), 'domain_rank_overview') => [['target' => 'no-rankings.example', 'items' => []]],
             str_contains($request->url(), 'ranked_keywords') => [['target' => 'no-rankings.example', 'items_count' => 0, 'items' => []]],
             str_contains($request->url(), 'backlinks/summary') => [['target' => 'no-rankings.example', 'backlinks' => 0, 'referring_domains' => 0]],
+            str_contains($request->url(), 'competitors_domain') => [['target' => 'no-rankings.example', 'items_count' => 0, 'items' => []]],
             default => [['target' => 'no-rankings.example', 'items_count' => 0, 'items' => []]],
         };
 
@@ -94,6 +106,7 @@ test('it prevents duplicate provider items within a snapshot', function (): void
             str_contains($request->url(), 'domain_rank_overview') => domainOverviewResult(),
             str_contains($request->url(), 'ranked_keywords') => $keywords,
             str_contains($request->url(), 'backlinks/summary') => backlinkOverviewResult(),
+            str_contains($request->url(), 'competitors_domain') => organicCompetitorsResult(),
             default => referringDomainsResult(),
         };
 
@@ -127,7 +140,8 @@ test('it retains successful keyword data when backlink datasets fail', function 
 
     expect($snapshot->status)->toBe(SeoSnapshot::STATUS_COMPLETED_WITH_ERRORS)
         ->and($snapshot->keywords)->toHaveCount(1)
-        ->and($snapshot->errors)->toHaveKeys(['backlink_overview', 'referring_domains'])
+        ->and($snapshot->opportunities)->toHaveCount(3)
+        ->and($snapshot->errors)->toHaveKeys(['backlink_overview', 'referring_domains', 'organic_competitors'])
         ->and($snapshot->apiUsages)->toHaveCount(2);
 });
 
@@ -141,7 +155,11 @@ test('it does not repurchase core datasets when resuming an interrupted snapshot
         'completed_at' => null,
     ]);
     Http::fake(function (Request $request) {
-        $result = str_contains($request->url(), 'backlinks/summary') ? backlinkOverviewResult() : referringDomainsResult();
+        $result = match (true) {
+            str_contains($request->url(), 'backlinks/summary') => backlinkOverviewResult(),
+            str_contains($request->url(), 'competitors_domain') => organicCompetitorsResult(),
+            default => referringDomainsResult(),
+        };
 
         return Http::response(dataForSEOTaskResponse($result, 0.01, 'resume-task'));
     });
@@ -151,10 +169,54 @@ test('it does not repurchase core datasets when resuming an interrupted snapshot
     expect($result->status)->toBe(SeoSnapshot::STATUS_COMPLETED)
         ->and($result->backlinks)->toBe(872)
         ->and($result->referringDomains)->toHaveCount(2)
-        ->and($result->apiUsages)->toHaveCount(2);
+        ->and($result->competitors)->toHaveCount(2)
+        ->and($result->apiUsages)->toHaveCount(3);
 
-    Http::assertSentCount(2);
-    Http::assertNotSent(fn (Request $request): bool => str_contains($request->url(), 'dataforseo_labs'));
+    Http::assertSentCount(3);
+    Http::assertNotSent(fn (Request $request): bool => str_contains($request->url(), 'domain_rank_overview') || str_contains($request->url(), 'ranked_keywords'));
+});
+
+test('it retains historical snapshots and derives movement from the previous compatible observation', function (): void {
+    $website = Website::factory()->create();
+    $previous = SeoSnapshot::factory()->for($website)->create([
+        'domain' => 'history.example',
+        'location_code' => 2826,
+        'language_code' => 'en',
+        'completed_at' => now()->subWeek(),
+    ]);
+    $current = SeoSnapshot::factory()->for($website)->create([
+        'domain' => 'history.example',
+        'location_code' => 2826,
+        'language_code' => 'en',
+        'status' => SeoSnapshot::STATUS_PROCESSING,
+        'completed_at' => null,
+    ]);
+    $previous->keywords()->create([
+        'website_id' => $website->id,
+        'fingerprint' => hash('sha256', 'history|old'),
+        'keyword' => 'historical keyword',
+        'position' => 8,
+        'ranking_url' => 'https://history.example/old-page',
+        'search_volume' => 200,
+        'location_code' => 2826,
+        'language_code' => 'en',
+    ]);
+    $current->keywords()->create([
+        'website_id' => $website->id,
+        'fingerprint' => hash('sha256', 'history|new'),
+        'keyword' => 'historical keyword',
+        'position' => 15,
+        'ranking_url' => 'https://history.example/new-page',
+        'search_volume' => 200,
+        'location_code' => 2826,
+        'language_code' => 'en',
+    ]);
+
+    $opportunities = app(SeoOpportunityService::class)->generate($current);
+
+    expect(SeoSnapshot::query()->where('website_id', $website->id)->count())->toBe(2)
+        ->and($opportunities->firstWhere('type', 'declining')->metrics['previous_snapshot_position'])->toBe(8)
+        ->and($opportunities->firstWhere('type', 'declining')->metrics['position_change'])->toBe(-7);
 });
 
 test('it requires a stored domain before spending provider credits', function (): void {
@@ -226,5 +288,14 @@ function referringDomainsResult(): array
     return [['target' => 'offline-example.com', 'items_count' => 2, 'items' => [
         ['domain' => 'publisher.example', 'rank' => 71, 'backlinks' => 14, 'first_seen' => '2024-01-10 12:00:00 +00:00', 'last_seen' => '2026-08-01 09:00:00 +00:00'],
         ['domain' => 'directory.example', 'rank' => 39, 'backlinks' => 6, 'first_seen' => 'invalid-date', 'last_seen' => null],
+    ]]];
+}
+
+/** @return array<int, array<string, mixed>> */
+function organicCompetitorsResult(): array
+{
+    return [['target' => 'offline-example.com', 'items_count' => 2, 'items' => [
+        ['domain' => 'competitor-one.example', 'intersections' => 63, 'full_domain_metrics' => ['organic' => ['count' => 842, 'etv' => 4200.75]]],
+        ['domain' => 'competitor-two.example', 'intersections' => 51, 'full_domain_metrics' => ['organic' => ['count' => 615, 'etv' => 2980.5]]],
     ]]];
 }

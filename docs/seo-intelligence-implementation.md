@@ -42,17 +42,20 @@
 - [x] Phase 1: configuration, authenticated DataForSEO client, validated response envelope, safe failures/logging, rate-limit-aware retries, endpoint service boundaries, mocked tests.
 - [x] Phase 2: snapshot, usage, keyword, referring-domain, competitor, and opportunity schema/models/factories/relationships.
 - [x] Phase 3: endpoint result DTO mapping and snapshot persistence for domain overview and ranked keywords.
-- [ ] Phase 4: independently tested DataForSEO opportunity calculation and historical comparisons.
-- [ ] Phase 5: backlink overview/referring-domain and competitor persistence with partial-failure orchestration.
+- [x] Phase 4: independently tested DataForSEO opportunity calculation and historical comparisons.
+  - [x] Striking-distance, high-volume, and commercial-intent recommendations with transparent priority scores.
+  - [x] Improving and declining keyword detection against the previous compatible local snapshot.
+  - [x] Snapshot-scoped opportunity persistence, configurable thresholds, retry-safe generation, and actionable dashboard panel.
+- [x] Phase 5: backlink overview/referring-domain and competitor persistence with partial-failure orchestration.
   - [x] Backlink overview metrics, referring-domain sample, usage costs, partial failures, retry-safe dataset checkpoints, and dashboard panel.
-  - [ ] Organic competitor persistence and dashboard panel.
+  - [x] Organic competitor DTO mapping, persistence, usage costs, partial failures, retry-safe dataset checkpoint, and dashboard panel.
 - [ ] Phase 6: refresh-window lock, unique queued generation job, usage/cost accounting, scheduling/manual refresh protection.
 - [ ] Phase 7: initial labelled SEO Intelligence dashboard and filterable keyword table.
 - [ ] Phase 8: end-to-end tests, broader regression/static analysis, and operational documentation.
 
 ## Current status
 
-Phase 3 complete. Next: Phase 4 independently tested DataForSEO opportunity calculation and historical comparisons.
+Phases 1–5 and the initial admin vertical slice are complete. Next: finish refresh scheduling/cost reporting and broader end-to-end operational checks.
 
 ### Admin vertical slice delivered after Phase 3
 
@@ -61,7 +64,8 @@ Phase 3 complete. Next: Phase 4 independently tested DataForSEO opportunity calc
 - [x] Website-level authorization for paid refresh requests.
 - [x] SEO Intelligence website tab with source labelling, snapshot state, visibility metrics, opportunity count, and paginated keyword filters/sorts.
 - [x] Backlink overview and referring-domain panel.
-- [ ] Competitor and generated-opportunity panels remain dependent on Phases 4 and 5.
+- [x] Organic competitor panel.
+- [x] Generated-opportunity panel with evidence, recommendation, priority score, and ranking-page action.
 - [ ] Scheduled refresh remains part of Phase 6.
 
 ### Ranked keyword collection correction

@@ -130,6 +130,8 @@ class WebsiteController extends Controller
         $seoDirection = $request->string('seo_direction')->toString() === 'asc' ? 'asc' : 'desc';
         $seoKeywords = null;
         $seoReferringDomains = collect();
+        $seoCompetitors = collect();
+        $seoOpportunities = collect();
         $strikingDistanceCount = 0;
 
         if ($seoSnapshot) {
@@ -137,6 +139,17 @@ class WebsiteController extends Controller
                 ->orderByDesc('domain_rank')
                 ->orderByDesc('backlinks_count')
                 ->limit(10)
+                ->get();
+            $seoCompetitors = $seoSnapshot->competitors()
+                ->orderByDesc('common_keywords')
+                ->orderByDesc('estimated_traffic')
+                ->limit(10)
+                ->get();
+            $seoOpportunities = $seoSnapshot->opportunities()
+                ->with('keyword')
+                ->where('status', 'open')
+                ->orderByDesc('priority_score')
+                ->limit(20)
                 ->get();
             $strikingDistanceCount = $seoSnapshot->keywords()->whereBetween('position', [4, 20])->count();
             $seoKeywordsQuery = $seoSnapshot->keywords();
@@ -174,7 +187,7 @@ class WebsiteController extends Controller
         return view('admin.websites.show', compact(
             'website', 'users', 'availableMembers', 'canManageMembers', 'canManageWebsite',
             'searchConsoleReport', 'searchConsoleReportUnavailable', 'seoGeneration', 'seoSnapshot',
-            'seoKeywords', 'seoReferringDomains', 'seoFilter', 'seoSort', 'seoDirection', 'strikingDistanceCount',
+            'seoKeywords', 'seoReferringDomains', 'seoCompetitors', 'seoOpportunities', 'seoFilter', 'seoSort', 'seoDirection', 'strikingDistanceCount',
             'dataForSeoConfigured',
         ));
     }

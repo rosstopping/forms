@@ -1,7 +1,9 @@
 <?php
 
 use App\Jobs\GenerateSeoIntelligence;
+use App\Models\SeoCompetitor;
 use App\Models\SeoKeyword;
+use App\Models\SeoOpportunity;
 use App\Models\SeoReferringDomain;
 use App\Models\SeoSnapshot;
 use App\Models\User;
@@ -121,10 +123,31 @@ test('the seo tab displays and filters locally stored keyword estimates', functi
         'search_volume' => 390,
         'search_intent' => 'commercial',
     ]);
+    $rankingKeyword = $snapshot->keywords()->where('keyword', 'garden rooms doncaster')->firstOrFail();
+    SeoOpportunity::factory()->for($website)->for($snapshot, 'snapshot')->for($rankingKeyword, 'keyword')->create([
+        'type' => SeoOpportunity::TYPE_STRIKING_DISTANCE,
+        'title' => 'Move “garden rooms doncaster” towards page one',
+        'summary' => 'The domain ranks at position 12 for an estimated 390 monthly searches.',
+        'recommendation' => 'Strengthen the ranking page and its relevant internal links.',
+        'metrics' => [
+            'data_source' => 'dataforseo_estimate',
+            'ranking_url' => 'https://example.com/garden-rooms',
+            'position' => 12,
+            'search_volume' => 390,
+            'search_intent' => 'commercial',
+        ],
+        'priority_score' => 82,
+    ]);
     SeoReferringDomain::factory()->for($website)->for($snapshot, 'snapshot')->create([
         'domain' => 'publisher.example',
         'domain_rank' => 71,
         'backlinks_count' => 14,
+    ]);
+    SeoCompetitor::factory()->for($website)->for($snapshot, 'snapshot')->create([
+        'domain' => 'competitor-one.example',
+        'common_keywords' => 63,
+        'organic_keywords' => 842,
+        'estimated_traffic' => 4200.75,
     ]);
     SeoKeyword::factory()->for($website)->for($snapshot, 'snapshot')->create([
         'keyword' => 'unrelated informational query',
@@ -140,6 +163,12 @@ test('the seo tab displays and filters locally stored keyword estimates', functi
         ->assertSee('Backlinks')
         ->assertSee('872')
         ->assertSee('publisher.example')
+        ->assertSee('Recommended actions')
+        ->assertSee('Move “garden rooms doncaster” towards page one')
+        ->assertSee('Strengthen the ranking page and its relevant internal links.')
+        ->assertSee('Organic competitors')
+        ->assertSee('competitor-one.example')
+        ->assertSee('63')
         ->assertSee('garden rooms doncaster')
         ->assertDontSee('unrelated informational query')
         ->assertSee('Third-party market intelligence')

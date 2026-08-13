@@ -5,6 +5,8 @@ namespace App\Services\SeoIntelligence;
 use App\Models\SeoSnapshot;
 use App\Models\Website;
 use App\Services\DataForSEO\BacklinksService;
+use App\Services\DataForSEO\CompetitorsService;
+use App\Services\DataForSEO\Data\OrganicCompetitorData;
 use App\Services\DataForSEO\Data\RankedKeywordData;
 use App\Services\DataForSEO\Data\ReferringDomainData;
 use App\Services\DataForSEO\DomainOverviewService;
@@ -20,6 +22,8 @@ class SeoSnapshotService
         private DomainOverviewService $domainOverview,
         private RankedKeywordsService $rankedKeywords,
         private BacklinksService $backlinks,
+        private CompetitorsService $competitors,
+        private SeoOpportunityService $opportunities,
     ) {}
 
     public function create(Website $website, int $locationCode = 2826, string $languageCode = 'en'): SeoSnapshot
@@ -163,6 +167,41 @@ class SeoSnapshotService
             }
         }
 
+        if (! in_array('organic_competitors', $datasets, true)) {
+            try {
+                $competitorsResponse = $this->competitors->forDomain($domain, $locationCode, $languageCode);
+
+                $datasets[] = 'organic_competitors';
+                DB::transaction(function () use ($snapshot, $requestedAt, $competitorsResponse, $datasets): void {
+                    $snapshot->competitors()->createMany(array_map(
+                        fn (OrganicCompetitorData $competitor): array => [
+                            'website_id' => $snapshot->website_id,
+                            'domain' => $competitor->domain,
+                            'common_keywords' => $competitor->commonKeywords,
+                            'organic_keywords' => $competitor->organicKeywords,
+                            'estimated_traffic' => $competitor->estimatedTraffic,
+                            'competition_level' => null,
+                        ],
+                        $competitorsResponse->competitors,
+                    ));
+                    $snapshot->update(['metadata' => ['data_source' => 'third_party_estimate', 'datasets' => $datasets]]);
+                    $snapshot->apiUsages()->create(
+                        $this->usageData($snapshot->website, $competitorsResponse->endpoint, 'organic_competitors', $competitorsResponse->resultCount, $competitorsResponse->cost, $competitorsResponse->taskId, $requestedAt),
+                    );
+                });
+            } catch (DataForSEOException) {
+                $errors['organic_competitors'] = 'Organic competitor data was unavailable from the provider.';
+            }
+        }
+
+        if (! in_array('seo_opportunities', $datasets, true)) {
+            $datasets[] = 'seo_opportunities';
+            DB::transaction(function () use ($snapshot, $datasets): void {
+                $this->opportunities->generate($snapshot);
+                $snapshot->update(['metadata' => ['data_source' => 'third_party_estimate', 'datasets' => $datasets]]);
+            });
+        }
+
         $snapshot->update([
             'status' => $errors === [] ? SeoSnapshot::STATUS_COMPLETED : SeoSnapshot::STATUS_COMPLETED_WITH_ERRORS,
             'metadata' => ['data_source' => 'third_party_estimate', 'datasets' => $datasets],
@@ -170,7 +209,7 @@ class SeoSnapshotService
             'completed_at' => now(),
         ]);
 
-        return $snapshot->load('keywords', 'referringDomains');
+        return $snapshot->load('keywords', 'referringDomains', 'competitors', 'opportunities.keyword');
     }
 
     /** @return array<string, mixed> */

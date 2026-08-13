@@ -70,6 +70,13 @@ return [
         'pending_timeout_minutes' => (int) env('DATAFORSEO_PENDING_TIMEOUT_MINUTES', 30),
         'location_code' => (int) env('DATAFORSEO_LOCATION_CODE', 2826),
         'language_code' => env('DATAFORSEO_LANGUAGE_CODE', 'en'),
+        'opportunities' => [
+            'high_volume_minimum' => (int) env('DATAFORSEO_HIGH_VOLUME_MINIMUM', 100),
+            'commercial_volume_minimum' => (int) env('DATAFORSEO_COMMERCIAL_VOLUME_MINIMUM', 20),
+            'movement_minimum' => (int) env('DATAFORSEO_MOVEMENT_MINIMUM', 3),
+            'per_type_limit' => (int) env('DATAFORSEO_OPPORTUNITIES_PER_TYPE_LIMIT', 10),
+            'maximum_results' => (int) env('DATAFORSEO_OPPORTUNITIES_LIMIT', 50),
+        ],
     ],
 
 ];
