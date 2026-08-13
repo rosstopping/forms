@@ -357,6 +357,8 @@ it('renders a casual outreach email with the showcase video and no audit details
         ->assertSeeInHtml('Watch the website video recorded for Acme Plumbing')
         ->assertSeeInHtml('Book a call with Ross')
         ->assertSeeInHtml('https://cal.com/ross')
+        ->assertSeeInHtml('Full disclosure, because we don’t currently manage your website, the data we can see is fairly limited.')
+        ->assertSeeInHtml('Google Search Console')
         ->assertSeeInHtml('quick video below')
         ->assertDontSeeInHtml('View your website review')
         ->assertDontSeeInHtml('What is Sitewell?')

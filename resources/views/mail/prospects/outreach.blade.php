@@ -23,6 +23,7 @@
                 <a href="https://cal.com/ross" style="display:inline-block;border-radius:8px;background:#0f766e;padding:12px 18px;color:#ffffff;font-weight:600;text-decoration:none;">Book a call with Ross</a>
                 <p style="margin:14px 0 0;font-size:12px;color:#64748b;">Or visit <a href="https://cal.com/ross" style="color:#0f766e;">cal.com/ross</a></p>
             </div>
+            <p style="margin:24px 0 0;font-size:13px;line-height:1.6;color:#64748b;">Full disclosure, because we don’t currently manage your website, the data we can see is fairly limited. If you decided to work with us, we’d connect tools like Google Search Console, giving us a much clearer picture of how your website is actually performing.</p>
         </section>
     </main>
 </body>
