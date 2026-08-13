@@ -4,8 +4,11 @@ namespace App\Services\SeoIntelligence;
 
 use App\Models\SeoSnapshot;
 use App\Models\Website;
+use App\Services\DataForSEO\BacklinksService;
 use App\Services\DataForSEO\Data\RankedKeywordData;
+use App\Services\DataForSEO\Data\ReferringDomainData;
 use App\Services\DataForSEO\DomainOverviewService;
+use App\Services\DataForSEO\Exceptions\DataForSEOException;
 use App\Services\DataForSEO\RankedKeywordsService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +19,7 @@ class SeoSnapshotService
     public function __construct(
         private DomainOverviewService $domainOverview,
         private RankedKeywordsService $rankedKeywords,
+        private BacklinksService $backlinks,
     ) {}
 
     public function create(Website $website, int $locationCode = 2826, string $languageCode = 'en'): SeoSnapshot
@@ -53,56 +57,120 @@ class SeoSnapshotService
         $domain = $snapshot->domain;
         $locationCode = $snapshot->location_code;
         $languageCode = $snapshot->language_code;
-        $overviewResponse = $this->domainOverview->forDomain($domain, $locationCode, $languageCode);
-        $keywordsResponse = $this->rankedKeywords->forDomain($domain, $locationCode, $languageCode);
+        $datasets = data_get($snapshot->metadata, 'datasets', []);
+        $datasets = is_array($datasets) ? $datasets : [];
+        $errors = [];
 
-        return DB::transaction(function () use ($snapshot, $requestedAt, $overviewResponse, $keywordsResponse): SeoSnapshot {
-            $website = $snapshot->website;
-            $overview = $overviewResponse->overview;
-            $snapshot->update([
-                'status' => SeoSnapshot::STATUS_COMPLETED,
-                'organic_keywords' => $overview->organicKeywords,
-                'estimated_organic_traffic' => $overview->estimatedOrganicTraffic,
-                'top_3_keywords' => $overview->top3Keywords,
-                'top_10_keywords' => $overview->top10Keywords,
-                'top_20_keywords' => $overview->top20Keywords,
-                'top_100_keywords' => $overview->top100Keywords,
-                'metadata' => [
-                    'data_source' => 'third_party_estimate',
-                    'datasets' => ['domain_overview', 'ranked_keywords'],
-                ],
-                'errors' => [],
-                'completed_at' => now(),
-            ]);
+        if (! in_array('domain_overview', $datasets, true) || ! in_array('ranked_keywords', $datasets, true)) {
+            $overviewResponse = $this->domainOverview->forDomain($domain, $locationCode, $languageCode);
+            $keywordsResponse = $this->rankedKeywords->forDomain($domain, $locationCode, $languageCode);
 
-            $snapshot->keywords()->createMany(array_map(
-                fn (RankedKeywordData $keyword): array => [
-                    'website_id' => $website->id,
-                    'fingerprint' => $keyword->fingerprint,
-                    'keyword' => $keyword->keyword,
-                    'position' => $keyword->position,
-                    'previous_position' => $keyword->previousPosition,
-                    'ranking_url' => $keyword->rankingUrl,
-                    'search_volume' => $keyword->searchVolume,
-                    'cpc' => $keyword->cpc,
-                    'competition' => $keyword->competition,
-                    'competition_level' => $keyword->competitionLevel,
-                    'search_intent' => $keyword->searchIntent,
-                    'estimated_traffic' => $keyword->estimatedTraffic,
-                    'keyword_difficulty' => $keyword->keywordDifficulty,
-                    'location_code' => $keyword->locationCode,
-                    'language_code' => $keyword->languageCode,
-                ],
-                $keywordsResponse->keywords,
-            ));
+            DB::transaction(function () use ($snapshot, $requestedAt, $overviewResponse, $keywordsResponse): void {
+                $website = $snapshot->website;
+                $overview = $overviewResponse->overview;
+                $snapshot->update([
+                    'organic_keywords' => $overview->organicKeywords,
+                    'estimated_organic_traffic' => $overview->estimatedOrganicTraffic,
+                    'top_3_keywords' => $overview->top3Keywords,
+                    'top_10_keywords' => $overview->top10Keywords,
+                    'top_20_keywords' => $overview->top20Keywords,
+                    'top_100_keywords' => $overview->top100Keywords,
+                    'metadata' => [
+                        'data_source' => 'third_party_estimate',
+                        'datasets' => ['domain_overview', 'ranked_keywords'],
+                    ],
+                ]);
 
-            $snapshot->apiUsages()->createMany([
-                $this->usageData($website, $overviewResponse->endpoint, 'domain_overview', $overviewResponse->resultCount, $overviewResponse->cost, $overviewResponse->taskId, $requestedAt),
-                $this->usageData($website, $keywordsResponse->endpoint, 'ranked_keywords', $keywordsResponse->resultCount, $keywordsResponse->cost, $keywordsResponse->taskId, $requestedAt),
-            ]);
+                $snapshot->keywords()->createMany(array_map(
+                    fn (RankedKeywordData $keyword): array => [
+                        'website_id' => $website->id,
+                        'fingerprint' => $keyword->fingerprint,
+                        'keyword' => $keyword->keyword,
+                        'position' => $keyword->position,
+                        'previous_position' => $keyword->previousPosition,
+                        'ranking_url' => $keyword->rankingUrl,
+                        'search_volume' => $keyword->searchVolume,
+                        'cpc' => $keyword->cpc,
+                        'competition' => $keyword->competition,
+                        'competition_level' => $keyword->competitionLevel,
+                        'search_intent' => $keyword->searchIntent,
+                        'estimated_traffic' => $keyword->estimatedTraffic,
+                        'keyword_difficulty' => $keyword->keywordDifficulty,
+                        'location_code' => $keyword->locationCode,
+                        'language_code' => $keyword->languageCode,
+                    ],
+                    $keywordsResponse->keywords,
+                ));
 
-            return $snapshot->load('keywords');
-        });
+                $snapshot->apiUsages()->createMany([
+                    $this->usageData($website, $overviewResponse->endpoint, 'domain_overview', $overviewResponse->resultCount, $overviewResponse->cost, $overviewResponse->taskId, $requestedAt),
+                    $this->usageData($website, $keywordsResponse->endpoint, 'ranked_keywords', $keywordsResponse->resultCount, $keywordsResponse->cost, $keywordsResponse->taskId, $requestedAt),
+                ]);
+            });
+
+            $datasets = ['domain_overview', 'ranked_keywords'];
+        }
+
+        if (! in_array('backlink_overview', $datasets, true)) {
+            try {
+                $backlinkResponse = $this->backlinks->overview($domain);
+
+                $datasets[] = 'backlink_overview';
+                DB::transaction(function () use ($snapshot, $requestedAt, $backlinkResponse, $datasets): void {
+                    $overview = $backlinkResponse->overview;
+                    $snapshot->update([
+                        'backlinks' => $overview->backlinks,
+                        'referring_domains' => $overview->referringDomains,
+                        'referring_ips' => $overview->referringIps,
+                        'referring_subnets' => $overview->referringSubnets,
+                        'broken_backlinks' => $overview->brokenBacklinks,
+                        'domain_rank' => $overview->domainRank,
+                        'metadata' => ['data_source' => 'third_party_estimate', 'datasets' => $datasets],
+                    ]);
+                    $snapshot->apiUsages()->create(
+                        $this->usageData($snapshot->website, $backlinkResponse->endpoint, 'backlink_overview', $backlinkResponse->resultCount, $backlinkResponse->cost, $backlinkResponse->taskId, $requestedAt),
+                    );
+                });
+            } catch (DataForSEOException) {
+                $errors['backlink_overview'] = 'Backlink overview data was unavailable from the provider.';
+            }
+        }
+
+        if (! in_array('referring_domains', $datasets, true)) {
+            try {
+                $referringDomainsResponse = $this->backlinks->referringDomains($domain);
+
+                $datasets[] = 'referring_domains';
+                DB::transaction(function () use ($snapshot, $requestedAt, $referringDomainsResponse, $datasets): void {
+                    $snapshot->referringDomains()->createMany(array_map(
+                        fn (ReferringDomainData $domain): array => [
+                            'website_id' => $snapshot->website_id,
+                            'domain' => $domain->domain,
+                            'domain_rank' => $domain->domainRank,
+                            'backlinks_count' => $domain->backlinksCount,
+                            'first_seen' => $domain->firstSeen,
+                            'last_seen' => $domain->lastSeen,
+                        ],
+                        $referringDomainsResponse->domains,
+                    ));
+                    $snapshot->update(['metadata' => ['data_source' => 'third_party_estimate', 'datasets' => $datasets]]);
+                    $snapshot->apiUsages()->create(
+                        $this->usageData($snapshot->website, $referringDomainsResponse->endpoint, 'referring_domains', $referringDomainsResponse->resultCount, $referringDomainsResponse->cost, $referringDomainsResponse->taskId, $requestedAt),
+                    );
+                });
+            } catch (DataForSEOException) {
+                $errors['referring_domains'] = 'Referring domain data was unavailable from the provider.';
+            }
+        }
+
+        $snapshot->update([
+            'status' => $errors === [] ? SeoSnapshot::STATUS_COMPLETED : SeoSnapshot::STATUS_COMPLETED_WITH_ERRORS,
+            'metadata' => ['data_source' => 'third_party_estimate', 'datasets' => $datasets],
+            'errors' => $errors,
+            'completed_at' => now(),
+        ]);
+
+        return $snapshot->load('keywords', 'referringDomains');
     }
 
     /** @return array<string, mixed> */

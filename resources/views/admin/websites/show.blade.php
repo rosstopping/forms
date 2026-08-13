@@ -117,6 +117,7 @@
         'seoGeneration' => $seoGeneration,
         'seoSnapshot' => $seoSnapshot,
         'seoKeywords' => $seoKeywords,
+        'seoReferringDomains' => $seoReferringDomains,
         'seoFilter' => $seoFilter,
         'seoSort' => $seoSort,
         'seoDirection' => $seoDirection,

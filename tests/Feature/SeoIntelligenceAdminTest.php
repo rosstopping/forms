@@ -2,6 +2,7 @@
 
 use App\Jobs\GenerateSeoIntelligence;
 use App\Models\SeoKeyword;
+use App\Models\SeoReferringDomain;
 use App\Models\SeoSnapshot;
 use App\Models\User;
 use App\Models\Website;
@@ -109,12 +110,21 @@ test('the seo tab displays and filters locally stored keyword estimates', functi
         'top_10_keywords' => 18,
         'top_20_keywords' => 42,
         'estimated_organic_traffic' => 720,
+        'backlinks' => 872,
+        'referring_domains' => 74,
+        'broken_backlinks' => 9,
+        'domain_rank' => 42,
     ]);
     SeoKeyword::factory()->for($website)->for($snapshot, 'snapshot')->create([
         'keyword' => 'garden rooms doncaster',
         'position' => 12,
         'search_volume' => 390,
         'search_intent' => 'commercial',
+    ]);
+    SeoReferringDomain::factory()->for($website)->for($snapshot, 'snapshot')->create([
+        'domain' => 'publisher.example',
+        'domain_rank' => 71,
+        'backlinks_count' => 14,
     ]);
     SeoKeyword::factory()->for($website)->for($snapshot, 'snapshot')->create([
         'keyword' => 'unrelated informational query',
@@ -127,6 +137,9 @@ test('the seo tab displays and filters locally stored keyword estimates', functi
         ->assertSuccessful()
         ->assertSee('139')
         ->assertSee('~720')
+        ->assertSee('Backlinks')
+        ->assertSee('872')
+        ->assertSee('publisher.example')
         ->assertSee('garden rooms doncaster')
         ->assertDontSee('unrelated informational query')
         ->assertSee('Third-party market intelligence')

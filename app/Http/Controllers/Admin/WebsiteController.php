@@ -129,9 +129,15 @@ class WebsiteController extends Controller
         $seoSort = in_array($seoSort, ['position', 'search_volume', 'estimated_traffic', 'cpc'], true) ? $seoSort : 'position';
         $seoDirection = $request->string('seo_direction')->toString() === 'asc' ? 'asc' : 'desc';
         $seoKeywords = null;
+        $seoReferringDomains = collect();
         $strikingDistanceCount = 0;
 
         if ($seoSnapshot) {
+            $seoReferringDomains = $seoSnapshot->referringDomains()
+                ->orderByDesc('domain_rank')
+                ->orderByDesc('backlinks_count')
+                ->limit(10)
+                ->get();
             $strikingDistanceCount = $seoSnapshot->keywords()->whereBetween('position', [4, 20])->count();
             $seoKeywordsQuery = $seoSnapshot->keywords();
 
@@ -168,7 +174,7 @@ class WebsiteController extends Controller
         return view('admin.websites.show', compact(
             'website', 'users', 'availableMembers', 'canManageMembers', 'canManageWebsite',
             'searchConsoleReport', 'searchConsoleReportUnavailable', 'seoGeneration', 'seoSnapshot',
-            'seoKeywords', 'seoFilter', 'seoSort', 'seoDirection', 'strikingDistanceCount',
+            'seoKeywords', 'seoReferringDomains', 'seoFilter', 'seoSort', 'seoDirection', 'strikingDistanceCount',
             'dataForSeoConfigured',
         ));
     }

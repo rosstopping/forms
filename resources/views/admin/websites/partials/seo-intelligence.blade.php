@@ -92,6 +92,77 @@
     </section>
 
     @if ($seoSnapshot)
+        <section class="rounded-xl border bg-white shadow-sm" aria-labelledby="backlinks-title">
+            <div class="border-b border-slate-950/10 p-4">
+                <h3 id="backlinks-title" class="text-balance text-base font-semibold text-slate-950">Backlinks</h3>
+                <p class="mt-1 text-pretty text-base text-slate-600 sm:text-sm">Who links to this website, based on locally stored DataForSEO estimates.</p>
+            </div>
+
+            @if (isset($seoSnapshot->errors['backlink_overview']) || isset($seoSnapshot->errors['referring_domains']))
+                <div class="border-b border-amber-950/10 bg-amber-50 p-4">
+                    <p class="text-base text-amber-800 sm:text-sm">Some backlink data was unavailable when this snapshot was generated. The successful SEO data has been retained.</p>
+                </div>
+            @endif
+
+            <div class="@container p-4">
+                <dl class="grid grid-cols-2 gap-y-5 @2xl:grid-cols-4">
+                    <div class="pr-4">
+                        <dt class="truncate font-medium text-slate-700">Backlinks</dt>
+                        <dd class="mt-1 text-2xl font-semibold tabular-nums text-slate-950">{{ is_null($seoSnapshot->backlinks) ? '—' : number_format($seoSnapshot->backlinks) }}</dd>
+                    </div>
+                    <div class="border-l border-slate-950/10 pl-4 @2xl:pr-4">
+                        <dt class="truncate font-medium text-slate-700">Referring domains</dt>
+                        <dd class="mt-1 text-2xl font-semibold tabular-nums text-slate-950">{{ is_null($seoSnapshot->referring_domains) ? '—' : number_format($seoSnapshot->referring_domains) }}</dd>
+                    </div>
+                    <div class="pr-4 @2xl:border-l @2xl:border-slate-950/10 @2xl:pl-4">
+                        <dt class="truncate font-medium text-slate-700">Domain rank</dt>
+                        <dd class="mt-1 text-2xl font-semibold tabular-nums text-slate-950">{{ $seoSnapshot->domain_rank ?? '—' }}</dd>
+                    </div>
+                    <div class="border-l border-slate-950/10 pl-4">
+                        <dt class="truncate font-medium text-slate-700">Broken backlinks</dt>
+                        <dd class="mt-1 text-2xl font-semibold tabular-nums text-slate-950">{{ is_null($seoSnapshot->broken_backlinks) ? '—' : number_format($seoSnapshot->broken_backlinks) }}</dd>
+                    </div>
+                </dl>
+            </div>
+
+            <div class="border-t border-slate-950/10 p-4">
+                <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                        <h4 class="text-balance font-semibold text-slate-950">Strongest referring domains</h4>
+                        <p class="text-pretty text-base text-slate-600 sm:text-sm">The highest-ranked domains in the stored sample.</p>
+                    </div>
+                    @if ($seoSnapshot->referring_domains > $seoReferringDomains->count())
+                        <p class="text-base tabular-nums text-slate-500 sm:text-sm">Showing {{ number_format($seoReferringDomains->count()) }} of {{ number_format($seoSnapshot->referring_domains) }}</p>
+                    @endif
+                </div>
+
+                <div class="-mx-4 -my-2 mt-4 overflow-x-auto whitespace-nowrap">
+                    <div class="inline-block min-w-full px-4 py-2 align-middle">
+                        <table class="w-full divide-y divide-slate-950/10">
+                            <thead>
+                                <tr>
+                                    <th class="whitespace-nowrap py-3 pr-4 text-left">Domain</th>
+                                    <th class="whitespace-nowrap px-4 py-3 text-right">Domain rank</th>
+                                    <th class="whitespace-nowrap py-3 pl-4 text-right">Backlinks</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-950/5">
+                                @forelse ($seoReferringDomains as $referringDomain)
+                                    <tr>
+                                        <td class="py-3 pr-4 font-medium text-slate-950">{{ $referringDomain->domain }}</td>
+                                        <td class="px-4 py-3 text-right tabular-nums text-slate-700">{{ $referringDomain->domain_rank ?? '—' }}</td>
+                                        <td class="py-3 pl-4 text-right tabular-nums text-slate-700">{{ number_format($referringDomain->backlinks_count) }}</td>
+                                    </tr>
+                                @empty
+                                    <tr><td colspan="3" class="py-8 text-center text-slate-500">No referring domains were returned for this snapshot.</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <section class="rounded-xl border bg-white shadow-sm" aria-labelledby="ranking-keywords-title">
             <div class="@container border-b border-slate-200 p-4">
             <div class="flex flex-col gap-4 @4xl:flex-row @4xl:items-end @4xl:justify-between">
