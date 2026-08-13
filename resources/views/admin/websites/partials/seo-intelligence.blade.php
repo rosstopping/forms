@@ -112,6 +112,9 @@
                                 <div class="flex flex-wrap items-center gap-2">
                                     <p class="rounded-full bg-teal-50 px-2 py-1 font-medium text-teal-800 ring-1 ring-teal-700/10">{{ str($opportunity->type)->headline() }}</p>
                                     <p class="tabular-nums text-slate-500">Priority {{ number_format((float) $opportunity->priority_score) }}/100</p>
+                                    @if ($opportunity->status === 'queued')
+                                        <p class="rounded-full bg-slate-100 px-2 py-1 font-medium text-slate-700">Added to content todos</p>
+                                    @endif
                                 </div>
                                 <h4 class="mt-3 text-balance font-semibold text-slate-950">{{ $opportunity->title }}</h4>
                                 <p class="mt-1 text-pretty text-base text-slate-600 sm:text-sm">{{ $opportunity->summary }}</p>
@@ -145,6 +148,24 @@
                                 @if (data_get($metrics, 'ranking_url'))
                                     <div class="mt-3 text-base font-medium sm:text-sm">
                                         <a href="{{ data_get($metrics, 'ranking_url') }}" target="_blank" rel="noopener noreferrer" class="text-teal-700 underline decoration-teal-700/30 underline-offset-4 hover:decoration-teal-700">Open ranking page</a>
+                                    </div>
+                                @endif
+                                @if ($canManageWebsite && $opportunity->status === 'open')
+                                    <div class="mt-4">
+                                        @if ($website->repository)
+                                            <form method="POST" action="{{ route('admin.seo-opportunities.queue', [$website, $opportunity]) }}">
+                                                @csrf
+                                                <button type="submit" class="relative rounded-md border border-slate-950/10 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600">
+                                                    Add to content todos
+                                                    <span class="absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2 pointer-fine:hidden" aria-hidden="true"></span>
+                                                </button>
+                                            </form>
+                                        @else
+                                            <a href="{{ route('admin.website-repositories.create', $website) }}" class="relative inline-flex rounded-md border border-slate-950/10 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600">
+                                                Connect GitHub to add todo
+                                                <span class="absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2 pointer-fine:hidden" aria-hidden="true"></span>
+                                            </a>
+                                        @endif
                                     </div>
                                 @endif
                             </div>

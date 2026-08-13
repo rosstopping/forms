@@ -7,7 +7,7 @@
 - [x] First-party SEO data already lives behind `SearchConsoleConnection`, `SearchConsoleClient`, `SearchOpportunityFinder`, and `SearchOpportunity`.
 - [x] Technical/on-page data already lives behind `WebsiteCrawler`, `WebsiteHealthAuditor`, `PageSpeedInsightsClient`, and immutable `WebsiteHealthReport` observations.
 - [x] Existing integrations use dedicated clients, Laravel HTTP, explicit timeouts, retries, configuration in `services.php`, queued unique jobs, and mocked HTTP tests.
-- [x] Existing admin website pages and partials are the appropriate UI location; the SEO Intelligence feature should be a distinct website section/tab with explicit “DataForSEO estimate” labels.
+- [x] Existing admin website pages and partials are the appropriate UI location; the SEO Intelligence feature is a distinct website tab with provider-neutral “third-party estimate” labels.
 
 ## Recommended database design
 
@@ -66,6 +66,7 @@ Phases 1–5 and the initial admin vertical slice are complete. Next: finish ref
 - [x] Backlink overview and referring-domain panel.
 - [x] Organic competitor panel.
 - [x] Generated-opportunity panel with evidence, recommendation, priority score, and ranking-page action.
+- [x] Approval-first “Add to content todos” action for generated SEO recommendations, with duplicate protection and removal reopening the recommendation.
 - [ ] Scheduled refresh remains part of Phase 6.
 
 ### Ranked keyword collection correction

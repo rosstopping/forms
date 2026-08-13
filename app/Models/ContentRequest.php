@@ -39,4 +39,9 @@ class ContentRequest extends Model
     {
         return $this->hasOne(SearchOpportunity::class);
     }
+
+    public function seoOpportunity(): HasOne
+    {
+        return $this->hasOne(SeoOpportunity::class);
+    }
 }

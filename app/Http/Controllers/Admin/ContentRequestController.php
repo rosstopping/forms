@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreContentRequestRequest;
 use App\Models\ContentRequest;
 use App\Models\SearchOpportunity;
+use App\Models\SeoOpportunity;
 use App\Models\Website;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -33,6 +34,10 @@ class ContentRequestController extends Controller
         DB::transaction(function () use ($contentRequest): void {
             $contentRequest->searchOpportunity?->update([
                 'status' => SearchOpportunity::STATUS_OPEN,
+                'content_request_id' => null,
+            ]);
+            $contentRequest->seoOpportunity?->update([
+                'status' => SeoOpportunity::STATUS_OPEN,
                 'content_request_id' => null,
             ]);
             $contentRequest->delete();

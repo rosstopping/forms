@@ -147,7 +147,7 @@ class WebsiteController extends Controller
                 ->get();
             $seoOpportunities = $seoSnapshot->opportunities()
                 ->with('keyword')
-                ->where('status', 'open')
+                ->whereIn('status', ['open', 'queued'])
                 ->orderByDesc('priority_score')
                 ->limit(20)
                 ->get();

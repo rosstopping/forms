@@ -21,10 +21,12 @@ class SeoOpportunity extends Model
 
     public const STATUS_OPEN = 'open';
 
+    public const STATUS_QUEUED = 'queued';
+
     /** @use HasFactory<SeoOpportunityFactory> */
     use HasFactory;
 
-    protected $fillable = ['website_id', 'seo_snapshot_id', 'seo_keyword_id', 'fingerprint', 'type', 'status', 'title', 'summary', 'recommendation', 'metrics', 'priority_score'];
+    protected $fillable = ['website_id', 'content_request_id', 'seo_snapshot_id', 'seo_keyword_id', 'fingerprint', 'type', 'status', 'title', 'summary', 'recommendation', 'metrics', 'priority_score'];
 
     protected $attributes = ['status' => self::STATUS_OPEN];
 
@@ -36,6 +38,11 @@ class SeoOpportunity extends Model
     public function website(): BelongsTo
     {
         return $this->belongsTo(Website::class);
+    }
+
+    public function contentRequest(): BelongsTo
+    {
+        return $this->belongsTo(ContentRequest::class);
     }
 
     public function snapshot(): BelongsTo
