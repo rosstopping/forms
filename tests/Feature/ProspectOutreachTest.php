@@ -252,21 +252,30 @@ it('prefers the Loom preloaded video thumbnail over its open graph image', funct
     Http::assertSent(fn (Request $request): bool => $request->url() === 'https://www.loom.com/share/prospect-video');
 });
 
-it('falls back to the Loom open graph image when no preload thumbnail exists', function () {
+it('uses a Loom session thumbnail from open graph metadata as a fallback', function () {
     Http::preventStrayRequests();
     Http::fake([
-        'https://www.loom.com/share/prospect-video' => Http::response('<meta property="og:image" content="https://cdn.loom.com/prospect-thumbnail.jpg">'),
+        'https://www.loom.com/share/prospect-video' => Http::response('<meta property="og:image" content="https://cdn.loom.com/sessions/thumbnails/prospect-thumbnail.jpg">'),
     ]);
 
     expect(app(LoomVideoThumbnail::class)->fetch('https://www.loom.com/share/prospect-video'))
-        ->toBe('https://cdn.loom.com/prospect-thumbnail.jpg');
+        ->toBe('https://cdn.loom.com/sessions/thumbnails/prospect-thumbnail.jpg');
+});
+
+it('rejects Looms generic social banner', function () {
+    Http::preventStrayRequests();
+    Http::fake([
+        'https://www.loom.com/share/prospect-video' => Http::response('<meta property="og:image" content="https://cdn.loom.com/assets/img/og/loom-banner.png">'),
+    ]);
+
+    expect(app(LoomVideoThumbnail::class)->fetch('https://www.loom.com/share/prospect-video'))->toBeNull();
 });
 
 it('stores the Loom thumbnail when a prospect is created', function () {
     Queue::fake();
     Http::preventStrayRequests();
     Http::fake([
-        'https://www.loom.com/share/prospect-video' => Http::response('<meta property="og:image" content="https://cdn.loom.com/prospect-thumbnail.jpg">'),
+        'https://www.loom.com/share/prospect-video' => Http::response('<link rel="preload" href="https://cdn.loom.com/sessions/thumbnails/prospect-thumbnail.jpg" as="image">'),
     ]);
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
 
@@ -276,7 +285,7 @@ it('stores the Loom thumbnail when a prospect is created', function () {
         'showcase_video_url' => 'https://www.loom.com/share/prospect-video',
     ])->assertRedirect();
 
-    expect(Prospect::query()->sole()->showcase_video_thumbnail_url)->toBe('https://cdn.loom.com/prospect-thumbnail.jpg');
+    expect(Prospect::query()->sole()->showcase_video_thumbnail_url)->toBe('https://cdn.loom.com/sessions/thumbnails/prospect-thumbnail.jpg');
 });
 
 it('does not request metadata from non-Loom video URLs', function () {

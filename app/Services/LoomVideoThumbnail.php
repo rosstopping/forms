@@ -17,7 +17,7 @@ class LoomVideoThumbnail
 
         try {
             $response = Http::accept('text/html')
-                ->withUserAgent(config('app.name').' Video Preview')
+                ->withUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36')
                 ->connectTimeout(3)
                 ->timeout(5)
                 ->withOptions(['allow_redirects' => false])
@@ -60,17 +60,25 @@ class LoomVideoThumbnail
         $xpath = new DOMXPath($document);
 
         foreach ([
-            "//link[contains(concat(' ', normalize-space(translate(@rel, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz')), ' '), ' preload ') and translate(@as, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz') = 'image']/@href",
+            "//link[contains(concat(' ', normalize-space(translate(@rel, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz')), ' '), ' preload ') and translate(@as, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz') = 'image' and contains(@href, '/sessions/thumbnails/')]/@href",
             "//meta[@property='og:image']/@content",
             "//meta[@name='twitter:image']/@content",
         ] as $query) {
             $imageUrl = trim((string) $xpath->evaluate("string({$query})"));
 
-            if (filter_var($imageUrl, FILTER_VALIDATE_URL) && parse_url($imageUrl, PHP_URL_SCHEME) === 'https') {
+            if ($this->isSessionThumbnail($imageUrl)) {
                 return $imageUrl;
             }
         }
 
         return null;
+    }
+
+    protected function isSessionThumbnail(string $imageUrl): bool
+    {
+        return filter_var($imageUrl, FILTER_VALIDATE_URL)
+            && parse_url($imageUrl, PHP_URL_SCHEME) === 'https'
+            && strtolower((string) parse_url($imageUrl, PHP_URL_HOST)) === 'cdn.loom.com'
+            && str_starts_with((string) parse_url($imageUrl, PHP_URL_PATH), '/sessions/thumbnails/');
     }
 }

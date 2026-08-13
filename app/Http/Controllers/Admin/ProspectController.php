@@ -86,9 +86,7 @@ class ProspectController extends Controller
         $draftChanged = $prospect->outreach_subject !== ($data['outreach_subject'] ?? null)
             || $prospect->outreach_body !== ($data['outreach_body'] ?? null)
             || $prospect->showcase_video_url !== ($data['showcase_video_url'] ?? null);
-        if ($prospect->showcase_video_url !== ($data['showcase_video_url'] ?? null) || blank($prospect->showcase_video_thumbnail_url)) {
-            $data['showcase_video_thumbnail_url'] = $loomVideoThumbnail->fetch($data['showcase_video_url'] ?? null);
-        }
+        $data['showcase_video_thumbnail_url'] = $loomVideoThumbnail->fetch($data['showcase_video_url'] ?? null);
         if ($draftChanged) {
             $data['approved_at'] = null;
             $data['approved_by'] = null;
