@@ -110,8 +110,8 @@ class ProspectController extends Controller
         return [
             'analysis_status' => 'skipped',
             'status' => 'drafted',
-            'outreach_subject' => 'A website idea for '.$businessName,
-            'outreach_body' => "Hi there,\n\nI came across {$businessName} and couldn't find a website linked from the public business listing. I wanted to check whether a new website might be useful.\n\nSitewell includes a professionally built website alongside ongoing website management, forms, lead tracking, health checks, fixes, and email reports.\n\nThere is no obligation at all—if you already have a website, or this is not relevant, please feel free to disregard this message.\n\nBest wishes",
+            'outreach_subject' => 'Quick one for '.$businessName,
+            'outreach_body' => "Hi there,\n\nI came across {$businessName} and couldn't see a website linked from the business listing. Thought Sitewell might be handy if you need one.\n\nI've included a quick video below so you can see what it does. If it looks useful, just reply and we can have a chat.\n\nCheers",
         ];
     }
 }

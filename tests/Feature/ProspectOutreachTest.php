@@ -10,6 +10,19 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\URL;
 
+beforeEach(function (): void {
+    config()->set('services.sitewell.showcase_video_url', 'https://video.example.com/sitewell-showcase');
+});
+
+it('instructs generated outreach to stay casual and omit audit findings', function () {
+    $instructions = (string) app(ProspectOutreachWriter::class)->instructions();
+
+    expect($instructions)
+        ->toContain('extremely casual')
+        ->toContain('showcase video')
+        ->toContain('Do not list, summarise, or mention website audit findings or fixes');
+});
+
 it('adds a prospect and automatically queues website research', function () {
     Queue::fake();
     $user = User::factory()->create(['role' => User::ROLE_ADMIN]);
@@ -42,7 +55,9 @@ it('adds a website opportunity without queueing website research', function () {
     expect($prospect->website_url)->toBeNull()
         ->and($prospect->analysis_status)->toBe('skipped')
         ->and($prospect->status)->toBe('drafted')
-        ->and($prospect->outreach_subject)->toBe('A website idea for Bristol Builders');
+        ->and($prospect->outreach_subject)->toBe('Quick one for Bristol Builders')
+        ->and($prospect->outreach_body)->toContain('quick video below')
+        ->and($prospect->outreach_body)->not->toContain('health checks');
     Queue::assertNotPushed(AnalyzeProspect::class);
 });
 
@@ -54,6 +69,7 @@ it('restricts outreach to Sitewell administrators', function () {
     $this->get(route('admin.prospects.show', $prospect))->assertForbidden();
     $this->post(route('admin.prospects.analyse', $prospect))->assertForbidden();
     $this->post(route('admin.prospects.approve', $prospect))->assertForbidden();
+    $this->post(route('admin.prospects.test-email', $prospect))->assertForbidden();
     $this->post(route('admin.prospects.send', $prospect))->assertForbidden();
     $this->get(route('admin.dashboard'))->assertDontSee('Outreach');
 });
@@ -140,6 +156,40 @@ it('requires approval before sending outreach and schedules a follow-up', functi
     Mail::assertSent(ProspectOutreach::class, fn (ProspectOutreach $mail): bool => $mail->hasTo($prospect->email));
 });
 
+it('sends the exact saved draft as a test to the administrator without contacting the prospect', function () {
+    Mail::fake();
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN, 'email' => 'admin@sitewell.example']);
+    $prospect = Prospect::factory()->for($admin, 'owner')->create([
+        'email' => 'prospect@example.com',
+        'status' => 'drafted',
+        'outreach_subject' => 'Quick one for Acme Plumbing',
+        'outreach_body' => "Hi Alex,\n\nI've included a quick video below.",
+        'approved_at' => null,
+        'sent_at' => null,
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.prospects.show', $prospect))
+        ->assertSuccessful()
+        ->assertSee('Send test to admin@sitewell.example');
+
+    $this->post(route('admin.prospects.test-email', $prospect))
+        ->assertRedirect()
+        ->assertSessionHas('status', 'Test email sent to admin@sitewell.example.');
+
+    Mail::assertSent(ProspectOutreach::class, function (ProspectOutreach $mail) use ($admin, $prospect): bool {
+        $mail->assertHasSubject($prospect->outreach_subject)
+            ->assertSeeInHtml($prospect->outreach_body)
+            ->assertSeeInHtml('https://video.example.com/sitewell-showcase');
+
+        return $mail->hasTo($admin->email) && ! $mail->hasTo($prospect->email);
+    });
+
+    expect($prospect->fresh()->sent_at)->toBeNull()
+        ->and($prospect->fresh()->approved_at)->toBeNull()
+        ->and($prospect->activities()->where('type', 'test_email_sent')->exists())->toBeTrue();
+});
+
 it('will not send to a suppressed prospect', function () {
     Mail::fake();
     $user = User::factory()->create(['role' => User::ROLE_ADMIN]);
@@ -152,6 +202,24 @@ it('will not send to a suppressed prospect', function () {
     ]);
 
     $this->actingAs($user)->post(route('admin.prospects.send', $prospect))->assertUnprocessable();
+    Mail::assertNothingSent();
+});
+
+it('will not send test or live outreach without the showcase video configured', function () {
+    Mail::fake();
+    config()->set('services.sitewell.showcase_video_url');
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $prospect = Prospect::factory()->for($admin, 'owner')->create([
+        'outreach_subject' => 'Quick one',
+        'outreach_body' => 'Hi there.',
+        'approved_at' => now(),
+    ]);
+
+    $this->actingAs($admin)
+        ->post(route('admin.prospects.test-email', $prospect))
+        ->assertUnprocessable();
+    $this->post(route('admin.prospects.send', $prospect))->assertUnprocessable();
+
     Mail::assertNothingSent();
 });
 
@@ -177,35 +245,35 @@ it('shares a time-limited website review with the prospect', function () {
     $this->get(route('prospect-reports.show', $prospect))->assertForbidden();
 });
 
-it('makes the outreach email warmer and includes the private report link', function () {
+it('renders a casual outreach email with the showcase video and no audit details', function () {
     $prospect = Prospect::factory()->create([
         'business_name' => 'Acme Plumbing',
-        'outreach_subject' => 'A quick website review for Acme Plumbing',
-        'outreach_body' => "Hi Alex,\n\nI had a look at your website and included a short review.",
+        'outreach_subject' => 'Quick one for Acme Plumbing',
+        'outreach_body' => "Hi Alex,\n\nI've included a quick video below so you can see what Sitewell does.",
     ]);
 
     (new ProspectOutreach($prospect))
-        ->assertHasSubject('A quick website review for Acme Plumbing')
-        ->assertSeeInHtml('View your website review')
-        ->assertSeeInHtml('This private link expires in 30 days')
-        ->assertSeeInHtml('What is Sitewell?')
-        ->assertSeeInHtml('Forms, automatic acknowledgements, and a simple lead CRM')
-        ->assertSeeInHtml('Google Business Profile posts and review replies')
-        ->assertSeeInHtml('signature=')
-        ->assertSeeInHtml('I had a look at your website');
+        ->assertHasSubject('Quick one for Acme Plumbing')
+        ->assertSeeInHtml('Watch the quick video')
+        ->assertSeeInHtml('https://video.example.com/sitewell-showcase')
+        ->assertSeeInHtml('quick video below')
+        ->assertDontSeeInHtml('View your website review')
+        ->assertDontSeeInHtml('What is Sitewell?')
+        ->assertDontSeeInHtml('Website health checks')
+        ->assertDontSeeInHtml('signature=');
 });
 
-it('does not include an audit link when offering a prospect a new website', function () {
+it('includes the showcase video when offering a prospect a new website', function () {
     $prospect = Prospect::factory()->create([
         'website_url' => null,
-        'outreach_subject' => 'A website idea for Acme Plumbing',
-        'outreach_body' => 'Hi there, I could not find a website linked from your public listing.',
+        'outreach_subject' => 'Quick one for Acme Plumbing',
+        'outreach_body' => 'Hi there, I could not see a website linked from the business listing.',
     ]);
 
     (new ProspectOutreach($prospect))
-        ->assertHasSubject('A website idea for Acme Plumbing')
-        ->assertSeeInHtml('A website idea for your business')
-        ->assertSeeInHtml('A professionally built website included')
+        ->assertHasSubject('Quick one for Acme Plumbing')
+        ->assertSeeInHtml('Watch the quick video')
+        ->assertSeeInHtml('https://video.example.com/sitewell-showcase')
         ->assertDontSeeInHtml('View your website review')
         ->assertDontSeeInHtml('signature=');
 });

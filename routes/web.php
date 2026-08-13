@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\ProspectApprovalController;
 use App\Http\Controllers\Admin\ProspectController;
 use App\Http\Controllers\Admin\ProspectDiscoveryController;
 use App\Http\Controllers\Admin\ProspectSendController;
+use App\Http\Controllers\Admin\ProspectTestEmailController;
 use App\Http\Controllers\Admin\RemediationRunController;
 use App\Http\Controllers\Admin\SearchConsoleController;
 use App\Http\Controllers\Admin\SearchOpportunityController;
@@ -144,6 +145,7 @@ Route::middleware(['web', 'auth'])->prefix('admin')->name('admin.')->group(funct
         Route::post('prospects/{prospect}/analyse', ProspectAnalysisController::class)->name('prospects.analyse');
         Route::post('prospects/{prospect}/approve', ProspectApprovalController::class)->name('prospects.approve');
         Route::post('prospects/{prospect}/send', ProspectSendController::class)->name('prospects.send');
+        Route::post('prospects/{prospect}/test-email', ProspectTestEmailController::class)->name('prospects.test-email');
         Route::resource('prospects', ProspectController::class);
     });
     Route::resource('users', UserController::class)->only(['index', 'create', 'store', 'edit', 'update']);

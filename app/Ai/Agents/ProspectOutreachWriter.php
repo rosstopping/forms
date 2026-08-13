@@ -14,7 +14,7 @@ class ProspectOutreachWriter implements Agent, HasStructuredOutput
 
     public function instructions(): Stringable|string
     {
-        return 'Write a warm, concise, respectful cold outreach email in British English using only the supplied verified website findings. Sound like a helpful person sharing a useful observation, not a sales script. Do not invent claims, imply an existing relationship, use manipulative urgency, or mention AI. Focus on at most two useful issues and invite the reader to look at their website review. Return a plain subject and plain-text body ready for human approval.';
+        return 'Write an extremely casual, short cold outreach email in British English. It should sound like a relaxed personal note, not marketing copy or a sales script. Mention that a quick showcase video is included below so they can see what Sitewell does. Do not list, summarise, or mention website audit findings or fixes. Do not invent claims, imply an existing relationship, use manipulative urgency, or mention AI. End with a low-pressure invitation to reply if it looks useful. Return a plain subject and plain-text body ready for human approval.';
     }
 
     public function schema(JsonSchema $schema): array

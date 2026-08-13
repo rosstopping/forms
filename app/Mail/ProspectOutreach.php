@@ -9,7 +9,6 @@ use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\URL;
 
 class ProspectOutreach extends Mailable
 {
@@ -38,11 +37,7 @@ class ProspectOutreach extends Mailable
         return new Content(
             view: 'mail.prospects.outreach',
             with: [
-                'reportUrl' => $this->prospect->website_url ? URL::temporarySignedRoute(
-                    'prospect-reports.show',
-                    now()->addDays(30),
-                    $this->prospect,
-                ) : null,
+                'showcaseVideoUrl' => config('services.sitewell.showcase_video_url'),
             ],
         );
     }

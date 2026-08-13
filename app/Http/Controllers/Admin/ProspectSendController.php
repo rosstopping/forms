@@ -21,6 +21,7 @@ class ProspectSendController extends Controller
         abort_if($prospect->sent_at !== null, 422, 'This outreach email has already been sent.');
         abort_if($prospect->suppressed_at !== null, 422, 'This prospect is on the suppression list.');
         abort_if(blank($prospect->email), 422, 'Add an email address before sending.');
+        abort_if(blank(config('services.sitewell.showcase_video_url')), 422, 'Configure the showcase video URL before sending.');
 
         Mail::to($prospect->email)->send(new ProspectOutreach($prospect));
         $prospect->update(['status' => 'contacted', 'sent_at' => now(), 'next_follow_up_at' => now()->addWeek()]);

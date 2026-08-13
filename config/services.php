@@ -79,4 +79,8 @@ return [
         ],
     ],
 
+    'sitewell' => [
+        'showcase_video_url' => env('SITEWELL_SHOWCASE_VIDEO_URL'),
+    ],
+
 ];

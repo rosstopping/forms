@@ -66,7 +66,8 @@ it('imports businesses without websites as website opportunities and skips the a
         ->and($prospect->email)->toBe('hello@bristol-builders.example')
         ->and(data_get($prospect->contact_details, 'phones.0.value'))->toBe('0117 123 4567')
         ->and(data_get($prospect->contact_details, 'addresses.0.value'))->toBe('High Street, Bristol')
-        ->and($prospect->outreach_body)->toContain("couldn't find a website linked from the public business listing");
+        ->and($prospect->outreach_body)->toContain("couldn't see a website linked from the business listing")
+        ->and($prospect->outreach_body)->toContain('quick video below');
     Queue::assertNotPushed(AnalyzeProspect::class);
 });
 

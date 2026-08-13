@@ -29,7 +29,7 @@ class AnalyzeProspect implements ShouldQueue
 
         try {
             $analysis = $analyzer->analyze($this->prospect->website_url);
-            $draft = $this->draft($writer, collect($analysis['findings'])->whereIn('severity', ['warning', 'failed'])->take(2)->all());
+            $draft = $this->draft($writer);
             $this->prospect->update([
                 'analysis_status' => 'completed', 'opportunity_score' => $analysis['score'], 'findings' => $analysis['findings'],
                 'contact_details' => $analysis['contacts'], 'email' => $this->prospect->email ?: data_get($analysis, 'contacts.emails.0.value'),
@@ -44,26 +44,19 @@ class AnalyzeProspect implements ShouldQueue
         }
     }
 
-    /** @param array<int, array<string, mixed>> $findings
-     * @return array{subject: string, body: string}
-     */
-    protected function draft(ProspectOutreachWriter $writer, array $findings): array
+    /** @return array{subject: string, body: string} */
+    protected function draft(ProspectOutreachWriter $writer): array
     {
-        if ($findings === []) {
-            return ['subject' => 'A quick website review for '.$this->prospect->business_name, 'body' => 'Hi '.($this->prospect->contact_name ?: 'there').",\n\nI had a look at your website and it appears to cover the essentials well. I have put together a short review in case it is useful.\n\nThere is no obligation at all—if you would like to talk through any ideas afterwards, just reply to this email.\n\nBest wishes"];
-        }
-
         try {
-            $response = $writer->prompt(json_encode(['business' => $this->prospect->business_name, 'contact' => $this->prospect->contact_name, 'website' => $this->prospect->website_url, 'findings' => $findings], JSON_THROW_ON_ERROR));
+            $response = $writer->prompt(json_encode(['business' => $this->prospect->business_name, 'contact' => $this->prospect->contact_name, 'website' => $this->prospect->website_url], JSON_THROW_ON_ERROR));
 
             return ['subject' => $response['subject'], 'body' => $response['body']];
         } catch (Throwable) {
-            $issues = collect($findings)->take(2)->pluck('message')->implode(' ');
             $name = $this->prospect->contact_name ?: 'there';
 
             return [
-                'subject' => 'A quick website review for '.$this->prospect->business_name,
-                'body' => "Hi {$name},\n\nI had a look at your website and noticed a couple of things that may be worth reviewing: {$issues}\n\nI have included a short website review below. There is no obligation at all—if you would like to talk through any of it, just reply to this email.\n\nBest wishes",
+                'subject' => 'Quick one for '.$this->prospect->business_name,
+                'body' => "Hi {$name},\n\nI came across {$this->prospect->business_name} and thought Sitewell might be useful.\n\nI've included a quick video below so you can see what it does. If it looks interesting, just reply and we can have a chat.\n\nCheers",
             ];
         }
     }
