@@ -38,11 +38,34 @@
         </section>
     @endif
 
-    @if ($aiPrompt)
-        @php
-            $remediationRun = $report->remediationRuns->first();
-            $hasRemediableFindings = collect($report->checks)->whereIn('status', ['warning', 'failed'])->isNotEmpty() || $report->pages->contains(fn ($page) => collect($page->checks)->whereIn('status', ['warning', 'failed'])->isNotEmpty());
-        @endphp
+    @php
+        $remediationRun = $report->remediationRuns->first();
+        $hasRemediableFindings = collect($report->checks)->whereIn('status', ['warning', 'failed'])->isNotEmpty() || $report->pages->contains(fn ($page) => collect($page->checks)->whereIn('status', ['warning', 'failed'])->isNotEmpty());
+        $pixelEligiblePages = $report->pages->filter(fn ($page) => collect($page->checks)->whereIn('status', ['warning', 'failed'])->whereIn('key', ['page_title', 'meta_description'])->isNotEmpty());
+        $reviewablePixelOptimisations = $report->pages->flatMap->optimisations->whereIn('status', [\App\Enums\OptimisationStatus::Draft, \App\Enums\OptimisationStatus::Approved]);
+    @endphp
+    @if ($canManageWebsite || $aiPrompt)
+        <div class="grid gap-4 lg:grid-cols-2">
+        @if ($canManageWebsite && $report->status === 'completed' && $pixelEligiblePages->isNotEmpty())
+            <section class="rounded-lg border border-teal-200 bg-teal-50 p-4 shadow-sm">
+                <p class="text-xs font-medium uppercase tracking-wide text-teal-700">Pixel remediation</p>
+                <h2 class="mt-1 font-semibold text-teal-950">Prepare Pixel fixes</h2>
+                <p class="mt-1 text-sm text-teal-800">Generate structured AI fixes for all {{ $pixelEligiblePages->count() }} eligible {{ Str::plural('page', $pixelEligiblePages->count()) }}. Review is required before anything becomes live.</p>
+                <div class="mt-4 flex flex-wrap gap-2">
+                    <form method="POST" action="{{ route('admin.report-optimisations.generate', [$report->website, $report]) }}">
+                        @csrf
+                        <button type="submit" class="rounded-md bg-teal-700 px-3 py-2 text-sm font-medium text-white hover:bg-teal-800">Generate all Pixel fixes</button>
+                    </form>
+                    @if ($reviewablePixelOptimisations->isNotEmpty())
+                        <form method="POST" action="{{ route('admin.report-optimisations.deploy', [$report->website, $report]) }}">
+                            @csrf
+                            <button type="submit" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">Approve &amp; deploy all ({{ $reviewablePixelOptimisations->count() }})</button>
+                        </form>
+                    @endif
+                </div>
+            </section>
+        @endif
+        @if ($aiPrompt)
         @if ($remediationRun)
             <section class="rounded-lg border border-blue-200 bg-blue-50 p-4 text-blue-900">
                 <p class="text-xs font-medium uppercase tracking-wide text-blue-700">GitHub remediation</p>
@@ -87,6 +110,8 @@
                 <a href="{{ route('admin.website-repositories.create', $report->website) }}" class="mt-3 inline-flex rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">Connect GitHub</a>
             </section>
         @endif
+        @endif
+        </div>
     @endif
 
     @if ($report->status === 'failed')
@@ -201,9 +226,11 @@
                                     @endforeach
                                 </div>
                             </div>
-                            <div class="mt-4 flex justify-end border-t border-slate-100 pt-4">
-                                <a href="{{ route('admin.website-health-report-pages.show', [$report->website, $report, $page]) }}" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">View SEO optimisations</a>
-                            </div>
+                            @if ($issues->isNotEmpty())
+                                <div class="mt-4 flex justify-end border-t border-slate-100 pt-4">
+                                    <a href="{{ route('admin.website-health-report-pages.show', [$report->website, $report, $page]) }}" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">View SEO recommendations</a>
+                                </div>
+                            @endif
                         </details>
                     @endforeach
                 </div>

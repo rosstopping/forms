@@ -45,11 +45,12 @@ class WebsiteHealthReportController extends Controller
         $websiteHealthReport->load([
             'website.repository',
             'remediationRuns' => fn ($query) => $query->with('repository')->latest(),
-            'pages' => fn ($query) => $query->orderBy('depth')->orderBy('url'),
+            'pages' => fn ($query) => $query->with('optimisations')->orderBy('depth')->orderBy('url'),
         ]);
 
         return view('admin.website-health-reports.show', [
             'report' => $websiteHealthReport,
+            'canManageWebsite' => $website->isManageableBy($request->user()),
             'aiPrompt' => $request->user()?->isAdmin() && $websiteHealthReport->status === WebsiteHealthReport::STATUS_COMPLETED
                 ? $this->promptGenerator->generate($websiteHealthReport)
                 : null,

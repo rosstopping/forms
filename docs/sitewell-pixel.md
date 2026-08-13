@@ -114,6 +114,9 @@ This document is the source of truth for the phased Sitewell Pixel rollout.
 - Sitewell treats AI output as untrusted: it allow-lists types, enforces SEO lengths, sanitizes values, rejects unchanged/duplicate output, and stores accepted results as immutable drafts.
 - **Approve & deploy all** is the single human publication boundary for the reviewed page set. It records an individual approval/deployment and version history for every fix.
 - Expanding one-click generation to body text, links, image alt text, and schema requires the crawler to retain a bounded structured DOM target snapshot so AI can reference verified selectors and original values. It must not guess selectors from aggregate audit counts.
+- A completed health report also offers **Prepare Pixel fixes** beside the GitHub remediation route. It queues one unique AI job per page with a supported title/meta-description warning or failure, avoiding a long-running bulk web request.
+- Once report drafts exist, **Approve & deploy all** publishes the reviewed report set while retaining one ledger entry per optimisation.
+- Healthy pages no longer show a recommendations link. Page-level recommendation workspaces are linked only when that page has at least one warning or failed check.
 
 ## Security and known issues
 
