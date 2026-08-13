@@ -30,7 +30,8 @@ test('the website workspace exposes seo intelligence with an empty state', funct
         ->assertSee('data-tab="seo"', false)
         ->assertSee('data-tab-panel="seo"', false)
         ->assertSee('SEO Intelligence')
-        ->assertSee('DataForSEO estimate')
+        ->assertSee('Estimated data')
+        ->assertDontSee('DataForSEO')
         ->assertSee('No SEO snapshot yet')
         ->assertSee('Generate intelligence');
 });
@@ -172,5 +173,6 @@ test('the seo tab displays and filters locally stored keyword estimates', functi
         ->assertSee('garden rooms doncaster')
         ->assertDontSee('unrelated informational query')
         ->assertSee('Third-party market intelligence')
-        ->assertSee('Locally stored DataForSEO estimates');
+        ->assertSee('Locally stored third-party estimates')
+        ->assertDontSee('DataForSEO');
 });

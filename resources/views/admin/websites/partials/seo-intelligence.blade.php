@@ -5,7 +5,7 @@
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
                     <p class="text-xs font-medium uppercase tracking-widest text-slate-500">Third-party market intelligence</p>
-                    <p class="rounded-full bg-teal-50 px-2 py-1 text-xs font-medium text-teal-800 ring-1 ring-teal-700/10">DataForSEO estimate</p>
+                    <p class="rounded-full bg-teal-50 px-2 py-1 text-xs font-medium text-teal-800 ring-1 ring-teal-700/10">Estimated data</p>
                 </div>
                 <h2 id="seo-intelligence-title" class="mt-2 text-lg font-semibold text-slate-950">SEO Intelligence</h2>
                 <p class="mt-1 max-w-3xl text-sm text-slate-600">Organic visibility estimates for {{ $website->primaryDomain()?->domain ?: 'this website' }}. These figures are separate from Google Search Console performance.</p>
@@ -21,7 +21,7 @@
                             </button>
                         </form>
                     @else
-                        <p class="max-w-xs text-sm text-amber-700">Add the DataForSEO credentials to Sitewell before generating intelligence.</p>
+                        <p class="max-w-xs text-sm text-amber-700">Add the SEO data provider credentials to Sitewell before generating intelligence.</p>
                     @endif
                 </div>
             @endif
@@ -97,7 +97,7 @@
                 <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                     <div class="min-w-0">
                         <h3 id="seo-opportunities-title" class="text-balance text-base font-semibold text-slate-950">Recommended actions</h3>
-                        <p class="max-w-[72ch] text-pretty text-base text-slate-600 sm:text-sm">Prioritised from DataForSEO ranking estimates. Review each recommendation before changing the website.</p>
+                        <p class="max-w-[72ch] text-pretty text-base text-slate-600 sm:text-sm">Prioritised from third-party ranking estimates. Review each recommendation before changing the website.</p>
                     </div>
                     <p class="shrink-0 text-base tabular-nums text-slate-500 sm:text-sm">{{ number_format($seoOpportunities->count()) }} shown</p>
                 </div>
@@ -204,7 +204,7 @@
         <section class="rounded-xl border bg-white shadow-sm" aria-labelledby="backlinks-title">
             <div class="border-b border-slate-950/10 p-4">
                 <h3 id="backlinks-title" class="text-balance text-base font-semibold text-slate-950">Backlinks</h3>
-                <p class="mt-1 text-pretty text-base text-slate-600 sm:text-sm">Who links to this website, based on locally stored DataForSEO estimates.</p>
+                <p class="mt-1 text-pretty text-base text-slate-600 sm:text-sm">Who links to this website, based on locally stored third-party estimates.</p>
             </div>
 
             @if (isset($seoSnapshot->errors['backlink_overview']) || isset($seoSnapshot->errors['referring_domains']))
@@ -277,7 +277,7 @@
             <div class="flex flex-col gap-4 @4xl:flex-row @4xl:items-end @4xl:justify-between">
                 <div>
                     <h3 id="ranking-keywords-title" class="text-base font-semibold text-slate-950">Ranking keywords</h3>
-                    <p class="mt-1 text-sm text-slate-600">Locally stored DataForSEO estimates from this snapshot.</p>
+                    <p class="mt-1 text-sm text-slate-600">Locally stored third-party estimates from this snapshot.</p>
                 </div>
                 <form method="GET" action="{{ route('admin.websites.show', $website) }}" class="grid gap-3 @md:grid-cols-3">
                     <input type="hidden" name="tab" value="seo">
