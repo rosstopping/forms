@@ -59,7 +59,11 @@ class LoomVideoThumbnail
 
         $xpath = new DOMXPath($document);
 
-        foreach (["//meta[@property='og:image']/@content", "//meta[@name='twitter:image']/@content"] as $query) {
+        foreach ([
+            "//link[contains(concat(' ', normalize-space(translate(@rel, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz')), ' '), ' preload ') and translate(@as, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz') = 'image']/@href",
+            "//meta[@property='og:image']/@content",
+            "//meta[@name='twitter:image']/@content",
+        ] as $query) {
             $imageUrl = trim((string) $xpath->evaluate("string({$query})"));
 
             if (filter_var($imageUrl, FILTER_VALIDATE_URL) && parse_url($imageUrl, PHP_URL_SCHEME) === 'https') {

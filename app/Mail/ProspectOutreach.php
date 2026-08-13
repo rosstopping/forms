@@ -5,6 +5,7 @@ namespace App\Mail;
 use App\Models\Prospect;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
@@ -25,6 +26,7 @@ class ProspectOutreach extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
+            from: new Address(config('mail.from.address'), 'Ross'),
             subject: $this->prospect->outreach_subject,
         );
     }

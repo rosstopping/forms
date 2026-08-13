@@ -240,16 +240,26 @@ it('stores a prospect-specific showcase video and resets approval when it change
         ->and($prospect->status)->toBe('drafted');
 });
 
-it('captures a Loom open graph image for the email preview', function () {
+it('prefers the Loom preloaded video thumbnail over its open graph image', function () {
     Http::preventStrayRequests();
     Http::fake([
-        'https://www.loom.com/share/prospect-video' => Http::response('<html><head><meta property="og:image" content="https://cdn.loom.com/prospect-thumbnail.jpg"></head></html>'),
+        'https://www.loom.com/share/prospect-video' => Http::response('<html><head><meta property="og:image" content="https://cdn.loom.com/generic-social-image.jpg"><link rel="preload" href="https://cdn.loom.com/sessions/thumbnails/f6d69f68372e4dbaa342b27f84c867f5-f0e055e05a32db4b.jpg" as="image" fetchpriority="high"></head></html>'),
     ]);
 
     $thumbnailUrl = app(LoomVideoThumbnail::class)->fetch('https://www.loom.com/share/prospect-video');
 
-    expect($thumbnailUrl)->toBe('https://cdn.loom.com/prospect-thumbnail.jpg');
+    expect($thumbnailUrl)->toBe('https://cdn.loom.com/sessions/thumbnails/f6d69f68372e4dbaa342b27f84c867f5-f0e055e05a32db4b.jpg');
     Http::assertSent(fn (Request $request): bool => $request->url() === 'https://www.loom.com/share/prospect-video');
+});
+
+it('falls back to the Loom open graph image when no preload thumbnail exists', function () {
+    Http::preventStrayRequests();
+    Http::fake([
+        'https://www.loom.com/share/prospect-video' => Http::response('<meta property="og:image" content="https://cdn.loom.com/prospect-thumbnail.jpg">'),
+    ]);
+
+    expect(app(LoomVideoThumbnail::class)->fetch('https://www.loom.com/share/prospect-video'))
+        ->toBe('https://cdn.loom.com/prospect-thumbnail.jpg');
 });
 
 it('stores the Loom thumbnail when a prospect is created', function () {
@@ -349,6 +359,7 @@ it('renders a casual outreach email with the showcase video and no audit details
     ]);
 
     (new ProspectOutreach($prospect))
+        ->assertFrom(config('mail.from.address'), 'Ross')
         ->assertHasSubject('Quick one for Acme Plumbing')
         ->assertSeeInHtml('Your website video')
         ->assertSeeInHtml('Watch your video')
