@@ -63,6 +63,7 @@ Phases 1–5 and the initial admin vertical slice are complete. Next: finish ref
 - [x] Atomic manual-refresh lock, active-job reuse, and seven-day completed-snapshot protection.
 - [x] Website-level authorization for paid refresh requests.
 - [x] SEO Intelligence website tab with source labelling, snapshot state, visibility metrics, opportunity count, and paginated keyword filters/sorts.
+- [x] Nested SEO navigation for Overview, Recommended Actions, Keywords, Backlinks, and Competitors, including keyboard navigation and filter-state preservation.
 - [x] Backlink overview and referring-domain panel.
 - [x] Organic competitor panel.
 - [x] Generated-opportunity panel with evidence, recommendation, priority score, and ranking-page action.

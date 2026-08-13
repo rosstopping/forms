@@ -38,7 +38,7 @@ test('website owners can add an seo recommendation to content todos', function (
     $this->actingAs($owner)
         ->get(route('admin.websites.show', [$website, 'tab' => 'seo']))
         ->assertSuccessful()
-        ->assertSee('Add to content todos');
+        ->assertSee('Add to action list');
 
     $this->actingAs($owner)
         ->post(route('admin.seo-opportunities.queue', [$website, $opportunity]))

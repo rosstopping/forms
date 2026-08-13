@@ -27,9 +27,11 @@ document.addEventListener('click', async (event) => {
 });
 
 document.querySelectorAll('[data-tabs]').forEach((tabs) => {
-    const tabButtons = [...tabs.querySelectorAll('[role="tab"][data-tab]')];
-    const tabPanels = [...tabs.querySelectorAll('[role="tabpanel"][data-tab-panel]')];
-    const storageKey = `selected-tab:${window.location.pathname}`;
+    const tabButtons = [...tabs.querySelectorAll('[role="tab"][data-tab]')]
+        .filter((button) => button.closest('[data-tabs]') === tabs);
+    const tabPanels = [...tabs.querySelectorAll('[role="tabpanel"][data-tab-panel]')]
+        .filter((panel) => panel.closest('[data-tabs]') === tabs);
+    const storageKey = `selected-tab:${window.location.pathname}:${tabs.dataset.tabsKey || 'primary'}`;
     const availableTabs = tabButtons.map((button) => button.dataset.tab);
 
     const selectTab = (tabName, focus = false) => {
@@ -77,7 +79,7 @@ document.querySelectorAll('[data-tabs]').forEach((tabs) => {
     const defaultTab = tabs.dataset.defaultTab;
     const storedTab = window.sessionStorage.getItem(storageKey);
 
-    selectTab(defaultTab !== 'health' ? defaultTab : storedTab || defaultTab);
+    selectTab(defaultTab !== availableTabs[0] ? defaultTab : storedTab || defaultTab);
 });
 
 const mobileNavigation = document.querySelector('[data-mobile-nav]');

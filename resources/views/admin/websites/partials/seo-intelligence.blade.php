@@ -1,4 +1,18 @@
 <div id="website-panel-seo" class="space-y-6" role="tabpanel" aria-labelledby="website-tab-seo" data-tab-panel="seo" hidden>
+    <div class="space-y-6" data-tabs data-tabs-key="seo-intelligence" data-default-tab="{{ request('seo_section', request()->has('seo_filter') ? 'keywords' : 'overview') }}">
+        <div class="max-w-full overflow-x-auto border-b border-slate-950/10" role="tablist" aria-label="SEO Intelligence sections">
+            <div class="flex min-w-max gap-1 pb-2">
+                <button type="button" id="seo-section-tab-overview" class="shrink-0 rounded-md px-3 py-2 text-base font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 aria-selected:bg-slate-100 aria-selected:text-slate-950 sm:text-sm" role="tab" aria-selected="true" aria-controls="seo-section-panel-overview" tabindex="0" data-tab="overview">Overview</button>
+                @if ($seoSnapshot)
+                    <button type="button" id="seo-section-tab-actions" class="shrink-0 rounded-md px-3 py-2 text-base font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 aria-selected:bg-slate-100 aria-selected:text-slate-950 sm:text-sm" role="tab" aria-selected="false" aria-controls="seo-section-panel-actions" tabindex="-1" data-tab="actions">Recommended Actions</button>
+                    <button type="button" id="seo-section-tab-keywords" class="shrink-0 rounded-md px-3 py-2 text-base font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 aria-selected:bg-slate-100 aria-selected:text-slate-950 sm:text-sm" role="tab" aria-selected="false" aria-controls="seo-section-panel-keywords" tabindex="-1" data-tab="keywords">Keywords</button>
+                    <button type="button" id="seo-section-tab-backlinks" class="shrink-0 rounded-md px-3 py-2 text-base font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 aria-selected:bg-slate-100 aria-selected:text-slate-950 sm:text-sm" role="tab" aria-selected="false" aria-controls="seo-section-panel-backlinks" tabindex="-1" data-tab="backlinks">Backlinks</button>
+                    <button type="button" id="seo-section-tab-competitors" class="shrink-0 rounded-md px-3 py-2 text-base font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 aria-selected:bg-slate-100 aria-selected:text-slate-950 sm:text-sm" role="tab" aria-selected="false" aria-controls="seo-section-panel-competitors" tabindex="-1" data-tab="competitors">Competitors</button>
+                @endif
+            </div>
+        </div>
+
+        <div id="seo-section-panel-overview" role="tabpanel" aria-labelledby="seo-section-tab-overview" data-tab-panel="overview">
     <section class="overflow-hidden rounded-xl border bg-white shadow-sm" aria-labelledby="seo-intelligence-title">
         <div class="@container border-b border-slate-200 p-4">
         <div class="flex flex-col gap-4 @xl:flex-row @xl:items-start @xl:justify-between">
@@ -68,7 +82,7 @@
                     <p class="text-xs font-medium uppercase tracking-widest text-slate-500">What can we improve?</p>
                     <h3 class="mt-2 text-base font-semibold text-slate-950">{{ number_format($strikingDistanceCount) }} striking-distance keywords</h3>
                     <p class="mt-1 text-sm text-slate-600">Keywords currently ranking in positions 4–20 may offer the clearest near-term optimisation opportunities.</p>
-                    <a href="{{ route('admin.websites.show', [$website, 'tab' => 'seo', 'seo_filter' => 'positions_11_20', 'seo_sort' => 'search_volume', 'seo_direction' => 'desc']) }}" class="mt-3 inline-flex text-sm font-medium text-teal-700 underline decoration-teal-700/30 underline-offset-4 hover:decoration-teal-700">Review page-two keywords</a>
+                    <a href="{{ route('admin.websites.show', [$website, 'tab' => 'seo', 'seo_section' => 'keywords', 'seo_filter' => 'positions_11_20', 'seo_sort' => 'search_volume', 'seo_direction' => 'desc']) }}" class="mt-3 inline-flex text-sm font-medium text-teal-700 underline decoration-teal-700/30 underline-offset-4 hover:decoration-teal-700">Review page-two keywords</a>
                 </div>
                 <div class="bg-slate-50 p-4">
                     <p class="text-sm font-medium text-slate-900">Snapshot details</p>
@@ -90,8 +104,10 @@
             </div>
         @endif
     </section>
+        </div>
 
     @if ($seoSnapshot)
+        <div id="seo-section-panel-actions" role="tabpanel" aria-labelledby="seo-section-tab-actions" data-tab-panel="actions" hidden>
         <section class="rounded-xl border bg-white shadow-sm" aria-labelledby="seo-opportunities-title">
             <div class="border-b border-slate-950/10 p-4">
                 <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
@@ -179,7 +195,9 @@
                 @endforelse
             </div>
         </section>
+        </div>
 
+        <div id="seo-section-panel-competitors" role="tabpanel" aria-labelledby="seo-section-tab-competitors" data-tab-panel="competitors" hidden>
         <section class="rounded-xl border bg-white shadow-sm" aria-labelledby="organic-competitors-title">
             <div class="border-b border-slate-950/10 p-4">
                 <h3 id="organic-competitors-title" class="text-balance text-base font-semibold text-slate-950">Organic competitors</h3>
@@ -221,7 +239,9 @@
                 </div>
             </div>
         </section>
+        </div>
 
+        <div id="seo-section-panel-backlinks" role="tabpanel" aria-labelledby="seo-section-tab-backlinks" data-tab-panel="backlinks" hidden>
         <section class="rounded-xl border bg-white shadow-sm" aria-labelledby="backlinks-title">
             <div class="border-b border-slate-950/10 p-4">
                 <h3 id="backlinks-title" class="text-balance text-base font-semibold text-slate-950">Backlinks</h3>
@@ -292,7 +312,9 @@
                 </div>
             </div>
         </section>
+        </div>
 
+        <div id="seo-section-panel-keywords" role="tabpanel" aria-labelledby="seo-section-tab-keywords" data-tab-panel="keywords" hidden>
         <section class="rounded-xl border bg-white shadow-sm" aria-labelledby="ranking-keywords-title">
             <div class="@container border-b border-slate-200 p-4">
             <div class="flex flex-col gap-4 @4xl:flex-row @4xl:items-end @4xl:justify-between">
@@ -302,6 +324,7 @@
                 </div>
                 <form method="GET" action="{{ route('admin.websites.show', $website) }}" class="grid gap-3 @md:grid-cols-3">
                     <input type="hidden" name="tab" value="seo">
+                    <input type="hidden" name="seo_section" value="keywords">
                     <div>
                         <label for="seo_filter">Filter</label>
                         <select id="seo_filter" name="seo_filter">
@@ -368,5 +391,7 @@
                 <div class="border-t border-slate-200 p-4">{{ $seoKeywords->links() }}</div>
             @endif
         </section>
+        </div>
     @endif
+    </div>
 </div>
