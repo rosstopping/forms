@@ -70,13 +70,6 @@ class GithubConnectionController extends Controller
 
         abort_unless(data_get($state, 'user_id') === $request->user()->id, 403);
 
-        if (data_get($state, 'return_to') === 'website-builder') {
-            $authorization = $this->oauth->authorize($request->user(), $data['code']);
-
-            return Redirect::route('admin.website-builder.create')
-                ->with('status', "GitHub reconnected as {$authorization->github_login}.");
-        }
-
         $website = Website::query()->findOrFail(data_get($state, 'website_id'));
         $this->authorizeWebsite($request, $website);
         $installation = $this->storeInstallation((int) $data['installation_id'], $request);
@@ -104,6 +97,14 @@ class GithubConnectionController extends Controller
         }
 
         abort_unless(data_get($state, 'user_id') === $request->user()->id, 403);
+
+        if (data_get($state, 'return_to') === 'website-builder') {
+            $authorization = $this->oauth->authorize($request->user(), $data['code']);
+
+            return Redirect::route('admin.website-builder.create')
+                ->with('status', "GitHub reconnected as {$authorization->github_login}.");
+        }
+
         $website = Website::query()->findOrFail(data_get($state, 'website_id'));
         $this->authorizeWebsite($request, $website);
         $authorization = $this->oauth->authorize($request->user(), $data['code']);
