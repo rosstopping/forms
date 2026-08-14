@@ -1,15 +1,18 @@
 <?php
 
+use App\Jobs\BuildWebsite;
 use App\Models\GithubInstallation;
 use App\Models\GithubUserAuthorization;
 use App\Models\User;
 use App\Models\Website;
+use App\Models\WebsiteBuild;
 use App\Services\CopilotAgentClient;
 use App\Services\GithubOAuthClient;
 use App\Services\NetlifyClient;
 use App\Services\StaticWebsiteGenerator;
 use App\Services\WebsiteBuilder;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 
 use function Pest\Laravel\mock;
 
@@ -20,7 +23,7 @@ it('shows the website builder only to administrators', function (): void {
     $this->actingAs($admin)->get(route('admin.website-builder.create'))
         ->assertSuccessful()
         ->assertSee('Website builder')
-        ->assertSee('Build and publish website');
+        ->assertSee('Queue website build');
 
     $this->actingAs($user)->get(route('admin.website-builder.create'))->assertForbidden();
 });
@@ -100,12 +103,7 @@ it('normalizes the page list before starting a build', function (): void {
         'repository_selection' => 'all',
         'permissions' => ['administration' => 'write', 'contents' => 'write'],
     ]);
-    $website = Website::factory()->create();
-    mock(WebsiteBuilder::class)->shouldReceive('build')->once()
-        ->withArgs(fn (array $details, User $creator): bool => $details['pages'] === ['Home', 'About', 'Contact']
-            && $details['repository_name'] === 'acme-site'
-            && $creator->is($admin))
-        ->andReturn($website);
+    Queue::fake();
 
     $this->actingAs($admin)->post(route('admin.website-builder.store'), [
         'name' => 'Acme',
@@ -114,7 +112,47 @@ it('normalizes the page list before starting a build', function (): void {
         'pages' => "Home\nAbout, Contact\nabout",
         'repository_name' => 'ACME-SITE',
         'github_installation_id' => $installation->id,
-    ])->assertRedirect(route('admin.websites.show', $website));
+    ])->assertRedirect(route('admin.website-builder.create'))
+        ->assertSessionHas('status');
+
+    $build = WebsiteBuild::query()->sole();
+
+    expect($build->requested_by)->toBe($admin->id)
+        ->and($build->status)->toBe(WebsiteBuild::STATUS_QUEUED)
+        ->and($build->details['pages'])->toBe(['Home', 'About', 'Contact'])
+        ->and($build->details['repository_name'])->toBe('acme-site');
+    Queue::assertPushed(BuildWebsite::class, fn (BuildWebsite $job): bool => $job->websiteBuildId === $build->id);
+});
+
+it('completes a queued website build in the background', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $website = Website::factory()->create();
+    $build = WebsiteBuild::factory()->for($admin, 'requester')->create();
+    $builder = mock(WebsiteBuilder::class);
+    $builder->shouldReceive('build')->once()
+        ->withArgs(fn (array $details, User $creator): bool => $details === $build->details && $creator->is($admin))
+        ->andReturn($website);
+
+    (new BuildWebsite($build->id))->handle($builder);
+
+    $build->refresh();
+
+    expect($build->status)->toBe(WebsiteBuild::STATUS_COMPLETED)
+        ->and($build->website_id)->toBe($website->id)
+        ->and($build->started_at)->not->toBeNull()
+        ->and($build->completed_at)->not->toBeNull();
+});
+
+it('records a failed queued website build for the administrator', function (): void {
+    $build = WebsiteBuild::factory()->create(['status' => WebsiteBuild::STATUS_RUNNING]);
+
+    (new BuildWebsite($build->id))->failed(new RuntimeException('GitHub is unavailable.'));
+
+    $build->refresh();
+
+    expect($build->status)->toBe(WebsiteBuild::STATUS_FAILED)
+        ->and($build->error)->toBe('GitHub is unavailable.')
+        ->and($build->completed_at)->not->toBeNull();
 });
 
 it('creates a GitHub repository and commits the generated files', function (): void {
@@ -259,33 +297,18 @@ it('stops before creating remote resources when GitHub administration permission
     ], $admin))->toThrow(RuntimeException::class, 'Administration and Contents both set to Read and write');
 });
 
-it('submits an installation with stale permissions and shows the actionable permission error', function (): void {
+it('shows failed background website builds with their actionable error', function (): void {
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
-    GithubUserAuthorization::factory()->for($admin)->create();
-    $installation = GithubInstallation::factory()->create([
-        'repository_selection' => 'all',
-        'permissions' => ['contents' => 'write'],
+    WebsiteBuild::factory()->for($admin, 'requester')->create([
+        'status' => WebsiteBuild::STATUS_FAILED,
+        'error' => 'The Sitewell GitHub App needs updated permissions.',
     ]);
-    $github = mock(GithubOAuthClient::class);
-    $github->shouldReceive('refreshInstallation')->once()->andReturn($installation);
-    $github->shouldNotReceive('createRepository');
-    mock(NetlifyClient::class)->shouldNotReceive('deployRepository');
 
     $this->actingAs($admin)->get(route('admin.website-builder.create'))
         ->assertSuccessful()
-        ->assertSee('value="'.$installation->id.'"', false)
-        ->assertSee('permission update required');
-
-    $this->post(route('admin.website-builder.store'), [
-        'name' => 'Acme Studio',
-        'sector' => 'Architecture',
-        'description' => 'Thoughtful spaces for modern teams.',
-        'pages' => "Home\nContact",
-        'repository_name' => 'acme-studio',
-        'github_installation_id' => $installation->id,
-    ])->assertSessionHasErrors([
-        'builder' => 'The Sitewell GitHub App needs Repository permissions → Administration and Contents both set to Read and write. Update the GitHub App, approve the new permissions for this installation, then try again.',
-    ])->assertSessionDoesntHaveErrors('github_installation_id');
+        ->assertSee('Recent builds')
+        ->assertSee('Failed')
+        ->assertSee('The Sitewell GitHub App needs updated permissions.');
 });
 
 it('refreshes stored GitHub installation permissions from GitHub', function (): void {

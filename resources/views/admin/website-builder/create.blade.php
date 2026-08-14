@@ -8,6 +8,10 @@
         <p class="mt-1 max-w-2xl text-sm text-slate-600">Create a static website, publish it to Netlify, connect its GitHub repository, and register its Sitewell contact form in one go.</p>
     </div>
 
+    @if (session('status'))
+        <div class="rounded-lg border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-900">{{ session('status') }}</div>
+    @endif
+
     <form method="POST" action="{{ route('admin.website-builder.store') }}" class="space-y-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         @csrf
 
@@ -46,8 +50,32 @@
             <select id="user_id" name="user_id" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"><option value="">Unassigned</option>@foreach ($users as $user)<option value="{{ $user->id }}" @selected((string) old('user_id') === (string) $user->id)>{{ $user->name }} ({{ $user->email }})</option>@endforeach</select>
         </div>
 
-        <div class="rounded-lg bg-slate-50 p-4 text-sm text-slate-600">The initial Netlify deployment is uploaded directly for reliability. The GitHub repository is created alongside it; continuous deployment can be connected in Netlify afterwards.</div>
-        <div class="flex flex-wrap items-center gap-3"><button type="submit" class="rounded-md bg-slate-950 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">Build and publish website</button><a href="{{ route('admin.websites.index') }}" class="text-sm font-medium text-slate-600 hover:text-slate-950">Cancel</a></div>
+        <div class="rounded-lg bg-slate-50 p-4 text-sm text-slate-600">The build runs in the background, so you can close this page after submitting. GitHub, Netlify, Copilot, and the Sitewell website record will be created by the queue worker.</div>
+        <div class="flex flex-wrap items-center gap-3"><button type="submit" class="rounded-md bg-slate-950 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">Queue website build</button><a href="{{ route('admin.websites.index') }}" class="text-sm font-medium text-slate-600 hover:text-slate-950">Cancel</a></div>
     </form>
+
+    @if ($builds->isNotEmpty())
+        <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div class="flex items-center justify-between gap-4 border-b border-slate-200 px-6 py-4">
+                <div><h2 class="font-semibold text-slate-950">Recent builds</h2><p class="text-sm text-slate-600">Refresh this page to see the latest progress.</p></div>
+                <a href="{{ route('admin.website-builder.create') }}" class="text-sm font-semibold text-teal-700 hover:text-teal-900">Refresh</a>
+            </div>
+            <div class="divide-y divide-slate-100">
+                @foreach ($builds as $build)
+                    <div class="flex flex-col gap-3 px-6 py-4 md:flex-row md:items-center md:justify-between">
+                        <div>
+                            <p class="font-medium text-slate-950">{{ $build->details['name'] ?? 'Website build' }}</p>
+                            <p class="mt-1 text-xs text-slate-500">Queued {{ $build->created_at->diffForHumans() }}</p>
+                            @if ($build->error)<p class="mt-2 max-w-3xl text-sm text-red-700">{{ $build->error }}</p>@endif
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ $build->status === 'completed' ? 'bg-emerald-100 text-emerald-800' : ($build->status === 'failed' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800') }}">{{ ucfirst($build->status) }}</span>
+                            @if ($build->website)<a href="{{ route('admin.websites.show', $build->website) }}" class="text-sm font-semibold text-teal-700 hover:text-teal-900">View website</a>@endif
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </section>
+    @endif
 </div>
 @endsection

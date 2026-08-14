@@ -4,9 +4,10 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreWebsiteBuildRequest;
+use App\Jobs\BuildWebsite;
 use App\Models\GithubInstallation;
 use App\Models\User;
-use App\Services\WebsiteBuilder;
+use App\Models\WebsiteBuild;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
@@ -24,21 +25,26 @@ class WebsiteBuilderController extends Controller
             ->orderBy('account_login')
             ->get();
         $users = User::query()->orderBy('name')->get(['id', 'name', 'email']);
+        $builds = WebsiteBuild::query()
+            ->whereBelongsTo($request->user(), 'requester')
+            ->with('website')
+            ->latest()
+            ->limit(10)
+            ->get();
 
-        return view('admin.website-builder.create', compact('installations', 'users'));
+        return view('admin.website-builder.create', compact('installations', 'users', 'builds'));
     }
 
-    public function store(StoreWebsiteBuildRequest $request, WebsiteBuilder $builder): RedirectResponse
+    public function store(StoreWebsiteBuildRequest $request): RedirectResponse
     {
-        try {
-            $website = $builder->build($request->validated(), $request->user());
-        } catch (\Throwable $exception) {
-            report($exception);
+        $build = WebsiteBuild::query()->create([
+            'requested_by' => $request->user()->id,
+            'details' => $request->validated(),
+        ]);
 
-            return Redirect::back()->withInput()->withErrors(['builder' => $exception->getMessage()]);
-        }
+        BuildWebsite::dispatch($build->id)->afterCommit();
 
-        return Redirect::route('admin.websites.show', $website)
-            ->with('status', 'The Eleventy website is connected to Netlify and Copilot is creating the full design in a pull request. Development URL: https://'.$website->primaryDomain()?->domain);
+        return Redirect::route('admin.website-builder.create')
+            ->with('status', 'The website build has been queued. You can safely leave this page while GitHub, Netlify, and Copilot finish in the background.');
     }
 }
