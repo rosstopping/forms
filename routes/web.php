@@ -110,6 +110,7 @@ Route::middleware(['web', 'auth'])->prefix('admin')->name('admin.')->group(funct
     Route::resource('websites', WebsiteController::class);
     Route::get('website-builder', [WebsiteBuilderController::class, 'create'])->name('website-builder.create');
     Route::post('website-builder', [WebsiteBuilderController::class, 'store'])->name('website-builder.store');
+    Route::get('website-builder/github/connect', [GithubConnectionController::class, 'authorizeBuilder'])->name('website-builder.github.connect');
     Route::put('websites/{website}/autoresponder', WebsiteAutoresponderController::class)->name('websites.autoresponder.update');
     Route::put('websites/{website}/pixel', [PixelSettingsController::class, 'update'])->name('websites.pixel.update');
     Route::post('websites/{website}/pixel/rotate-key', PixelKeyController::class)->name('websites.pixel.rotate-key');

@@ -39,6 +39,18 @@ class GithubConnectionController extends Controller
         return Redirect::away("https://github.com/apps/{$slug}/installations/new?".http_build_query(['state' => $state]));
     }
 
+    public function authorizeBuilder(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()?->isAdmin(), 403);
+
+        $state = Crypt::encryptString(json_encode([
+            'user_id' => $request->user()->id,
+            'return_to' => 'website-builder',
+        ], JSON_THROW_ON_ERROR));
+
+        return Redirect::away($this->oauth->authorizationUrl($state));
+    }
+
     public function callback(Request $request): RedirectResponse
     {
         if ($request->filled('code')) {
@@ -57,6 +69,14 @@ class GithubConnectionController extends Controller
         }
 
         abort_unless(data_get($state, 'user_id') === $request->user()->id, 403);
+
+        if (data_get($state, 'return_to') === 'website-builder') {
+            $authorization = $this->oauth->authorize($request->user(), $data['code']);
+
+            return Redirect::route('admin.website-builder.create')
+                ->with('status', "GitHub reconnected as {$authorization->github_login}.");
+        }
+
         $website = Website::query()->findOrFail(data_get($state, 'website_id'));
         $this->authorizeWebsite($request, $website);
         $installation = $this->storeInstallation((int) $data['installation_id'], $request);

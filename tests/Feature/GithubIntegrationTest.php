@@ -82,6 +82,36 @@ it('starts a GitHub App installation for an administrator', function (): void {
     $response->assertRedirectContains('https://github.com/apps/website-health-bot/installations/new?state=');
 });
 
+it('starts a GitHub reauthorization directly from the website builder', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    mock(GithubOAuthClient::class)->shouldReceive('authorizationUrl')
+        ->once()
+        ->andReturn('https://github.com/login/oauth/authorize?state=test');
+
+    $this->actingAs($admin)
+        ->get(route('admin.website-builder.github.connect'))
+        ->assertRedirect('https://github.com/login/oauth/authorize?state=test');
+});
+
+it('returns to the website builder after GitHub reauthorization', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $authorization = GithubUserAuthorization::factory()->for($admin)->create(['github_login' => 'octocat']);
+    $state = Crypt::encryptString(json_encode([
+        'user_id' => $admin->id,
+        'return_to' => 'website-builder',
+    ], JSON_THROW_ON_ERROR));
+    mock(GithubOAuthClient::class)->shouldReceive('authorize')
+        ->once()
+        ->withArgs(fn (User $user, string $code): bool => $user->is($admin) && $code === 'temporary-code')
+        ->andReturn($authorization);
+
+    $this->actingAs($admin)->get(route('admin.github.callback', [
+        'code' => 'temporary-code',
+        'state' => $state,
+    ]))->assertRedirect(route('admin.website-builder.create'))
+        ->assertSessionHas('status', 'GitHub reconnected as octocat.');
+});
+
 it('stores a verified GitHub App installation callback', function (): void {
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     $website = Website::factory()->create();

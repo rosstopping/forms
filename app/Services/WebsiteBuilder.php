@@ -6,6 +6,7 @@ use App\Models\GithubInstallation;
 use App\Models\GithubUserAuthorization;
 use App\Models\User;
 use App\Models\Website;
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -30,8 +31,15 @@ class WebsiteBuilder
             ->where('status', GithubInstallation::STATUS_ACTIVE)
             ->where('repository_selection', 'all')
             ->findOrFail($details['github_installation_id']);
+        try {
+            $installation = $this->github->refreshInstallation($authorization, $installation);
+        } catch (DecryptException) {
+            throw new RuntimeException('Your stored GitHub authorization can no longer be decrypted. Use Reconnect GitHub on the Website Builder, then try again.');
+        }
 
-        if (($installation->permissions['administration'] ?? null) !== 'write') {
+        if ($installation->status !== GithubInstallation::STATUS_ACTIVE
+            || $installation->repository_selection !== 'all'
+            || ($installation->permissions['administration'] ?? null) !== 'write') {
             throw new RuntimeException('The Sitewell GitHub App needs Repository permissions → Administration set to Read and write. Update the GitHub App, approve the new permission for this installation, then try again.');
         }
 

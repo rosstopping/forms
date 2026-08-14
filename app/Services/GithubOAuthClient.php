@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\GithubInstallation;
 use App\Models\GithubUserAuthorization;
 use App\Models\User;
 use Illuminate\Http\Client\PendingRequest;
@@ -11,6 +12,41 @@ use RuntimeException;
 
 class GithubOAuthClient
 {
+    public function refreshInstallation(
+        GithubUserAuthorization $authorization,
+        GithubInstallation $installation,
+    ): GithubInstallation {
+        $page = 1;
+        $details = null;
+
+        do {
+            $installations = $this->apiRequest($this->accessToken($authorization))
+                ->get('user/installations', ['per_page' => 100, 'page' => $page])
+                ->throw()
+                ->json('installations', []);
+            $details = collect($installations)->firstWhere('id', $installation->installation_id);
+            $page++;
+        } while (! is_array($details) && count($installations) === 100);
+
+        if (! is_array($details)) {
+            throw new RuntimeException('Your GitHub account can no longer access this Sitewell installation. Reconnect GitHub and try again.');
+        }
+
+        $installation->update([
+            'account_id' => $details['account']['id'],
+            'account_login' => $details['account']['login'],
+            'account_type' => $details['account']['type'],
+            'repository_selection' => $details['repository_selection'],
+            'permissions' => $details['permissions'] ?? [],
+            'status' => isset($details['suspended_at']) && $details['suspended_at'] !== null
+                ? GithubInstallation::STATUS_SUSPENDED
+                : GithubInstallation::STATUS_ACTIVE,
+            'suspended_at' => $details['suspended_at'] ?? null,
+        ]);
+
+        return $installation->refresh();
+    }
+
     /** @param array<string, string> $files
      * @return array<string, mixed>
      */

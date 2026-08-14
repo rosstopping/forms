@@ -52,6 +52,7 @@ it('publishes a repository and creates the website and contact form records', fu
         'permissions' => ['administration' => 'write', 'contents' => 'write'],
     ]);
     $github = mock(GithubOAuthClient::class);
+    $github->shouldReceive('refreshInstallation')->once()->withArgs(fn ($selectedAuthorization, $selectedInstallation): bool => $selectedAuthorization->is($authorization) && $selectedInstallation->is($installation))->andReturn($installation);
     $github->shouldReceive('createRepository')
         ->once()
         ->withArgs(fn ($selectedAuthorization, string $account, string $repository, array $files): bool => $selectedAuthorization->is($authorization)
@@ -173,7 +174,9 @@ it('stops before creating remote resources when GitHub administration permission
         'repository_selection' => 'all',
         'permissions' => ['contents' => 'write'],
     ]);
-    mock(GithubOAuthClient::class)->shouldNotReceive('createRepository');
+    $github = mock(GithubOAuthClient::class);
+    $github->shouldReceive('refreshInstallation')->once()->andReturn($installation);
+    $github->shouldNotReceive('createRepository');
     mock(NetlifyClient::class)->shouldNotReceive('deploy');
 
     expect(fn () => app(WebsiteBuilder::class)->build([
@@ -184,6 +187,63 @@ it('stops before creating remote resources when GitHub administration permission
         'repository_name' => 'acme-studio',
         'github_installation_id' => $installation->id,
     ], $admin))->toThrow(RuntimeException::class, 'Administration set to Read and write');
+});
+
+it('submits an installation with stale permissions and shows the actionable permission error', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    GithubUserAuthorization::factory()->for($admin)->create();
+    $installation = GithubInstallation::factory()->create([
+        'repository_selection' => 'all',
+        'permissions' => ['contents' => 'write'],
+    ]);
+    $github = mock(GithubOAuthClient::class);
+    $github->shouldReceive('refreshInstallation')->once()->andReturn($installation);
+    $github->shouldNotReceive('createRepository');
+    mock(NetlifyClient::class)->shouldNotReceive('deploy');
+
+    $this->actingAs($admin)->get(route('admin.website-builder.create'))
+        ->assertSuccessful()
+        ->assertSee('value="'.$installation->id.'"', false)
+        ->assertSee('permission update required');
+
+    $this->post(route('admin.website-builder.store'), [
+        'name' => 'Acme Studio',
+        'sector' => 'Architecture',
+        'description' => 'Thoughtful spaces for modern teams.',
+        'pages' => "Home\nContact",
+        'repository_name' => 'acme-studio',
+        'github_installation_id' => $installation->id,
+    ])->assertSessionHasErrors([
+        'builder' => 'The Sitewell GitHub App needs Repository permissions → Administration set to Read and write. Update the GitHub App, approve the new permission for this installation, then try again.',
+    ])->assertSessionDoesntHaveErrors('github_installation_id');
+});
+
+it('refreshes stored GitHub installation permissions from GitHub', function (): void {
+    $installation = GithubInstallation::factory()->create([
+        'repository_selection' => 'all',
+        'permissions' => ['contents' => 'write'],
+    ]);
+    config(['services.github.api_url' => 'https://api.github.test']);
+    Http::preventStrayRequests();
+    Http::fake([
+        'api.github.test/user/installations*' => Http::response(['installations' => [[
+            'id' => $installation->installation_id,
+            'account' => ['id' => 987, 'login' => 'acme', 'type' => 'Organization'],
+            'repository_selection' => 'all',
+            'permissions' => ['administration' => 'write', 'contents' => 'write'],
+            'suspended_at' => null,
+        ]]]),
+    ]);
+    $authorization = GithubUserAuthorization::factory()->create([
+        'access_token' => 'github-token',
+        'access_token_expires_at' => now()->addHour(),
+    ]);
+
+    $refreshed = app(GithubOAuthClient::class)->refreshInstallation($authorization, $installation);
+
+    expect($refreshed->account_login)->toBe('acme')
+        ->and($refreshed->permissions['administration'])->toBe('write')
+        ->and($refreshed->status)->toBe(GithubInstallation::STATUS_ACTIVE);
 });
 
 it('turns a GitHub repository creation 403 into an actionable error', function (): void {
