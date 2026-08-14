@@ -13,13 +13,13 @@ class ContentPlan extends Model
     /** @use HasFactory<ContentPlanFactory> */
     use HasFactory;
 
-    protected $fillable = ['website_id', 'created_by', 'enabled', 'weekday', 'hour', 'timezone', 'audience', 'guidance', 'last_generated_at'];
+    protected $fillable = ['website_id', 'created_by', 'enabled', 'weekday', 'hour', 'timezone', 'audience', 'guidance', 'last_generated_at', 'suggestion_reminder_sent_for'];
 
     protected $attributes = ['enabled' => false, 'weekday' => 1, 'hour' => 8, 'timezone' => 'Europe/London'];
 
     protected function casts(): array
     {
-        return ['enabled' => 'boolean', 'last_generated_at' => 'datetime'];
+        return ['enabled' => 'boolean', 'last_generated_at' => 'datetime', 'suggestion_reminder_sent_for' => 'datetime'];
     }
 
     public function website(): BelongsTo

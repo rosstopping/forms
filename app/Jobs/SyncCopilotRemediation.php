@@ -54,7 +54,7 @@ class SyncCopilotRemediation implements ShouldBeEncrypted, ShouldBeUniqueUntilPr
 
         if ($state === 'completed') {
             $pullRequest = collect($task['artifacts'] ?? [])->first(fn (array $artifact) => ($artifact['provider'] ?? null) === 'github' && ($artifact['type'] ?? null) === 'pull');
-            $pullRequestNumber = data_get($pullRequest, 'data.number', data_get($pullRequest, 'data.id'));
+            $pullRequestNumber = data_get($pullRequest, 'data.number');
             $pullRequestUrl = null;
             $headRef = data_get($task, 'sessions.0.head_ref');
 

@@ -16,10 +16,18 @@ Schedule::command('content:dispatch')
     ->hourly()
     ->withoutOverlapping();
 
+Schedule::command('content:send-suggestion-reminders')
+    ->hourly()
+    ->withoutOverlapping();
+
 Schedule::command('business-profiles:dispatch-audits')
     ->hourly()
     ->withoutOverlapping();
 
 Schedule::command('search-opportunities:dispatch')
     ->hourly()
+    ->withoutOverlapping();
+
+Schedule::command('seo:dispatch-weekly-snapshots')
+    ->weeklyOn(1, '05:00')
     ->withoutOverlapping();

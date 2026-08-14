@@ -51,12 +51,19 @@ it('shows Search Console reporting on the website dashboard', function (): void 
     $this->mock(SearchConsoleClient::class)
         ->shouldReceive('report')
         ->once()
-        ->andReturn(searchConsoleReportData());
+        ->andReturn(searchConsoleReportData())
+        ->shouldReceive('monthlyPerformance')
+        ->once()
+        ->andReturn([
+            ['month' => '2026-07', 'clicks' => 100.0, 'impressions' => 2000.0, 'ctr' => 0.05, 'position' => 7.1],
+            ['month' => '2026-08', 'clicks' => 125.0, 'impressions' => 2500.0, 'ctr' => 0.05, 'position' => 6.4],
+        ]);
 
     $this->actingAs($admin)
         ->get(route('admin.websites.show', $website))
         ->assertSuccessful()
         ->assertSee('Search performance')
+        ->assertSee('Organic clicks')
         ->assertSee('2,500')
         ->assertSee('5.0%')
         ->assertSee('example services')
@@ -90,6 +97,12 @@ it('shows sortable Search Console queries and landing pages to website users', f
         ->andReturn([
             ['page' => 'https://example.com/strong-page', 'clicks' => 20.0, 'impressions' => 300.0, 'ctr' => 0.067, 'position' => 2.5],
             ['page' => 'https://example.com/weak-page', 'clicks' => 8.0, 'impressions' => 150.0, 'ctr' => 0.053, 'position' => 14.2],
+        ])
+        ->shouldReceive('monthlyPerformance')
+        ->once()
+        ->andReturn([
+            ['month' => '2026-07', 'clicks' => 20.0, 'impressions' => 300.0, 'ctr' => 0.067, 'position' => 4.2],
+            ['month' => '2026-08', 'clicks' => 30.0, 'impressions' => 420.0, 'ctr' => 0.071, 'position' => 3.5],
         ]);
 
     $url = route('admin.search-console.performance', [

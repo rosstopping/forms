@@ -129,12 +129,17 @@ class WebsiteController extends Controller
             ? User::query()->when($website->user_id, fn ($query) => $query->whereKeyNot($website->user_id))->whereDoesntHave('sharedWebsites', fn ($query) => $query->whereKey($website->id))->orderBy('name')->get(['id', 'name', 'email'])
             : collect();
         $searchConsoleReport = null;
+        $searchConsoleHistory = [];
         $searchConsoleReportUnavailable = false;
         $seoGeneration = $website->seoSnapshots()->latest('id')->first();
         $seoSnapshot = $website->seoSnapshots()
             ->whereIn('status', ['completed', 'completed_with_errors'])
             ->latest('completed_at')
             ->first();
+        $seoHistory = $website->seoSnapshots()
+            ->whereIn('status', ['completed', 'completed_with_errors'])
+            ->orderBy('snapshot_date')
+            ->get(['snapshot_date', 'organic_keywords', 'estimated_organic_traffic', 'top_3_keywords', 'top_10_keywords', 'top_20_keywords']);
         $seoFilter = $request->string('seo_filter')->toString();
         $seoFilter = in_array($seoFilter, ['top_3', 'page_1', 'positions_11_20', 'positions_21_50', 'positions_51_100', 'commercial'], true) ? $seoFilter : 'all';
         $seoSort = $request->string('seo_sort')->toString();
@@ -188,6 +193,7 @@ class WebsiteController extends Controller
                 $connection = $website->searchConsoleConnection;
                 $cacheKey = 'search-console-report:'.$connection->id.':'.hash('sha256', $connection->property_url).':'.$connection->updated_at->timestamp;
                 $searchConsoleReport = Cache::remember($cacheKey, now()->addMinutes(15), fn (): array => $this->searchConsole->report($connection));
+                $searchConsoleHistory = Cache::remember($cacheKey.':monthly-history', now()->addHours(6), fn (): array => $this->searchConsole->monthlyPerformance($connection));
             } catch (\Throwable) {
                 $searchConsoleReportUnavailable = true;
             }
@@ -200,7 +206,7 @@ class WebsiteController extends Controller
 
         return view('admin.websites.show', compact(
             'website', 'users', 'availableMembers', 'canManageMembers', 'canManageWebsite',
-            'searchConsoleReport', 'searchConsoleReportUnavailable', 'seoGeneration', 'seoSnapshot',
+            'searchConsoleReport', 'searchConsoleHistory', 'searchConsoleReportUnavailable', 'seoGeneration', 'seoSnapshot', 'seoHistory',
             'seoKeywords', 'seoReferringDomains', 'seoCompetitors', 'seoOpportunities', 'seoFilter', 'seoSort', 'seoDirection', 'strikingDistanceCount',
             'dataForSeoConfigured', 'outreachProspect', 'pixelInstallationSnippet',
         ));

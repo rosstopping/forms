@@ -357,9 +357,15 @@ it('links a completed Copilot task to its pull request', function (): void {
     $copilot->shouldReceive('task')->once()->andReturn([
         'state' => 'completed',
         'artifacts' => [['provider' => 'github', 'type' => 'pull', 'data' => ['id' => 42]]],
+        'sessions' => [['head_ref' => 'copilot/content-update']],
+    ]);
+    $github = mock(GithubAppClient::class);
+    $github->shouldReceive('pullRequestForHead')->once()->andReturn([
+        'number' => 42,
+        'html_url' => 'https://github.com/acme/site/pull/42',
     ]);
 
-    (new SyncCopilotRemediation($run))->handle($copilot, mock(GithubAppClient::class));
+    (new SyncCopilotRemediation($run))->handle($copilot, $github);
 
     expect($run->fresh()->status)->toBe(RemediationRun::STATUS_PULL_REQUEST_OPEN)
         ->and($run->fresh()->pull_request_number)->toBe(42)

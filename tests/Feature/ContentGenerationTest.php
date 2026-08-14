@@ -131,20 +131,35 @@ test('a due weekly content plan queues a generation while an earlier pull reques
 
 test('an admin can reconcile a merged content pull request when its webhook was missed', function () {
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    GithubUserAuthorization::factory()->for($admin)->create();
     $website = Website::factory()->create();
     $repository = WebsiteRepository::factory()->for($website)->create();
     $plan = ContentPlan::factory()->for($website)->for($admin, 'creator')->create();
     $generation = ContentGeneration::factory()->for($plan, 'plan')->for($repository, 'repository')->for($admin, 'requester')->create([
         'status' => ContentGeneration::STATUS_PULL_REQUEST_OPEN,
-        'pull_request_number' => 42,
+        'copilot_task_id' => '3f42d7ad-7377-464a-9e15-c1784cb7dc5c',
+        'pull_request_number' => 4252147427,
         'pull_request_state' => 'open',
     ]);
     $mergedAt = now()->subHour();
-    $this->mock(GithubAppClient::class)
+    $github = $this->mock(GithubAppClient::class);
+    $github->shouldReceive('pullRequestDetails')
+        ->once()
+        ->withArgs(fn (WebsiteRepository $passedRepository, int $number): bool => $passedRepository->is($repository) && $number === 4252147427)
+        ->andThrow(new RuntimeException('GitHub returned 404.'));
+    $github->shouldReceive('pullRequestForHead')
+        ->once()
+        ->withArgs(fn (WebsiteRepository $passedRepository, string $headRef): bool => $passedRepository->is($repository) && $headRef === 'copilot/create-useful-content')
+        ->andReturn(['number' => 42, 'html_url' => 'https://github.com/acme/site/pull/42']);
+    $github
         ->shouldReceive('pullRequestDetails')
         ->once()
         ->withArgs(fn (WebsiteRepository $passedRepository, int $number): bool => $passedRepository->is($repository) && $number === 42)
         ->andReturn(['pull_request' => ['state' => 'closed', 'merged_at' => $mergedAt->toIso8601String()], 'files' => []]);
+    $this->mock(CopilotAgentClient::class)
+        ->shouldReceive('task')
+        ->once()
+        ->andReturn(['sessions' => [['head_ref' => 'copilot/create-useful-content']]]);
 
     $this->actingAs($admin)
         ->get(route('admin.websites.show', $website))
@@ -158,6 +173,8 @@ test('an admin can reconcile a merged content pull request when its webhook was 
         ->assertSessionHas('status', 'GitHub confirmed that the content pull request was merged.');
 
     expect($generation->fresh()->status)->toBe(ContentGeneration::STATUS_COMPLETED)
+        ->and($generation->fresh()->pull_request_number)->toBe(42)
+        ->and($generation->fresh()->pull_request_url)->toBe('https://github.com/acme/site/pull/42')
         ->and($generation->fresh()->pull_request_state)->toBe('closed')
         ->and($generation->fresh()->merged_at?->timestamp)->toBe($mergedAt->timestamp)
         ->and($generation->fresh()->completed_at?->timestamp)->toBe($mergedAt->timestamp);

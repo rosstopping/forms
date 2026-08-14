@@ -80,6 +80,7 @@ class SearchConsoleController extends Controller
         $cacheKey = 'search-console-performance:'.$connection->id.':'.$connection->updated_at->timestamp.':';
         $queries = Cache::remember($cacheKey.'query-pages', now()->addMinutes(15), fn (): array => $this->searchConsole->queryPagePerformance($connection, self::PERFORMANCE_ROW_LIMIT));
         $landingPages = Cache::remember($cacheKey.'pages', now()->addMinutes(15), fn (): array => $this->searchConsole->pagePerformance($connection, self::PERFORMANCE_ROW_LIMIT));
+        $history = Cache::remember($cacheKey.'monthly-history', now()->addHours(6), fn (): array => $this->searchConsole->monthlyPerformance($connection));
         $queries = $this->sortPerformanceRows($queries, $querySort, $queryDirection);
         $landingPages = $this->sortPerformanceRows($landingPages, $pageSort, $pageDirection);
         $queryOffset = ($queryPage - 1) * self::PERFORMANCE_PAGE_SIZE;
@@ -100,6 +101,7 @@ class SearchConsoleController extends Controller
             'hasMorePages' => count($landingPages) > $pageOffset + self::PERFORMANCE_PAGE_SIZE,
             'pageSize' => self::PERFORMANCE_PAGE_SIZE,
             'period' => ['start' => now()->subDays(29), 'end' => now()->subDay()],
+            'history' => $history,
         ]);
     }
 

@@ -93,6 +93,20 @@ class SearchConsoleClient
         ];
     }
 
+    /** @return array<int, array{month: string, clicks: float, impressions: float, ctr: float, position: float}> */
+    public function monthlyPerformance(SearchConsoleConnection $connection): array
+    {
+        $rows = $this->performanceRows($connection, ['date'], 25000, dates: ['start' => now()->subMonthsNoOverflow(16)->startOfMonth(), 'end' => now()->subDays(3)]);
+
+        return collect($rows)->groupBy(fn (array $row): string => substr((string) data_get($row, 'keys.0'), 0, 7))->map(function ($rows, string $month): array {
+            $clicks = (float) $rows->sum(fn (array $row): float => (float) ($row['clicks'] ?? 0));
+            $impressions = (float) $rows->sum(fn (array $row): float => (float) ($row['impressions'] ?? 0));
+            $weightedPosition = (float) $rows->sum(fn (array $row): float => (float) ($row['position'] ?? 0) * (float) ($row['impressions'] ?? 0));
+
+            return ['month' => $month, 'clicks' => $clicks, 'impressions' => $impressions, 'ctr' => $impressions > 0 ? $clicks / $impressions : 0, 'position' => $impressions > 0 ? $weightedPosition / $impressions : 0];
+        })->sortKeys()->values()->all();
+    }
+
     /**
      * @param  array<int, string>  $dimensions
      * @return array<int, array<string, mixed>>

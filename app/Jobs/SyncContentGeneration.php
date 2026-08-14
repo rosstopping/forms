@@ -51,7 +51,7 @@ class SyncContentGeneration implements ShouldBeEncrypted, ShouldBeUniqueUntilPro
         }
         if ($state === 'completed') {
             $pullRequest = collect($task['artifacts'] ?? [])->first(fn (array $artifact) => ($artifact['provider'] ?? null) === 'github' && ($artifact['type'] ?? null) === 'pull');
-            $number = data_get($pullRequest, 'data.number', data_get($pullRequest, 'data.id'));
+            $number = data_get($pullRequest, 'data.number');
             $url = null;
             $headRef = data_get($task, 'sessions.0.head_ref');
 

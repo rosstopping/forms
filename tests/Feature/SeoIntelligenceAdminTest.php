@@ -32,6 +32,7 @@ test('the website workspace exposes seo intelligence with an empty state', funct
         ->assertSee('data-tabs-key="seo-intelligence"', false)
         ->assertSee('SEO Intelligence')
         ->assertSee('Estimated data')
+        ->assertSee('Automatic weekly snapshots')
         ->assertDontSee('DataForSEO')
         ->assertSee('No SEO snapshot yet')
         ->assertSee('Generate intelligence');

@@ -26,7 +26,7 @@
             </div>
 
             @if ($canManageWebsite)
-                <div class="shrink-0">
+                <div class="flex shrink-0 flex-col items-end gap-2">
                     @if ($dataForSeoConfigured)
                         <form method="POST" action="{{ route('admin.seo-intelligence.store', $website) }}">
                             @csrf
@@ -37,6 +37,14 @@
                     @else
                         <p class="max-w-xs text-sm text-amber-700">Add the SEO data provider credentials to Sitewell before generating intelligence.</p>
                     @endif
+                    <form method="POST" action="{{ route('admin.seo-snapshot-settings.update', $website) }}" class="flex items-center gap-2">
+                        @csrf @method('PUT')
+                        <input type="hidden" name="seo_weekly_snapshots_enabled" value="0">
+                        <input id="seo-weekly-snapshots" type="checkbox" name="seo_weekly_snapshots_enabled" value="1" @checked($website->seo_weekly_snapshots_enabled)>
+                        <label for="seo-weekly-snapshots" class="text-sm text-slate-600">Automatic weekly snapshots</label>
+                        <button class="rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">Save</button>
+                    </form>
+                    <p class="max-w-sm text-right text-xs text-slate-500">Uses the paid SEO data API. Enabling it also imports available monthly history once.</p>
                 </div>
             @endif
         </div>
@@ -96,6 +104,10 @@
                     </dl>
                 </div>
             </div>
+            </div>
+            <div class="grid gap-4 border-t border-slate-200 p-4 lg:grid-cols-2">
+                <x-progress-chart title="Estimated organic traffic" description="Monthly third-party organic visibility estimate." :points="$seoHistory" value-key="estimated_organic_traffic" format="traffic" />
+                <x-progress-chart title="Ranking keywords" description="Keywords estimated to rank in Google's top 100." :points="$seoHistory" value-key="organic_keywords" />
             </div>
         @else
             <div class="p-8 text-center">

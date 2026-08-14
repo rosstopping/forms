@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateContentPlanRequest;
 use App\Jobs\StartContentGeneration;
 use App\Models\ContentGeneration;
 use App\Models\Website;
+use App\Services\CopilotAgentClient;
 use App\Services\GithubAppClient;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -54,13 +55,13 @@ class ContentPlanController extends Controller
         return Redirect::route('admin.websites.show', $website)->with('status', $generation->wasRecentlyCreated ? 'Content generation queued.' : 'A content generation already exists for today.');
     }
 
-    public function syncGeneration(Request $request, Website $website, ContentGeneration $contentGeneration, GithubAppClient $github): RedirectResponse
+    public function syncGeneration(Request $request, Website $website, ContentGeneration $contentGeneration, GithubAppClient $github, CopilotAgentClient $copilot): RedirectResponse
     {
         $this->authorizeGeneration($request, $website, $contentGeneration);
         abort_unless($contentGeneration->pull_request_number, 422);
 
-        $contentGeneration->loadMissing('repository.installation');
-        $pullRequest = $github->pullRequestDetails($contentGeneration->repository, $contentGeneration->pull_request_number)['pull_request'];
+        $contentGeneration->loadMissing(['repository.installation', 'requester.githubAuthorization']);
+        $pullRequest = $this->contentPullRequestDetails($contentGeneration, $github, $copilot);
         $state = (string) ($pullRequest['state'] ?? $contentGeneration->pull_request_state);
         $mergedAt = filled($pullRequest['merged_at'] ?? null) ? Carbon::parse($pullRequest['merged_at']) : null;
 
@@ -116,5 +117,40 @@ class ContentPlanController extends Controller
     {
         abort_unless($request->user()?->isAdmin(), 403);
         abort_unless($contentGeneration->plan()->where('website_id', $website->id)->exists(), 404);
+    }
+
+    /** @return array<string, mixed> */
+    protected function contentPullRequestDetails(ContentGeneration $contentGeneration, GithubAppClient $github, CopilotAgentClient $copilot): array
+    {
+        try {
+            return $github->pullRequestDetails($contentGeneration->repository, $contentGeneration->pull_request_number)['pull_request'];
+        } catch (\Throwable $exception) {
+            $authorization = $contentGeneration->requester?->githubAuthorization;
+
+            if (! $authorization || ! $contentGeneration->copilot_task_id) {
+                throw $exception;
+            }
+
+            $task = $copilot->task($authorization, $contentGeneration->repository, $contentGeneration->copilot_task_id);
+            $headRef = data_get($task, 'sessions.0.head_ref');
+
+            if (! is_string($headRef) || $headRef === '') {
+                throw $exception;
+            }
+
+            $pullRequest = $github->pullRequestForHead($contentGeneration->repository, $headRef);
+            $pullRequestNumber = (int) ($pullRequest['number'] ?? 0);
+
+            if ($pullRequestNumber < 1) {
+                throw $exception;
+            }
+
+            $contentGeneration->update([
+                'pull_request_number' => $pullRequestNumber,
+                'pull_request_url' => (string) ($pullRequest['html_url'] ?? "https://github.com/{$contentGeneration->repository->full_name}/pull/{$pullRequestNumber}"),
+            ]);
+
+            return $github->pullRequestDetails($contentGeneration->repository, $pullRequestNumber)['pull_request'];
+        }
     }
 }
