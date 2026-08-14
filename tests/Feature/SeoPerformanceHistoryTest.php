@@ -2,6 +2,7 @@
 
 use App\Jobs\BackfillSeoHistory;
 use App\Models\SearchConsoleConnection;
+use App\Models\SearchConsoleMetric;
 use App\Models\SeoSnapshot;
 use App\Models\User;
 use App\Models\Website;
@@ -9,11 +10,13 @@ use App\Services\DataForSEO\Data\DataForSEOResponse;
 use App\Services\DataForSEO\DataForSEOClient;
 use App\Services\GoogleOAuthClient;
 use App\Services\SearchConsoleClient;
+use App\Services\SearchConsoleHistoryStore;
 use App\Services\SeoIntelligence\SeoHistoryService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Schedule;
 
 uses(RefreshDatabase::class);
 
@@ -98,6 +101,81 @@ test('search console query history uses an exact query filter', function () {
         'operator' => 'equals',
         'expression' => 'luxury train journeys',
     ]);
+});
+
+test('search console history remains stored after it falls outside the provider window', function () {
+    $connection = SearchConsoleConnection::factory()->create(['property_url' => 'sc-domain:example.com']);
+    SearchConsoleMetric::factory()->for($connection->website)->for($connection, 'connection')->create([
+        'property_url' => $connection->property_url,
+        'property_hash' => hash('sha256', $connection->property_url),
+        'month' => '2024-01-01',
+        'clicks' => 40,
+        'impressions' => 800,
+        'ctr' => .05,
+        'position' => 12,
+    ]);
+    $client = $this->mock(SearchConsoleClient::class);
+    $client->shouldReceive('monthlyPerformance')->once()->andReturn([
+        ['month' => '2026-07', 'clicks' => 100.0, 'impressions' => 2000.0, 'ctr' => .05, 'position' => 7.1],
+    ]);
+
+    $history = (new SearchConsoleHistoryStore($client))->syncSite($connection);
+
+    expect($history)->toHaveCount(2)
+        ->and($history[0]['month'])->toBe('2024-01')
+        ->and($history[1]['month'])->toBe('2026-07')
+        ->and($connection->metrics()->count())->toBe(2);
+});
+
+test('search console history refresh updates a month instead of duplicating it', function () {
+    $connection = SearchConsoleConnection::factory()->create(['property_url' => 'sc-domain:example.com']);
+    $client = $this->mock(SearchConsoleClient::class);
+    $client->shouldReceive('monthlyPerformance')->twice()->andReturn(
+        [['month' => '2026-07', 'clicks' => 100.0, 'impressions' => 2000.0, 'ctr' => .05, 'position' => 7.1]],
+        [['month' => '2026-07', 'clicks' => 125.0, 'impressions' => 2500.0, 'ctr' => .05, 'position' => 6.4]],
+    );
+    $store = new SearchConsoleHistoryStore($client);
+
+    $store->syncSite($connection);
+    $history = $store->syncSite($connection);
+
+    expect($connection->metrics()->count())->toBe(1)
+        ->and($history[0]['clicks'])->toBe(125.0)
+        ->and($history[0]['position'])->toBe(6.4);
+});
+
+test('stored search console history survives disconnecting the Google account', function () {
+    $connection = SearchConsoleConnection::factory()->create(['property_url' => 'sc-domain:example.com']);
+    $metric = SearchConsoleMetric::factory()->for($connection->website)->for($connection, 'connection')->create([
+        'property_url' => $connection->property_url,
+        'property_hash' => hash('sha256', $connection->property_url),
+    ]);
+
+    $connection->delete();
+
+    expect($metric->fresh())->not->toBeNull()
+        ->and($metric->fresh()->search_console_connection_id)->toBeNull();
+});
+
+test('viewed search console queries are stored as tracked histories', function () {
+    $connection = SearchConsoleConnection::factory()->create(['property_url' => 'sc-domain:example.com']);
+    $client = $this->mock(SearchConsoleClient::class);
+    $client->shouldReceive('monthlyPerformanceForQuery')->once()->with($connection, 'luxury trains')->andReturn([
+        ['month' => '2026-07', 'clicks' => 12.0, 'impressions' => 240.0, 'ctr' => .05, 'position' => 8.2],
+    ]);
+
+    (new SearchConsoleHistoryStore($client))->syncQuery($connection, 'luxury trains');
+
+    $metric = $connection->metrics()->firstOrFail();
+    expect($metric->query)->toBe('luxury trains')
+        ->and($metric->dimension_key)->toBe(hash('sha256', 'query:luxury trains'));
+});
+
+test('search console history synchronisation is scheduled weekly', function () {
+    $event = collect(Schedule::events())->first(fn ($event): bool => str_contains($event->command, 'search-console:sync-history'));
+
+    expect($event)->not->toBeNull()
+        ->and($event->expression)->toBe('0 4 * * 1');
 });
 
 test('progress chart exposes every period for pointer and keyboard inspection', function () {

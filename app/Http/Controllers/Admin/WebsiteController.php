@@ -8,6 +8,7 @@ use App\Models\Website;
 use App\Models\WebsiteDomain;
 use App\Services\PixelInstallationSnippet;
 use App\Services\SearchConsoleClient;
+use App\Services\SearchConsoleHistoryStore;
 use App\Services\WebsiteProspectService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,7 +22,10 @@ use Illuminate\View\View;
 
 class WebsiteController extends Controller
 {
-    public function __construct(protected SearchConsoleClient $searchConsole) {}
+    public function __construct(
+        protected SearchConsoleClient $searchConsole,
+        protected SearchConsoleHistoryStore $searchConsoleHistory,
+    ) {}
 
     public function index(Request $request): View
     {
@@ -193,7 +197,7 @@ class WebsiteController extends Controller
                 $connection = $website->searchConsoleConnection;
                 $cacheKey = 'search-console-report:'.$connection->id.':'.hash('sha256', $connection->property_url).':'.$connection->updated_at->timestamp;
                 $searchConsoleReport = Cache::remember($cacheKey, now()->addMinutes(15), fn (): array => $this->searchConsole->report($connection));
-                $searchConsoleHistory = Cache::remember($cacheKey.':monthly-history', now()->addHours(6), fn (): array => $this->searchConsole->monthlyPerformance($connection));
+                $searchConsoleHistory = Cache::remember($cacheKey.':monthly-history', now()->addHours(6), fn (): array => $this->searchConsoleHistory->syncSite($connection));
             } catch (\Throwable) {
                 $searchConsoleReportUnavailable = true;
             }

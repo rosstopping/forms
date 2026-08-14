@@ -7,6 +7,7 @@ use App\Http\Requests\StoreSearchConsolePropertyRequest;
 use App\Models\Website;
 use App\Services\GoogleOAuthClient;
 use App\Services\SearchConsoleClient;
+use App\Services\SearchConsoleHistoryStore;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -22,7 +23,11 @@ class SearchConsoleController extends Controller
 
     protected const PERFORMANCE_ROW_LIMIT = 25000;
 
-    public function __construct(protected GoogleOAuthClient $oauth, protected SearchConsoleClient $searchConsole) {}
+    public function __construct(
+        protected GoogleOAuthClient $oauth,
+        protected SearchConsoleClient $searchConsole,
+        protected SearchConsoleHistoryStore $historyStore,
+    ) {}
 
     public function connect(Request $request, Website $website): RedirectResponse
     {
@@ -80,7 +85,7 @@ class SearchConsoleController extends Controller
         $cacheKey = 'search-console-performance:'.$connection->id.':'.$connection->updated_at->timestamp.':';
         $queries = Cache::remember($cacheKey.'query-pages', now()->addMinutes(15), fn (): array => $this->searchConsole->queryPagePerformance($connection, self::PERFORMANCE_ROW_LIMIT));
         $landingPages = Cache::remember($cacheKey.'pages', now()->addMinutes(15), fn (): array => $this->searchConsole->pagePerformance($connection, self::PERFORMANCE_ROW_LIMIT));
-        $history = Cache::remember($cacheKey.'monthly-history', now()->addHours(6), fn (): array => $this->searchConsole->monthlyPerformance($connection));
+        $history = Cache::remember($cacheKey.'monthly-history', now()->addHours(6), fn (): array => $this->historyStore->syncSite($connection));
         $queries = $this->sortPerformanceRows($queries, $querySort, $queryDirection);
         $landingPages = $this->sortPerformanceRows($landingPages, $pageSort, $pageDirection);
         $queryOffset = ($queryPage - 1) * self::PERFORMANCE_PAGE_SIZE;
@@ -112,7 +117,7 @@ class SearchConsoleController extends Controller
         $connection = $website->searchConsoleConnection()->firstOrFail();
         $query = $data['query'];
         $cacheKey = 'search-console-query-history:'.$connection->id.':'.$connection->updated_at->timestamp.':'.hash('sha256', $query);
-        $history = Cache::remember($cacheKey, now()->addHours(6), fn (): array => $this->searchConsole->monthlyPerformanceForQuery($connection, $query));
+        $history = Cache::remember($cacheKey, now()->addHours(6), fn (): array => $this->historyStore->syncQuery($connection, $query));
 
         return view('admin.websites.search-console-query', compact('website', 'connection', 'query', 'history'));
     }

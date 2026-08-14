@@ -6,6 +6,7 @@ use Database\Factories\SearchConsoleConnectionFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class SearchConsoleConnection extends Model
 {
@@ -34,5 +35,10 @@ class SearchConsoleConnection extends Model
     public function connector(): BelongsTo
     {
         return $this->belongsTo(User::class, 'connected_by');
+    }
+
+    public function metrics(): HasMany
+    {
+        return $this->hasMany(SearchConsoleMetric::class);
     }
 }
