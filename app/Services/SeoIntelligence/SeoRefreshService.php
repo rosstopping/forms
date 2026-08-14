@@ -31,7 +31,7 @@ class SeoRefreshService
                 ->latest('completed_at')
                 ->first();
 
-            if ($freshSnapshot) {
+            if ($freshSnapshot && (int) data_get($freshSnapshot->metadata, 'keyword_sample_version') >= SeoSnapshotService::KEYWORD_SAMPLE_VERSION) {
                 return new SeoRefreshResult($freshSnapshot, false, SeoRefreshResult::REASON_FRESH);
             }
 

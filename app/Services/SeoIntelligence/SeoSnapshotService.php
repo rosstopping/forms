@@ -18,6 +18,18 @@ use InvalidArgumentException;
 
 class SeoSnapshotService
 {
+    public const KEYWORD_SAMPLE_VERSION = 2;
+
+    /** @var array<int, string> */
+    private const COMPLETE_DATASETS = [
+        'domain_overview',
+        'ranked_keywords',
+        'backlink_overview',
+        'referring_domains',
+        'organic_competitors',
+        'seo_opportunities',
+    ];
+
     public function __construct(
         private DomainOverviewService $domainOverview,
         private RankedKeywordsService $rankedKeywords,
@@ -50,7 +62,13 @@ class SeoSnapshotService
 
     public function process(SeoSnapshot $snapshot): SeoSnapshot
     {
-        if (in_array($snapshot->status, [SeoSnapshot::STATUS_COMPLETED, SeoSnapshot::STATUS_COMPLETED_WITH_ERRORS], true)) {
+        $datasets = data_get($snapshot->metadata, 'datasets', []);
+        $datasets = is_array($datasets) ? $datasets : [];
+        $keywordSampleVersion = (int) data_get($snapshot->metadata, 'keyword_sample_version', 0);
+        $isHistoricalSummary = data_get($snapshot->metadata, 'historical') === true;
+        $isFullyProcessed = array_diff(self::COMPLETE_DATASETS, $datasets) === [];
+
+        if (in_array($snapshot->status, [SeoSnapshot::STATUS_COMPLETED, SeoSnapshot::STATUS_COMPLETED_WITH_ERRORS], true) && ($isHistoricalSummary || $isFullyProcessed)) {
             return $snapshot->loadMissing('keywords');
         }
 
@@ -61,8 +79,6 @@ class SeoSnapshotService
         $domain = $snapshot->domain;
         $locationCode = $snapshot->location_code;
         $languageCode = $snapshot->language_code;
-        $datasets = data_get($snapshot->metadata, 'datasets', []);
-        $datasets = is_array($datasets) ? $datasets : [];
         $errors = [];
 
         if (! in_array('domain_overview', $datasets, true) || ! in_array('ranked_keywords', $datasets, true)) {
@@ -82,6 +98,7 @@ class SeoSnapshotService
                     'metadata' => [
                         'data_source' => 'third_party_estimate',
                         'datasets' => ['domain_overview', 'ranked_keywords'],
+                        'keyword_sample_version' => self::KEYWORD_SAMPLE_VERSION,
                     ],
                 ]);
 
@@ -113,6 +130,7 @@ class SeoSnapshotService
             });
 
             $datasets = ['domain_overview', 'ranked_keywords'];
+            $keywordSampleVersion = self::KEYWORD_SAMPLE_VERSION;
         }
 
         if (! in_array('backlink_overview', $datasets, true)) {
@@ -120,7 +138,7 @@ class SeoSnapshotService
                 $backlinkResponse = $this->backlinks->overview($domain);
 
                 $datasets[] = 'backlink_overview';
-                DB::transaction(function () use ($snapshot, $requestedAt, $backlinkResponse, $datasets): void {
+                DB::transaction(function () use ($snapshot, $requestedAt, $backlinkResponse, $datasets, $keywordSampleVersion): void {
                     $overview = $backlinkResponse->overview;
                     $snapshot->update([
                         'backlinks' => $overview->backlinks,
@@ -129,7 +147,7 @@ class SeoSnapshotService
                         'referring_subnets' => $overview->referringSubnets,
                         'broken_backlinks' => $overview->brokenBacklinks,
                         'domain_rank' => $overview->domainRank,
-                        'metadata' => ['data_source' => 'third_party_estimate', 'datasets' => $datasets],
+                        'metadata' => ['data_source' => 'third_party_estimate', 'datasets' => $datasets, 'keyword_sample_version' => $keywordSampleVersion],
                     ]);
                     $snapshot->apiUsages()->create(
                         $this->usageData($snapshot->website, $backlinkResponse->endpoint, 'backlink_overview', $backlinkResponse->resultCount, $backlinkResponse->cost, $backlinkResponse->taskId, $requestedAt),
@@ -145,7 +163,7 @@ class SeoSnapshotService
                 $referringDomainsResponse = $this->backlinks->referringDomains($domain);
 
                 $datasets[] = 'referring_domains';
-                DB::transaction(function () use ($snapshot, $requestedAt, $referringDomainsResponse, $datasets): void {
+                DB::transaction(function () use ($snapshot, $requestedAt, $referringDomainsResponse, $datasets, $keywordSampleVersion): void {
                     $snapshot->referringDomains()->createMany(array_map(
                         fn (ReferringDomainData $domain): array => [
                             'website_id' => $snapshot->website_id,
@@ -157,7 +175,7 @@ class SeoSnapshotService
                         ],
                         $referringDomainsResponse->domains,
                     ));
-                    $snapshot->update(['metadata' => ['data_source' => 'third_party_estimate', 'datasets' => $datasets]]);
+                    $snapshot->update(['metadata' => ['data_source' => 'third_party_estimate', 'datasets' => $datasets, 'keyword_sample_version' => $keywordSampleVersion]]);
                     $snapshot->apiUsages()->create(
                         $this->usageData($snapshot->website, $referringDomainsResponse->endpoint, 'referring_domains', $referringDomainsResponse->resultCount, $referringDomainsResponse->cost, $referringDomainsResponse->taskId, $requestedAt),
                     );
@@ -172,7 +190,7 @@ class SeoSnapshotService
                 $competitorsResponse = $this->competitors->forDomain($domain, $locationCode, $languageCode);
 
                 $datasets[] = 'organic_competitors';
-                DB::transaction(function () use ($snapshot, $requestedAt, $competitorsResponse, $datasets): void {
+                DB::transaction(function () use ($snapshot, $requestedAt, $competitorsResponse, $datasets, $keywordSampleVersion): void {
                     $snapshot->competitors()->createMany(array_map(
                         fn (OrganicCompetitorData $competitor): array => [
                             'website_id' => $snapshot->website_id,
@@ -184,7 +202,7 @@ class SeoSnapshotService
                         ],
                         $competitorsResponse->competitors,
                     ));
-                    $snapshot->update(['metadata' => ['data_source' => 'third_party_estimate', 'datasets' => $datasets]]);
+                    $snapshot->update(['metadata' => ['data_source' => 'third_party_estimate', 'datasets' => $datasets, 'keyword_sample_version' => $keywordSampleVersion]]);
                     $snapshot->apiUsages()->create(
                         $this->usageData($snapshot->website, $competitorsResponse->endpoint, 'organic_competitors', $competitorsResponse->resultCount, $competitorsResponse->cost, $competitorsResponse->taskId, $requestedAt),
                     );
@@ -196,15 +214,15 @@ class SeoSnapshotService
 
         if (! in_array('seo_opportunities', $datasets, true)) {
             $datasets[] = 'seo_opportunities';
-            DB::transaction(function () use ($snapshot, $datasets): void {
+            DB::transaction(function () use ($snapshot, $datasets, $keywordSampleVersion): void {
                 $this->opportunities->generate($snapshot);
-                $snapshot->update(['metadata' => ['data_source' => 'third_party_estimate', 'datasets' => $datasets]]);
+                $snapshot->update(['metadata' => ['data_source' => 'third_party_estimate', 'datasets' => $datasets, 'keyword_sample_version' => $keywordSampleVersion]]);
             });
         }
 
         $snapshot->update([
             'status' => $errors === [] ? SeoSnapshot::STATUS_COMPLETED : SeoSnapshot::STATUS_COMPLETED_WITH_ERRORS,
-            'metadata' => ['data_source' => 'third_party_estimate', 'datasets' => $datasets],
+            'metadata' => ['data_source' => 'third_party_estimate', 'datasets' => $datasets, 'keyword_sample_version' => $keywordSampleVersion],
             'errors' => $errors,
             'completed_at' => now(),
         ]);
