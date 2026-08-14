@@ -134,10 +134,66 @@ it('creates a GitHub repository and commits the generated files', function (): v
     ]);
 
     expect($repository['full_name'])->toBe('octocat/acme-site');
-    Http::assertSentCount(3);
+    Http::assertSentCount(5);
     Http::assertSent(fn ($request): bool => $request->method() === 'PUT'
         && $request->url() === 'https://api.github.test/repos/octocat/acme-site/contents/index.html'
         && $request['content'] === base64_encode('<h1>Acme</h1>'));
+});
+
+it('reuses a repository from a partial earlier build and updates its files', function (): void {
+    config(['services.github.api_url' => 'https://api.github.test']);
+    Http::preventStrayRequests();
+    Http::fake([
+        'api.github.test/user/repos' => Http::response([
+            'message' => 'Repository creation failed.',
+            'errors' => [['field' => 'name', 'message' => 'name already exists on this account']],
+        ], 422),
+        'api.github.test/repos/octocat/acme-site' => Http::response([
+            'id' => 456,
+            'full_name' => 'octocat/acme-site',
+            'default_branch' => 'main',
+            'private' => false,
+        ]),
+        'api.github.test/repos/octocat/acme-site/contents/index.html' => Http::sequence()
+            ->push(['sha' => 'existing-file-sha'])
+            ->push(['content' => ['sha' => 'updated-file-sha']], 200),
+    ]);
+    $authorization = GithubUserAuthorization::factory()->create([
+        'github_login' => 'octocat',
+        'access_token' => 'github-token',
+        'access_token_expires_at' => now()->addHour(),
+    ]);
+
+    $repository = app(GithubOAuthClient::class)->createRepository($authorization, 'octocat', 'acme-site', [
+        'index.html' => '<h1>Updated Acme</h1>',
+    ]);
+
+    expect($repository['full_name'])->toBe('octocat/acme-site');
+    Http::assertSent(fn ($request): bool => $request->method() === 'PUT'
+        && $request->url() === 'https://api.github.test/repos/octocat/acme-site/contents/index.html'
+        && $request['sha'] === 'existing-file-sha'
+        && $request['content'] === base64_encode('<h1>Updated Acme</h1>'));
+});
+
+it('shows the complete GitHub repository validation message when a repository cannot be reused', function (): void {
+    config(['services.github.api_url' => 'https://api.github.test']);
+    Http::preventStrayRequests();
+    Http::fake([
+        'api.github.test/user/repos' => Http::response([
+            'message' => 'Repository creation failed.',
+            'errors' => [['field' => 'name', 'message' => 'name contains an invalid character']],
+        ], 422),
+        'api.github.test/repos/octocat/bad-name' => Http::response([], 404),
+    ]);
+    $authorization = GithubUserAuthorization::factory()->create([
+        'github_login' => 'octocat',
+        'access_token' => 'github-token',
+        'access_token_expires_at' => now()->addHour(),
+    ]);
+
+    expect(fn () => app(GithubOAuthClient::class)->createRepository($authorization, 'octocat', 'bad-name', [
+        'index.html' => '<h1>Acme</h1>',
+    ]))->toThrow(RuntimeException::class, 'name contains an invalid character');
 });
 
 it('uploads a zip deployment and returns the Netlify development link', function (): void {
@@ -186,7 +242,7 @@ it('stops before creating remote resources when GitHub administration permission
         'pages' => ['Home', 'Contact'],
         'repository_name' => 'acme-studio',
         'github_installation_id' => $installation->id,
-    ], $admin))->toThrow(RuntimeException::class, 'Administration set to Read and write');
+    ], $admin))->toThrow(RuntimeException::class, 'Administration and Contents both set to Read and write');
 });
 
 it('submits an installation with stale permissions and shows the actionable permission error', function (): void {
@@ -214,7 +270,7 @@ it('submits an installation with stale permissions and shows the actionable perm
         'repository_name' => 'acme-studio',
         'github_installation_id' => $installation->id,
     ])->assertSessionHasErrors([
-        'builder' => 'The Sitewell GitHub App needs Repository permissions → Administration set to Read and write. Update the GitHub App, approve the new permission for this installation, then try again.',
+        'builder' => 'The Sitewell GitHub App needs Repository permissions → Administration and Contents both set to Read and write. Update the GitHub App, approve the new permissions for this installation, then try again.',
     ])->assertSessionDoesntHaveErrors('github_installation_id');
 });
 
@@ -263,4 +319,29 @@ it('turns a GitHub repository creation 403 into an actionable error', function (
     expect(fn () => app(GithubOAuthClient::class)->createRepository($authorization, 'octocat', 'acme-site', [
         'index.html' => '<h1>Acme</h1>',
     ]))->toThrow(RuntimeException::class, 'organisation allows GitHub Apps to create repositories');
+});
+
+it('turns a GitHub contents 403 into an actionable retry message', function (): void {
+    config(['services.github.api_url' => 'https://api.github.test']);
+    Http::preventStrayRequests();
+    Http::fake([
+        'api.github.test/user/repos' => Http::response([
+            'id' => 456,
+            'full_name' => 'octocat/acme-site',
+            'default_branch' => 'main',
+            'private' => false,
+        ], 201),
+        'api.github.test/repos/octocat/acme-site/contents/index.html' => Http::sequence()
+            ->push([], 404)
+            ->push(['message' => 'Resource not accessible by integration'], 403),
+    ]);
+    $authorization = GithubUserAuthorization::factory()->create([
+        'github_login' => 'octocat',
+        'access_token' => 'github-token',
+        'access_token_expires_at' => now()->addHour(),
+    ]);
+
+    expect(fn () => app(GithubOAuthClient::class)->createRepository($authorization, 'octocat', 'acme-site', [
+        'index.html' => '<h1>Acme</h1>',
+    ]))->toThrow(RuntimeException::class, 'Contents” to Read and write');
 });

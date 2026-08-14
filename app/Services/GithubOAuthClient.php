@@ -68,19 +68,48 @@ class GithubOAuthClient
             throw new RuntimeException('GitHub refused repository creation. Confirm the Sitewell GitHub App has Repository permissions → Administration set to Read and write, the updated permission has been approved for the installation, and the organisation allows GitHub Apps to create repositories.');
         }
 
-        $repository = $response->throw()->json();
+        if ($response->unprocessableEntity()) {
+            $existingRepository = $this->apiRequest($token)->get("repos/{$owner}/{$name}");
+
+            if ($existingRepository->successful()) {
+                $repository = $existingRepository->json();
+            } else {
+                $errors = collect($response->json('errors', []))
+                    ->pluck('message')
+                    ->filter()
+                    ->implode(' ');
+
+                throw new RuntimeException('GitHub could not create the repository.'.($errors !== '' ? ' '.$errors : ' Check the repository name and organisation creation policy.'));
+            }
+        } else {
+            $repository = $response->throw()->json();
+        }
 
         if (! is_string($repository['full_name'] ?? null)) {
             throw new RuntimeException('GitHub did not return the new repository details.');
         }
 
         foreach ($files as $path => $contents) {
-            $this->apiRequest($token)
-                ->put("repos/{$repository['full_name']}/contents/{$path}", [
-                    'message' => 'Build initial website',
-                    'content' => base64_encode($contents),
-                ])
-                ->throw();
+            $endpoint = "repos/{$repository['full_name']}/contents/{$path}";
+            $existingFile = $this->apiRequest($token)->get($endpoint);
+            $payload = [
+                'message' => 'Build website with Sitewell',
+                'content' => base64_encode($contents),
+            ];
+
+            if ($existingFile->successful() && is_string($existingFile->json('sha'))) {
+                $payload['sha'] = $existingFile->json('sha');
+            } elseif (! $existingFile->notFound()) {
+                $existingFile->throw();
+            }
+
+            $writeResponse = $this->apiRequest($token)->put($endpoint, $payload);
+
+            if ($writeResponse->forbidden()) {
+                throw new RuntimeException('GitHub created the repository but refused to write its files. Set the Sitewell GitHub App Repository permission “Contents” to Read and write, approve the updated installation permission, then retry with the same repository name.');
+            }
+
+            $writeResponse->throw();
         }
 
         return $repository;

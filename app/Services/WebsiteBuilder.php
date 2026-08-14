@@ -39,8 +39,9 @@ class WebsiteBuilder
 
         if ($installation->status !== GithubInstallation::STATUS_ACTIVE
             || $installation->repository_selection !== 'all'
-            || ($installation->permissions['administration'] ?? null) !== 'write') {
-            throw new RuntimeException('The Sitewell GitHub App needs Repository permissions → Administration set to Read and write. Update the GitHub App, approve the new permission for this installation, then try again.');
+            || ($installation->permissions['administration'] ?? null) !== 'write'
+            || ($installation->permissions['contents'] ?? null) !== 'write') {
+            throw new RuntimeException('The Sitewell GitHub App needs Repository permissions → Administration and Contents both set to Read and write. Update the GitHub App, approve the new permissions for this installation, then try again.');
         }
 
         $files = $this->generator->generate($details);
