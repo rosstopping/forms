@@ -2,6 +2,7 @@
 
 use App\Jobs\BackfillSeoHistory;
 use App\Models\SearchConsoleConnection;
+use App\Models\SeoSnapshot;
 use App\Models\User;
 use App\Models\Website;
 use App\Services\DataForSEO\Data\DataForSEOResponse;
@@ -10,6 +11,7 @@ use App\Services\GoogleOAuthClient;
 use App\Services\SearchConsoleClient;
 use App\Services\SeoIntelligence\SeoHistoryService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 
@@ -72,4 +74,49 @@ test('search console daily performance is aggregated into monthly history', func
         ->and($history[0]['impressions'])->toBe(400.0)
         ->and($history[0]['ctr'])->toBe(.075)
         ->and($history[0]['position'])->toBe(7.0);
+});
+
+test('progress chart exposes every period for pointer and keyboard inspection', function () {
+    $html = Blade::render(
+        '<x-progress-chart title="Organic clicks" description="Monthly clicks." :points="$points" value-key="clicks" />',
+        ['points' => [
+            ['month' => '2026-05', 'clicks' => 10],
+            ['month' => '2026-06', 'clicks' => 25],
+            ['month' => '2026-07', 'clicks' => 20],
+        ]],
+    );
+
+    expect($html)
+        ->toContain('data-progress-chart')
+        ->toContain('data-chart-tooltip')
+        ->toContain('aria-label="May 2026: 10"')
+        ->toContain('aria-label="Jun 2026: 25"')
+        ->toContain('aria-label="Jul 2026: 20"')
+        ->and(substr_count($html, 'data-chart-point'))
+        ->toBe(3);
+});
+
+test('progress chart accepts eloquent snapshot observations', function () {
+    $website = Website::factory()->create();
+    $snapshots = collect([
+        SeoSnapshot::factory()->for($website)->make([
+            'snapshot_date' => '2026-06-30',
+            'estimated_organic_traffic' => 125.5,
+        ]),
+        SeoSnapshot::factory()->for($website)->make([
+            'snapshot_date' => '2026-07-31',
+            'estimated_organic_traffic' => 150.5,
+        ]),
+    ]);
+
+    $html = Blade::render(
+        '<x-progress-chart title="Traffic" description="Estimated traffic." :points="$points" value-key="estimated_organic_traffic" format="traffic" />',
+        ['points' => $snapshots],
+    );
+
+    expect($html)
+        ->toContain('aria-label="30 Jun 2026: ~126"')
+        ->toContain('aria-label="31 Jul 2026: ~151"')
+        ->and(substr_count($html, 'data-chart-point'))
+        ->toBe(2);
 });

@@ -332,3 +332,48 @@ document.querySelectorAll('[data-confirm-action-dialog]').forEach((dialog) => {
     dialog.querySelector('[data-confirm-action-cancel]')?.addEventListener('click', () => dialog.close());
     submit.addEventListener('click', () => activeForm?.requestSubmit());
 });
+
+document.querySelectorAll('[data-progress-chart]').forEach((chart) => {
+    const plot = chart.querySelector('[data-chart-plot]');
+    const tooltip = chart.querySelector('[data-chart-tooltip]');
+    const tooltipValue = chart.querySelector('[data-chart-tooltip-value]');
+    const tooltipPeriod = chart.querySelector('[data-chart-tooltip-period]');
+    const guide = chart.querySelector('[data-chart-guide]');
+    const points = [...chart.querySelectorAll('[data-chart-point]')];
+
+    if (!plot || !tooltip || !tooltipValue || !tooltipPeriod || !guide) {
+        return;
+    }
+
+    const showPoint = (point) => {
+        const pointBounds = point.getBoundingClientRect();
+        const chartBounds = chart.getBoundingClientRect();
+        const pointCenter = pointBounds.left + (pointBounds.width / 2) - chartBounds.left;
+        const top = pointBounds.top - chartBounds.top - 8;
+
+        tooltipValue.textContent = point.dataset.displayValue;
+        tooltipPeriod.textContent = point.dataset.period;
+        tooltip.style.setProperty('--chart-tooltip-top', `${top}px`);
+        tooltip.classList.remove('hidden');
+        const tooltipHalfWidth = tooltip.offsetWidth / 2;
+        const left = Math.min(Math.max(pointCenter, tooltipHalfWidth + 4), chartBounds.width - tooltipHalfWidth - 4);
+
+        tooltip.style.setProperty('--chart-tooltip-left', `${left}px`);
+        guide.setAttribute('x1', point.dataset.chartX);
+        guide.setAttribute('x2', point.dataset.chartX);
+        guide.classList.remove('hidden');
+    };
+
+    const hidePoint = () => {
+        tooltip.classList.add('hidden');
+        guide.classList.add('hidden');
+    };
+
+    points.forEach((point) => {
+        point.addEventListener('mouseenter', () => showPoint(point));
+        point.addEventListener('mouseleave', hidePoint);
+        point.addEventListener('focus', () => showPoint(point));
+        point.addEventListener('blur', hidePoint);
+        point.addEventListener('click', () => showPoint(point));
+    });
+});

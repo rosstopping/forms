@@ -24,7 +24,7 @@
         <div class="grid gap-4 lg:grid-cols-2">
             <x-progress-chart title="Organic clicks" description="Actual monthly clicks from Google Search Console." :points="$history" value-key="clicks" />
             <x-progress-chart title="Search impressions" description="Monthly appearances in Google search results." :points="$history" value-key="impressions" />
-            <x-progress-chart title="Average CTR" description="Monthly click-through rate." :points="collect($history)->map(fn ($point) => [...$point, 'ctr_percentage' => $point['ctr'] * 100])" value-key="ctr_percentage" format="decimal" />
+            <x-progress-chart title="Average CTR" description="Monthly click-through rate." :points="collect($history)->map(fn ($point) => [...$point, 'ctr_percentage' => $point['ctr'] * 100])" value-key="ctr_percentage" format="percentage" />
             <x-progress-chart title="Average position" description="Impression-weighted average position; lower is better." :points="$history" value-key="position" format="decimal" :lower-is-better="true" />
         </div>
 
