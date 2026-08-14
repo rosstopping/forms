@@ -230,6 +230,44 @@ test('website owners can queue and remove manual content requests', function () 
     $this->assertModelMissing($contentRequest);
 });
 
+test('actioned content todos remain visible separately with their generation outcome', function () {
+    $owner = User::factory()->create();
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $repository = WebsiteRepository::factory()->for($website)->create();
+    $plan = ContentPlan::factory()->for($website)->for($owner, 'creator')->create();
+    $generation = ContentGeneration::factory()
+        ->for($plan, 'plan')
+        ->for($repository, 'repository')
+        ->for($owner, 'requester')
+        ->create([
+            'status' => ContentGeneration::STATUS_PULL_REQUEST_OPEN,
+            'pull_request_url' => 'https://github.com/example/site/pull/42',
+            'pull_request_number' => 42,
+        ]);
+    $pending = ContentRequest::factory()->for($website)->for($owner, 'creator')->create([
+        'instructions' => 'Pending content todo',
+    ]);
+    $actioned = ContentRequest::factory()->for($website)->for($owner, 'creator')->create([
+        'content_generation_id' => $generation->id,
+        'picked_up_at' => now()->subHour(),
+        'instructions' => 'Completed content todo',
+    ]);
+
+    $response = $this->actingAs($owner)->get(route('admin.websites.show', $website));
+
+    $response->assertSuccessful()
+        ->assertSee('Pending todos')
+        ->assertSee('Pending content todo')
+        ->assertSee('Actioned todos')
+        ->assertSee('Completed content todo')
+        ->assertSee('pull request open')
+        ->assertSee('View pull request')
+        ->assertSee('https://github.com/example/site/pull/42');
+
+    expect($pending->fresh()->picked_up_at)->toBeNull()
+        ->and($actioned->fresh()->content_generation_id)->toBe($generation->id);
+});
+
 test('content generation uses search performance and pending requests to start a copilot pull request task', function () {
     Queue::fake();
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);

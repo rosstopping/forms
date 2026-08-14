@@ -40,7 +40,9 @@
     </div>
 
     <div id="website-panel-health" class="space-y-6" role="tabpanel" aria-labelledby="website-tab-health" data-tab-panel="health">
-        @php($latestReport = $website->healthReports->first())
+        @php
+            $latestReport = $website->healthReports->first();
+        @endphp
         <section class="rounded-lg border border-slate-200 bg-white" aria-labelledby="health-title">
         <div class="flex flex-col gap-4 border-b border-slate-200 p-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
@@ -175,7 +177,9 @@
 
         @if ($website->repository)
         @if (Auth::user()?->isAdmin())
-        @php($contentPlan = $website->contentPlan)
+        @php
+            $contentPlan = $website->contentPlan;
+        @endphp
         <div class="rounded-lg border bg-white p-4 shadow-sm">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div><p class="text-xs font-medium uppercase tracking-wide text-slate-500">AI content</p><h2 class="mt-1 font-semibold">Weekly content generation</h2><p class="mt-1 text-sm text-slate-600">Copilot chooses a blog post, landing page, or page improvement and opens a pull request for review.</p></div>
@@ -230,33 +234,73 @@
             </div>
         </form>
 
+        @php
+            $pendingContentRequests = $website->contentRequests->whereNull('picked_up_at');
+            $actionedContentRequests = $website->contentRequests->whereNotNull('picked_up_at');
+        @endphp
         <div class="mt-5 border-t border-slate-200 pt-4">
-            <h3 class="text-sm font-semibold text-slate-900">Recent requests</h3>
+            <div class="flex items-center justify-between gap-3">
+                <h3 class="text-sm font-semibold text-slate-900">Pending todos</h3>
+                <span class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium tabular-nums text-amber-800">{{ $pendingContentRequests->count() }}</span>
+            </div>
             <div class="mt-3 space-y-3">
-                @forelse ($website->contentRequests as $contentRequest)
+                @forelse ($pendingContentRequests as $contentRequest)
                     <article class="rounded-lg border border-slate-200 p-3">
                         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                             <div class="min-w-0">
                                 <div class="flex flex-wrap items-center gap-2">
-                                    <span @class(['rounded-full px-2.5 py-1 text-xs font-medium', 'bg-amber-100 text-amber-800' => ! $contentRequest->picked_up_at, 'bg-emerald-100 text-emerald-800' => $contentRequest->picked_up_at])>{{ $contentRequest->picked_up_at ? 'Picked up' : 'Pending' }}</span>
+                                    <span class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800">Pending</span>
                                     <span class="text-xs text-slate-500">Added {{ $contentRequest->created_at->diffForHumans() }}{{ $contentRequest->creator ? ' by '.$contentRequest->creator->name : '' }}</span>
                                 </div>
                                 <p class="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700">{{ $contentRequest->instructions }}</p>
                             </div>
-                            @if (! $contentRequest->picked_up_at)
-                                <form method="POST" action="{{ route('admin.content-requests.destroy', [$website, $contentRequest]) }}" class="shrink-0">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="rounded-md border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50">Remove</button>
-                                </form>
-                            @endif
+                            <form method="POST" action="{{ route('admin.content-requests.destroy', [$website, $contentRequest]) }}" class="shrink-0">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="rounded-md border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50">Remove</button>
+                            </form>
                         </div>
                     </article>
                 @empty
-                    <p class="rounded-lg bg-slate-50 p-3 text-sm text-slate-500">No manual content requests have been added yet.</p>
+                    <p class="rounded-lg bg-slate-50 p-3 text-sm text-slate-500">No pending content todos.</p>
                 @endforelse
             </div>
         </div>
+
+        @if ($actionedContentRequests->isNotEmpty())
+            <div class="mt-5 border-t border-slate-200 pt-4">
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <h3 class="text-sm font-semibold text-slate-900">Actioned todos</h3>
+                        <p class="mt-1 text-xs text-slate-500">Requests already handed to Copilot remain here as a permanent activity record.</p>
+                    </div>
+                    <span class="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium tabular-nums text-emerald-800">{{ $actionedContentRequests->count() }}</span>
+                </div>
+                <div class="mt-3 space-y-3">
+                    @foreach ($actionedContentRequests as $contentRequest)
+                        <article class="rounded-lg border border-emerald-200 bg-emerald-50/50 p-3">
+                            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                <div class="min-w-0">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <span class="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-800">Actioned</span>
+                                        @if ($contentRequest->generation)
+                                            <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium capitalize text-slate-700">{{ str_replace('_', ' ', $contentRequest->generation->status) }}</span>
+                                        @endif
+                                        <span class="text-xs text-slate-500">Picked up {{ $contentRequest->picked_up_at->diffForHumans() }}</span>
+                                    </div>
+                                    <p class="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700">{{ $contentRequest->instructions }}</p>
+                                </div>
+                                @if ($contentRequest->generation?->pull_request_url)
+                                    <a href="{{ $contentRequest->generation->pull_request_url }}" target="_blank" rel="noreferrer" class="shrink-0 rounded-md border border-emerald-300 bg-white px-2.5 py-1.5 text-xs font-medium text-emerald-800 hover:bg-emerald-100">View pull request</a>
+                                @elseif ($contentRequest->generation?->copilot_task_url)
+                                    <a href="{{ $contentRequest->generation->copilot_task_url }}" target="_blank" rel="noreferrer" class="shrink-0 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">View Copilot task</a>
+                                @endif
+                            </div>
+                        </article>
+                    @endforeach
+                </div>
+            </div>
+        @endif
         </section>
         @endif
     </div>

@@ -115,7 +115,7 @@ class WebsiteController extends Controller
             'businessProfileConnection.posts' => fn ($query) => $query->latest()->limit(8),
             'businessProfileConnection.reviews' => fn ($query) => $query->latest('reviewed_at')->limit(20),
             'contentPlan.generations' => fn ($query) => $query->latest('created_at')->limit(8),
-            'contentRequests' => fn ($query) => $query->with('creator')->latest('created_at')->limit(20),
+            'contentRequests' => fn ($query) => $query->with(['creator', 'generation'])->latest('created_at')->limit(50),
         ]);
         $website->loadCount([
             'pixelPages',
