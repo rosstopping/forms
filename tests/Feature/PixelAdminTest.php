@@ -5,6 +5,20 @@ use App\Models\PixelPageSighting;
 use App\Models\User;
 use App\Models\Website;
 
+beforeEach(fn () => config(['forms.pixel_ui_enabled' => true]));
+
+it('hides the pixel workspace while the feature is disabled', function (): void {
+    config(['forms.pixel_ui_enabled' => false]);
+    $user = User::factory()->create();
+    $website = Website::factory()->for($user, 'owner')->create();
+
+    $this->actingAs($user)->get(route('admin.websites.show', $website))
+        ->assertSuccessful()
+        ->assertDontSee('data-tab="pixel"', false)
+        ->assertDontSee('data-tab-panel="pixel"', false)
+        ->assertDontSee('Sitewell Pixel');
+});
+
 it('shows configured pixel installation and connection information', function (): void {
     config([
         'services.sitewell.pixel_asset_url' => 'https://cdn.sitewell.test/pixel.js',

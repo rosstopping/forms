@@ -10,6 +10,8 @@ use App\Models\WebsiteHealthReportPage;
 use Laravel\Ai\Prompts\AgentPrompt;
 use RuntimeException;
 
+beforeEach(fn () => config(['forms.pixel_ui_enabled' => true]));
+
 function automatedOptimisationWorkspace(): array
 {
     $owner = User::factory()->create();

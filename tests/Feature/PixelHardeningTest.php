@@ -11,6 +11,8 @@ use App\Services\PixelUrlNormalizer;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
+beforeEach(fn () => config(['forms.pixel_ui_enabled' => true]));
+
 /** @return array{User, Website, WebsiteHealthReport, WebsiteHealthReportPage} */
 function hardenedPixelWorkspace(): array
 {

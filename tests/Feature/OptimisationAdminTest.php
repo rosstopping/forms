@@ -7,6 +7,8 @@ use App\Models\Website;
 use App\Models\WebsiteHealthReport;
 use App\Models\WebsiteHealthReportPage;
 
+beforeEach(fn () => config(['forms.pixel_ui_enabled' => true]));
+
 /** @return array{User, Website, WebsiteHealthReport, WebsiteHealthReportPage} */
 function optimisationPageWorkspace(): array
 {

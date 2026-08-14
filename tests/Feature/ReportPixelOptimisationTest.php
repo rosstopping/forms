@@ -11,6 +11,8 @@ use App\Services\OptimisationDeploymentManager;
 use App\Services\PixelOptimisationGenerator;
 use Illuminate\Support\Facades\Queue;
 
+beforeEach(fn () => config(['forms.pixel_ui_enabled' => true]));
+
 function reportPixelWorkspace(): array
 {
     $owner = User::factory()->create();

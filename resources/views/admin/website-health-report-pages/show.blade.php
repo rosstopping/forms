@@ -40,6 +40,7 @@
         @endif
     </section>
 
+    @if (config('forms.pixel_ui_enabled'))
     <section class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm" aria-labelledby="optimisations-title">
         <div>
             <p class="text-xs font-medium uppercase tracking-widest text-teal-700">Automated deployment</p>
@@ -167,6 +168,7 @@
                 <div class="lg:col-span-2"><button class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">Create draft optimisation</button></div>
             </form>
         </details>
+    @endif
     @endif
 </div>
 @endsection
