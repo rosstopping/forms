@@ -144,3 +144,24 @@ test('progress chart accepts eloquent snapshot observations', function () {
         ->and(substr_count($html, 'data-chart-point'))
         ->toBe(2);
 });
+
+test('comparison chart renders two labelled series without horizontal overflow', function () {
+    $html = Blade::render(
+        '<x-comparison-chart title="Clicks and impressions" description="Monthly performance." :points="$points" first-key="clicks" first-label="Clicks" second-key="impressions" second-label="Impressions" />',
+        ['points' => [
+            ['month' => '2026-06', 'clicks' => 12, 'impressions' => 240],
+            ['month' => '2026-07', 'clicks' => 18, 'impressions' => 360],
+        ]],
+    );
+
+    expect($html)
+        ->toContain('data-comparison-chart')
+        ->toContain('Clicks: 12 · Impressions: 240')
+        ->toContain('Clicks: 18 · Impressions: 360')
+        ->toContain('stroke-teal-700')
+        ->toContain('stroke-violet-600')
+        ->not->toContain('overflow-x-auto')
+        ->not->toContain('min-w-xl')
+        ->and(substr_count($html, '<polyline'))
+        ->toBe(2);
+});

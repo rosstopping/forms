@@ -21,9 +21,8 @@
             <p class="mt-4 rounded-md bg-slate-100 px-4 py-3 text-sm text-slate-600">Position is the average position of your highest result for each search. Results are ordered by clicks and Search Console may limit the data it returns.</p>
         </header>
 
-        <div class="grid gap-4 lg:grid-cols-2">
-            <x-progress-chart title="Organic clicks" description="Actual monthly clicks from Google Search Console." :points="$history" value-key="clicks" />
-            <x-progress-chart title="Search impressions" description="Monthly appearances in Google search results." :points="$history" value-key="impressions" />
+        <div class="grid gap-4" data-search-console-history-charts>
+            <x-comparison-chart title="Clicks and impressions" description="Monthly visits from Google compared with appearances in search results." :points="$history" first-key="clicks" first-label="Clicks" second-key="impressions" second-label="Impressions" />
             <x-progress-chart title="Average CTR" description="Monthly click-through rate." :points="collect($history)->map(fn ($point) => [...$point, 'ctr_percentage' => $point['ctr'] * 100])" value-key="ctr_percentage" format="percentage" />
             <x-progress-chart title="Average position" description="Impression-weighted average position; lower is better." :points="$history" value-key="position" format="decimal" :lower-is-better="true" />
         </div>

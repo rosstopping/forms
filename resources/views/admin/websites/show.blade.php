@@ -110,9 +110,8 @@
                         <div class="rounded-lg bg-slate-50 p-3"><dt class="text-xs text-slate-500">Average CTR</dt><dd class="mt-1 text-xl font-semibold">{{ number_format($searchConsoleReport['totals']['ctr'] * 100, 1) }}%</dd></div>
                         <div class="rounded-lg bg-slate-50 p-3"><dt class="text-xs text-slate-500">Average position</dt><dd class="mt-1 text-xl font-semibold">{{ number_format($searchConsoleReport['totals']['position'], 1) }}</dd></div>
                     </dl>
-                    <div class="mt-5 grid gap-4 lg:grid-cols-3">
-                        <x-progress-chart title="Organic clicks" description="Actual clicks reported by Google Search Console each month." :points="$searchConsoleHistory" value-key="clicks" />
-                        <x-progress-chart title="Search impressions" description="Appearances in Google search results each month." :points="$searchConsoleHistory" value-key="impressions" />
+                    <div class="mt-5 grid gap-4">
+                        <x-comparison-chart title="Clicks and impressions" description="Monthly visits from Google compared with appearances in search results." :points="$searchConsoleHistory" first-key="clicks" first-label="Clicks" second-key="impressions" second-label="Impressions" />
                         <x-progress-chart title="Average position" description="Impression-weighted average Google position; lower is better." :points="$searchConsoleHistory" value-key="position" format="decimal" :lower-is-better="true" />
                     </div>
                     <div class="mt-5 grid gap-5 lg:grid-cols-2">

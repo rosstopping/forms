@@ -105,7 +105,7 @@
                 </div>
             </div>
             </div>
-            <div class="grid gap-4 border-t border-slate-200 p-4 lg:grid-cols-2">
+            <div data-seo-history-charts class="grid gap-4 border-t border-slate-200 p-4">
                 <x-progress-chart title="Estimated organic traffic" description="Monthly third-party organic visibility estimate." :points="$seoHistory" value-key="estimated_organic_traffic" format="traffic" />
                 <x-progress-chart title="Ranking keywords" description="Keywords estimated to rank in Google's top 100." :points="$seoHistory" value-key="organic_keywords" />
             </div>

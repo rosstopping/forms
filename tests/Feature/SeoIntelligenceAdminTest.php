@@ -191,6 +191,7 @@ test('the seo tab displays and filters locally stored keyword estimates', functi
         ->assertSee('data-tab-panel="keywords"', false)
         ->assertSee('data-tab-panel="backlinks"', false)
         ->assertSee('data-tab-panel="competitors"', false)
+        ->assertSee('data-seo-history-charts class="grid gap-4 border-t border-slate-200 p-4"', false)
         ->assertSee('139')
         ->assertSee('~720')
         ->assertSee('Backlinks')

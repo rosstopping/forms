@@ -63,8 +63,8 @@ it('shows Search Console reporting on the website dashboard', function (): void 
         ->get(route('admin.websites.show', $website))
         ->assertSuccessful()
         ->assertSee('Search performance')
-        ->assertSee('Organic clicks')
-        ->assertSee('Search impressions')
+        ->assertSee('Clicks and impressions')
+        ->assertSee('data-comparison-chart', false)
         ->assertSee('2,500')
         ->assertSee('5.0%')
         ->assertSee('example services')
@@ -119,6 +119,9 @@ it('shows sortable Search Console queries and landing pages to website users', f
         ->assertSuccessful()
         ->assertSee('All available queries')
         ->assertSee('All available landing pages')
+        ->assertSee('data-search-console-history-charts', false)
+        ->assertSee('data-comparison-chart', false)
+        ->assertSee('Clicks and impressions')
         ->assertSee('Average position')
         ->assertSee('Ranking page')
         ->assertSeeInOrder(['higher ranking query', 'lower ranking query'])
@@ -152,8 +155,8 @@ it('shows monthly Search Console performance for a selected query', function ():
         ->assertSuccessful()
         ->assertSee('example services')
         ->assertSee('Clicks vs impressions over time')
-        ->assertSee('Actual clicks for this query.')
-        ->assertSee('Search-result appearances for this query.');
+        ->assertSee('Actual clicks for this query compared with its search-result appearances.')
+        ->assertSee('data-comparison-chart', false);
 });
 
 it('lets an administrator enable reports and queue one immediately', function (): void {

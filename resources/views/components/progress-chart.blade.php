@@ -71,8 +71,8 @@
     </div>
 
     @if ($values->count() > 1)
-        <div class="mt-4 overflow-x-auto pb-2">
-            <div class="relative min-w-xl" data-chart-plot>
+        <div class="mt-4 pb-2">
+            <div class="relative" data-chart-plot>
                 <svg class="h-64 w-full" viewBox="0 0 680 230" role="img" aria-label="{{ $title }} over time">
                     @foreach ($yTicks as $tick)
                         <line x1="58" x2="656" y1="{{ $tick['y'] }}" y2="{{ $tick['y'] }}" class="stroke-slate-950/10" vector-effect="non-scaling-stroke" />
