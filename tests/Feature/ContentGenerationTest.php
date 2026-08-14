@@ -2,6 +2,7 @@
 
 use App\Jobs\StartContentGeneration;
 use App\Jobs\SyncContentGeneration;
+use App\Mail\ContentGenerationReady;
 use App\Models\ContentGeneration;
 use App\Models\ContentPlan;
 use App\Models\ContentRequest;
@@ -11,6 +12,7 @@ use App\Models\SearchConsoleConnection;
 use App\Models\User;
 use App\Models\Website;
 use App\Models\WebsiteRepository;
+use App\Services\ContentGenerationNotifier;
 use App\Services\ContentGenerationPromptGenerator;
 use App\Services\CopilotAgentClient;
 use App\Services\GithubAppClient;
@@ -19,6 +21,7 @@ use App\Services\SearchConsoleClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 
 uses(RefreshDatabase::class);
@@ -531,12 +534,38 @@ test('content synchronization stores the pull request resolved from the copilot 
             'number' => 42,
             'html_url' => 'https://github.com/acme/site/pull/42',
         ]);
+    $notifier = $this->mock(ContentGenerationNotifier::class);
+    $notifier->shouldReceive('ready')->once()->with($generation);
 
-    (new SyncContentGeneration($generation))->handle($copilot, $github);
+    (new SyncContentGeneration($generation))->handle($copilot, $github, $notifier);
 
     expect($generation->fresh()->pull_request_number)->toBe(42)
         ->and($generation->fresh()->pull_request_url)->toBe('https://github.com/acme/site/pull/42')
         ->and($generation->fresh()->pull_request_url)->not->toContain('999999');
+});
+
+test('content completion email explains the consumed todos and is only queued once', function () {
+    Mail::fake();
+    $owner = User::factory()->create(['email' => 'owner@example.com']);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $plan = ContentPlan::factory()->for($website)->create();
+    $generation = ContentGeneration::factory()->for($plan, 'plan')->create([
+        'status' => ContentGeneration::STATUS_PULL_REQUEST_OPEN,
+        'pull_request_number' => 42,
+        'pull_request_url' => 'https://github.com/acme/site/pull/42',
+    ]);
+    ContentRequest::factory()->for($website)->for($generation, 'generation')->create(['instructions' => 'Create a guide to luxury train journeys.']);
+    $notifier = app(ContentGenerationNotifier::class);
+
+    $notifier->ready($generation);
+    $notifier->ready($generation);
+
+    Mail::assertQueued(ContentGenerationReady::class, 1);
+    Mail::assertQueued(ContentGenerationReady::class, fn (ContentGenerationReady $mail): bool => $mail->hasTo('owner@example.com'));
+    expect($generation->fresh()->notification_emailed_at)->not->toBeNull();
+    (new ContentGenerationReady($generation->fresh()->load(['plan.website', 'contentRequests.searchOpportunity', 'contentRequests.seoOpportunity'])))
+        ->assertSeeInHtml('Create a guide to luxury train journeys.')
+        ->assertSeeInHtml('Review pull request');
 });
 
 test('search console access and refresh tokens are encrypted at rest', function () {

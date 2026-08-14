@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\ContentGeneration;
+use App\Services\ContentGenerationNotifier;
 use App\Services\CopilotAgentClient;
 use App\Services\GithubAppClient;
 use Illuminate\Contracts\Queue\ShouldBeEncrypted;
@@ -31,7 +32,7 @@ class SyncContentGeneration implements ShouldBeEncrypted, ShouldBeUniqueUntilPro
         return (string) $this->generation->id;
     }
 
-    public function handle(CopilotAgentClient $copilot, GithubAppClient $github): void
+    public function handle(CopilotAgentClient $copilot, GithubAppClient $github, ContentGenerationNotifier $notifier): void
     {
         $this->generation->loadMissing(['repository', 'requester.githubAuthorization']);
         $authorization = $this->generation->requester?->githubAuthorization;
@@ -72,6 +73,7 @@ class SyncContentGeneration implements ShouldBeEncrypted, ShouldBeUniqueUntilPro
                 'pull_request_url' => $url ?: "https://github.com/{$this->generation->repository->full_name}/pull/{$number}",
                 'pull_request_state' => 'open',
             ]);
+            $notifier->ready($this->generation);
 
             return;
         }

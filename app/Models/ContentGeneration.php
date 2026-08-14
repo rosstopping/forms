@@ -25,13 +25,13 @@ class ContentGeneration extends Model
 
     public const STATUS_CANCELLED = 'cancelled';
 
-    protected $fillable = ['content_plan_id', 'website_repository_id', 'requested_by', 'scheduled_for', 'status', 'search_performance', 'prompt', 'copilot_task_id', 'copilot_task_url', 'copilot_task_state', 'pull_request_number', 'pull_request_url', 'pull_request_state', 'error', 'started_at', 'completed_at', 'merged_at'];
+    protected $fillable = ['content_plan_id', 'website_repository_id', 'requested_by', 'scheduled_for', 'status', 'search_performance', 'prompt', 'copilot_task_id', 'copilot_task_url', 'copilot_task_state', 'pull_request_number', 'pull_request_url', 'pull_request_state', 'error', 'started_at', 'completed_at', 'merged_at', 'notification_emailed_at'];
 
     protected $attributes = ['status' => self::STATUS_PENDING];
 
     protected function casts(): array
     {
-        return ['scheduled_for' => 'date', 'search_performance' => 'array', 'started_at' => 'datetime', 'completed_at' => 'datetime', 'merged_at' => 'datetime'];
+        return ['scheduled_for' => 'date', 'search_performance' => 'array', 'started_at' => 'datetime', 'completed_at' => 'datetime', 'merged_at' => 'datetime', 'notification_emailed_at' => 'datetime'];
     }
 
     public function plan(): BelongsTo

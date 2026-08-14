@@ -35,3 +35,7 @@ Schedule::command('seo:dispatch-weekly-snapshots')
 Schedule::command('search-console:sync-history')
     ->weeklyOn(1, '04:00')
     ->withoutOverlapping();
+
+Schedule::command('ranking-reports:dispatch')
+    ->weeklyOn(1, '08:00')
+    ->withoutOverlapping();
