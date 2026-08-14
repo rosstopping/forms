@@ -97,6 +97,10 @@ class WebsiteHealthAuditor
      */
     public function inspectHtml(string $html, string $url): array
     {
+        if (trim($html) === '') {
+            return [$this->check('seo', 'html_parseable', 'HTML can be analysed', 'failed', 'The homepage returned an empty response body.')];
+        }
+
         $document = new DOMDocument;
         $previousErrors = libxml_use_internal_errors(true);
         $loaded = $document->loadHTML($html, LIBXML_NOWARNING | LIBXML_NOERROR);

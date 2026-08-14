@@ -156,6 +156,13 @@ class WebsiteCrawler
     /** @return array<string, mixed> */
     public function analyseHtml(string $html, string $url, int $depth = 0): array
     {
+        if (trim($html) === '') {
+            return [
+                ...$this->emptyAnalysis($url, $depth),
+                'checks' => [$this->check('html_parseable', 'HTML can be analysed', 'failed', 'The page returned an empty response body.')],
+            ];
+        }
+
         $document = new DOMDocument;
         $previousErrors = libxml_use_internal_errors(true);
         $loaded = $document->loadHTML($html, LIBXML_NOWARNING | LIBXML_NOERROR);

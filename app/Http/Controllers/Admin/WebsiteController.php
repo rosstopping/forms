@@ -10,6 +10,7 @@ use App\Services\PixelInstallationSnippet;
 use App\Services\SearchConsoleClient;
 use App\Services\SearchConsoleHistoryStore;
 use App\Services\WebsiteProspectService;
+use Closure;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,7 +18,6 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class WebsiteController extends Controller
@@ -62,13 +62,7 @@ class WebsiteController extends Controller
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'domain' => [
-                'required',
-                'string',
-                'max:253',
-                'regex:/^(?=.{1,253}$)(?!-)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])$/',
-                Rule::unique((new WebsiteDomain)->getTable(), 'domain'),
-            ],
+            'domain' => $this->domainRules(),
             'user_id' => ['nullable', 'exists:users,id'],
             'health_reports_enabled' => ['required', 'boolean'],
         ]);
@@ -222,8 +216,18 @@ class WebsiteController extends Controller
 
         abort_unless($user?->isAdmin(), 403);
 
+        if ($request->has('domain')) {
+            $request->merge(['domain' => $this->normalizeDomain($request->string('domain')->toString())]);
+        }
+
+        $primaryDomain = $website->primaryDomain();
+
         $data = $request->validate([
             'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'domain' => [
+                'sometimes',
+                ...$this->domainRules($primaryDomain),
+            ],
             'user_id' => ['nullable', 'exists:users,id'],
             'health_reports_enabled' => ['sometimes', 'boolean'],
             'webhook_enabled' => ['sometimes', 'boolean'],
@@ -231,7 +235,22 @@ class WebsiteController extends Controller
             'webhook_secret' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $website->fill($data)->save();
+        $domain = $data['domain'] ?? null;
+        unset($data['domain']);
+
+        DB::transaction(function () use ($data, $domain, $primaryDomain, $website): void {
+            $website->fill($data)->save();
+
+            if ($domain !== null && $domain !== $primaryDomain?->domain) {
+                if ($primaryDomain) {
+                    $primaryDomain->update(['domain' => $domain]);
+                } else {
+                    $website->domains()->create(['domain' => $domain, 'is_primary' => true]);
+                }
+
+                $website->update(['seo_history_backfilled_at' => null]);
+            }
+        });
 
         if ($website->user_id) {
             $website->members()->detach($website->user_id);
@@ -254,10 +273,36 @@ class WebsiteController extends Controller
         $value = Str::lower(trim($value));
         $host = parse_url(Str::contains($value, '://') ? $value : '//'.$value, PHP_URL_HOST);
         $domain = Str::of(is_string($host) ? $host : $value)
-            ->replaceStart('www.', '')
             ->trim('.')
             ->toString();
 
         return idn_to_ascii($domain, IDNA_DEFAULT, INTL_IDNA_VARIANT_UTS46) ?: $domain;
+    }
+
+    /** @return array<int, mixed> */
+    protected function domainRules(?WebsiteDomain $ignoredDomain = null): array
+    {
+        return [
+            'required',
+            'string',
+            'max:253',
+            'regex:/^(?=.{1,253}$)(?!-)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])$/',
+            function (string $attribute, mixed $value, Closure $fail) use ($ignoredDomain): void {
+                if (! is_string($value)) {
+                    return;
+                }
+
+                $apexDomain = Str::startsWith($value, 'www.') ? Str::after($value, 'www.') : $value;
+                $equivalentDomains = [$apexDomain, 'www.'.$apexDomain];
+                $domainExists = WebsiteDomain::query()
+                    ->whereIn('domain', $equivalentDomains)
+                    ->when($ignoredDomain, fn ($query) => $query->whereKeyNot($ignoredDomain->id))
+                    ->exists();
+
+                if ($domainExists) {
+                    $fail('That domain is already assigned to another website.');
+                }
+            },
+        ];
     }
 }

@@ -31,3 +31,12 @@ it('explains homepage metadata length warnings', function (): void {
     expect($checksByKey['page_title']['message'])->toContain('Aim for 65 or fewer')
         ->and($checksByKey['meta_description']['message'])->toContain('Aim for 170 or fewer');
 });
+
+it('turns an empty homepage response into a failed check', function (): void {
+    $checks = (new WebsiteHealthAuditor(new WebsiteCrawler(new StructuredDataAnalyzer)))->inspectHtml('', 'https://example.com');
+
+    expect($checks)->toHaveCount(1)
+        ->and($checks[0]['key'])->toBe('html_parseable')
+        ->and($checks[0]['status'])->toBe('failed')
+        ->and($checks[0]['message'])->toContain('empty response body');
+});

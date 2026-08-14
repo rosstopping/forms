@@ -342,6 +342,12 @@
                         @error('name')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror
                     </div>
                     <div>
+                        <label class="block text-sm font-medium text-slate-700" for="domain">Website domain or URL</label>
+                        <input id="domain" name="domain" type="text" required value="{{ old('domain', $website->primaryDomain()?->domain) }}" placeholder="https://example.com" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" autocapitalize="none" autocomplete="url" spellcheck="false">
+                        <p class="mt-1 text-xs text-slate-500">Sitewell uses this domain for crawling and SEO intelligence. Connected Search Console properties and repositories are managed separately.</p>
+                        @error('domain')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror
+                    </div>
+                    <div>
                         <label class="block text-sm font-medium text-slate-700" for="user_id">Assign owner</label>
                         <select id="user_id" name="user_id" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
                             <option value="">Unassigned</option>

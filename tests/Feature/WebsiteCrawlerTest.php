@@ -6,6 +6,27 @@ use App\Models\WebsiteHealthReportPage;
 use App\Services\WebsiteCrawler;
 use Illuminate\Support\Facades\Http;
 
+it('crawls the exact www hostname saved for a website', function (): void {
+    config()->set('forms.health_reports.max_pages', 1);
+    config()->set('forms.health_reports.crawl_delay_ms', 0);
+
+    $website = Website::factory()->create();
+    $website->domains()->create(['domain' => 'www.example.com', 'is_primary' => true]);
+
+    Http::fake([
+        'https://www.example.com/sitemap.xml' => Http::response('', 404),
+        'https://www.example.com/' => Http::response('<html><head><title>Home</title></head><body><h1>Home</h1></body></html>', 200, ['Content-Type' => 'text/html']),
+    ]);
+
+    $pages = app(WebsiteCrawler::class)->crawl($website);
+
+    expect($pages)->toHaveCount(1)
+        ->and($pages[0]['url'])->toBe('https://www.example.com/')
+        ->and($pages[0]['status_code'])->toBe(200);
+
+    Http::assertNotSent(fn ($request): bool => str_starts_with($request->url(), 'https://example.com'));
+});
+
 it('analyses sitemap and discovered internal pages without leaving the website', function (): void {
     config()->set('forms.health_reports.max_pages', 5);
     config()->set('forms.health_reports.max_depth', 2);
@@ -153,4 +174,23 @@ it('explains why long search metadata is worth improving', function (): void {
         ->and($checks['page_title']['message'])->toContain('characters long', 'Aim for 65 or fewer', 'truncated in search results')
         ->and($checks['meta_description']['status'])->toBe('warning')
         ->and($checks['meta_description']['message'])->toContain('characters long', 'Aim for 170 or fewer', 'truncated in search results');
+});
+
+it('records an empty successful page response without crashing the crawl', function (): void {
+    config()->set('forms.health_reports.max_pages', 1);
+    config()->set('forms.health_reports.crawl_delay_ms', 0);
+    $website = Website::factory()->create();
+    $website->domains()->create(['domain' => 'example.com', 'is_primary' => true]);
+    Http::fake([
+        'https://example.com/sitemap.xml' => Http::response('', 404),
+        'https://example.com/' => Http::response('', 200, ['Content-Type' => 'text/html']),
+    ]);
+
+    $page = app(WebsiteCrawler::class)->crawl($website)[0];
+
+    expect($page['status_code'])->toBe(200)
+        ->and($page['checks'])->toHaveCount(1)
+        ->and($page['checks'][0]['key'])->toBe('html_parseable')
+        ->and($page['checks'][0]['status'])->toBe('failed')
+        ->and($page['checks'][0]['message'])->toContain('empty response body');
 });
