@@ -19,7 +19,7 @@ beforeEach(function (): void {
     Http::preventStrayRequests();
 });
 
-test('it requests ranked organic keywords using the configured cost limit', function (): void {
+test('it balances the configured keyword limit across page one and deeper rankings', function (): void {
     Http::fake(['api.dataforseo.test/*' => Http::response([
         'status_code' => 20000,
         'tasks' => [[
@@ -42,7 +42,8 @@ test('it requests ranked organic keywords using the configured cost limit', func
 
     expect($response->keywords)->toHaveCount(1)
         ->and($response->keywords[0]->keyword)->toBe('garden room')
-        ->and($response->keywords[0]->position)->toBe(12);
+        ->and($response->keywords[0]->position)->toBe(12)
+        ->and($response->cost)->toBe(0.0206);
 
     Http::assertSent(function (Request $request): bool {
         return $request->url() === 'https://api.dataforseo.test/v3/dataforseo_labs/google/ranked_keywords/live'
@@ -51,14 +52,33 @@ test('it requests ranked organic keywords using the configured cost limit', func
                 'location_code' => 2826,
                 'language_code' => 'en',
                 'item_types' => ['organic'],
-                'filters' => ['ranked_serp_element.serp_item.rank_group', '<=', 100],
-                'limit' => 500,
+                'filters' => ['ranked_serp_element.serp_item.rank_group', '<=', 10],
+                'limit' => 200,
                 'order_by' => [
                     'keyword_data.keyword_info.search_volume,desc',
                     'ranked_serp_element.serp_item.rank_group,asc',
                 ],
             ]];
     });
+    Http::assertSent(function (Request $request): bool {
+        return $request->data() === [[
+            'target' => 'example.com',
+            'location_code' => 2826,
+            'language_code' => 'en',
+            'item_types' => ['organic'],
+            'filters' => [
+                ['ranked_serp_element.serp_item.rank_group', '>', 10],
+                'and',
+                ['ranked_serp_element.serp_item.rank_group', '<=', 100],
+            ],
+            'limit' => 300,
+            'order_by' => [
+                'keyword_data.keyword_info.search_volume,desc',
+                'ranked_serp_element.serp_item.rank_group,asc',
+            ],
+        ]];
+    });
+    Http::assertSentCount(2);
 });
 
 test('it handles a domain with no ranking keywords', function (): void {

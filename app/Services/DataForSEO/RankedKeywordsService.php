@@ -2,9 +2,9 @@
 
 namespace App\Services\DataForSEO;
 
+use App\Services\DataForSEO\Data\DataForSEOResponse;
 use App\Services\DataForSEO\Data\RankedKeywordData;
 use App\Services\DataForSEO\Data\RankedKeywordsResponse;
-use App\Services\DataForSEO\Data\DataForSEOResponse;
 use Illuminate\Support\Collection;
 
 class RankedKeywordsService

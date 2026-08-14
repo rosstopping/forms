@@ -8,6 +8,7 @@ use App\Models\SeoReferringDomain;
 use App\Models\SeoSnapshot;
 use App\Models\User;
 use App\Models\Website;
+use App\Services\SeoIntelligence\SeoSnapshotService;
 use Illuminate\Support\Facades\Queue;
 
 beforeEach(function (): void {
@@ -64,7 +65,10 @@ test('refresh protection returns a recent snapshot without spending again', func
     $owner = User::factory()->create();
     $website = Website::factory()->for($owner, 'owner')->create();
     $website->domains()->create(['domain' => 'example.com', 'is_primary' => true]);
-    $snapshot = SeoSnapshot::factory()->for($website)->create(['completed_at' => now()->subDays(2)]);
+    $snapshot = SeoSnapshot::factory()->for($website)->create([
+        'completed_at' => now()->subDays(2),
+        'metadata' => ['data_source' => 'third_party_estimate', 'keyword_sample_version' => SeoSnapshotService::KEYWORD_SAMPLE_VERSION],
+    ]);
 
     $this->actingAs($owner)
         ->post(route('admin.seo-intelligence.store', $website))
@@ -73,6 +77,25 @@ test('refresh protection returns a recent snapshot without spending again', func
 
     expect($website->seoSnapshots()->sole()->is($snapshot))->toBeTrue();
     Queue::assertNothingPushed();
+});
+
+test('a recent snapshot with the legacy keyword sample can be replaced', function (): void {
+    Queue::fake();
+    $owner = User::factory()->create();
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $website->domains()->create(['domain' => 'example.com', 'is_primary' => true]);
+    $legacySnapshot = SeoSnapshot::factory()->for($website)->create([
+        'completed_at' => now()->subDays(2),
+        'metadata' => ['data_source' => 'third_party_estimate', 'datasets' => ['domain_overview', 'ranked_keywords']],
+    ]);
+
+    $this->actingAs($owner)
+        ->post(route('admin.seo-intelligence.store', $website))
+        ->assertRedirect(route('admin.websites.show', [$website, 'tab' => 'seo']))
+        ->assertSessionHas('status', 'SEO intelligence generation has been queued.');
+
+    expect($website->seoSnapshots()->count())->toBe(2);
+    Queue::assertPushed(GenerateSeoIntelligence::class, fn (GenerateSeoIntelligence $job): bool => ! $job->snapshot->is($legacySnapshot));
 });
 
 test('refresh protection reuses an active snapshot', function (): void {

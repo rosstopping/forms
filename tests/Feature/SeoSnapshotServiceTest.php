@@ -68,10 +68,11 @@ test('it persists domain metrics and ranked keywords as a historical snapshot', 
         ->and($snapshot->opportunities)->toHaveCount(3)
         ->and($snapshot->opportunities->pluck('type')->all())->toContain('striking_distance', 'high_volume', 'commercial')
         ->and($snapshot->metadata['datasets'])->toContain('seo_opportunities')
-        ->and($snapshot->apiUsages()->sum('cost'))->toEqual(0.0525)
+        ->and($snapshot->metadata['keyword_sample_version'])->toBe(SeoSnapshotService::KEYWORD_SAMPLE_VERSION)
+        ->and($snapshot->apiUsages()->sum('cost'))->toEqual(0.0628)
         ->and($snapshot->apiUsages()->pluck('provider_task_id')->all())->toBe(['overview-task', 'keywords-task', 'backlinks-task', 'referring-domains-task', 'competitors-task']);
 
-    Http::assertSentCount(5);
+    Http::assertSentCount(6);
 });
 
 test('it stores an empty keyword dataset without inventing keyword rows', function (): void {
@@ -145,14 +146,24 @@ test('it retains successful keyword data when backlink datasets fail', function 
         ->and($snapshot->apiUsages)->toHaveCount(2);
 });
 
-test('it does not repurchase core datasets when resuming an interrupted snapshot', function (): void {
+test('it resumes missing enrichment on a snapshot previously marked completed', function (): void {
     $website = Website::factory()->create();
     $website->domains()->create(['domain' => 'resume.example', 'is_primary' => true]);
     $snapshot = SeoSnapshot::factory()->for($website)->create([
-        'status' => SeoSnapshot::STATUS_PROCESSING,
+        'status' => SeoSnapshot::STATUS_COMPLETED,
         'domain' => 'resume.example',
         'metadata' => ['data_source' => 'third_party_estimate', 'datasets' => ['domain_overview', 'ranked_keywords']],
-        'completed_at' => null,
+        'completed_at' => now(),
+    ]);
+    $snapshot->keywords()->create([
+        'website_id' => $website->id,
+        'fingerprint' => hash('sha256', 'resume keyword'),
+        'keyword' => 'resume keyword',
+        'position' => 12,
+        'ranking_url' => 'https://resume.example/page',
+        'search_volume' => 200,
+        'location_code' => 2826,
+        'language_code' => 'en',
     ]);
     Http::fake(function (Request $request) {
         $result = match (true) {
@@ -170,6 +181,8 @@ test('it does not repurchase core datasets when resuming an interrupted snapshot
         ->and($result->backlinks)->toBe(872)
         ->and($result->referringDomains)->toHaveCount(2)
         ->and($result->competitors)->toHaveCount(2)
+        ->and($result->opportunities)->not->toBeEmpty()
+        ->and($result->metadata['keyword_sample_version'])->toBe(0)
         ->and($result->apiUsages)->toHaveCount(3);
 
     Http::assertSentCount(3);
