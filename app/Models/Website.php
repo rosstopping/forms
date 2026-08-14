@@ -43,6 +43,10 @@ class Website extends Model
         'turnstile_secret_key',
         'first_seen_at',
         'pixel_enabled',
+        'copilot_build_task_id',
+        'copilot_build_task_url',
+        'copilot_build_task_state',
+        'copilot_build_prompt',
     ];
 
     protected $casts = [

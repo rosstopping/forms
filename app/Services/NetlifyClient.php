@@ -4,14 +4,13 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
-use ZipArchive;
 
 class NetlifyClient
 {
-    /** @param array<string, string> $files
+    /** @param array<string, mixed> $repository
      * @return array{id: string, url: string, domain: string}
      */
-    public function deploy(array $files): array
+    public function deployRepository(array $repository): array
     {
         $token = (string) config('services.netlify.token');
 
@@ -19,35 +18,24 @@ class NetlifyClient
             throw new RuntimeException('Netlify is not configured. Add a NETLIFY_ACCESS_TOKEN first.');
         }
 
-        $archivePath = tempnam(sys_get_temp_dir(), 'sitewell-netlify-');
-
-        if ($archivePath === false) {
-            throw new RuntimeException('The website archive could not be created.');
-        }
-
-        try {
-            $archive = new ZipArchive;
-
-            if ($archive->open($archivePath, ZipArchive::OVERWRITE) !== true) {
-                throw new RuntimeException('The website archive could not be opened.');
-            }
-
-            foreach ($files as $path => $contents) {
-                $archive->addFromString($path, $contents);
-            }
-
-            $archive->close();
-            $response = Http::baseUrl((string) config('services.netlify.api_url'))
-                ->withToken($token)
-                ->connectTimeout(5)
-                ->timeout(45)
-                ->retry([250, 750], throw: false)
-                ->withBody((string) file_get_contents($archivePath), 'application/zip')
-                ->post('sites')
-                ->throw();
-        } finally {
-            @unlink($archivePath);
-        }
+        $response = Http::baseUrl((string) config('services.netlify.api_url'))
+            ->withToken($token)
+            ->acceptJson()
+            ->connectTimeout(5)
+            ->timeout(45)
+            ->retry([250, 750], throw: false)
+            ->post('sites', [
+                'repo' => [
+                    'provider' => 'github',
+                    'repo' => $repository['full_name'],
+                    'repo_id' => $repository['id'],
+                    'private' => $repository['private'] ?? false,
+                    'branch' => $repository['default_branch'] ?? 'main',
+                    'cmd' => 'npm run build',
+                    'dir' => '_site',
+                ],
+            ])
+            ->throw();
 
         $url = $response->json('ssl_url') ?: $response->json('url');
         $id = $response->json('id');

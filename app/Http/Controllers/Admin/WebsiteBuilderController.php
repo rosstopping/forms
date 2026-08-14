@@ -39,6 +39,6 @@ class WebsiteBuilderController extends Controller
         }
 
         return Redirect::route('admin.websites.show', $website)
-            ->with('status', 'Website built and published at https://'.$website->primaryDomain()?->domain);
+            ->with('status', 'The Eleventy website is connected to Netlify and Copilot is creating the full design in a pull request. Development URL: https://'.$website->primaryDomain()?->domain);
     }
 }

@@ -16,6 +16,7 @@ class WebsiteBuilder
         private StaticWebsiteGenerator $generator,
         private GithubOAuthClient $github,
         private NetlifyClient $netlify,
+        private CopilotAgentClient $copilot,
     ) {}
 
     /** @param array{name: string, sector: string, description: string, pages: array<int, string>, repository_name: string, github_installation_id: int, user_id?: int|null} $details */
@@ -46,9 +47,9 @@ class WebsiteBuilder
 
         $files = $this->generator->generate($details);
         $repository = $this->github->createRepository($authorization, $installation->account_login, $details['repository_name'], $files);
-        $site = $this->netlify->deploy($files);
+        $site = $this->netlify->deployRepository($repository);
 
-        return DB::transaction(function () use ($details, $installation, $repository, $site): Website {
+        $website = DB::transaction(function () use ($details, $installation, $repository, $site): Website {
             $website = Website::query()->create([
                 'name' => $details['name'],
                 'user_id' => $details['user_id'] ?? null,
@@ -72,5 +73,16 @@ class WebsiteBuilder
 
             return $website;
         });
+
+        $prompt = $this->generator->prompt($details);
+        $task = $this->copilot->startTask($authorization, $website->repository, $prompt);
+        $website->update([
+            'copilot_build_task_id' => $task['id'],
+            'copilot_build_task_url' => $task['html_url'] ?? null,
+            'copilot_build_task_state' => $task['state'] ?? 'queued',
+            'copilot_build_prompt' => $prompt,
+        ]);
+
+        return $website;
     }
 }

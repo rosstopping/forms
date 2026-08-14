@@ -28,6 +28,19 @@
         </div>
     </div>
 
+    @if ($website->copilot_build_task_id)
+        <section class="flex flex-col gap-4 rounded-xl border border-violet-200 bg-violet-50 p-5 sm:flex-row sm:items-center sm:justify-between" aria-labelledby="copilot-build-title">
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-widest text-violet-700">Website builder</p>
+                <h2 id="copilot-build-title" class="mt-1 font-semibold text-slate-950">Copilot is creating the Eleventy design</h2>
+                <p class="mt-1 text-sm text-slate-600">Task status: <span class="font-medium capitalize">{{ str_replace('_', ' ', $website->copilot_build_task_state ?: 'queued') }}</span>. Review and merge Copilot’s pull request to publish through Netlify.</p>
+            </div>
+            @if ($website->copilot_build_task_url)
+                <a href="{{ $website->copilot_build_task_url }}" target="_blank" rel="noopener" class="shrink-0 rounded-md bg-violet-700 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-800">Open Copilot task</a>
+            @endif
+        </section>
+    @endif
+
     <div class="website-tabs" role="tablist" aria-label="Website sections">
         <button type="button" id="website-tab-health" class="website-tab" role="tab" aria-selected="true" aria-controls="website-panel-health" tabindex="0" data-tab="health">Health reports</button>
         <button type="button" id="website-tab-search" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-search" tabindex="-1" data-tab="search">Search</button>
