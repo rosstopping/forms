@@ -9,6 +9,7 @@
         </div>
         <div class="flex flex-wrap items-center gap-2">
             @if (Auth::user()?->isAdmin())
+                <a href="{{ route('admin.website-builder.create') }}" class="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Build new website</a>
                 <a href="{{ route('admin.websites.create') }}" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">Add website</a>
             @endif
         </div>

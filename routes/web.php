@@ -38,6 +38,7 @@ use App\Http\Controllers\Admin\SeoOpportunityController;
 use App\Http\Controllers\Admin\SeoSnapshotSettingsController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\WebsiteAutoresponderController;
+use App\Http\Controllers\Admin\WebsiteBuilderController;
 use App\Http\Controllers\Admin\WebsiteController;
 use App\Http\Controllers\Admin\WebsiteHealthReportController;
 use App\Http\Controllers\Admin\WebsiteHealthReportPageController;
@@ -107,6 +108,8 @@ Route::middleware(['web', 'signed', 'throttle:20,1'])->group(function () {
 Route::middleware(['web', 'auth'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::resource('websites', WebsiteController::class);
+    Route::get('website-builder', [WebsiteBuilderController::class, 'create'])->name('website-builder.create');
+    Route::post('website-builder', [WebsiteBuilderController::class, 'store'])->name('website-builder.store');
     Route::put('websites/{website}/autoresponder', WebsiteAutoresponderController::class)->name('websites.autoresponder.update');
     Route::put('websites/{website}/pixel', [PixelSettingsController::class, 'update'])->name('websites.pixel.update');
     Route::post('websites/{website}/pixel/rotate-key', PixelKeyController::class)->name('websites.pixel.rotate-key');

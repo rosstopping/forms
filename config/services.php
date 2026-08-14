@@ -46,6 +46,11 @@ return [
         'oauth_url' => env('GITHUB_OAUTH_URL', 'https://github.com/login/oauth'),
     ],
 
+    'netlify' => [
+        'token' => env('NETLIFY_ACCESS_TOKEN'),
+        'api_url' => env('NETLIFY_API_URL', 'https://api.netlify.com/api/v1'),
+    ],
+
     'sitewell' => [
         'pixel_asset_url' => env('SITEWELL_PIXEL_ASSET_URL', rtrim((string) env('APP_URL', 'http://localhost'), '/').'/pixel.js'),
         'pixel_api_url' => env('SITEWELL_PIXEL_API_URL', rtrim((string) env('APP_URL', 'http://localhost'), '/').'/api/pixel'),

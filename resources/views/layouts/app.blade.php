@@ -30,6 +30,12 @@
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="size-5 shrink-0" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg>
                             Websites
                         </a>
+                        @if (Auth::user()?->isAdmin())
+                            <a href="{{ route('admin.website-builder.create') }}" @class(['flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium', 'bg-white/10 text-white' => request()->routeIs('admin.website-builder.*'), 'text-slate-400 hover:bg-white/5 hover:text-white' => ! request()->routeIs('admin.website-builder.*')])>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="size-5 shrink-0" aria-hidden="true"><path d="M12 3v18M3 12h18" stroke-linecap="round"/><path d="M5 5h14v14H5z" opacity=".35"/></svg>
+                                Website builder
+                            </a>
+                        @endif
                         <a href="{{ route('admin.form-submissions.index') }}" @class(['flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium', 'bg-white/10 text-white' => request()->routeIs('admin.form-submissions.*'), 'text-slate-400 hover:bg-white/5 hover:text-white' => ! request()->routeIs('admin.form-submissions.*')])>
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="size-5 shrink-0" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v13a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 18.5v-13Z"/><path d="M8 8h8M8 12h8M8 16h5" stroke-linecap="round"/></svg>
                             <span class="flex-1">Leads</span>
@@ -97,7 +103,7 @@
                             <a href="{{ route('admin.dashboard') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Overview</a>
                             <a href="{{ route('admin.websites.index') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Websites</a>
                             <a href="{{ route('admin.form-submissions.index') }}" class="flex items-center justify-between gap-3 rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5"><span>Leads</span><span class="flex gap-1">@if ($newLeadCount > 0)<span data-new-leads-count class="min-w-7 rounded-full bg-teal-400 px-2 py-0.5 text-center text-xs font-semibold tabular-nums text-slate-950" aria-label="{{ $newLeadCount }} new leads">{{ $newLeadCount > 99 ? '99+' : $newLeadCount }}</span>@endif @if ($followUpReminderCount > 0)<span class="min-w-7 rounded-full bg-amber-300 px-2 py-0.5 text-center text-xs font-semibold tabular-nums text-slate-950" aria-label="{{ $followUpReminderCount }} lead follow-ups due">{{ $followUpReminderCount > 99 ? '99+' : $followUpReminderCount }}</span>@endif</span></a>
-                            @if (Auth::user()?->isAdmin())<a href="{{ route('admin.prospects.index') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Outreach</a><a href="{{ route('admin.users.index') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Users</a>@endif
+                            @if (Auth::user()?->isAdmin())<a href="{{ route('admin.website-builder.create') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Website builder</a><a href="{{ route('admin.prospects.index') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Outreach</a><a href="{{ route('admin.users.index') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Users</a>@endif
                         </nav>
                         <form method="POST" action="{{ route('logout') }}" class="mt-auto border-t border-white/10 pt-4">
                             @csrf
