@@ -31,7 +31,7 @@ class BackfillSeoHistory implements ShouldBeUnique, ShouldQueue
      */
     public function handle(SeoHistoryService $history): void
     {
-        if ($this->website->seo_weekly_snapshots_enabled && ! $this->website->seo_history_backfilled_at) {
+        if (! $this->website->seo_history_backfilled_at) {
             $history->backfill($this->website);
         }
     }

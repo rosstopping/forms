@@ -58,6 +58,31 @@ test('automatic weekly snapshots can be enabled and disabled', function () {
     expect($website->fresh()->seo_weekly_snapshots_enabled)->toBeFalse();
 });
 
+test('manual intelligence refresh backfills history while weekly snapshots are disabled', function () {
+    Queue::fake();
+    $owner = User::factory()->create();
+    $website = Website::factory()->for($owner, 'owner')->create([
+        'seo_weekly_snapshots_enabled' => false,
+        'seo_history_backfilled_at' => null,
+    ]);
+    $website->domains()->create(['domain' => 'example.com', 'is_primary' => true]);
+
+    $this->actingAs($owner)->post(route('admin.seo-intelligence.store', $website))->assertRedirect();
+
+    Queue::assertPushed(BackfillSeoHistory::class, fn (BackfillSeoHistory $job): bool => $job->website->is($website));
+});
+
+test('historical backfill runs independently of the weekly snapshot setting', function () {
+    $website = Website::factory()->create([
+        'seo_weekly_snapshots_enabled' => false,
+        'seo_history_backfilled_at' => null,
+    ]);
+    $history = $this->mock(SeoHistoryService::class);
+    $history->shouldReceive('backfill')->once()->with($website)->andReturn(12);
+
+    (new BackfillSeoHistory($website))->handle($history);
+});
+
 test('search console daily performance is aggregated into monthly history', function () {
     config(['services.google.search_console_url' => 'https://search-console.test']);
     $connection = SearchConsoleConnection::factory()->create(['property_url' => 'sc-domain:example.com']);

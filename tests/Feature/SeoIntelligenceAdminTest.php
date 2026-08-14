@@ -1,5 +1,6 @@
 <?php
 
+use App\Jobs\BackfillSeoHistory;
 use App\Jobs\GenerateSeoIntelligence;
 use App\Models\SeoCompetitor;
 use App\Models\SeoKeyword;
@@ -50,7 +51,7 @@ test('a manager can queue the first seo intelligence snapshot', function (): voi
     $this->actingAs($manager)
         ->post(route('admin.seo-intelligence.store', $website))
         ->assertRedirect(route('admin.websites.show', [$website, 'tab' => 'seo']))
-        ->assertSessionHas('status', 'SEO intelligence generation has been queued.');
+        ->assertSessionHas('status', 'SEO intelligence generation has been queued. Historical SEO data import has also been queued.');
 
     $snapshot = $website->seoSnapshots()->sole();
     expect($snapshot->status)->toBe(SeoSnapshot::STATUS_PENDING)
@@ -58,6 +59,7 @@ test('a manager can queue the first seo intelligence snapshot', function (): voi
         ->and($snapshot->location_code)->toBe(2826)
         ->and($snapshot->language_code)->toBe('en');
     Queue::assertPushed(GenerateSeoIntelligence::class, fn (GenerateSeoIntelligence $job): bool => $job->snapshot->is($snapshot));
+    Queue::assertPushed(BackfillSeoHistory::class, fn (BackfillSeoHistory $job): bool => $job->website->is($website));
 });
 
 test('refresh protection returns a recent snapshot without spending again', function (): void {
@@ -73,10 +75,11 @@ test('refresh protection returns a recent snapshot without spending again', func
     $this->actingAs($owner)
         ->post(route('admin.seo-intelligence.store', $website))
         ->assertRedirect(route('admin.websites.show', [$website, 'tab' => 'seo']))
-        ->assertSessionHas('status', 'The latest SEO intelligence is still within the seven-day refresh window.');
+        ->assertSessionHas('status', 'The latest SEO intelligence is still within the seven-day refresh window. Historical SEO data import has been queued.');
 
     expect($website->seoSnapshots()->sole()->is($snapshot))->toBeTrue();
-    Queue::assertNothingPushed();
+    Queue::assertPushed(BackfillSeoHistory::class, fn (BackfillSeoHistory $job): bool => $job->website->is($website));
+    Queue::assertNotPushed(GenerateSeoIntelligence::class);
 });
 
 test('a recent snapshot with the legacy keyword sample can be replaced', function (): void {
@@ -92,7 +95,7 @@ test('a recent snapshot with the legacy keyword sample can be replaced', functio
     $this->actingAs($owner)
         ->post(route('admin.seo-intelligence.store', $website))
         ->assertRedirect(route('admin.websites.show', [$website, 'tab' => 'seo']))
-        ->assertSessionHas('status', 'SEO intelligence generation has been queued.');
+        ->assertSessionHas('status', 'SEO intelligence generation has been queued. Historical SEO data import has also been queued.');
 
     expect($website->seoSnapshots()->count())->toBe(2);
     Queue::assertPushed(GenerateSeoIntelligence::class, fn (GenerateSeoIntelligence $job): bool => ! $job->snapshot->is($legacySnapshot));
@@ -107,10 +110,29 @@ test('refresh protection reuses an active snapshot', function (): void {
 
     $this->actingAs($owner)
         ->post(route('admin.seo-intelligence.store', $website))
-        ->assertSessionHas('status', 'SEO intelligence is already being generated.');
+        ->assertSessionHas('status', 'SEO intelligence is already being generated. Historical SEO data import has also been queued.');
 
     expect($website->seoSnapshots()->sole()->is($snapshot))->toBeTrue();
-    Queue::assertNothingPushed();
+    Queue::assertPushed(BackfillSeoHistory::class, fn (BackfillSeoHistory $job): bool => $job->website->is($website));
+    Queue::assertNotPushed(GenerateSeoIntelligence::class);
+});
+
+test('refresh does not repeat a completed historical import', function (): void {
+    Queue::fake();
+    $owner = User::factory()->create();
+    $website = Website::factory()->for($owner, 'owner')->create(['seo_history_backfilled_at' => now()]);
+    $website->domains()->create(['domain' => 'example.com', 'is_primary' => true]);
+    SeoSnapshot::factory()->for($website)->create([
+        'completed_at' => now()->subDays(2),
+        'metadata' => ['data_source' => 'third_party_estimate', 'keyword_sample_version' => SeoSnapshotService::KEYWORD_SAMPLE_VERSION],
+    ]);
+
+    $this->actingAs($owner)
+        ->post(route('admin.seo-intelligence.store', $website))
+        ->assertSessionHas('status', 'The latest SEO intelligence is still within the seven-day refresh window.');
+
+    Queue::assertNotPushed(BackfillSeoHistory::class);
+    Queue::assertNotPushed(GenerateSeoIntelligence::class);
 });
 
 test('viewers cannot request a paid seo refresh', function (): void {

@@ -2,6 +2,7 @@
 
 namespace App\Services\SeoIntelligence;
 
+use App\Jobs\BackfillSeoHistory;
 use App\Jobs\GenerateSeoIntelligence;
 use App\Models\SeoSnapshot;
 use App\Models\Website;
@@ -13,6 +14,10 @@ class SeoRefreshService
     public function request(Website $website): SeoRefreshResult
     {
         return Cache::lock('seo-intelligence-refresh:'.$website->id, 10)->block(3, function () use ($website): SeoRefreshResult {
+            if (! $website->seo_history_backfilled_at) {
+                BackfillSeoHistory::dispatch($website);
+            }
+
             $activeSnapshot = $website->seoSnapshots()
                 ->where('provider', SeoSnapshot::PROVIDER_DATAFORSEO)
                 ->whereIn('status', [SeoSnapshot::STATUS_PENDING, SeoSnapshot::STATUS_PROCESSING])
