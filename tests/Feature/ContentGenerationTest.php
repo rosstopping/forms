@@ -100,6 +100,86 @@ test('a due weekly content plan queues one generation only', function () {
     Queue::assertPushed(StartContentGeneration::class, 1);
 });
 
+test('a due weekly content plan queues a generation while an earlier pull request remains open', function () {
+    Queue::fake();
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    GithubUserAuthorization::factory()->create(['user_id' => $admin->id]);
+    $website = Website::factory()->create();
+    $installation = GithubInstallation::factory()->create();
+    $repository = WebsiteRepository::factory()->create(['website_id' => $website->id, 'github_installation_id' => $installation->id]);
+    SearchConsoleConnection::factory()->create(['website_id' => $website->id, 'connected_by' => $admin->id]);
+    $plan = ContentPlan::factory()->create([
+        'website_id' => $website->id,
+        'created_by' => $admin->id,
+        'weekday' => now('Europe/London')->dayOfWeek,
+        'hour' => now('Europe/London')->hour,
+    ]);
+    ContentGeneration::factory()->create([
+        'content_plan_id' => $plan->id,
+        'website_repository_id' => $repository->id,
+        'requested_by' => $admin->id,
+        'scheduled_for' => now('Europe/London')->subWeek()->toDateString(),
+        'status' => ContentGeneration::STATUS_PULL_REQUEST_OPEN,
+    ]);
+
+    $this->artisan('content:dispatch')->assertSuccessful();
+
+    expect($plan->generations()->count())->toBe(2)
+        ->and($plan->generations()->whereDate('scheduled_for', now('Europe/London')->toDateString())->exists())->toBeTrue();
+    Queue::assertPushed(StartContentGeneration::class, 1);
+});
+
+test('an admin can reconcile a merged content pull request when its webhook was missed', function () {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $website = Website::factory()->create();
+    $repository = WebsiteRepository::factory()->for($website)->create();
+    $plan = ContentPlan::factory()->for($website)->for($admin, 'creator')->create();
+    $generation = ContentGeneration::factory()->for($plan, 'plan')->for($repository, 'repository')->for($admin, 'requester')->create([
+        'status' => ContentGeneration::STATUS_PULL_REQUEST_OPEN,
+        'pull_request_number' => 42,
+        'pull_request_state' => 'open',
+    ]);
+    $mergedAt = now()->subHour();
+    $this->mock(GithubAppClient::class)
+        ->shouldReceive('pullRequestDetails')
+        ->once()
+        ->withArgs(fn (WebsiteRepository $passedRepository, int $number): bool => $passedRepository->is($repository) && $number === 42)
+        ->andReturn(['pull_request' => ['state' => 'closed', 'merged_at' => $mergedAt->toIso8601String()], 'files' => []]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.websites.show', $website))
+        ->assertSuccessful()
+        ->assertSee('Check GitHub status')
+        ->assertSee('Cancel');
+
+    $this->actingAs($admin)
+        ->post(route('admin.content-generations.sync', [$website, $generation]))
+        ->assertRedirect(route('admin.websites.show', $website))
+        ->assertSessionHas('status', 'GitHub confirmed that the content pull request was merged.');
+
+    expect($generation->fresh()->status)->toBe(ContentGeneration::STATUS_COMPLETED)
+        ->and($generation->fresh()->pull_request_state)->toBe('closed')
+        ->and($generation->fresh()->merged_at?->timestamp)->toBe($mergedAt->timestamp)
+        ->and($generation->fresh()->completed_at?->timestamp)->toBe($mergedAt->timestamp);
+});
+
+test('an admin can cancel a stale open content generation', function () {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $website = Website::factory()->create();
+    $plan = ContentPlan::factory()->for($website)->for($admin, 'creator')->create();
+    $generation = ContentGeneration::factory()->for($plan, 'plan')->for($admin, 'requester')->create([
+        'status' => ContentGeneration::STATUS_PULL_REQUEST_OPEN,
+    ]);
+
+    $this->actingAs($admin)
+        ->delete(route('admin.content-generations.destroy', [$website, $generation]))
+        ->assertRedirect(route('admin.websites.show', $website))
+        ->assertSessionHas('status', 'Content generation cancelled.');
+
+    expect($generation->fresh()->status)->toBe(ContentGeneration::STATUS_CANCELLED)
+        ->and($generation->fresh()->completed_at)->not->toBeNull();
+});
+
 test('content plan settings remain saved when activation requirements are missing', function () {
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     $website = Website::factory()->create();

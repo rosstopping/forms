@@ -23,6 +23,8 @@ class ContentGeneration extends Model
 
     public const STATUS_FAILED = 'failed';
 
+    public const STATUS_CANCELLED = 'cancelled';
+
     protected $fillable = ['content_plan_id', 'website_repository_id', 'requested_by', 'scheduled_for', 'status', 'search_performance', 'prompt', 'copilot_task_id', 'copilot_task_url', 'copilot_task_state', 'pull_request_number', 'pull_request_url', 'pull_request_state', 'error', 'started_at', 'completed_at', 'merged_at'];
 
     protected $attributes = ['status' => self::STATUS_PENDING];

@@ -26,7 +26,7 @@ class DispatchDueContentGenerations extends Command
                 if (! $plan->website->repository || ! $plan->website->searchConsoleConnection?->property_url || ! $plan->creator?->githubAuthorization) {
                     return;
                 }
-                if ($plan->generations()->whereIn('status', [ContentGeneration::STATUS_PENDING, ContentGeneration::STATUS_RUNNING, ContentGeneration::STATUS_PULL_REQUEST_OPEN])->exists()) {
+                if ($plan->generations()->whereIn('status', [ContentGeneration::STATUS_PENDING, ContentGeneration::STATUS_RUNNING])->exists()) {
                     return;
                 }
                 $generation = $plan->generations()->firstOrCreate(

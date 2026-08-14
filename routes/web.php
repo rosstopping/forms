@@ -155,6 +155,8 @@ Route::middleware(['web', 'auth'])->prefix('admin')->name('admin.')->group(funct
     Route::put('websites/{website}/business-profile/reviews/{review}', [BusinessProfileReviewController::class, 'update'])->name('business-profile.reviews.update');
     Route::put('websites/{website}/content-plan', [ContentPlanController::class, 'update'])->name('content-plans.update');
     Route::post('websites/{website}/content-generations', [ContentPlanController::class, 'generate'])->name('content-generations.store');
+    Route::post('websites/{website}/content-generations/{contentGeneration}/sync', [ContentPlanController::class, 'syncGeneration'])->name('content-generations.sync');
+    Route::delete('websites/{website}/content-generations/{contentGeneration}', [ContentPlanController::class, 'cancelGeneration'])->name('content-generations.destroy');
     Route::post('websites/{website}/content-requests', [ContentRequestController::class, 'store'])->name('content-requests.store');
     Route::delete('websites/{website}/content-requests/{contentRequest}', [ContentRequestController::class, 'destroy'])->name('content-requests.destroy');
     Route::resource('forms', FormController::class);
