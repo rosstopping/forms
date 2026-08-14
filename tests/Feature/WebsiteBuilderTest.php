@@ -46,7 +46,11 @@ it('publishes a repository and creates the website and contact form records', fu
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     $owner = User::factory()->create();
     $authorization = GithubUserAuthorization::factory()->for($admin)->create(['github_login' => 'octocat']);
-    $installation = GithubInstallation::factory()->create(['account_login' => 'acme', 'repository_selection' => 'all']);
+    $installation = GithubInstallation::factory()->create([
+        'account_login' => 'acme',
+        'repository_selection' => 'all',
+        'permissions' => ['administration' => 'write', 'contents' => 'write'],
+    ]);
     $github = mock(GithubOAuthClient::class);
     $github->shouldReceive('createRepository')
         ->once()
@@ -84,7 +88,10 @@ it('publishes a repository and creates the website and contact form records', fu
 
 it('normalizes the page list before starting a build', function (): void {
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
-    $installation = GithubInstallation::factory()->create(['repository_selection' => 'all']);
+    $installation = GithubInstallation::factory()->create([
+        'repository_selection' => 'all',
+        'permissions' => ['administration' => 'write', 'contents' => 'write'],
+    ]);
     $website = Website::factory()->create();
     mock(WebsiteBuilder::class)->shouldReceive('build')->once()
         ->withArgs(fn (array $details, User $creator): bool => $details['pages'] === ['Home', 'About', 'Contact']
@@ -157,4 +164,43 @@ it('uploads a zip deployment and returns the Netlify development link', function
         && $request->url() === 'https://api.netlify.test/sites'
         && $request->hasHeader('Authorization', 'Bearer netlify-token')
         && $request->hasHeader('Content-Type', 'application/zip'));
+});
+
+it('stops before creating remote resources when GitHub administration permission is missing', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    GithubUserAuthorization::factory()->for($admin)->create();
+    $installation = GithubInstallation::factory()->create([
+        'repository_selection' => 'all',
+        'permissions' => ['contents' => 'write'],
+    ]);
+    mock(GithubOAuthClient::class)->shouldNotReceive('createRepository');
+    mock(NetlifyClient::class)->shouldNotReceive('deploy');
+
+    expect(fn () => app(WebsiteBuilder::class)->build([
+        'name' => 'Acme Studio',
+        'sector' => 'Architecture',
+        'description' => 'Thoughtful spaces for modern teams.',
+        'pages' => ['Home', 'Contact'],
+        'repository_name' => 'acme-studio',
+        'github_installation_id' => $installation->id,
+    ], $admin))->toThrow(RuntimeException::class, 'Administration set to Read and write');
+});
+
+it('turns a GitHub repository creation 403 into an actionable error', function (): void {
+    config(['services.github.api_url' => 'https://api.github.test']);
+    Http::preventStrayRequests();
+    Http::fake([
+        'api.github.test/user/repos' => Http::response([
+            'message' => 'Resource not accessible by integration',
+        ], 403),
+    ]);
+    $authorization = GithubUserAuthorization::factory()->create([
+        'github_login' => 'octocat',
+        'access_token' => 'github-token',
+        'access_token_expires_at' => now()->addHour(),
+    ]);
+
+    expect(fn () => app(GithubOAuthClient::class)->createRepository($authorization, 'octocat', 'acme-site', [
+        'index.html' => '<h1>Acme</h1>',
+    ]))->toThrow(RuntimeException::class, 'organisation allows GitHub Apps to create repositories');
 });

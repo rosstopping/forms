@@ -30,6 +30,11 @@ class WebsiteBuilder
             ->where('status', GithubInstallation::STATUS_ACTIVE)
             ->where('repository_selection', 'all')
             ->findOrFail($details['github_installation_id']);
+
+        if (($installation->permissions['administration'] ?? null) !== 'write') {
+            throw new RuntimeException('The Sitewell GitHub App needs Repository permissions → Administration set to Read and write. Update the GitHub App, approve the new permission for this installation, then try again.');
+        }
+
         $files = $this->generator->generate($details);
         $repository = $this->github->createRepository($authorization, $installation->account_login, $details['repository_name'], $files);
         $site = $this->netlify->deploy($files);
