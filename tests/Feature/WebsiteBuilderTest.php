@@ -41,7 +41,15 @@ it('generates an Eleventy and Tailwind scaffold with a complete Copilot build br
         ->and($files['src/assets/css/input.css'])->toContain('@import "tailwindcss"')
         ->and($files['src/contact.njk'])->toContain('action="https://sitewell.digizu.co.uk/submit"')
         ->and($files['src/contact.njk'])->toContain('name="_form_name" value="Contact form"')
-        ->and($files['BUILD_SITE.md'])->toContain('Architecture', 'fully fledged visual identity', 'About us, Services', 'npm run build');
+        ->and($files['BUILD_SITE.md'])->toContain(
+            'Architecture',
+            'About us, Services',
+            'Understand the business before designing',
+            'what creates trust in this specific industry',
+            'Do not default to a generic "modern website" aesthetic',
+            'Final design sanity check',
+            'npm run build',
+        );
 });
 
 it('publishes a repository and creates the website and contact form records', function (): void {
