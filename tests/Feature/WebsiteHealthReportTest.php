@@ -64,6 +64,7 @@ it('shows Search Console reporting on the website dashboard', function (): void 
         ->assertSuccessful()
         ->assertSee('Search performance')
         ->assertSee('Organic clicks')
+        ->assertSee('Search impressions')
         ->assertSee('2,500')
         ->assertSee('5.0%')
         ->assertSee('example services')
@@ -128,6 +129,31 @@ it('shows sortable Search Console queries and landing pages to website users', f
     $this->actingAs($otherUser)
         ->get($url)
         ->assertForbidden();
+});
+
+it('shows monthly Search Console performance for a selected query', function (): void {
+    $owner = User::factory()->create();
+    $website = websiteWithDomain(['user_id' => $owner->id]);
+    SearchConsoleConnection::factory()->for($website)->create([
+        'connected_by' => $owner->id,
+        'property_url' => 'sc-domain:example.com',
+    ]);
+    $this->mock(SearchConsoleClient::class)
+        ->shouldReceive('monthlyPerformanceForQuery')
+        ->once()
+        ->withArgs(fn (SearchConsoleConnection $connection, string $query): bool => $connection->website_id === $website->id && $query === 'example services')
+        ->andReturn([
+            ['month' => '2026-07', 'clicks' => 20.0, 'impressions' => 300.0, 'ctr' => 0.067, 'position' => 4.2],
+            ['month' => '2026-08', 'clicks' => 30.0, 'impressions' => 420.0, 'ctr' => 0.071, 'position' => 3.5],
+        ]);
+
+    $this->actingAs($owner)
+        ->get(route('admin.search-console.queries.show', [$website, 'query' => 'example services']))
+        ->assertSuccessful()
+        ->assertSee('example services')
+        ->assertSee('Clicks vs impressions over time')
+        ->assertSee('Actual clicks for this query.')
+        ->assertSee('Search-result appearances for this query.');
 });
 
 it('lets an administrator enable reports and queue one immediately', function (): void {

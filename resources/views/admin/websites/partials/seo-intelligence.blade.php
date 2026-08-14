@@ -379,7 +379,7 @@
                         @forelse ($seoKeywords as $keyword)
                             <tr>
                                 <td class="max-w-sm px-4 py-3">
-                                    <p class="truncate font-medium text-slate-950" title="{{ $keyword->keyword }}">{{ $keyword->keyword }}</p>
+                                    <p class="truncate font-medium" title="{{ $keyword->keyword }}"><a href="{{ route('admin.seo-keywords.show', [$website, $keyword]) }}" class="text-teal-700 underline decoration-teal-700/30 underline-offset-4 hover:decoration-teal-700">{{ $keyword->keyword }}</a></p>
                                     @if ($keyword->ranking_url)
                                         <p class="mt-1 truncate text-xs text-slate-500" title="{{ $keyword->ranking_url }}"><a href="{{ $keyword->ranking_url }}" target="_blank" rel="noopener noreferrer" class="hover:text-teal-700">{{ \Illuminate\Support\Str::after($keyword->ranking_url, '://') }}</a></p>
                                     @endif

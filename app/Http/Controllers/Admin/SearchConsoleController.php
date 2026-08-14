@@ -105,6 +105,18 @@ class SearchConsoleController extends Controller
         ]);
     }
 
+    public function query(Request $request, Website $website): View
+    {
+        abort_unless($website->isAccessibleBy($request->user()), 403);
+        $data = $request->validate(['query' => ['required', 'string', 'max:4096']]);
+        $connection = $website->searchConsoleConnection()->firstOrFail();
+        $query = $data['query'];
+        $cacheKey = 'search-console-query-history:'.$connection->id.':'.$connection->updated_at->timestamp.':'.hash('sha256', $query);
+        $history = Cache::remember($cacheKey, now()->addHours(6), fn (): array => $this->searchConsole->monthlyPerformanceForQuery($connection, $query));
+
+        return view('admin.websites.search-console-query', compact('website', 'connection', 'query', 'history'));
+    }
+
     /**
      * @param  array<int, array<string, mixed>>  $rows
      * @return array<int, array<string, mixed>>

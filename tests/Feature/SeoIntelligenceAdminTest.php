@@ -208,3 +208,28 @@ test('the seo tab displays and filters locally stored keyword estimates', functi
         ->assertSee('Locally stored third-party estimates')
         ->assertDontSee('DataForSEO');
 });
+
+test('website users can drill into locally observed keyword history', function (): void {
+    $owner = User::factory()->create();
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $olderSnapshot = SeoSnapshot::factory()->for($website)->create(['snapshot_date' => '2026-07-31']);
+    $latestSnapshot = SeoSnapshot::factory()->for($website)->create(['snapshot_date' => '2026-08-31']);
+    $olderKeyword = SeoKeyword::factory()->for($website)->for($olderSnapshot, 'snapshot')->create([
+        'keyword' => 'luxury train journeys',
+        'position' => 14,
+        'estimated_traffic' => 20,
+    ]);
+    SeoKeyword::factory()->for($website)->for($latestSnapshot, 'snapshot')->create([
+        'keyword' => 'luxury train journeys',
+        'position' => 9,
+        'estimated_traffic' => 45,
+    ]);
+
+    $this->actingAs($owner)
+        ->get(route('admin.seo-keywords.show', [$website, $olderKeyword]))
+        ->assertSuccessful()
+        ->assertSee('luxury train journeys')
+        ->assertSee('Keyword performance over time')
+        ->assertSee('31 Jul 2026: 14.0', false)
+        ->assertSee('31 Aug 2026: 9.0', false);
+});

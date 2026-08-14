@@ -76,6 +76,30 @@ test('search console daily performance is aggregated into monthly history', func
         ->and($history[0]['position'])->toBe(7.0);
 });
 
+test('search console query history uses an exact query filter', function () {
+    config(['services.google.search_console_url' => 'https://search-console.test']);
+    $connection = SearchConsoleConnection::factory()->create(['property_url' => 'sc-domain:example.com']);
+    $oauth = $this->mock(GoogleOAuthClient::class);
+    $oauth->shouldReceive('accessToken')->once()->andReturn('token');
+    Http::fake(['search-console.test/*' => Http::response(['rows' => [
+        ['keys' => ['2026-07-01'], 'clicks' => 4, 'impressions' => 100, 'ctr' => .04, 'position' => 12],
+        ['keys' => ['2026-07-02'], 'clicks' => 6, 'impressions' => 100, 'ctr' => .06, 'position' => 8],
+    ]])]);
+
+    $history = (new SearchConsoleClient($oauth))->monthlyPerformanceForQuery($connection, 'luxury train journeys');
+
+    expect($history)->toHaveCount(1)
+        ->and($history[0]['clicks'])->toBe(10.0)
+        ->and($history[0]['impressions'])->toBe(200.0)
+        ->and($history[0]['position'])->toBe(10.0);
+
+    Http::assertSent(fn ($request): bool => data_get($request->data(), 'dimensionFilterGroups.0.filters.0') === [
+        'dimension' => 'query',
+        'operator' => 'equals',
+        'expression' => 'luxury train journeys',
+    ]);
+});
+
 test('progress chart exposes every period for pointer and keyboard inspection', function () {
     $html = Blade::render(
         '<x-progress-chart title="Organic clicks" description="Monthly clicks." :points="$points" value-key="clicks" />',

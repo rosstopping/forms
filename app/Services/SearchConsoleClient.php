@@ -98,6 +98,29 @@ class SearchConsoleClient
     {
         $rows = $this->performanceRows($connection, ['date'], 25000, dates: ['start' => now()->subMonthsNoOverflow(16)->startOfMonth(), 'end' => now()->subDays(3)]);
 
+        return $this->monthlyRows($rows);
+    }
+
+    /** @return array<int, array{month: string, clicks: float, impressions: float, ctr: float, position: float}> */
+    public function monthlyPerformanceForQuery(SearchConsoleConnection $connection, string $query): array
+    {
+        $rows = $this->performanceRows(
+            $connection,
+            ['date'],
+            25000,
+            dates: ['start' => now()->subMonthsNoOverflow(16)->startOfMonth(), 'end' => now()->subDays(3)],
+            filters: [['dimension' => 'query', 'operator' => 'equals', 'expression' => $query]],
+        );
+
+        return $this->monthlyRows($rows);
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $rows
+     * @return array<int, array{month: string, clicks: float, impressions: float, ctr: float, position: float}>
+     */
+    protected function monthlyRows(array $rows): array
+    {
         return collect($rows)->groupBy(fn (array $row): string => substr((string) data_get($row, 'keys.0'), 0, 7))->map(function ($rows, string $month): array {
             $clicks = (float) $rows->sum(fn (array $row): float => (float) ($row['clicks'] ?? 0));
             $impressions = (float) $rows->sum(fn (array $row): float => (float) ($row['impressions'] ?? 0));
@@ -111,19 +134,26 @@ class SearchConsoleClient
      * @param  array<int, string>  $dimensions
      * @return array<int, array<string, mixed>>
      */
-    protected function performanceRows(SearchConsoleConnection $connection, array $dimensions, int $rowLimit, int $startRow = 0, ?array $dates = null): array
+    protected function performanceRows(SearchConsoleConnection $connection, array $dimensions, int $rowLimit, int $startRow = 0, ?array $dates = null, array $filters = []): array
     {
         $dates ??= ['start' => now()->subDays(29), 'end' => now()->subDay()];
+        $payload = [
+            'startDate' => $dates['start']->toDateString(),
+            'endDate' => $dates['end']->toDateString(),
+            'dimensions' => $dimensions,
+            'type' => 'web',
+            'rowLimit' => $rowLimit,
+            'startRow' => $startRow,
+        ];
+
+        if ($filters !== []) {
+            $payload['dimensionFilterGroups'] = [['groupType' => 'and', 'filters' => $filters]];
+        }
 
         return $this->request($connection)
-            ->post('sites/'.rawurlencode((string) $connection->property_url).'/searchAnalytics/query', [
-                'startDate' => $dates['start']->toDateString(),
-                'endDate' => $dates['end']->toDateString(),
-                'dimensions' => $dimensions,
-                'type' => 'web',
-                'rowLimit' => $rowLimit,
-                'startRow' => $startRow,
-            ])->throw()->json('rows', []);
+            ->post('sites/'.rawurlencode((string) $connection->property_url).'/searchAnalytics/query', $payload)
+            ->throw()
+            ->json('rows', []);
     }
 
     /** @return array{clicks: float, impressions: float, ctr: float, position: float} */

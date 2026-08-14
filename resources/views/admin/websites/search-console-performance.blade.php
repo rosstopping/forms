@@ -32,7 +32,7 @@
             <div class="flex flex-wrap items-end justify-between gap-2 border-b border-slate-200 pb-3">
                 <div>
                     <h2 id="queries-heading" class="text-lg font-semibold text-slate-950">All available queries</h2>
-                    <p class="mt-1 text-sm text-slate-500">The searches people used and the page that ranked for each one.</p>
+                    <p class="mt-1 text-sm text-slate-500">The searches people used and the page that ranked for each one. Select a query to see its history.</p>
                 </div>
                 @if ($queries)
                     <p class="text-sm tabular-nums text-slate-500">Rows {{ number_format((($queryPage - 1) * $pageSize) + 1) }}–{{ number_format((($queryPage - 1) * $pageSize) + count($queries)) }}</p>
@@ -50,7 +50,7 @@
                         </tr></thead>
                         <tbody class="divide-y divide-slate-950/5">
                             @forelse ($queries as $query)
-                                <tr><td class="max-w-96 truncate py-3 pr-6 font-medium text-slate-900" title="{{ $query['query'] }}">{{ $query['query'] }}</td><td class="max-w-96 truncate px-3 py-3"><a href="{{ $query['page'] }}" target="_blank" rel="noreferrer" class="text-slate-700 underline decoration-slate-300 underline-offset-4 hover:decoration-slate-900" title="{{ $query['page'] }}">{{ \Illuminate\Support\Str::after($query['page'], '://') }}</a></td><td class="px-3 py-3 text-right tabular-nums">{{ number_format($query['clicks']) }}</td><td class="px-3 py-3 text-right tabular-nums">{{ number_format($query['impressions']) }}</td><td class="px-3 py-3 text-right tabular-nums">{{ number_format($query['ctr'] * 100, 1) }}%</td><td class="py-3 pl-3 text-right tabular-nums">{{ number_format($query['position'], 1) }}</td></tr>
+                                <tr><td class="max-w-96 truncate py-3 pr-6 font-medium" title="{{ $query['query'] }}"><a href="{{ route('admin.search-console.queries.show', [$website, 'query' => $query['query']]) }}" class="text-teal-700 underline decoration-teal-700/30 underline-offset-4 hover:decoration-teal-700">{{ $query['query'] }}</a></td><td class="max-w-96 truncate px-3 py-3"><a href="{{ $query['page'] }}" target="_blank" rel="noreferrer" class="text-slate-700 underline decoration-slate-300 underline-offset-4 hover:decoration-slate-900" title="{{ $query['page'] }}">{{ \Illuminate\Support\Str::after($query['page'], '://') }}</a></td><td class="px-3 py-3 text-right tabular-nums">{{ number_format($query['clicks']) }}</td><td class="px-3 py-3 text-right tabular-nums">{{ number_format($query['impressions']) }}</td><td class="px-3 py-3 text-right tabular-nums">{{ number_format($query['ctr'] * 100, 1) }}%</td><td class="py-3 pl-3 text-right tabular-nums">{{ number_format($query['position'], 1) }}</td></tr>
                             @empty
                                 <tr><td colspan="6" class="py-8 text-center text-slate-500">No query data is available for this period.</td></tr>
                             @endforelse
