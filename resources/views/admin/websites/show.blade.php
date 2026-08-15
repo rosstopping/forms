@@ -45,6 +45,7 @@
         <button type="button" id="website-tab-health" class="website-tab" role="tab" aria-selected="true" aria-controls="website-panel-health" tabindex="0" data-tab="health">Health reports</button>
         <button type="button" id="website-tab-search" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-search" tabindex="-1" data-tab="search">Search</button>
         <button type="button" id="website-tab-seo" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-seo" tabindex="-1" data-tab="seo">SEO Intelligence</button>
+        <button type="button" id="website-tab-assistant" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-assistant" tabindex="-1" data-tab="assistant">Ask Sitewell</button>
         <button type="button" id="website-tab-content" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-content" tabindex="-1" data-tab="content">Content</button>
         @if (config('forms.pixel_ui_enabled'))
             <button type="button" id="website-tab-pixel" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-pixel" tabindex="-1" data-tab="pixel">Pixel</button>
@@ -92,6 +93,65 @@
         </div>
         </section>
 
+    </div>
+
+    <div id="website-panel-assistant" class="space-y-6" role="tabpanel" aria-labelledby="website-tab-assistant" data-tab-panel="assistant" hidden>
+        @if ($canUseCompleteFeatures)
+            <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm" aria-labelledby="website-assistant-title">
+                <div class="border-b border-slate-200 bg-slate-950 px-5 py-5 text-white sm:px-6">
+                    <div class="flex flex-wrap items-start justify-between gap-4">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-widest text-teal-300">Complete</p>
+                            <h2 id="website-assistant-title" class="mt-1 text-xl font-semibold">Ask Sitewell about {{ $website->name }}</h2>
+                            <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-300">Answers are restricted to this website’s health reports, Search Console measurements, SEO snapshots, keywords, and recorded opportunities.</p>
+                        </div>
+                        <div class="rounded-lg border border-white/15 bg-white/10 px-4 py-3 text-right">
+                            <p class="text-xs text-slate-300">Weekly allowance</p>
+                            <p class="mt-1 text-lg font-semibold tabular-nums">{{ max(0, $websiteAiWeeklyLimit - $websiteAiQuestionsUsed) }} of {{ $websiteAiWeeklyLimit }} left</p>
+                            <p class="text-xs text-slate-400">Resets Monday</p>
+                        </div>
+                    </div>
+                </div>
+
+                <form method="POST" action="{{ route('admin.websites.assistant.questions.store', $website) }}" class="space-y-3 border-b border-slate-200 p-5 sm:p-6">
+                    @csrf
+                    <label for="website-assistant-question" class="block text-sm font-semibold text-slate-900">What would you like to understand?</label>
+                    <textarea id="website-assistant-question" name="question" rows="3" maxlength="1000" required placeholder="For example: Which search queries have the best opportunity for more clicks?" class="w-full rounded-lg border border-slate-300 px-3 py-3 text-sm leading-6 text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/20">{{ old('question') }}</textarea>
+                    @error('question')<p class="text-sm text-red-600">{{ $message }}</p>@enderror
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <p class="text-xs text-slate-500">Questions outside this website’s stored performance data will be refused and still count towards the allowance.</p>
+                        <button type="submit" @disabled($websiteAiQuestionsUsed >= $websiteAiWeeklyLimit) class="rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:bg-slate-300">Ask question</button>
+                    </div>
+                </form>
+
+                <div class="divide-y divide-slate-200">
+                    @forelse ($websiteAiQuestions as $websiteAiQuestion)
+                        <article class="space-y-3 p-5 sm:p-6">
+                            <div class="flex flex-wrap items-start justify-between gap-3">
+                                <h3 class="font-medium text-slate-950">{{ $websiteAiQuestion->question }}</h3>
+                                <time datetime="{{ $websiteAiQuestion->created_at->toAtomString() }}" class="shrink-0 text-xs text-slate-500">{{ $websiteAiQuestion->created_at->diffForHumans() }}</time>
+                            </div>
+                            @if ($websiteAiQuestion->status === 'completed')
+                                <p class="whitespace-pre-line text-sm leading-6 text-slate-700">{{ $websiteAiQuestion->answer }}</p>
+                            @elseif ($websiteAiQuestion->status === 'failed')
+                                <p class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{{ $websiteAiQuestion->error }}</p>
+                            @else
+                                <p class="text-sm text-slate-500">Preparing an answer…</p>
+                            @endif
+                        </article>
+                    @empty
+                        <p class="p-6 text-sm text-slate-500">No questions yet. Ask about rankings, traffic opportunities, or recent website health findings.</p>
+                    @endforelse
+                </div>
+            </section>
+        @else
+            <x-feature-upgrade-banner tier="Complete" title="Ask questions about your website data" description="Upgrade to Complete to ask Sitewell about this website’s health reports, Search Console performance, SEO rankings, and opportunities." />
+            <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                <p class="text-xs font-semibold uppercase tracking-widest text-slate-500">Website data assistant</p>
+                <h2 class="mt-2 text-lg font-semibold text-slate-950">Turn reports into clear answers</h2>
+                <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Ask which rankings are improving, where clicks are being missed, or what the latest health report says needs attention. Answers stay restricted to the selected website.</p>
+            </section>
+        @endif
     </div>
 
     @if ($canUseGrowthFeatures)

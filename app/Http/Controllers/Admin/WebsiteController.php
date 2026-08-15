@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Website;
+use App\Models\WebsiteAiQuestion;
 use App\Models\WebsiteDomain;
 use App\Services\PixelInstallationSnippet;
 use App\Services\SearchConsoleClient;
@@ -201,12 +202,30 @@ class WebsiteController extends Controller
         $dataForSeoConfigured = filled(config('services.dataforseo.login')) && filled(config('services.dataforseo.password'));
         $outreachProspect = $user?->isAdmin() ? $websiteProspects->find($website) : null;
         $pixelInstallationSnippet = $pixelInstallation->for($website);
+        $websiteAiWeeklyLimit = (int) config('memberships.website_ai_questions_per_week', 25);
+        $websiteAiQuestions = collect();
+        $websiteAiQuestionsUsed = 0;
+
+        if ($canUseCompleteFeatures) {
+            $websiteAiQuestions = WebsiteAiQuestion::query()
+                ->whereBelongsTo($website)
+                ->whereBelongsTo($user)
+                ->latest()
+                ->limit(10)
+                ->get();
+            $websiteAiQuestionsUsed = WebsiteAiQuestion::query()
+                ->whereBelongsTo($website)
+                ->whereBelongsTo($user)
+                ->where('created_at', '>=', now()->startOfWeek())
+                ->count();
+        }
 
         return view('admin.websites.show', compact(
             'website', 'users', 'canManageMembers', 'canManageWebsite',
             'searchConsoleReport', 'searchConsoleHistory', 'searchConsoleReportUnavailable', 'seoGeneration', 'seoSnapshot', 'seoHistory',
             'seoKeywords', 'seoReferringDomains', 'seoCompetitors', 'seoOpportunities', 'seoFilter', 'seoSort', 'seoDirection', 'strikingDistanceCount',
             'dataForSeoConfigured', 'outreachProspect', 'pixelInstallationSnippet', 'canUseGrowthFeatures', 'canUseCompleteFeatures',
+            'websiteAiQuestions', 'websiteAiQuestionsUsed', 'websiteAiWeeklyLimit',
         ));
     }
 

@@ -233,6 +233,11 @@ class Website extends Model
         return $this->hasMany(ExternalApiUsage::class);
     }
 
+    public function aiQuestions(): HasMany
+    {
+        return $this->hasMany(WebsiteAiQuestion::class);
+    }
+
     public function primaryDomain(): ?WebsiteDomain
     {
         return $this->domains()->where('is_primary', true)->first() ?: $this->domains()->first();

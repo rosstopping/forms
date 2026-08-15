@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'website_ai_questions_per_week' => 25,
+
     'plans' => [
         'essential' => [
             'name' => 'Essential',
@@ -41,6 +43,7 @@ return [
                 'Generated Google post drafts',
                 'Review replies in approval mode',
                 'Advanced automations and dedicated support',
+                'Website data AI assistant (25 questions per week)',
             ],
             'stripe_price_id' => env('STRIPE_COMPLETE_PRICE_ID'),
         ],

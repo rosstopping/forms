@@ -38,6 +38,7 @@ use App\Http\Controllers\Admin\SeoKeywordController;
 use App\Http\Controllers\Admin\SeoOpportunityController;
 use App\Http\Controllers\Admin\SeoSnapshotSettingsController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\WebsiteAiChatController;
 use App\Http\Controllers\Admin\WebsiteAutoresponderController;
 use App\Http\Controllers\Admin\WebsiteBuilderController;
 use App\Http\Controllers\Admin\WebsiteController;
@@ -132,6 +133,7 @@ Route::middleware(['web', 'auth'])->prefix('admin')->name('admin.')->group(funct
     Route::put('websites/{website}/pixel', [PixelSettingsController::class, 'update'])->name('websites.pixel.update');
     Route::post('websites/{website}/pixel/rotate-key', PixelKeyController::class)->name('websites.pixel.rotate-key');
     Route::post('websites/{website}/members', [WebsiteMemberController::class, 'store'])->middleware('membership:growth')->name('websites.members.store');
+    Route::post('websites/{website}/assistant/questions', WebsiteAiChatController::class)->middleware(['membership:complete', 'throttle:10,1'])->name('websites.assistant.questions.store');
     Route::put('websites/{website}/members/{member}', [WebsiteMemberController::class, 'update'])->name('websites.members.update');
     Route::delete('websites/{website}/members/{member}', [WebsiteMemberController::class, 'destroy'])->name('websites.members.destroy');
     Route::post('websites/{website}/health-reports', [WebsiteHealthReportController::class, 'store'])->name('website-health-reports.store');
