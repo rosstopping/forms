@@ -47,6 +47,7 @@ use App\Http\Controllers\Admin\WebsiteMemberController;
 use App\Http\Controllers\Admin\WebsiteProspectController;
 use App\Http\Controllers\Admin\WebsiteRepositoryController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\WebsiteInvitationController;
 use App\Http\Controllers\FormSubmissionController;
 use App\Http\Controllers\FormSubmissionSpamController;
 use App\Http\Controllers\GithubWebhookController;
@@ -97,6 +98,11 @@ Route::middleware('web')->group(function () {
 });
 
 Route::middleware(['web', 'signed', 'throttle:20,1'])->group(function () {
+    Route::get('/website-invitations/{user}', [WebsiteInvitationController::class, 'edit'])->name('website-invitations.accept');
+    Route::put('/website-invitations/{user}', [WebsiteInvitationController::class, 'update'])->name('website-invitations.update');
+});
+
+Route::middleware(['web', 'signed', 'throttle:20,1'])->group(function () {
     Route::get('/website-health-reports/{websiteHealthReport}', PublicWebsiteHealthReportController::class)
         ->name('website-health-reports.show');
     Route::get('/form-submissions/{formSubmission}/spam', [FormSubmissionSpamController::class, 'show'])
@@ -119,7 +125,7 @@ Route::middleware(['web', 'auth'])->prefix('admin')->name('admin.')->group(funct
     Route::put('websites/{website}/autoresponder', WebsiteAutoresponderController::class)->name('websites.autoresponder.update');
     Route::put('websites/{website}/pixel', [PixelSettingsController::class, 'update'])->name('websites.pixel.update');
     Route::post('websites/{website}/pixel/rotate-key', PixelKeyController::class)->name('websites.pixel.rotate-key');
-    Route::post('websites/{website}/members', [WebsiteMemberController::class, 'store'])->name('websites.members.store');
+    Route::post('websites/{website}/members', [WebsiteMemberController::class, 'store'])->middleware('membership:growth')->name('websites.members.store');
     Route::put('websites/{website}/members/{member}', [WebsiteMemberController::class, 'update'])->name('websites.members.update');
     Route::delete('websites/{website}/members/{member}', [WebsiteMemberController::class, 'destroy'])->name('websites.members.destroy');
     Route::post('websites/{website}/health-reports', [WebsiteHealthReportController::class, 'store'])->name('website-health-reports.store');

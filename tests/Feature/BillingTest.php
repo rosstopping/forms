@@ -147,5 +147,7 @@ it('shows only the website feature areas included in the owner package', functio
         ->assertDontSee('data-tab="seo"', false)
         ->assertDontSee('data-tab="business-profile"', false)
         ->assertSee('data-tab="content"', false)
+        ->assertDontSee('Manual content requests')
+        ->assertSee('A Growth or Complete membership is required to invite additional website users.')
         ->assertSee('data-tab="forms"', false);
 });

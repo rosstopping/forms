@@ -4,18 +4,25 @@ use App\Models\Form;
 use App\Models\FormSubmission;
 use App\Models\User;
 use App\Models\Website;
+use App\Notifications\WebsiteInvitation;
+use App\Support\MembershipPlan;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\URL;
 
 it('allows an owner to add update and remove a website member', function (): void {
+    Notification::fake();
     $owner = User::factory()->create();
-    $member = User::factory()->create();
     $website = Website::factory()->create(['user_id' => $owner->id, 'name' => 'Shared client website']);
 
     $this->actingAs($owner)->post(route('admin.websites.members.store', $website), [
-        'user_id' => $member->id,
+        'email' => 'new.member@example.com',
         'role' => Website::MEMBER_ROLE_VIEWER,
     ])->assertRedirect();
 
+    $member = User::query()->where('email', 'new.member@example.com')->sole();
     expect($website->membershipRoleFor($member))->toBe(Website::MEMBER_ROLE_VIEWER);
+    Notification::assertSentTo($member, WebsiteInvitation::class);
 
     $this->put(route('admin.websites.members.update', [$website, $member]), [
         'role' => Website::MEMBER_ROLE_MANAGER,
@@ -62,9 +69,60 @@ it('gives viewers read only access', function (): void {
         'autoresponder_enabled' => true,
     ])->assertForbidden();
     $this->post(route('admin.websites.members.store', $website), [
-        'user_id' => User::factory()->create()->id,
+        'email' => User::factory()->create()->email,
         'role' => Website::MEMBER_ROLE_MANAGER,
     ])->assertForbidden();
+});
+
+it('requires an active Growth membership to invite website users', function (): void {
+    Notification::fake();
+    $owner = User::factory()->create([
+        'membership_tier' => MembershipPlan::GROWTH,
+        'membership_status' => null,
+    ]);
+    $website = Website::factory()->for($owner, 'owner')->create();
+
+    $this->actingAs($owner)
+        ->post(route('admin.websites.members.store', $website), [
+            'email' => 'blocked@example.com',
+            'role' => Website::MEMBER_ROLE_VIEWER,
+        ])
+        ->assertRedirect(route('admin.billing.index'));
+
+    expect(User::query()->where('email', 'blocked@example.com')->exists())->toBeFalse();
+    Notification::assertNothingSent();
+});
+
+it('does not expose unrelated users in the website invitation form', function (): void {
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::GROWTH]);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $unrelated = User::factory()->create(['email' => 'private.user@example.com']);
+
+    $this->actingAs($owner)->get(route('admin.websites.show', $website))
+        ->assertSuccessful()
+        ->assertSee('Invite by email')
+        ->assertDontSee('Choose a user')
+        ->assertDontSee($unrelated->email);
+});
+
+it('lets a newly invited website user set up their account once', function (): void {
+    $user = User::factory()->unverified()->create();
+    $url = URL::temporarySignedRoute('website-invitations.accept', now()->addHour(), ['user' => $user]);
+
+    $this->get($url)->assertSuccessful()->assertSee($user->email);
+
+    $this->put($url, [
+        'name' => 'Invited Person',
+        'password' => 'secure-password',
+        'password_confirmation' => 'secure-password',
+    ])->assertRedirect(route('login'));
+
+    $user->refresh();
+    expect($user->name)->toBe('Invited Person')
+        ->and($user->email_verified_at)->not->toBeNull()
+        ->and(Hash::check('secure-password', $user->password))->toBeTrue();
+
+    $this->get($url)->assertGone();
 });
 
 it('keeps unrelated websites isolated from members', function (): void {

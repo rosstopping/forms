@@ -238,6 +238,7 @@
         </div>
         @endif
 
+        @if ($canUseGrowthFeatures)
         <section class="rounded-lg border bg-white p-4 shadow-sm" aria-labelledby="content-requests-title">
         <div>
             <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Ideas for Copilot</p>
@@ -326,6 +327,7 @@
             </div>
         @endif
         </section>
+        @endif
         @endif
     </div>
 
@@ -477,15 +479,15 @@
                 @endforeach
             </div>
 
-            @if ($canManageMembers && $availableMembers->isNotEmpty())
+            @if ($canManageMembers && $canUseGrowthFeatures)
                 <form method="POST" action="{{ route('admin.websites.members.store', $website) }}" class="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_10rem_auto] sm:items-end">
                     @csrf
-                    <div><label for="member_user_id" class="text-sm font-medium text-slate-700">Add user</label><select id="member_user_id" name="user_id" required class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"><option value="">Choose a user</option>@foreach ($availableMembers as $availableMember)<option value="{{ $availableMember->id }}">{{ $availableMember->name }} ({{ $availableMember->email }})</option>@endforeach</select></div>
+                    <div><label for="member_email" class="text-sm font-medium text-slate-700">Invite by email</label><input id="member_email" name="email" type="email" required autocomplete="email" value="{{ old('email') }}" placeholder="colleague@example.com" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"><p class="mt-1 text-xs text-slate-500">We’ll email them a secure link to set up their account.</p>@error('email')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror</div>
                     <div><label for="member_role" class="text-sm font-medium text-slate-700">Access</label><select id="member_role" name="role" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"><option value="manager">Manager</option><option value="viewer">Viewer</option></select></div>
-                    <button class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">Add user</button>
+                    <button class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">Send invitation</button>
                 </form>
             @elseif ($canManageMembers)
-                <p class="mt-4 text-sm text-slate-500">Every available user already has access to this website.</p>
+                <p class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">A Growth or Complete membership is required to invite additional website users.</p>
             @endif
         </div>
     </div>

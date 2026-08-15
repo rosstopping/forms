@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests;
 
-use App\Models\User;
 use App\Models\Website;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -26,13 +25,20 @@ class StoreWebsiteMemberRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => [
+            'email' => [
                 'required',
-                'integer',
-                Rule::exists((new User)->getTable(), 'id'),
-                Rule::notIn([$this->route('website')?->user_id]),
+                'string',
+                'lowercase',
+                'email:rfc',
+                'max:255',
+                Rule::notIn([$this->route('website')?->owner?->email]),
             ],
             'role' => ['required', 'string', Rule::in(Website::MEMBER_ROLES)],
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->merge(['email' => strtolower(trim((string) $this->input('email')))]);
     }
 }

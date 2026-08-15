@@ -7,17 +7,40 @@ use App\Http\Requests\StoreWebsiteMemberRequest;
 use App\Http\Requests\UpdateWebsiteMemberRequest;
 use App\Models\User;
 use App\Models\Website;
+use App\Notifications\WebsiteInvitation;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 
 class WebsiteMemberController extends Controller
 {
     public function store(StoreWebsiteMemberRequest $request, Website $website): RedirectResponse
     {
         $data = $request->validated();
-        $website->members()->syncWithoutDetaching([$data['user_id'] => ['role' => $data['role']]]);
+        $created = false;
 
-        return back()->with('status', 'Website member added.');
+        $member = DB::transaction(function () use ($data, $website, &$created): User {
+            $member = User::query()->where('email', $data['email'])->first();
+
+            if (! $member) {
+                $member = User::query()->create([
+                    'name' => Str::headline(Str::before($data['email'], '@')),
+                    'email' => $data['email'],
+                    'password' => Str::random(64),
+                    'role' => User::ROLE_USER,
+                ]);
+                $created = true;
+            }
+
+            $website->members()->syncWithoutDetaching([$member->id => ['role' => $data['role']]]);
+
+            return $member;
+        });
+
+        $member->notify(new WebsiteInvitation($website, $created));
+
+        return back()->with('status', 'Invitation sent to '.$member->email.'.');
     }
 
     public function update(UpdateWebsiteMemberRequest $request, Website $website, User $member): RedirectResponse

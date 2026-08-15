@@ -124,9 +124,6 @@ class WebsiteController extends Controller
         ]);
         $users = $user?->isAdmin() ? User::query()->orderBy('name')->get(['id', 'name', 'email']) : collect();
         $canManageMembers = $user?->can('manageMembers', $website) === true;
-        $availableMembers = $canManageMembers
-            ? User::query()->when($website->user_id, fn ($query) => $query->whereKeyNot($website->user_id))->whereDoesntHave('sharedWebsites', fn ($query) => $query->whereKey($website->id))->orderBy('name')->get(['id', 'name', 'email'])
-            : collect();
         $canUseGrowthFeatures = $user?->isAdmin() === true || $website->owner?->hasMembershipFeature(MembershipPlan::FEATURE_GROWTH) === true;
         $canUseCompleteFeatures = $user?->isAdmin() === true || $website->owner?->hasMembershipFeature(MembershipPlan::FEATURE_COMPLETE) === true;
         $searchConsoleReport = null;
@@ -206,7 +203,7 @@ class WebsiteController extends Controller
         $pixelInstallationSnippet = $pixelInstallation->for($website);
 
         return view('admin.websites.show', compact(
-            'website', 'users', 'availableMembers', 'canManageMembers', 'canManageWebsite',
+            'website', 'users', 'canManageMembers', 'canManageWebsite',
             'searchConsoleReport', 'searchConsoleHistory', 'searchConsoleReportUnavailable', 'seoGeneration', 'seoSnapshot', 'seoHistory',
             'seoKeywords', 'seoReferringDomains', 'seoCompetitors', 'seoOpportunities', 'seoFilter', 'seoSort', 'seoDirection', 'strikingDistanceCount',
             'dataForSeoConfigured', 'outreachProspect', 'pixelInstallationSnippet', 'canUseGrowthFeatures', 'canUseCompleteFeatures',
