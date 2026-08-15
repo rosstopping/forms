@@ -27,7 +27,7 @@ class RemediationRunController extends Controller
         }
 
         if (! $request->user()->githubAuthorization()->exists()) {
-            throw ValidationException::withMessages(['github' => 'Authorize GitHub before starting a Copilot remediation.']);
+            throw ValidationException::withMessages(['github' => 'Authorize GitHub before starting automated remediation.']);
         }
 
         $availableFindings = $this->availableFindings($websiteHealthReport);
@@ -55,7 +55,7 @@ class RemediationRunController extends Controller
 
         return Redirect::route('admin.website-health-reports.show', [$website, $websiteHealthReport])
             ->with('status', $run->wasRecentlyCreated
-                ? 'The GitHub Copilot remediation has been queued.'
+                ? 'The automated GitHub remediation has been queued.'
                 : 'A remediation request already exists for this report.');
     }
 

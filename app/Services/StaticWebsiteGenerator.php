@@ -71,7 +71,7 @@ HTML,
         $pages = $this->pageList($details['pages']);
 
         return Str::limit(implode("\n\n", [
-            '# Copilot website build',
+            '# Automated website build',
             "Create a production-quality marketing website for **{$details['name']}**, operating in the **{$details['sector']}** sector.",
             "## Business brief\n\n{$details['description']}\n\nRequired pages: {$pages}.",
             $this->designStrategySection($details['sector']),

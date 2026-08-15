@@ -4,7 +4,7 @@
         <div>
             <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Weekly analysis</p>
             <h2 id="search-opportunities-title" class="mt-1 font-semibold text-slate-950">Search opportunities</h2>
-            <p class="mt-1 max-w-3xl text-sm text-slate-600">Directional opportunities from two comparable 28-day periods. Analytics are never treated as instructions, and Copilot changes are delivered as pull requests for review.</p>
+            <p class="mt-1 max-w-3xl text-sm text-slate-600">Directional opportunities from two comparable 28-day periods. Analytics are never treated as instructions, and changes are delivered as pull requests for review.</p>
             @if ($website->searchConsoleConnection->opportunities_checked_at)
                 <p class="mt-1 text-xs text-slate-500">Last checked {{ $website->searchConsoleConnection->opportunities_checked_at->diffForHumans() }}.</p>
             @endif
@@ -32,7 +32,7 @@
                         'bg-amber-100 text-amber-800' => $opportunity->type === 'cannibalisation',
                     ])>{{ str_replace('_', ' ', $opportunity->type) }}</span>
                     @if ($opportunity->status === 'queued')
-                        <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">Queued for Copilot</span>
+                        <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">Queued for improvement</span>
                     @endif
                 </div>
                 <h3 class="mt-3 font-semibold text-slate-950">{{ $opportunity->title }}</h3>
@@ -48,7 +48,7 @@
                 @if ($opportunity->status === 'open')
                     <div class="mt-4 flex flex-wrap gap-2">
                         @if ($website->repository)
-                            <form method="POST" action="{{ route('admin.search-opportunities.queue', [$website, $opportunity]) }}">@csrf<button class="rounded-md bg-slate-900 px-3 py-2 text-xs font-medium text-white hover:bg-slate-800">Improve with Copilot</button></form>
+                            <form method="POST" action="{{ route('admin.search-opportunities.queue', [$website, $opportunity]) }}">@csrf<button class="rounded-md bg-slate-900 px-3 py-2 text-xs font-medium text-white hover:bg-slate-800">Prepare improvement</button></form>
                         @else
                             <a href="{{ route('admin.website-repositories.create', $website) }}" class="rounded-md bg-slate-900 px-3 py-2 text-xs font-medium text-white">Connect GitHub to improve</a>
                         @endif

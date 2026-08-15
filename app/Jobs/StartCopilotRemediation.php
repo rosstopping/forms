@@ -45,7 +45,7 @@ class StartCopilotRemediation implements ShouldBeEncrypted, ShouldBeUnique, Shou
         if (! $authorization) {
             $this->run->update([
                 'status' => RemediationRun::STATUS_FAILED,
-                'error' => 'The requesting administrator has not authorized GitHub Copilot.',
+                'error' => 'The requesting administrator has not authorized the GitHub automation.',
                 'completed_at' => now(),
             ]);
 
@@ -74,7 +74,7 @@ class StartCopilotRemediation implements ShouldBeEncrypted, ShouldBeUnique, Shou
     {
         $this->run->update([
             'status' => RemediationRun::STATUS_FAILED,
-            'error' => $exception?->getMessage() ?? 'The Copilot remediation could not be started.',
+            'error' => $exception?->getMessage() ?? 'The automated remediation could not be started.',
             'completed_at' => now(),
         ]);
     }

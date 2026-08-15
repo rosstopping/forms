@@ -45,6 +45,6 @@ class WebsiteBuilderController extends Controller
         BuildWebsite::dispatch($build->id)->afterCommit();
 
         return Redirect::route('admin.website-builder.create')
-            ->with('status', 'The website build has been queued. You can safely leave this page while GitHub, Netlify, and Copilot finish in the background.');
+            ->with('status', 'The website build has been queued. You can safely leave this page while GitHub, Netlify, and the design automation finish in the background.');
     }
 }

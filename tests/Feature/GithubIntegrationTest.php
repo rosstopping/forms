@@ -332,7 +332,7 @@ it('snapshots selected audit findings into one remediation request', function ()
     Queue::assertPushed(StartCopilotRemediation::class, fn ($job) => $job->run->is($run));
 });
 
-it('starts a Copilot task with an audit prompt and schedules synchronization', function (): void {
+it('starts an automated task with an audit prompt and schedules synchronization', function (): void {
     Queue::fake([SyncCopilotRemediation::class]);
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     GithubUserAuthorization::factory()->for($admin)->create();
@@ -371,7 +371,7 @@ it('starts a Copilot task with an audit prompt and schedules synchronization', f
     Queue::assertPushed(SyncCopilotRemediation::class);
 });
 
-it('links a completed Copilot task to its pull request', function (): void {
+it('links a completed automated task to its pull request', function (): void {
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     GithubUserAuthorization::factory()->for($admin)->create();
     $repository = WebsiteRepository::factory()->create(['full_name' => 'acme/site']);

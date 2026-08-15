@@ -39,7 +39,7 @@ class CopilotAgentClient
             ->acceptJson()
             ->withHeaders([
                 'X-GitHub-Api-Version' => '2026-03-10',
-                'User-Agent' => config('app.name').' Copilot Remediation',
+                'User-Agent' => config('app.name').' Automated Remediation',
             ])
             ->withToken($this->oauth->accessToken($authorization))
             ->connectTimeout(5)

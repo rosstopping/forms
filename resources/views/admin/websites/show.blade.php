@@ -29,14 +29,14 @@
     </div>
 
     @if ($website->copilot_build_task_id)
-        <section class="flex flex-col gap-4 rounded-xl border border-violet-200 bg-violet-50 p-5 sm:flex-row sm:items-center sm:justify-between" aria-labelledby="copilot-build-title">
+        <section class="flex flex-col gap-4 rounded-xl border border-violet-200 bg-violet-50 p-5 sm:flex-row sm:items-center sm:justify-between" aria-labelledby="website-build-title">
             <div>
                 <p class="text-xs font-semibold uppercase tracking-widest text-violet-700">Website builder</p>
-                <h2 id="copilot-build-title" class="mt-1 font-semibold text-slate-950">Copilot is creating the Eleventy design</h2>
-                <p class="mt-1 text-sm text-slate-600">Task status: <span class="font-medium capitalize">{{ str_replace('_', ' ', $website->copilot_build_task_state ?: 'queued') }}</span>. Review and merge Copilot’s pull request to publish through Netlify.</p>
+                <h2 id="website-build-title" class="mt-1 font-semibold text-slate-950">Your Eleventy design is being created</h2>
+                <p class="mt-1 text-sm text-slate-600">Task status: <span class="font-medium capitalize">{{ str_replace('_', ' ', $website->copilot_build_task_state ?: 'queued') }}</span>. Review and merge the pull request to publish through Netlify.</p>
             </div>
             @if ($website->copilot_build_task_url)
-                <a href="{{ $website->copilot_build_task_url }}" target="_blank" rel="noopener" class="shrink-0 rounded-md bg-violet-700 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-800">Open Copilot task</a>
+                <a href="{{ $website->copilot_build_task_url }}" target="_blank" rel="noopener" class="shrink-0 rounded-md bg-violet-700 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-800">Open build task</a>
             @endif
         </section>
     @endif
@@ -185,7 +185,7 @@
 
     <div id="website-panel-content" class="space-y-6" role="tabpanel" aria-labelledby="website-tab-content" data-tab-panel="content" hidden>
         @unless ($canUseGrowthFeatures)
-            <x-feature-upgrade-banner tier="Growth" title="Plan and request new content" description="Upgrade to Growth to submit content requests, plan improvements, and have Copilot prepare reviewable website changes." />
+            <x-feature-upgrade-banner tier="Growth" title="Plan and request new content" description="Upgrade to Growth to submit content requests, plan improvements, and prepare reviewable website changes." />
         @endunless
         <div class="rounded-lg border bg-white p-4 shadow-sm">
             <div class="flex flex-wrap items-start justify-between gap-4">
@@ -225,7 +225,7 @@
         @endphp
         <div class="rounded-lg border bg-white p-4 shadow-sm">
             <div class="flex flex-wrap items-start justify-between gap-4">
-                <div><p class="text-xs font-medium uppercase tracking-wide text-slate-500">AI content</p><h2 class="mt-1 font-semibold">Weekly content generation</h2><p class="mt-1 text-sm text-slate-600">Copilot chooses a blog post, landing page, or page improvement and opens a pull request for review.</p></div>
+                <div><p class="text-xs font-medium uppercase tracking-wide text-slate-500">AI content</p><h2 class="mt-1 font-semibold">Weekly content generation</h2><p class="mt-1 text-sm text-slate-600">Sitewell chooses a blog post, landing page, or page improvement and opens a pull request for review.</p></div>
                 @if ($website->repository && $website->searchConsoleConnection?->property_url)
                     <form method="POST" action="{{ route('admin.content-generations.store', $website) }}">@csrf<button class="rounded-md border px-3 py-2 text-sm font-medium text-slate-700">Generate now</button></form>
                 @endif
@@ -260,18 +260,18 @@
         @if ($canUseGrowthFeatures)
         <section class="rounded-lg border bg-white p-4 shadow-sm" aria-labelledby="content-requests-title">
         <div>
-            <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Ideas for Copilot</p>
+            <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Content ideas</p>
             <h2 id="content-requests-title" class="mt-1 font-semibold">Manual content requests</h2>
             <p class="mt-1 text-sm text-slate-600">Suggest a landing page, blog post, or other useful content change. The two oldest pending requests will be prioritised in the next weekly or manually started content run.</p>
         </div>
 
         <form method="POST" action="{{ route('admin.content-requests.store', $website) }}" class="mt-4">
             @csrf
-            <label class="block text-sm font-medium text-slate-900" for="content-request-instructions">What would you like Copilot to create or change?</label>
+            <label class="block text-sm font-medium text-slate-900" for="content-request-instructions">What would you like Sitewell to create or change?</label>
             <textarea id="content-request-instructions" name="instructions" rows="5" maxlength="3000" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" placeholder="For example: Create a new landing page or blog post for a specific category.">{{ old('instructions') }}</textarea>
             <div class="mt-2 flex flex-wrap items-center justify-between gap-3">
                 <div>
-                    <p class="text-xs text-slate-500">Include the audience, useful keywords, desired location in the site, and any claims or qualifications Copilot must preserve. Up to 3,000 characters.</p>
+                    <p class="text-xs text-slate-500">Include the audience, useful keywords, desired location in the site, and any claims or qualifications that must be preserved. Up to 3,000 characters.</p>
                     @error('instructions')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror
                 </div>
                 <button type="submit" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">Add content request</button>
@@ -316,7 +316,7 @@
                 <div class="flex items-center justify-between gap-3">
                     <div>
                         <h3 class="text-sm font-semibold text-slate-900">Actioned todos</h3>
-                        <p class="mt-1 text-xs text-slate-500">Requests already handed to Copilot remain here as a permanent activity record.</p>
+                        <p class="mt-1 text-xs text-slate-500">Requests already being prepared remain here as a permanent activity record.</p>
                     </div>
                     <span class="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium tabular-nums text-emerald-800">{{ $actionedContentRequests->count() }}</span>
                 </div>
@@ -337,7 +337,7 @@
                                 @if ($contentRequest->generation?->pull_request_url)
                                     <a href="{{ $contentRequest->generation->pull_request_url }}" target="_blank" rel="noreferrer" class="shrink-0 rounded-md border border-emerald-300 bg-white px-2.5 py-1.5 text-xs font-medium text-emerald-800 hover:bg-emerald-100">View pull request</a>
                                 @elseif ($contentRequest->generation?->copilot_task_url)
-                                    <a href="{{ $contentRequest->generation->copilot_task_url }}" target="_blank" rel="noreferrer" class="shrink-0 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">View Copilot task</a>
+                                    <a href="{{ $contentRequest->generation->copilot_task_url }}" target="_blank" rel="noreferrer" class="shrink-0 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">View generation task</a>
                                 @endif
                             </div>
                         </article>
@@ -352,7 +352,7 @@
             <h2 id="content-preview-title" class="mt-2 font-semibold text-slate-950">From an idea to a reviewable website change</h2>
             <div class="mt-4 grid gap-4 sm:grid-cols-3">
                 <div class="rounded-lg bg-slate-50 p-4"><span class="text-sm font-semibold text-violet-700">01</span><h3 class="mt-2 text-sm font-semibold text-slate-900">Request content</h3><p class="mt-1 text-sm text-slate-600">Describe a landing page, article, or improvement you need.</p></div>
-                <div class="rounded-lg bg-slate-50 p-4"><span class="text-sm font-semibold text-violet-700">02</span><h3 class="mt-2 text-sm font-semibold text-slate-900">Copilot prepares it</h3><p class="mt-1 text-sm text-slate-600">Content is created in your repository against your site and audience.</p></div>
+                <div class="rounded-lg bg-slate-50 p-4"><span class="text-sm font-semibold text-violet-700">02</span><h3 class="mt-2 text-sm font-semibold text-slate-900">Sitewell prepares it</h3><p class="mt-1 text-sm text-slate-600">Content is created in your repository against your site and audience.</p></div>
                 <div class="rounded-lg bg-slate-50 p-4"><span class="text-sm font-semibold text-violet-700">03</span><h3 class="mt-2 text-sm font-semibold text-slate-900">Review before publishing</h3><p class="mt-1 text-sm text-slate-600">Nothing goes live until the proposed change has been reviewed.</p></div>
             </div>
         </section>

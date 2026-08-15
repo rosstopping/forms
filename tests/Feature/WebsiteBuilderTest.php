@@ -28,7 +28,7 @@ it('shows the website builder only to administrators', function (): void {
     $this->actingAs($user)->get(route('admin.website-builder.create'))->assertForbidden();
 });
 
-it('generates an Eleventy and Tailwind scaffold with a complete Copilot build brief', function (): void {
+it('generates an Eleventy and Tailwind scaffold with a complete automated build brief', function (): void {
     $files = app(StaticWebsiteGenerator::class)->generate([
         'name' => 'Acme <Studio>',
         'sector' => 'Architecture',

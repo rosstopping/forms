@@ -37,7 +37,7 @@ class SyncContentGeneration implements ShouldBeEncrypted, ShouldBeUniqueUntilPro
         $this->generation->loadMissing(['repository', 'requester.githubAuthorization']);
         $authorization = $this->generation->requester?->githubAuthorization;
         if (! $authorization || ! $this->generation->copilot_task_id) {
-            $this->failGeneration('The Copilot task can no longer be synchronized.');
+            $this->failGeneration('The content generation task can no longer be synchronized.');
 
             return;
         }
@@ -46,7 +46,7 @@ class SyncContentGeneration implements ShouldBeEncrypted, ShouldBeUniqueUntilPro
         $state = (string) ($task['state'] ?? 'unknown');
         $this->generation->update(['copilot_task_state' => $state]);
         if (in_array($state, ['failed', 'cancelled'], true)) {
-            $this->failGeneration('GitHub Copilot reported that the task '.$state.'.');
+            $this->failGeneration('GitHub reported that the content generation task '.$state.'.');
 
             return;
         }
@@ -63,7 +63,7 @@ class SyncContentGeneration implements ShouldBeEncrypted, ShouldBeUniqueUntilPro
             }
 
             if (! $number) {
-                $this->failGeneration('GitHub Copilot completed without creating a pull request.');
+                $this->failGeneration('Content generation completed without creating a pull request.');
 
                 return;
             }
@@ -78,7 +78,7 @@ class SyncContentGeneration implements ShouldBeEncrypted, ShouldBeUniqueUntilPro
             return;
         }
         if ($this->generation->started_at?->isBefore(now()->subHours(2))) {
-            $this->failGeneration('The GitHub Copilot task did not complete within two hours.');
+            $this->failGeneration('The content generation task did not complete within two hours.');
 
             return;
         }
@@ -87,7 +87,7 @@ class SyncContentGeneration implements ShouldBeEncrypted, ShouldBeUniqueUntilPro
 
     public function failed(?Throwable $exception): void
     {
-        $this->failGeneration($exception?->getMessage() ?? 'The Copilot task status could not be synchronized.');
+        $this->failGeneration($exception?->getMessage() ?? 'The content generation task status could not be synchronized.');
     }
 
     protected function failGeneration(string $message): void

@@ -21,7 +21,7 @@
             </div>
         @endforeach
     @else
-        <p style="color:#64748b;">No queued content todo was attached, so Copilot used the current Search Console performance and content-plan guidance.</p>
+        <p style="color:#64748b;">No queued content request was attached, so Sitewell used the current Search Console performance and content-plan guidance.</p>
     @endif
     <p style="margin-top:20px;color:#475569;">Nothing has been published automatically. Review and merge the pull request when you are happy with the changes.</p>
     <p style="margin-top:24px;"><a href="{{ $generation->pull_request_url }}" style="display:inline-block;background:#0f172a;color:white;text-decoration:none;padding:10px 16px;border-radius:6px;">Review pull request</a></p>

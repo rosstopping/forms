@@ -44,7 +44,7 @@
                         <label for="seo-weekly-snapshots" class="text-sm text-slate-600">Automatic weekly snapshots</label>
                         <button class="rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">Save</button>
                     </form>
-                    <p class="max-w-sm text-right text-xs text-slate-500">Uses the paid SEO data API. Enabling it also imports available monthly history once.</p>
+                    <p class="max-w-sm text-right text-xs text-slate-500">Enabling this also imports available monthly history once.</p>
                 </div>
             @endif
         </div>

@@ -106,7 +106,7 @@ class ContentPlanController extends Controller
             $errors['enabled'] = 'Connect a Search Console property first.';
         }
         if (! $request->user()?->githubAuthorization) {
-            $errors['enabled'] = 'Authorize GitHub Copilot first.';
+            $errors['enabled'] = 'Authorize the GitHub automation first.';
         }
         if ($errors) {
             throw ValidationException::withMessages($errors);

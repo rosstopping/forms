@@ -1,9 +1,9 @@
 # Roadmap
 
 ## Near term
-- Ship Search Console opportunity alerts for ranking gaps, weak click-through rates, declining pages, emerging queries, and query cannibalisation. Opportunities can be queued into the existing approval-first Copilot content workflow.
+- Ship Search Console opportunity alerts for ranking gaps, weak click-through rates, declining pages, emerging queries, and query cannibalisation. Opportunities can be queued into the existing approval-first content workflow.
 - Add PageSpeed and Core Web Vitals monitoring for important pages on mobile and desktop.
-- Ship structured-data validation and evidence-based schema opportunity reporting through weekly health reports and approval-first Copilot remediation.
+- Ship structured-data validation and evidence-based schema opportunity reporting through weekly health reports and approval-first automated remediation.
 - Add safe form heartbeat monitoring that validates form resolution, CORS, validation, mail, and webhook configuration without creating a lead or contacting customers.
 - Add invite-based sharing so a user can grant access to another account without handing over the full admin login.
 - Introduce per-user API keys for webhook and CRM integrations.
@@ -11,7 +11,7 @@
 
 ## Medium term
 - Add website change monitoring for titles, descriptions, canonicals, indexing directives, headings, structured data, forms, status codes, redirects, and significant content changes (deferred).
-- Pass detailed Lighthouse recommendations, lab measurements, estimated savings, and affected URLs into approval-first Copilot remediation prompts (deferred).
+- Pass detailed Lighthouse recommendations, lab measurements, estimated savings, and affected URLs into approval-first automated remediation prompts (deferred).
 - Add SSL certificate, HTTPS, mixed-content, DNS, and domain-expiry monitoring where registry data is available.
 - Add uptime and response-time monitoring with consecutive-failure thresholds to avoid noisy alerts.
 - Add a customer-friendly monthly report covering health, search, content, forms, completed work, and pending approvals.

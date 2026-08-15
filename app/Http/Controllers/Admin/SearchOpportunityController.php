@@ -25,12 +25,12 @@ class SearchOpportunityController extends Controller
     public function queue(Request $request, Website $website, SearchOpportunity $searchOpportunity, ContentOpportunityQueuer $queuer): RedirectResponse
     {
         $this->authorizeOpportunity($request, $website, $searchOpportunity);
-        abort_unless($website->repository, 422, 'Connect the website repository before sending an opportunity to Copilot.');
+        abort_unless($website->repository, 422, 'Connect the website repository before preparing an opportunity.');
         abort_unless($searchOpportunity->status === SearchOpportunity::STATUS_OPEN, 422, 'Only open opportunities can be queued.');
 
         $queuer->queueSearch($searchOpportunity, $request->user());
 
-        return Redirect::route('admin.websites.show', [$website, 'tab' => 'search'])->with('status', 'Search opportunity added to the approval-first Copilot content queue.');
+        return Redirect::route('admin.websites.show', [$website, 'tab' => 'search'])->with('status', 'Search opportunity added to the review-first content queue.');
     }
 
     public function dismiss(Request $request, Website $website, SearchOpportunity $searchOpportunity): RedirectResponse

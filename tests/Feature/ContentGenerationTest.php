@@ -368,7 +368,7 @@ test('actioned content todos remain visible separately with their generation out
         ->and($actioned->fresh()->content_generation_id)->toBe($generation->id);
 });
 
-test('content generation uses search performance and pending requests to start a copilot pull request task', function () {
+test('content generation uses search performance and pending requests to start a pull request task', function () {
     Queue::fake();
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     GithubUserAuthorization::factory()->create(['user_id' => $admin->id]);
@@ -420,7 +420,7 @@ test('content generation uses search performance and pending requests to start a
     Queue::assertPushed(SyncContentGeneration::class);
 });
 
-test('content generation prompts keep every section within the Copilot request budget', function () {
+test('content generation prompts keep every section within the generation request budget', function () {
     $website = Website::factory()->create(['name' => 'Example Site']);
     $repository = WebsiteRepository::factory()->create(['website_id' => $website->id]);
     $plan = ContentPlan::factory()->create([
@@ -444,8 +444,8 @@ test('content generation prompts keep every section within the Copilot request b
     $prompt = app(ContentGenerationPromptGenerator::class)->generate($generation);
 
     expect(mb_strlen($prompt))->toBeLessThanOrEqual(30000)
-        ->and($prompt)->toContain('[Audience truncated for Copilot.]')
-        ->and($prompt)->toContain('[Editorial guidance truncated for Copilot.]')
+        ->and($prompt)->toContain('[Audience truncated for the generation task.]')
+        ->and($prompt)->toContain('[Editorial guidance truncated for the generation task.]')
         ->and($prompt)->toContain('Search Console rows included.]')
         ->and($prompt)->toContain('one high-quality, reviewable content initiative')
         ->and($prompt)->toContain('a lightweight blog or content section when none exists')
@@ -455,7 +455,7 @@ test('content generation prompts keep every section within the Copilot request b
         ->and($prompt)->toContain('Search Console top query/page rows');
 });
 
-test('manual content requests remain pending when copilot does not accept the task', function () {
+test('manual content requests remain pending when automation does not accept the task', function () {
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     GithubUserAuthorization::factory()->for($admin)->create();
     $website = Website::factory()->create();
@@ -475,7 +475,7 @@ test('manual content requests remain pending when copilot does not accept the ta
         ->and($contentRequest->fresh()->content_generation_id)->toBeNull();
 });
 
-test('starting a Copilot task is never automatically replayed', function () {
+test('starting a content generation task is never automatically replayed', function () {
     config(['services.github.api_url' => 'https://api.github.test']);
     Http::preventStrayRequests();
     Http::fakeSequence('api.github.test/agents/repos/*/tasks')
@@ -494,7 +494,7 @@ test('starting a Copilot task is never automatically replayed', function () {
     Http::assertSentCount(1);
 });
 
-test('a content generation with a recorded Copilot task is not started again', function () {
+test('a content generation with a recorded automation task is not started again', function () {
     $generation = ContentGeneration::factory()->create([
         'copilot_task_id' => '33333333-3333-4333-8333-333333333333',
         'copilot_task_state' => 'queued',
@@ -511,7 +511,7 @@ test('a content generation with a recorded Copilot task is not started again', f
     expect($generation->fresh()->copilot_task_id)->toBe('33333333-3333-4333-8333-333333333333');
 });
 
-test('content synchronization stores the pull request resolved from the copilot branch', function () {
+test('content synchronization stores the pull request resolved from the automation branch', function () {
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     GithubUserAuthorization::factory()->for($admin)->create();
     $repository = WebsiteRepository::factory()->create(['full_name' => 'acme/site']);

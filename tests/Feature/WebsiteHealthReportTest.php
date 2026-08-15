@@ -340,7 +340,7 @@ it('hides the manual AI prompt when a GitHub repository is connected', function 
         ->assertDontSee('AI remediation prompt')
         ->assertDontSee('Copy prompt')
         ->assertSee('Prepare repository fix')
-        ->assertSee('Start Copilot remediation');
+        ->assertSee('Start automated remediation');
 });
 
 it('stores page titles longer than the varchar limit', function (): void {

@@ -74,7 +74,7 @@
                 @if ($remediationRun->copilot_task_url || $remediationRun->pull_request_url)
                     <div class="mt-3 flex flex-wrap gap-2">
                         @if ($remediationRun->copilot_task_url)
-                            <a href="{{ $remediationRun->copilot_task_url }}" class="inline-flex rounded-md border border-blue-300 bg-white px-3 py-2 text-sm font-medium text-blue-800 hover:bg-blue-100" target="_blank" rel="noreferrer">View Copilot task</a>
+                            <a href="{{ $remediationRun->copilot_task_url }}" class="inline-flex rounded-md border border-blue-300 bg-white px-3 py-2 text-sm font-medium text-blue-800 hover:bg-blue-100" target="_blank" rel="noreferrer">View remediation task</a>
                         @endif
                         @if ($remediationRun->pull_request_url)
                             <a href="{{ $remediationRun->pull_request_url }}" class="inline-flex rounded-md bg-blue-700 px-3 py-2 text-sm font-medium text-white hover:bg-blue-800" target="_blank" rel="noreferrer">View pull request</a>
@@ -89,7 +89,7 @@
             <section class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
                 <p class="text-xs font-medium uppercase tracking-wide text-slate-500">GitHub remediation</p>
                 <h2 class="mt-1 font-semibold">Prepare repository fix</h2>
-                <p class="mt-1 text-sm text-slate-600">Send the current warnings and failures to GitHub Copilot. Copilot will work in its cloud environment and open a pull request for review; it will not merge or deploy code.</p>
+                <p class="mt-1 text-sm text-slate-600">Prepare fixes for the current warnings and failures in a cloud environment. Sitewell will open a pull request for review; it will not merge or deploy code.</p>
                 <form method="POST" action="{{ route('admin.remediation-runs.store', [$report->website, $report]) }}" class="mt-4">
                     @csrf
                     @foreach (collect($report->checks)->whereIn('status', ['warning', 'failed']) as $finding)
@@ -100,7 +100,7 @@
                             <input type="hidden" name="findings[]" value="page:{{ $page->id }}:{{ $finding['key'] }}">
                         @endforeach
                     @endforeach
-                    <button type="submit" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">Start Copilot remediation</button>
+                    <button type="submit" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">Start automated remediation</button>
                 </form>
             </section>
         @elseif (! $report->website->repository)

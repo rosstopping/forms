@@ -18,8 +18,8 @@ class ContentGenerationPromptGenerator
     public function generate(ContentGeneration $generation): string
     {
         $generation->loadMissing(['plan.website', 'repository', 'contentRequests']);
-        $audience = Str::limit((string) $generation->plan->audience, self::AUDIENCE_LIMIT, PHP_EOL.'[Audience truncated for Copilot.]');
-        $guidance = Str::limit((string) $generation->plan->guidance, self::GUIDANCE_LIMIT, PHP_EOL.'[Editorial guidance truncated for Copilot.]');
+        $audience = Str::limit((string) $generation->plan->audience, self::AUDIENCE_LIMIT, PHP_EOL.'[Audience truncated for the generation task.]');
+        $guidance = Str::limit((string) $generation->plan->guidance, self::GUIDANCE_LIMIT, PHP_EOL.'[Editorial guidance truncated for the generation task.]');
         $performance = $this->performanceForPrompt($generation->search_performance ?? []);
         $projectPath = $generation->repository->project_path ?: 'repository root';
         $manualRequests = $generation->contentRequests->isEmpty()

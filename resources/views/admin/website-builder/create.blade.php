@@ -50,7 +50,7 @@
             <select id="user_id" name="user_id" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"><option value="">Unassigned</option>@foreach ($users as $user)<option value="{{ $user->id }}" @selected((string) old('user_id') === (string) $user->id)>{{ $user->name }} ({{ $user->email }})</option>@endforeach</select>
         </div>
 
-        <div class="rounded-lg bg-slate-50 p-4 text-sm text-slate-600">The build runs in the background, so you can close this page after submitting. GitHub, Netlify, Copilot, and the Sitewell website record will be created by the queue worker.</div>
+        <div class="rounded-lg bg-slate-50 p-4 text-sm text-slate-600">The build runs in the background, so you can close this page after submitting. GitHub, Netlify, the website design, and the Sitewell website record will be created by the queue worker.</div>
         <div class="flex flex-wrap items-center gap-3"><button type="submit" class="rounded-md bg-slate-950 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">Queue website build</button><a href="{{ route('admin.websites.index') }}" class="text-sm font-medium text-slate-600 hover:text-slate-950">Cancel</a></div>
     </form>
 

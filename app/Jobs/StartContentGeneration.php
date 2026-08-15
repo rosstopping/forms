@@ -45,7 +45,7 @@ class StartContentGeneration implements ShouldBeEncrypted, ShouldBeUnique, Shoul
         $authorization = $this->generation->requester?->githubAuthorization;
 
         if (! $connection?->property_url || ! $authorization) {
-            $this->failGeneration('Search Console and GitHub Copilot must remain connected.');
+            $this->failGeneration('Search Console and GitHub must remain connected.');
 
             return;
         }

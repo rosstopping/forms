@@ -7,7 +7,7 @@ This document is the source of truth for the phased Sitewell Pixel rollout.
 - `Website` is the customer site/project aggregate and `WebsiteDomain` stores its accepted domains.
 - Crawled URLs are currently snapshots in `WebsiteHealthReportPage`, owned through `WebsiteHealthReport`.
 - Audit findings live in report page checks and SEO opportunities. There was no existing approved, deployable optimisation concept.
-- GitHub remediation is a report-level Copilot workflow using `RemediationRun`, queued jobs, and GitHub App/OAuth services. It is intentionally unchanged.
+- GitHub remediation is a report-level automated workflow using `RemediationRun`, queued jobs, and GitHub App/OAuth services. It is intentionally unchanged.
 - The authenticated administration UI is server-rendered Blade under `/admin`, with website ownership/management policy checks.
 - Queues use Laravel jobs and Horizon. Phase 1A deployment transitions are synchronous and transactional; Pixel publishing does not require remote work.
 

@@ -37,7 +37,7 @@ class SyncCopilotRemediation implements ShouldBeEncrypted, ShouldBeUniqueUntilPr
         $authorization = $this->run->requester?->githubAuthorization;
 
         if (! $authorization || ! $this->run->copilot_task_id) {
-            $this->failRun('The Copilot task can no longer be synchronized.');
+            $this->failRun('The remediation task can no longer be synchronized.');
 
             return;
         }
@@ -47,7 +47,7 @@ class SyncCopilotRemediation implements ShouldBeEncrypted, ShouldBeUniqueUntilPr
         $this->run->update(['copilot_task_state' => $state]);
 
         if (in_array($state, ['failed', 'cancelled'], true)) {
-            $this->failRun('GitHub Copilot reported that the task '.$state.'.');
+            $this->failRun('GitHub reported that the remediation task '.$state.'.');
 
             return;
         }
@@ -65,7 +65,7 @@ class SyncCopilotRemediation implements ShouldBeEncrypted, ShouldBeUniqueUntilPr
             }
 
             if (! $pullRequestNumber) {
-                $this->failRun('GitHub Copilot completed without creating a pull request.');
+                $this->failRun('The remediation completed without creating a pull request.');
 
                 return;
             }
@@ -81,7 +81,7 @@ class SyncCopilotRemediation implements ShouldBeEncrypted, ShouldBeUniqueUntilPr
         }
 
         if ($this->run->started_at?->isBefore(now()->subHours(2))) {
-            $this->failRun('The GitHub Copilot task did not complete within two hours.');
+            $this->failRun('The remediation task did not complete within two hours.');
 
             return;
         }
@@ -91,7 +91,7 @@ class SyncCopilotRemediation implements ShouldBeEncrypted, ShouldBeUniqueUntilPr
 
     public function failed(?Throwable $exception): void
     {
-        $this->failRun($exception?->getMessage() ?? 'The Copilot task status could not be synchronized.');
+        $this->failRun($exception?->getMessage() ?? 'The remediation task status could not be synchronized.');
     }
 
     protected function failRun(string $message): void
