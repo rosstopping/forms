@@ -12,6 +12,7 @@ it('shows each public marketing page', function (string $route, string $copy): v
     'home' => ['marketing.home', 'Your website, well looked after'],
     'features' => ['marketing.features', 'Everything you need after a website goes live'],
     'pricing' => ['marketing.pricing', 'Everything your website needs to work harder'],
+    'free audit' => ['marketing.free-site-audit', 'Find out what your website needs next'],
     'journal' => ['marketing.journal', 'Practical notes on looking after websites'],
     'contact' => ['marketing.contact', 'A better website starts here'],
 ]);

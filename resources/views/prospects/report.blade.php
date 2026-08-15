@@ -39,6 +39,18 @@
             </div>
         </section>
 
+        <section class="rounded-2xl bg-teal-900 p-6 text-white shadow-sm sm:flex sm:items-center sm:justify-between sm:gap-8 sm:p-8" aria-labelledby="audit-next-step-title">
+            <div>
+                <p class="text-sm font-medium text-teal-200">Your next step</p>
+                <h2 id="audit-next-step-title" class="mt-1 text-2xl font-semibold">Want help turning these findings into fixes?</h2>
+                <p class="mt-2 max-w-2xl text-sm leading-6 text-teal-50/80">Talk through the priorities with Ross, or send us a message if you would prefer to start by email.</p>
+            </div>
+            <div class="mt-5 flex flex-wrap gap-3 sm:mt-0 sm:shrink-0">
+                <a href="{{ route('marketing.contact') }}" class="rounded-md bg-white px-4 py-2 text-sm font-semibold text-teal-950 hover:bg-teal-50">Get in touch</a>
+                <a href="{{ config('marketing.booking_url') }}" class="rounded-md px-4 py-2 text-sm font-semibold text-white ring-1 ring-white/30 hover:bg-white/10">Book a call with Ross</a>
+            </div>
+        </section>
+
         <p class="px-2 text-center text-xs leading-5 text-slate-500">This review is based on publicly available information from {{ parse_url($prospect->website_url, PHP_URL_HOST) }}. If you would like to discuss any finding, reply to the email that shared this report.</p>
     </main>
 </body>

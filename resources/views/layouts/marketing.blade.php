@@ -16,7 +16,7 @@
                     <a href="{{ route('marketing.home') }}" aria-label="Homepage" class="font-display text-2xl font-semibold tracking-tight text-ink">Sitewell</a>
                 </div>
                 <nav class="hidden items-center gap-8 text-sm text-ink/65 lg:flex" aria-label="Main navigation">
-                    @foreach ([['route' => 'marketing.features', 'label' => 'Features'], ['route' => 'marketing.pricing', 'label' => 'Pricing'], ['route' => 'marketing.journal', 'label' => 'Journal'], ['route' => 'marketing.contact', 'label' => 'Contact']] as $item)
+                    @foreach ([['route' => 'marketing.features', 'label' => 'Features'], ['route' => 'marketing.pricing', 'label' => 'Pricing'], ['route' => 'marketing.free-site-audit', 'label' => 'Free audit'], ['route' => 'marketing.journal', 'label' => 'Journal'], ['route' => 'marketing.contact', 'label' => 'Contact']] as $item)
                         <a href="{{ route($item['route']) }}" @class(['hover:text-ink', 'text-ink' => request()->routeIs($item['route'])])>{{ $item['label'] }}</a>
                     @endforeach
                 </nav>
@@ -30,6 +30,7 @@
                         <div class="grid gap-1">
                             <a href="{{ route('marketing.features') }}" class="rounded-md px-3 py-3 text-base hover:bg-lichen/50">Features</a>
                             <a href="{{ route('marketing.pricing') }}" class="rounded-md px-3 py-3 text-base hover:bg-lichen/50">Pricing</a>
+                            <a href="{{ route('marketing.free-site-audit') }}" class="rounded-md px-3 py-3 text-base hover:bg-lichen/50">Free site audit</a>
                             <a href="{{ route('marketing.journal') }}" class="rounded-md px-3 py-3 text-base hover:bg-lichen/50">Journal</a>
                             <a href="{{ route('marketing.contact') }}" class="rounded-md px-3 py-3 text-base hover:bg-lichen/50">Contact</a>
                             <a href="{{ route('login') }}" class="mt-2 border-t border-ink/10 px-3 pt-4 pb-3 text-base text-ink/65">Log in</a>
@@ -54,6 +55,7 @@
                         <p class="font-medium text-paper">Product</p>
                         <a href="{{ route('marketing.features') }}" class="font-normal hover:text-paper">Features</a>
                         <a href="{{ route('marketing.pricing') }}" class="font-normal hover:text-paper">Pricing</a>
+                        <a href="{{ route('marketing.free-site-audit') }}" class="font-normal hover:text-paper">Free site audit</a>
                         <a href="{{ route('marketing.contact') }}" class="font-normal hover:text-paper">Onboarding</a>
                     </nav>
                     <nav class="grid content-start gap-3 text-base text-paper/70 sm:text-sm" aria-label="Company">

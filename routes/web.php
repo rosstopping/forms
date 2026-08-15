@@ -50,6 +50,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\WebsiteInvitationController;
 use App\Http\Controllers\FormSubmissionController;
 use App\Http\Controllers\FormSubmissionSpamController;
+use App\Http\Controllers\FreeSiteAuditController;
 use App\Http\Controllers\GithubWebhookController;
 use App\Http\Controllers\MarketingController;
 use App\Http\Controllers\OnboardingEnquiryController;
@@ -74,6 +75,11 @@ Route::controller(MarketingController::class)->group(function () {
 Route::post('/contact', OnboardingEnquiryController::class)
     ->middleware('throttle:6,1')
     ->name('marketing.contact.store');
+
+Route::get('/free-site-audit', [FreeSiteAuditController::class, 'create'])->name('marketing.free-site-audit');
+Route::post('/free-site-audit', [FreeSiteAuditController::class, 'store'])
+    ->middleware('throttle:3,1')
+    ->name('marketing.free-site-audit.store');
 
 Route::get('/submitted', function (Request $request) {
     $returnUrl = $request->header('referer') ?: url('/');
