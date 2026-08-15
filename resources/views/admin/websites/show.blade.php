@@ -43,15 +43,13 @@
 
     <div class="website-tabs" role="tablist" aria-label="Website sections">
         <button type="button" id="website-tab-health" class="website-tab" role="tab" aria-selected="true" aria-controls="website-panel-health" tabindex="0" data-tab="health">Health reports</button>
-        @if ($canUseGrowthFeatures)
-            <button type="button" id="website-tab-search" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-search" tabindex="-1" data-tab="search">Search</button>
-            <button type="button" id="website-tab-seo" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-seo" tabindex="-1" data-tab="seo">SEO Intelligence</button>
-        @endif
+        <button type="button" id="website-tab-search" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-search" tabindex="-1" data-tab="search">Search</button>
+        <button type="button" id="website-tab-seo" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-seo" tabindex="-1" data-tab="seo">SEO Intelligence</button>
         <button type="button" id="website-tab-content" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-content" tabindex="-1" data-tab="content">Content</button>
         @if (config('forms.pixel_ui_enabled'))
             <button type="button" id="website-tab-pixel" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-pixel" tabindex="-1" data-tab="pixel">Pixel</button>
         @endif
-        @if ($canUseCompleteFeatures)<button type="button" id="website-tab-business-profile" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-business-profile" tabindex="-1" data-tab="business-profile">Business Profile</button>@endif
+        <button type="button" id="website-tab-business-profile" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-business-profile" tabindex="-1" data-tab="business-profile">Business Profile</button>
         <button type="button" id="website-tab-forms" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-forms" tabindex="-1" data-tab="forms">Forms</button>
         <button type="button" id="website-tab-settings" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-settings" tabindex="-1" data-tab="settings">Settings</button>
     </div>
@@ -165,9 +163,30 @@
         'dataForSeoConfigured' => $dataForSeoConfigured,
     ])
 
+    @else
+    <div id="website-panel-search" class="space-y-6" role="tabpanel" aria-labelledby="website-tab-search" data-tab-panel="search" hidden>
+        <x-feature-upgrade-banner tier="Growth" title="Unlock search performance" description="Upgrade to connect Google Search Console and turn clicks, impressions, rankings, and real customer searches into clear opportunities." />
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-label="Search performance preview">
+            @foreach (['Clicks and impressions', 'Average position', 'Top customer searches', 'Best-performing pages'] as $feature)
+                <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"><div class="h-2 w-16 rounded-full bg-violet-100"></div><h3 class="mt-4 font-semibold text-slate-900">{{ $feature }}</h3><p class="mt-1 text-sm text-slate-500">Available with Growth and Complete.</p></div>
+            @endforeach
+        </div>
+    </div>
+
+    <div id="website-panel-seo" class="space-y-6" role="tabpanel" aria-labelledby="website-tab-seo" data-tab-panel="seo" hidden>
+        <x-feature-upgrade-banner tier="Growth" title="See where your website can grow" description="SEO Intelligence tracks keyword visibility, competitors, backlinks, and prioritised recommendations so you know what to improve next." />
+        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            @foreach ([['Keyword opportunities', 'Find valuable searches where a focused improvement could move your website up.'], ['Competitor visibility', 'Compare the businesses competing for the same searches and customers.'], ['Recommended actions', 'Turn SEO evidence into a practical, prioritised improvement list.']] as [$feature, $description])
+                <article class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm"><span class="text-xs font-semibold uppercase tracking-widest text-violet-700">SEO Intelligence</span><h3 class="mt-2 font-semibold text-slate-950">{{ $feature }}</h3><p class="mt-2 text-sm text-slate-600">{{ $description }}</p></article>
+            @endforeach
+        </div>
+    </div>
     @endif
 
     <div id="website-panel-content" class="space-y-6" role="tabpanel" aria-labelledby="website-tab-content" data-tab-panel="content" hidden>
+        @unless ($canUseGrowthFeatures)
+            <x-feature-upgrade-banner tier="Growth" title="Plan and request new content" description="Upgrade to Growth to submit content requests, plan improvements, and have Copilot prepare reviewable website changes." />
+        @endunless
         <div class="rounded-lg border bg-white p-4 shadow-sm">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
@@ -327,6 +346,16 @@
             </div>
         @endif
         </section>
+        @else
+        <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm" aria-labelledby="content-preview-title">
+            <p class="text-xs font-semibold uppercase tracking-widest text-violet-700">Content workflow</p>
+            <h2 id="content-preview-title" class="mt-2 font-semibold text-slate-950">From an idea to a reviewable website change</h2>
+            <div class="mt-4 grid gap-4 sm:grid-cols-3">
+                <div class="rounded-lg bg-slate-50 p-4"><span class="text-sm font-semibold text-violet-700">01</span><h3 class="mt-2 text-sm font-semibold text-slate-900">Request content</h3><p class="mt-1 text-sm text-slate-600">Describe a landing page, article, or improvement you need.</p></div>
+                <div class="rounded-lg bg-slate-50 p-4"><span class="text-sm font-semibold text-violet-700">02</span><h3 class="mt-2 text-sm font-semibold text-slate-900">Copilot prepares it</h3><p class="mt-1 text-sm text-slate-600">Content is created in your repository against your site and audience.</p></div>
+                <div class="rounded-lg bg-slate-50 p-4"><span class="text-sm font-semibold text-violet-700">03</span><h3 class="mt-2 text-sm font-semibold text-slate-900">Review before publishing</h3><p class="mt-1 text-sm text-slate-600">Nothing goes live until the proposed change has been reviewed.</p></div>
+            </div>
+        </section>
         @endif
         @endif
     </div>
@@ -340,6 +369,15 @@
 
     @if ($canUseCompleteFeatures)
         @include('admin.websites.partials.business-profile')
+    @else
+        <div id="website-panel-business-profile" class="space-y-6" role="tabpanel" aria-labelledby="website-tab-business-profile" data-tab-panel="business-profile" hidden>
+            <x-feature-upgrade-banner tier="Complete" title="Put your local presence to work" description="Upgrade to Complete for Google Business Profile health checks, recommended changes, generated post drafts, and approval-first review replies." />
+            <div class="grid gap-4 md:grid-cols-2">
+                @foreach ([['Profile health checks', 'Spot missing or outdated details and receive practical recommendations.'], ['Google post drafts', 'Keep your profile active with useful, reviewable post ideas.'], ['Review reply assistance', 'Prepare thoughtful responses while keeping every reply under your control.'], ['Advanced automations', 'Keep profile checks and drafts moving without adding another manual routine.']] as [$feature, $description])
+                    <article class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm"><span class="text-xs font-semibold uppercase tracking-widest text-violet-700">Google Business Profile</span><h3 class="mt-2 font-semibold text-slate-950">{{ $feature }}</h3><p class="mt-2 text-sm text-slate-600">{{ $description }}</p></article>
+                @endforeach
+            </div>
+        </div>
     @endif
 
     <div id="website-panel-settings" class="grid gap-6 lg:grid-cols-2" role="tabpanel" aria-labelledby="website-tab-settings" data-tab-panel="settings" hidden>

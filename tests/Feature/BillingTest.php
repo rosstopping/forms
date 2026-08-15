@@ -137,17 +137,35 @@ it('blocks a website owner from Growth routes when they have Essential', functio
         ->assertSessionHas('error');
 });
 
-it('shows only the website feature areas included in the owner package', function (): void {
+it('shows locked feature previews for website areas outside the owner package', function (): void {
     $owner = User::factory()->create(['membership_tier' => MembershipPlan::ESSENTIAL]);
     $website = Website::factory()->for($owner, 'owner')->create();
 
     $this->actingAs($owner)->get(route('admin.websites.show', $website))
         ->assertSuccessful()
-        ->assertDontSee('data-tab="search"', false)
-        ->assertDontSee('data-tab="seo"', false)
-        ->assertDontSee('data-tab="business-profile"', false)
+        ->assertSee('data-tab="search"', false)
+        ->assertSee('data-tab="seo"', false)
+        ->assertSee('data-tab="business-profile"', false)
         ->assertSee('data-tab="content"', false)
         ->assertDontSee('Manual content requests')
+        ->assertSee('Unlock search performance')
+        ->assertSee('See where your website can grow')
+        ->assertSee('Plan and request new content')
+        ->assertSee('Put your local presence to work')
         ->assertSee('A Growth or Complete membership is required to invite additional website users.')
         ->assertSee('data-tab="forms"', false);
+});
+
+it('keeps locked content request actions protected on the server', function (): void {
+    $owner = User::factory()->create([
+        'membership_tier' => MembershipPlan::GROWTH,
+        'membership_status' => null,
+    ]);
+    $website = Website::factory()->for($owner, 'owner')->create();
+
+    $this->actingAs($owner)
+        ->post(route('admin.content-requests.store', $website), ['instructions' => 'Create a new service page.'])
+        ->assertRedirect(route('admin.billing.index'));
+
+    expect($website->contentRequests()->exists())->toBeFalse();
 });
