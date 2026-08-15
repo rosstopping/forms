@@ -37,7 +37,7 @@ it('answers complete members using only the selected website context', function 
 
     $this->actingAs($owner)
         ->post(route('admin.websites.assistant.questions.store', $website), ['question' => 'What needs attention?'])
-        ->assertRedirect(route('admin.websites.show', [$website, 'tab' => 'assistant']));
+        ->assertRedirect(route('admin.websites.show', [$website, 'assistant' => 'open']));
 
     $record = WebsiteAiQuestion::query()->sole();
     expect($record->website_id)->toBe($website->id)
@@ -91,9 +91,9 @@ it('enforces the weekly question limit before prompting the agent', function ():
     WebsiteDataAssistant::fake()->preventStrayPrompts();
 
     $this->actingAs($owner)
-        ->from(route('admin.websites.show', [$website, 'tab' => 'assistant']))
+        ->from(route('admin.websites.show', $website))
         ->post(route('admin.websites.assistant.questions.store', $website), ['question' => 'One more question?'])
-        ->assertRedirect(route('admin.websites.show', [$website, 'tab' => 'assistant']))
+        ->assertRedirect(route('admin.websites.show', $website))
         ->assertSessionHasErrors('question');
 
     expect(WebsiteAiQuestion::query()->count())->toBe(2);
@@ -108,9 +108,21 @@ it('shows a locked assistant preview to lower membership tiers', function (): vo
     $website = Website::factory()->for($owner, 'owner')->create();
 
     $this->actingAs($owner)
-        ->get(route('admin.websites.show', [$website, 'tab' => 'assistant']))
+        ->get(route('admin.websites.show', $website))
         ->assertSuccessful()
         ->assertSee('Ask Sitewell')
-        ->assertSee('Upgrade to Complete')
+        ->assertSee('Complete feature')
         ->assertDontSee('What would you like to understand?');
+});
+
+it('renders the assistant as a fixed chat widget instead of a website tab', function (): void {
+    [$owner, $website] = completeWebsiteWorkspace();
+
+    $this->actingAs($owner)
+        ->get(route('admin.websites.show', $website))
+        ->assertSuccessful()
+        ->assertSee('id="website-assistant"', false)
+        ->assertSee('fixed right-3 bottom-3', false)
+        ->assertDontSee('website-tab-assistant', false)
+        ->assertDontSee('website-panel-assistant', false);
 });

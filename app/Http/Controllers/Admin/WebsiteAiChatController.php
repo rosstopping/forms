@@ -72,10 +72,10 @@ class WebsiteAiChatController extends Controller
             report($exception);
             $question->update(['status' => 'failed', 'error' => 'The assistant could not answer this question.']);
 
-            return Redirect::route('admin.websites.show', [$website, 'tab' => 'assistant'])
+            return Redirect::route('admin.websites.show', [$website, 'assistant' => 'open'])
                 ->with('error', 'The website assistant could not answer right now. This request still counts towards the weekly safety limit.');
         }
 
-        return Redirect::route('admin.websites.show', [$website, 'tab' => 'assistant']);
+        return Redirect::route('admin.websites.show', [$website, 'assistant' => 'open']);
     }
 }
