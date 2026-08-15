@@ -89,6 +89,10 @@ class SeoOpportunityService
             }
         }
 
+        if ($opportunities->isEmpty() && $currentKeywords->isNotEmpty()) {
+            $opportunities = $this->sparseSampleOpportunities($currentKeywords, $previousByKeyword);
+        }
+
         return $opportunities
             ->groupBy('type')
             ->flatMap(fn (Collection $items): Collection => $items->sortByDesc('priority_score')->take($this->perTypeLimit()))
@@ -96,6 +100,38 @@ class SeoOpportunityService
             ->take($this->maximumResults())
             ->values()
             ->all();
+    }
+
+    /**
+     * @param  Collection<int, SeoKeyword>  $keywords
+     * @param  Collection<string, SeoKeyword>  $previousByKeyword
+     * @return Collection<int, array<string, mixed>>
+     */
+    protected function sparseSampleOpportunities(Collection $keywords, Collection $previousByKeyword): Collection
+    {
+        return $keywords
+            ->sortByDesc(fn (SeoKeyword $keyword): float => $this->fallbackScore($keyword))
+            ->take($this->sparseSampleLimit())
+            ->values()
+            ->map(function (SeoKeyword $keyword) use ($previousByKeyword): array {
+                $position = $keyword->position;
+                $isLeadingResult = $position <= 3;
+
+                return $this->opportunity(
+                    SeoOpportunity::TYPE_FOUNDATION,
+                    $keyword,
+                    $isLeadingResult
+                        ? 'Protect visibility for “'.$keyword->keyword.'”'
+                        : 'Build visibility for “'.$keyword->keyword.'”',
+                    sprintf('Within this limited keyword sample, the domain ranks at position %d with an estimated %s monthly searches.', $position, number_format($keyword->search_volume ?? 0)),
+                    $isLeadingResult
+                        ? 'Keep the ranking page accurate and useful, reinforce it with relevant internal links, and avoid unnecessary rewrites while it holds a leading position.'
+                        : 'Review whether the ranking page fully answers this search. Improve its title, main heading, useful supporting detail, and internal links, while keeping every claim accurate.',
+                    $this->fallbackScore($keyword),
+                    $previousByKeyword->get($this->keywordKey($keyword)),
+                    true,
+                );
+            });
     }
 
     public function generate(SeoSnapshot $snapshot): Collection
@@ -123,7 +159,7 @@ class SeoOpportunityService
     }
 
     /** @return array<string, mixed> */
-    protected function opportunity(string $type, SeoKeyword $keyword, string $title, string $summary, string $recommendation, float $priorityScore, ?SeoKeyword $previous): array
+    protected function opportunity(string $type, SeoKeyword $keyword, string $title, string $summary, string $recommendation, float $priorityScore, ?SeoKeyword $previous, bool $usesAdaptiveThreshold = false): array
     {
         return [
             'seo_keyword_id' => $keyword->id,
@@ -144,6 +180,7 @@ class SeoOpportunityService
                 'estimated_traffic' => $keyword->estimated_traffic,
                 'cpc' => $keyword->cpc,
                 'search_intent' => $keyword->search_intent,
+                'uses_adaptive_threshold' => $usesAdaptiveThreshold,
             ],
             'priority_score' => round(min(100, max(0, $priorityScore)), 4),
         ];
@@ -162,6 +199,13 @@ class SeoOpportunityService
     protected function intentBonus(SeoKeyword $keyword): int
     {
         return in_array($keyword->search_intent, ['commercial', 'transactional'], true) ? 10 : 0;
+    }
+
+    protected function fallbackScore(SeoKeyword $keyword): float
+    {
+        $positionScore = max(0, 35 - min(35, max(0, $keyword->position - 1) * 0.5));
+
+        return $this->volumeScore($keyword->search_volume ?? 0) + $positionScore + $this->intentBonus($keyword);
     }
 
     protected function highVolumeMinimum(): int
@@ -187,5 +231,10 @@ class SeoOpportunityService
     protected function maximumResults(): int
     {
         return (int) config('services.dataforseo.opportunities.maximum_results', 50);
+    }
+
+    protected function sparseSampleLimit(): int
+    {
+        return (int) config('services.dataforseo.opportunities.sparse_sample_limit', 3);
     }
 }

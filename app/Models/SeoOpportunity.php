@@ -19,6 +19,8 @@ class SeoOpportunity extends Model
 
     public const TYPE_IMPROVING = 'improving';
 
+    public const TYPE_FOUNDATION = 'foundation';
+
     public const STATUS_OPEN = 'open';
 
     public const STATUS_QUEUED = 'queued';

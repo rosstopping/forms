@@ -82,6 +82,36 @@ test('refresh protection returns a recent snapshot without spending again', func
     Queue::assertNotPushed(GenerateSeoIntelligence::class);
 });
 
+test('refreshing a sparse recent snapshot derives foundation actions without another provider request', function (): void {
+    Queue::fake();
+    $owner = User::factory()->create();
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $website->domains()->create(['domain' => 'small.example', 'is_primary' => true]);
+    $snapshot = SeoSnapshot::factory()->for($website)->create([
+        'completed_at' => now()->subDay(),
+        'metadata' => ['data_source' => 'third_party_estimate', 'keyword_sample_version' => SeoSnapshotService::KEYWORD_SAMPLE_VERSION],
+    ]);
+    $snapshot->keywords()->create([
+        'website_id' => $website->id,
+        'fingerprint' => hash('sha256', 'specialist sparse phrase'),
+        'keyword' => 'specialist sparse phrase',
+        'position' => 62,
+        'ranking_url' => 'https://small.example/service',
+        'search_volume' => 5,
+        'search_intent' => 'informational',
+        'location_code' => 2826,
+        'language_code' => 'en',
+    ]);
+
+    $this->actingAs($owner)
+        ->post(route('admin.seo-intelligence.store', $website))
+        ->assertRedirect(route('admin.websites.show', [$website, 'tab' => 'seo']));
+
+    expect($snapshot->opportunities()->sole()->type)->toBe(SeoOpportunity::TYPE_FOUNDATION)
+        ->and($snapshot->opportunities()->sole()->metrics['uses_adaptive_threshold'])->toBeTrue();
+    Queue::assertNotPushed(GenerateSeoIntelligence::class);
+});
+
 test('a recent snapshot with the legacy keyword sample can be replaced', function (): void {
     Queue::fake();
     $owner = User::factory()->create();

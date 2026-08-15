@@ -11,6 +11,8 @@ use InvalidArgumentException;
 
 class SeoRefreshService
 {
+    public function __construct(private SeoOpportunityService $opportunities) {}
+
     public function request(Website $website): SeoRefreshResult
     {
         return Cache::lock('seo-intelligence-refresh:'.$website->id, 10)->block(3, function () use ($website): SeoRefreshResult {
@@ -37,6 +39,10 @@ class SeoRefreshService
                 ->first();
 
             if ($freshSnapshot && (int) data_get($freshSnapshot->metadata, 'keyword_sample_version') >= SeoSnapshotService::KEYWORD_SAMPLE_VERSION) {
+                if (! $freshSnapshot->opportunities()->exists() && $freshSnapshot->keywords()->exists()) {
+                    $this->opportunities->generate($freshSnapshot);
+                }
+
                 return new SeoRefreshResult($freshSnapshot, false, SeoRefreshResult::REASON_FRESH);
             }
 

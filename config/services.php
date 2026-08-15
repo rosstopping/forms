@@ -92,6 +92,7 @@ return [
             'movement_minimum' => (int) env('DATAFORSEO_MOVEMENT_MINIMUM', 3),
             'per_type_limit' => (int) env('DATAFORSEO_OPPORTUNITIES_PER_TYPE_LIMIT', 10),
             'maximum_results' => (int) env('DATAFORSEO_OPPORTUNITIES_LIMIT', 50),
+            'sparse_sample_limit' => (int) env('DATAFORSEO_SPARSE_SAMPLE_OPPORTUNITIES_LIMIT', 3),
         ],
     ],
 

@@ -167,6 +167,12 @@
                                             <dd class="capitalize text-slate-500">{{ data_get($metrics, 'search_intent') }}</dd>
                                         </div>
                                     @endif
+                                    @if (data_get($metrics, 'uses_adaptive_threshold'))
+                                        <div class="sm:col-span-2">
+                                            <dt class="font-medium text-slate-700">Why this appears</dt>
+                                            <dd class="text-slate-500">Selected from a limited keyword sample using broader thresholds.</dd>
+                                        </div>
+                                    @endif
                                 </dl>
                             </div>
 
@@ -202,7 +208,7 @@
                 @empty
                     <div class="p-8 text-center">
                         <h4 class="text-balance font-semibold text-slate-950">No priority actions found</h4>
-                        <p class="mx-auto mt-2 max-w-[60ch] text-pretty text-base text-slate-600 sm:text-sm">The stored keyword sample does not currently meet the configured opportunity thresholds. Future snapshots may reveal ranking movement.</p>
+                        <p class="mx-auto mt-2 max-w-[60ch] text-pretty text-base text-slate-600 sm:text-sm">No ranked keyword estimates were stored in this snapshot. Run another snapshot after the provider has discovered rankings for the website.</p>
                     </div>
                 @endforelse
             </div>

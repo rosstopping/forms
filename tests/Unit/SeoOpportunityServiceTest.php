@@ -14,6 +14,7 @@ beforeEach(function (): void {
         'movement_minimum' => 3,
         'per_type_limit' => 10,
         'maximum_results' => 50,
+        'sparse_sample_limit' => 3,
     ]);
 });
 
@@ -68,6 +69,24 @@ test('it applies per-type and overall cost-free result limits', function (): voi
 
     expect($opportunities)->toHaveCount(3)
         ->and(collect($opportunities)->countBy('type')->max())->toBeLessThanOrEqual(2);
+});
+
+test('it creates honest foundation actions when a sparse sample misses standard thresholds', function (): void {
+    $keywords = collect([
+        seoKeyword(1, 'small brand name', 2, 5, 'navigational'),
+        seoKeyword(2, 'specialist local service', 37, 8, 'informational'),
+        seoKeyword(3, 'specific customer question', 74, 0, 'informational'),
+    ]);
+
+    $opportunities = collect((new SeoOpportunityService)->find($keywords));
+
+    expect($opportunities)->toHaveCount(3)
+        ->and($opportunities->pluck('type')->unique()->all())->toBe([SeoOpportunity::TYPE_FOUNDATION])
+        ->and($opportunities->every(fn (array $opportunity): bool => $opportunity['metrics']['uses_adaptive_threshold'] === true))->toBeTrue()
+        ->and($opportunities->pluck('title'))->toContain(
+            'Protect visibility for “small brand name”',
+            'Build visibility for “specialist local service”',
+        );
 });
 
 function seoKeyword(int $id, string $keyword, int $position, int $volume, string $intent, ?float $cpc = null): SeoKeyword
