@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Account\BillingController;
 use App\Http\Controllers\Admin\BulkFormSubmissionController;
 use App\Http\Controllers\Admin\BusinessProfileController;
 use App\Http\Controllers\Admin\BusinessProfilePostController;
@@ -52,6 +53,7 @@ use App\Http\Controllers\GithubWebhookController;
 use App\Http\Controllers\MarketingController;
 use App\Http\Controllers\OnboardingEnquiryController;
 use App\Http\Controllers\ProspectReportController;
+use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\WebsiteHealthReportController as PublicWebsiteHealthReportController;
 use App\Http\Middleware\AllowFormSubmissionCors;
 use App\Http\Middleware\EnsureAdmin;
@@ -107,6 +109,9 @@ Route::middleware(['web', 'signed', 'throttle:20,1'])->group(function () {
 
 Route::middleware(['web', 'auth'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('account/billing', [BillingController::class, 'index'])->name('billing.index');
+    Route::post('account/billing/checkout', [BillingController::class, 'checkout'])->middleware('throttle:10,1')->name('billing.checkout');
+    Route::post('account/billing/portal', [BillingController::class, 'portal'])->middleware('throttle:10,1')->name('billing.portal');
     Route::resource('websites', WebsiteController::class);
     Route::get('website-builder', [WebsiteBuilderController::class, 'create'])->name('website-builder.create');
     Route::post('website-builder', [WebsiteBuilderController::class, 'store'])->name('website-builder.store');
@@ -135,41 +140,41 @@ Route::middleware(['web', 'auth'])->prefix('admin')->name('admin.')->group(funct
     Route::get('websites/{website}/repository/create', [WebsiteRepositoryController::class, 'create'])->name('website-repositories.create');
     Route::post('websites/{website}/repository', [WebsiteRepositoryController::class, 'store'])->name('website-repositories.store');
     Route::delete('websites/{website}/repository', [WebsiteRepositoryController::class, 'destroy'])->name('website-repositories.destroy');
-    Route::get('websites/{website}/search-console/connect', [SearchConsoleController::class, 'connect'])->name('search-console.connect');
+    Route::get('websites/{website}/search-console/connect', [SearchConsoleController::class, 'connect'])->middleware('membership:growth')->name('search-console.connect');
     Route::get('search-console/callback', [SearchConsoleController::class, 'callback'])->name('search-console.callback');
-    Route::get('websites/{website}/search-console/property', [SearchConsoleController::class, 'property'])->name('search-console.property');
-    Route::post('websites/{website}/search-console/property', [SearchConsoleController::class, 'storeProperty'])->name('search-console.property.store');
-    Route::get('websites/{website}/search-console/performance', [SearchConsoleController::class, 'performance'])->name('search-console.performance');
-    Route::get('websites/{website}/search-console/performance/query', [SearchConsoleController::class, 'query'])->name('search-console.queries.show');
-    Route::delete('websites/{website}/search-console', [SearchConsoleController::class, 'destroy'])->name('search-console.destroy');
-    Route::post('websites/{website}/search-opportunities/refresh', [SearchOpportunityController::class, 'refresh'])->name('search-opportunities.refresh');
-    Route::post('websites/{website}/seo-intelligence', SeoIntelligenceController::class)->name('seo-intelligence.store');
-    Route::get('websites/{website}/seo-keywords/{seoKeyword}', [SeoKeywordController::class, 'show'])->name('seo-keywords.show');
-    Route::put('websites/{website}/seo-snapshot-settings', SeoSnapshotSettingsController::class)->name('seo-snapshot-settings.update');
-    Route::post('websites/{website}/seo-opportunities/{seoOpportunity}/queue', [SeoOpportunityController::class, 'queue'])->name('seo-opportunities.queue');
-    Route::post('websites/{website}/search-opportunities/{searchOpportunity}/queue', [SearchOpportunityController::class, 'queue'])->name('search-opportunities.queue');
-    Route::delete('websites/{website}/search-opportunities/{searchOpportunity}', [SearchOpportunityController::class, 'dismiss'])->name('search-opportunities.dismiss');
-    Route::get('websites/{website}/business-profile/connect', [BusinessProfileController::class, 'connect'])->name('business-profile.connect');
+    Route::get('websites/{website}/search-console/property', [SearchConsoleController::class, 'property'])->middleware('membership:growth')->name('search-console.property');
+    Route::post('websites/{website}/search-console/property', [SearchConsoleController::class, 'storeProperty'])->middleware('membership:growth')->name('search-console.property.store');
+    Route::get('websites/{website}/search-console/performance', [SearchConsoleController::class, 'performance'])->middleware('membership:growth')->name('search-console.performance');
+    Route::get('websites/{website}/search-console/performance/query', [SearchConsoleController::class, 'query'])->middleware('membership:growth')->name('search-console.queries.show');
+    Route::delete('websites/{website}/search-console', [SearchConsoleController::class, 'destroy'])->middleware('membership:growth')->name('search-console.destroy');
+    Route::post('websites/{website}/search-opportunities/refresh', [SearchOpportunityController::class, 'refresh'])->middleware('membership:growth')->name('search-opportunities.refresh');
+    Route::post('websites/{website}/seo-intelligence', SeoIntelligenceController::class)->middleware('membership:growth')->name('seo-intelligence.store');
+    Route::get('websites/{website}/seo-keywords/{seoKeyword}', [SeoKeywordController::class, 'show'])->middleware('membership:growth')->name('seo-keywords.show');
+    Route::put('websites/{website}/seo-snapshot-settings', SeoSnapshotSettingsController::class)->middleware('membership:growth')->name('seo-snapshot-settings.update');
+    Route::post('websites/{website}/seo-opportunities/{seoOpportunity}/queue', [SeoOpportunityController::class, 'queue'])->middleware('membership:growth')->name('seo-opportunities.queue');
+    Route::post('websites/{website}/search-opportunities/{searchOpportunity}/queue', [SearchOpportunityController::class, 'queue'])->middleware('membership:growth')->name('search-opportunities.queue');
+    Route::delete('websites/{website}/search-opportunities/{searchOpportunity}', [SearchOpportunityController::class, 'dismiss'])->middleware('membership:growth')->name('search-opportunities.dismiss');
+    Route::get('websites/{website}/business-profile/connect', [BusinessProfileController::class, 'connect'])->middleware('membership:complete')->name('business-profile.connect');
     Route::get('business-profile/callback', [BusinessProfileController::class, 'callback'])->name('business-profile.callback');
-    Route::get('websites/{website}/business-profile/locations', [BusinessProfileController::class, 'locations'])->name('business-profile.locations');
-    Route::post('websites/{website}/business-profile/location', [BusinessProfileController::class, 'storeLocation'])->name('business-profile.location.store');
-    Route::put('websites/{website}/business-profile', [BusinessProfileController::class, 'update'])->name('business-profile.update');
-    Route::delete('websites/{website}/business-profile', [BusinessProfileController::class, 'destroy'])->name('business-profile.destroy');
-    Route::post('websites/{website}/business-profile/audits', [BusinessProfileController::class, 'audit'])->name('business-profile.audits.store');
-    Route::post('websites/{website}/business-profile/reviews/sync', [BusinessProfileController::class, 'syncReviews'])->name('business-profile.reviews.sync');
-    Route::put('websites/{website}/business-profile/recommendations/{recommendation}', [BusinessProfileRecommendationController::class, 'update'])->name('business-profile.recommendations.update');
-    Route::delete('websites/{website}/business-profile/recommendations/{recommendation}', [BusinessProfileRecommendationController::class, 'destroy'])->name('business-profile.recommendations.destroy');
-    Route::post('websites/{website}/business-profile/posts', [BusinessProfilePostController::class, 'store'])->name('business-profile.posts.store');
-    Route::put('websites/{website}/business-profile/posts/{post}', [BusinessProfilePostController::class, 'update'])->name('business-profile.posts.update');
-    Route::post('websites/{website}/business-profile/reviews/{review}/draft', [BusinessProfileReviewController::class, 'store'])->name('business-profile.reviews.draft');
-    Route::put('websites/{website}/business-profile/reviews/{review}', [BusinessProfileReviewController::class, 'update'])->name('business-profile.reviews.update');
-    Route::put('websites/{website}/content-plan', [ContentPlanController::class, 'update'])->name('content-plans.update');
-    Route::post('websites/{website}/content-generations', [ContentPlanController::class, 'generate'])->name('content-generations.store');
-    Route::get('websites/{website}/content-suggestions/queue', ContentSuggestionController::class)->middleware('signed')->name('content-suggestions.store');
-    Route::post('websites/{website}/content-generations/{contentGeneration}/sync', [ContentPlanController::class, 'syncGeneration'])->name('content-generations.sync');
-    Route::delete('websites/{website}/content-generations/{contentGeneration}', [ContentPlanController::class, 'cancelGeneration'])->name('content-generations.destroy');
-    Route::post('websites/{website}/content-requests', [ContentRequestController::class, 'store'])->name('content-requests.store');
-    Route::delete('websites/{website}/content-requests/{contentRequest}', [ContentRequestController::class, 'destroy'])->name('content-requests.destroy');
+    Route::get('websites/{website}/business-profile/locations', [BusinessProfileController::class, 'locations'])->middleware('membership:complete')->name('business-profile.locations');
+    Route::post('websites/{website}/business-profile/location', [BusinessProfileController::class, 'storeLocation'])->middleware('membership:complete')->name('business-profile.location.store');
+    Route::put('websites/{website}/business-profile', [BusinessProfileController::class, 'update'])->middleware('membership:complete')->name('business-profile.update');
+    Route::delete('websites/{website}/business-profile', [BusinessProfileController::class, 'destroy'])->middleware('membership:complete')->name('business-profile.destroy');
+    Route::post('websites/{website}/business-profile/audits', [BusinessProfileController::class, 'audit'])->middleware('membership:complete')->name('business-profile.audits.store');
+    Route::post('websites/{website}/business-profile/reviews/sync', [BusinessProfileController::class, 'syncReviews'])->middleware('membership:complete')->name('business-profile.reviews.sync');
+    Route::put('websites/{website}/business-profile/recommendations/{recommendation}', [BusinessProfileRecommendationController::class, 'update'])->middleware('membership:complete')->name('business-profile.recommendations.update');
+    Route::delete('websites/{website}/business-profile/recommendations/{recommendation}', [BusinessProfileRecommendationController::class, 'destroy'])->middleware('membership:complete')->name('business-profile.recommendations.destroy');
+    Route::post('websites/{website}/business-profile/posts', [BusinessProfilePostController::class, 'store'])->middleware('membership:complete')->name('business-profile.posts.store');
+    Route::put('websites/{website}/business-profile/posts/{post}', [BusinessProfilePostController::class, 'update'])->middleware('membership:complete')->name('business-profile.posts.update');
+    Route::post('websites/{website}/business-profile/reviews/{review}/draft', [BusinessProfileReviewController::class, 'store'])->middleware('membership:complete')->name('business-profile.reviews.draft');
+    Route::put('websites/{website}/business-profile/reviews/{review}', [BusinessProfileReviewController::class, 'update'])->middleware('membership:complete')->name('business-profile.reviews.update');
+    Route::put('websites/{website}/content-plan', [ContentPlanController::class, 'update'])->middleware('membership:growth')->name('content-plans.update');
+    Route::post('websites/{website}/content-generations', [ContentPlanController::class, 'generate'])->middleware('membership:growth')->name('content-generations.store');
+    Route::get('websites/{website}/content-suggestions/queue', ContentSuggestionController::class)->middleware(['signed', 'membership:growth'])->name('content-suggestions.store');
+    Route::post('websites/{website}/content-generations/{contentGeneration}/sync', [ContentPlanController::class, 'syncGeneration'])->middleware('membership:growth')->name('content-generations.sync');
+    Route::delete('websites/{website}/content-generations/{contentGeneration}', [ContentPlanController::class, 'cancelGeneration'])->middleware('membership:growth')->name('content-generations.destroy');
+    Route::post('websites/{website}/content-requests', [ContentRequestController::class, 'store'])->middleware('membership:growth')->name('content-requests.store');
+    Route::delete('websites/{website}/content-requests/{contentRequest}', [ContentRequestController::class, 'destroy'])->middleware('membership:growth')->name('content-requests.destroy');
     Route::resource('forms', FormController::class);
     Route::patch('form-submissions/bulk', BulkFormSubmissionController::class)->name('form-submissions.bulk');
     Route::patch('form-submissions/{form_submission}/spam', [AdminFormSubmissionController::class, 'markSpam'])->name('form-submissions.spam');
@@ -188,6 +193,10 @@ Route::middleware(['web', 'auth'])->prefix('admin')->name('admin.')->group(funct
     });
     Route::resource('users', UserController::class)->only(['index', 'create', 'store', 'edit', 'update']);
 });
+
+Route::post('/stripe/webhook', StripeWebhookController::class)
+    ->middleware('throttle:120,1')
+    ->name('stripe.webhook');
 
 Route::post('/github/webhook', GithubWebhookController::class)
     ->middleware('throttle:120,1')

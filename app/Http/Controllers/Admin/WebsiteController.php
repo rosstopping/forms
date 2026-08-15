@@ -10,6 +10,7 @@ use App\Services\PixelInstallationSnippet;
 use App\Services\SearchConsoleClient;
 use App\Services\SearchConsoleHistoryStore;
 use App\Services\WebsiteProspectService;
+use App\Support\MembershipPlan;
 use Closure;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -126,6 +127,8 @@ class WebsiteController extends Controller
         $availableMembers = $canManageMembers
             ? User::query()->when($website->user_id, fn ($query) => $query->whereKeyNot($website->user_id))->whereDoesntHave('sharedWebsites', fn ($query) => $query->whereKey($website->id))->orderBy('name')->get(['id', 'name', 'email'])
             : collect();
+        $canUseGrowthFeatures = $user?->isAdmin() === true || $website->owner?->hasMembershipFeature(MembershipPlan::FEATURE_GROWTH) === true;
+        $canUseCompleteFeatures = $user?->isAdmin() === true || $website->owner?->hasMembershipFeature(MembershipPlan::FEATURE_COMPLETE) === true;
         $searchConsoleReport = null;
         $searchConsoleHistory = [];
         $searchConsoleReportUnavailable = false;
@@ -186,7 +189,7 @@ class WebsiteController extends Controller
                 ->withQueryString();
         }
 
-        if ($website->searchConsoleConnection?->property_url) {
+        if ($canUseGrowthFeatures && $website->searchConsoleConnection?->property_url) {
             try {
                 $connection = $website->searchConsoleConnection;
                 $cacheKey = 'search-console-report:'.$connection->id.':'.hash('sha256', $connection->property_url).':'.$connection->updated_at->timestamp;
@@ -206,7 +209,7 @@ class WebsiteController extends Controller
             'website', 'users', 'availableMembers', 'canManageMembers', 'canManageWebsite',
             'searchConsoleReport', 'searchConsoleHistory', 'searchConsoleReportUnavailable', 'seoGeneration', 'seoSnapshot', 'seoHistory',
             'seoKeywords', 'seoReferringDomains', 'seoCompetitors', 'seoOpportunities', 'seoFilter', 'seoSort', 'seoDirection', 'strikingDistanceCount',
-            'dataForSeoConfigured', 'outreachProspect', 'pixelInstallationSnippet',
+            'dataForSeoConfigured', 'outreachProspect', 'pixelInstallationSnippet', 'canUseGrowthFeatures', 'canUseCompleteFeatures',
         ));
     }
 

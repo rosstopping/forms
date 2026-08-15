@@ -51,6 +51,12 @@ return [
         'api_url' => env('NETLIFY_API_URL', 'https://api.netlify.com/api/v1'),
     ],
 
+    'stripe' => [
+        'secret' => env('STRIPE_SECRET_KEY'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+        'api_url' => env('STRIPE_API_URL', 'https://api.stripe.com/v1'),
+    ],
+
     'sitewell' => [
         'pixel_asset_url' => env('SITEWELL_PIXEL_ASSET_URL', rtrim((string) env('APP_URL', 'http://localhost'), '/').'/pixel.js'),
         'pixel_api_url' => env('SITEWELL_PIXEL_API_URL', rtrim((string) env('APP_URL', 'http://localhost'), '/').'/api/pixel'),
