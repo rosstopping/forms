@@ -669,7 +669,15 @@
                             @endif
                         </article>
                     @empty
-                        <div class="p-5 text-center"><p class="text-sm font-medium text-slate-900">What would you like to understand?</p><p class="mt-1 text-xs leading-5 text-slate-500">Ask about rankings, traffic opportunities, or recent health findings.</p></div>
+                        <div class="space-y-3 p-5 text-center">
+                            <div><p class="text-sm font-medium text-slate-900">What would you like to understand?</p><p class="mt-1 text-xs leading-5 text-slate-500">Ask about this website’s rankings, search performance, opportunities, or health reports.</p></div>
+                            <div class="space-y-1.5 text-left text-xs text-slate-600">
+                                <p class="font-semibold text-slate-700">Try asking:</p>
+                                <p class="rounded-lg bg-slate-50 px-3 py-2">“Which keywords have improved or declined recently?”</p>
+                                <p class="rounded-lg bg-slate-50 px-3 py-2">“What should we prioritise from the latest health report?”</p>
+                                <p class="rounded-lg bg-slate-50 px-3 py-2">“How have clicks and impressions changed over the last six months?”</p>
+                            </div>
+                        </div>
                     @endforelse
                 </div>
 

@@ -9,6 +9,10 @@ use Illuminate\Support\Carbon;
 
 class SearchConsoleHistoryStore
 {
+    protected const DISCOVERED_QUERY_LIMIT = 25;
+
+    protected const EXISTING_QUERY_LIMIT = 25;
+
     public function __construct(protected SearchConsoleClient $searchConsole) {}
 
     /** @return array<int, array{month: string, clicks: float, impressions: float, ctr: float, position: float}> */
@@ -32,11 +36,22 @@ class SearchConsoleHistoryStore
     {
         $this->syncSite($connection);
 
-        $this->currentPropertyMetrics($connection)
+        $discoveredQueries = collect($this->searchConsole->queryPerformance($connection, self::DISCOVERED_QUERY_LIMIT))
+            ->pluck('query');
+        $existingQueries = $this->currentPropertyMetrics($connection)
             ->whereNotNull('query')
             ->select('query')
-            ->distinct()
+            ->selectRaw('MAX(updated_at) as last_updated_at')
+            ->groupBy('query')
+            ->orderByDesc('last_updated_at')
+            ->limit(self::EXISTING_QUERY_LIMIT)
             ->pluck('query')
+            ->values();
+
+        $discoveredQueries
+            ->merge($existingQueries)
+            ->filter(fn (mixed $query): bool => is_string($query) && $query !== '')
+            ->unique()
             ->each(fn (string $query) => $this->syncQuery($connection, $query));
     }
 

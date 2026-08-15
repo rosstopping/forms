@@ -196,6 +196,30 @@ test('viewed search console queries are stored as tracked histories', function (
         ->and($metric->dimension_key)->toBe(hash('sha256', 'query:luxury trains'));
 });
 
+test('weekly history sync proactively discovers and stores top query histories', function () {
+    $connection = SearchConsoleConnection::factory()->create(['property_url' => 'sc-domain:example.com']);
+    $client = $this->mock(SearchConsoleClient::class);
+    $client->shouldReceive('monthlyPerformance')->once()->with($connection)->andReturn([]);
+    $client->shouldReceive('queryPerformance')->once()->with($connection, 25)->andReturn([
+        ['query' => 'northern belle', 'clicks' => 120.0, 'impressions' => 1000.0, 'ctr' => .12, 'position' => 4.5],
+        ['query' => 'luxury train journeys', 'clicks' => 80.0, 'impressions' => 900.0, 'ctr' => .089, 'position' => 7.2],
+    ]);
+    $client->shouldReceive('monthlyPerformanceForQuery')->once()->with($connection, 'northern belle')->andReturn([
+        ['month' => '2025-05', 'clicks' => 50.0, 'impressions' => 800.0, 'ctr' => .0625, 'position' => 18.0],
+        ['month' => '2026-08', 'clicks' => 120.0, 'impressions' => 1000.0, 'ctr' => .12, 'position' => 4.5],
+    ]);
+    $client->shouldReceive('monthlyPerformanceForQuery')->once()->with($connection, 'luxury train journeys')->andReturn([
+        ['month' => '2025-05', 'clicks' => 30.0, 'impressions' => 700.0, 'ctr' => .043, 'position' => 14.0],
+        ['month' => '2026-08', 'clicks' => 80.0, 'impressions' => 900.0, 'ctr' => .089, 'position' => 7.2],
+    ]);
+
+    (new SearchConsoleHistoryStore($client))->syncTracked($connection);
+
+    expect($connection->metrics()->whereNotNull('query')->distinct()->pluck('query')->all())
+        ->toEqualCanonicalizing(['northern belle', 'luxury train journeys'])
+        ->and($connection->metrics()->whereNotNull('query')->count())->toBe(4);
+});
+
 test('search console history synchronisation is scheduled weekly', function () {
     $event = collect(Schedule::events())->first(fn ($event): bool => str_contains($event->command, 'search-console:sync-history'));
 

@@ -10,6 +10,7 @@ use App\Models\WebsiteAiQuestion;
 use App\Services\WebsiteAiContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\ValidationException;
 use Throwable;
@@ -69,8 +70,17 @@ class WebsiteAiChatController extends Controller
                 'status' => 'completed',
             ]);
         } catch (Throwable $exception) {
+            Log::error('Website data assistant request failed.', [
+                'website_ai_question_id' => $question->id,
+                'website_id' => $website->id,
+                'user_id' => $user->id,
+                'exception' => $exception,
+            ]);
             report($exception);
-            $question->update(['status' => 'failed', 'error' => 'The assistant could not answer this question.']);
+            $question->update([
+                'status' => 'failed',
+                'error' => "The assistant could not answer this question. Reference: WAI-{$question->id}.",
+            ]);
 
             return Redirect::route('admin.websites.show', [$website, 'assistant' => 'open'])
                 ->with('error', 'The website assistant could not answer right now. This request still counts towards the weekly safety limit.');

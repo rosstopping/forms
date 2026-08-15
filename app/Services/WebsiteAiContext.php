@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Models\SearchConsoleMetric;
+use App\Models\SeoKeyword;
 use App\Models\Website;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 class WebsiteAiContext
@@ -20,44 +22,123 @@ class WebsiteAiContext
             'warnings' => $report->warning_checks,
             'failed' => $report->failed_checks,
             'categories' => $report->categories,
-            'checks' => $report->checks,
-            'metrics' => $report->metrics,
+            'notable_checks' => collect($report->checks)->whereIn('status', ['warning', 'failed'])->take(30)->values()->all(),
+            'metrics' => collect($report->metrics)->take(30)->all(),
         ]);
 
-        $searchConsole = SearchConsoleMetric::query()->whereBelongsTo($website)
-            ->latest('month')->limit(100)->get(['month', 'dimension_key', 'query', 'clicks', 'impressions', 'ctr', 'position'])
+        $searchConsoleMetrics = SearchConsoleMetric::query()->whereBelongsTo($website)
+            ->where('month', '>=', now()->subMonths(23)->startOfMonth())
+            ->latest('month')->limit(2500)->get(['month', 'dimension_key', 'query', 'clicks', 'impressions', 'ctr', 'position']);
+        $searchConsoleSiteHistory = $searchConsoleMetrics
+            ->where('dimension_key', SearchConsoleMetric::SITE_DIMENSION_KEY)
+            ->sortBy('month')
             ->map(fn (SearchConsoleMetric $metric): array => [
                 'source' => 'Google Search Console',
                 'month' => $metric->month->toDateString(),
-                'dimension' => $metric->dimension_key,
+                'clicks' => $metric->clicks,
+                'impressions' => $metric->impressions,
+                'ctr' => $metric->ctr,
+                'position' => $metric->position,
+            ])->values();
+        $searchConsoleKeywordMovements = $this->searchConsoleKeywordMovements($searchConsoleMetrics);
+        $searchConsoleRecentQueries = $searchConsoleMetrics->whereNotNull('query')
+            ->unique('query')->take(50)
+            ->map(fn (SearchConsoleMetric $metric): array => [
+                'source' => 'Google Search Console',
+                'month' => $metric->month->toDateString(),
                 'query' => $metric->query,
                 'clicks' => $metric->clicks,
                 'impressions' => $metric->impressions,
                 'ctr' => $metric->ctr,
                 'position' => $metric->position,
-            ]);
+            ])->values();
 
         $snapshot = $website->seoSnapshots()->whereIn('status', ['completed', 'completed_with_errors'])->latest('snapshot_date')->first();
+        $seoSnapshotHistory = $website->seoSnapshots()->whereIn('status', ['completed', 'completed_with_errors'])
+            ->latest('snapshot_date')->limit(24)->get([
+                'snapshot_date', 'organic_keywords', 'estimated_organic_traffic', 'top_3_keywords', 'top_10_keywords',
+                'top_20_keywords', 'top_100_keywords', 'backlinks', 'referring_domains', 'domain_rank',
+            ])->sortBy('snapshot_date')->values()->toArray();
         $seo = $snapshot ? [
             'source' => 'SEO snapshot (third-party estimate)',
             'date' => $snapshot->snapshot_date?->toDateString(),
             'summary' => $snapshot->only(['organic_keywords', 'estimated_organic_traffic', 'top_3_keywords', 'top_10_keywords', 'top_20_keywords', 'top_100_keywords', 'backlinks', 'referring_domains', 'broken_backlinks', 'domain_rank']),
-            'keywords' => $snapshot->keywords()->orderByDesc('estimated_traffic')->limit(50)->get(['keyword', 'position', 'previous_position', 'ranking_url', 'search_volume', 'estimated_traffic', 'keyword_difficulty', 'search_intent'])->toArray(),
-            'opportunities' => $snapshot->opportunities()->whereIn('status', ['open', 'queued'])->orderByDesc('priority_score')->limit(20)->get(['title', 'summary', 'recommendation', 'metrics', 'priority_score'])->toArray(),
+            'top_keywords' => $snapshot->keywords()->orderByDesc('estimated_traffic')->limit(30)->get(['keyword', 'position', 'previous_position', 'ranking_url', 'search_volume', 'estimated_traffic', 'keyword_difficulty', 'search_intent'])->toArray(),
+            'keyword_movements' => $snapshot->keywords()->whereNotNull('previous_position')
+                ->orderByRaw('ABS(previous_position - position) DESC')->limit(40)
+                ->get(['keyword', 'position', 'previous_position', 'ranking_url', 'search_volume', 'estimated_traffic'])
+                ->map(fn (SeoKeyword $keyword): array => [
+                    ...$keyword->only(['keyword', 'position', 'previous_position', 'ranking_url', 'search_volume', 'estimated_traffic']),
+                    'position_change' => $keyword->previous_position - $keyword->position,
+                    'direction' => $keyword->position < $keyword->previous_position ? 'improved' : ($keyword->position > $keyword->previous_position ? 'declined' : 'unchanged'),
+                    'comparison_note' => 'Provider-reported previous position; this is not necessarily a comparison with the earliest Search Console month.',
+                ])->toArray(),
+            'opportunities' => $snapshot->opportunities()->whereIn('status', ['open', 'queued'])->orderByDesc('priority_score')->limit(10)->get(['title', 'summary', 'recommendation', 'metrics', 'priority_score'])->toArray(),
         ] : null;
 
         $searchOpportunities = $website->searchOpportunities()->whereIn('status', ['open', 'queued'])->orderByDesc('priority_score')->limit(20)->get([
             'query', 'page', 'title', 'summary', 'recommendation', 'metrics', 'priority_score', 'last_detected_at',
-        ])->toArray();
+        ])->take(10)->toArray();
+
+        $queryMetrics = $searchConsoleMetrics->whereNotNull('query');
 
         $context = (string) json_encode([
             'website' => ['id' => $website->id, 'name' => $website->name, 'domains' => $website->domains()->pluck('domain')->all()],
-            'health_reports' => $healthReports,
-            'search_console' => $searchConsole,
+            'data_coverage' => [
+                'search_console_first_month_in_context' => $searchConsoleMetrics->min('month')?->toDateString(),
+                'search_console_latest_month_in_context' => $searchConsoleMetrics->max('month')?->toDateString(),
+                'search_console_distinct_queries_in_context' => $queryMetrics->pluck('query')->unique()->count(),
+                'search_console_keyword_comparison_note' => 'Only queries stored in both the first and latest available month can be compared. Site-average improvement does not prove every keyword improved.',
+                'seo_keyword_comparison_note' => 'SEO keyword previous_position values are provider-reported comparisons. Do not describe them as changes since a user-specified date unless that date is explicitly present.',
+            ],
+            'search_console_site_history' => $searchConsoleSiteHistory,
+            'search_console_keyword_movements' => $searchConsoleKeywordMovements,
+            'search_console_recent_queries' => $searchConsoleRecentQueries,
+            'seo_snapshot_history' => $seoSnapshotHistory,
             'seo' => $seo,
+            'health_reports' => $healthReports,
             'search_opportunities' => $searchOpportunities,
         ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
 
-        return Str::limit($context, 60000, PHP_EOL.'[Older or lower-priority context truncated.]');
+        return Str::limit($context, 75000, PHP_EOL.'[Lower-priority context truncated. Use data_coverage before making comparisons.]');
+    }
+
+    /**
+     * @param  Collection<int, SearchConsoleMetric>  $metrics
+     * @return array<int, array<string, mixed>>
+     */
+    protected function searchConsoleKeywordMovements(Collection $metrics): array
+    {
+        return $metrics->whereNotNull('query')
+            ->groupBy('query')
+            ->map(function (Collection $queryMetrics, string $query): ?array {
+                $ordered = $queryMetrics->sortBy('month')->values();
+                $first = $ordered->first();
+                $latest = $ordered->last();
+
+                if (! $first || ! $latest || $first->month->equalTo($latest->month)) {
+                    return null;
+                }
+
+                $positionChange = $first->position - $latest->position;
+
+                return [
+                    'source' => 'Google Search Console',
+                    'query' => $query,
+                    'first_month' => $first->month->toDateString(),
+                    'first_position' => $first->position,
+                    'latest_month' => $latest->month->toDateString(),
+                    'latest_position' => $latest->position,
+                    'position_change' => round($positionChange, 2),
+                    'direction' => $positionChange > 0 ? 'improved' : ($positionChange < 0 ? 'declined' : 'unchanged'),
+                    'latest_clicks' => $latest->clicks,
+                    'latest_impressions' => $latest->impressions,
+                ];
+            })
+            ->filter()
+            ->sortByDesc(fn (array $movement): float => abs((float) $movement['position_change']))
+            ->take(50)
+            ->values()
+            ->all();
     }
 }

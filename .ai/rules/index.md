@@ -9,7 +9,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | resources/views/admin/websites/**,routes/web.php, resources/views/admin/websites/show.blade.php | .ai/rules/admin-websites.md |
 | app/{Ai,Jobs,Mail,Models,Http/Controllers/Admin}/**/*Prospect*.php | .ai/rules/admin.md |
 | app/{Ai/Agents/PixelOptimisationWriter.php,Services/PixelOptimisationGenerator.php,Http/Controllers/Admin/*PageOptimisationsController.php} | .ai/rules/agents-controllers-admin.md |
-| app/{Services/Github*,Models/GithubUserAuthorization.php,Jobs/{StartCopilotRemediation,SyncCopilotRemediation}.php} | .ai/rules/app-services.md |
+| app/{Services/Github*,Models/GithubUserAuthorization.php,Jobs/{StartCopilotRemediation,SyncCopilotRemediation}.php}, app/{Services/SearchConsoleHistoryStore.php,Services/WebsiteAiContext.php,Jobs/SyncSearchConsoleHistory.php} | .ai/rules/app-services.md |
 | app/{Services/OptimisationValueSanitizer.php,Services/PixelDeploymentDriver.php,Http/Requests/*Optimisation*.php,Http/Controllers/Admin/Optimisation*.php} | .ai/rules/controllers-admin.md |
 | app/{Http/Controllers/FormSubmissionController.php,Services/SpamDetector.php} | .ai/rules/controllers.md |
 | app/{Jobs/GeneratePagePixelOptimisations.php,Http/Controllers/Admin/*ReportOptimisationsController.php}, app/{Jobs/BuildWebsite.php,Http/Controllers/Admin/WebsiteBuilderController.php,Models/WebsiteBuild.php} | .ai/rules/jobs-controllers-admin.md |
