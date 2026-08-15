@@ -10,6 +10,7 @@ use App\Models\BusinessProfileReview;
 use App\Models\Website;
 use App\Services\BusinessProfileClient;
 use App\Services\BusinessProfileOAuthClient;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
@@ -46,13 +47,19 @@ class BusinessProfileController extends Controller
         return Redirect::route('admin.business-profile.locations', $website);
     }
 
-    public function locations(Request $request, Website $website): View
+    public function locations(Request $request, Website $website): View|RedirectResponse
     {
         $this->authorizeWebsite($request, $website);
         $connection = $website->businessProfileConnection()->firstOrFail();
-        $locations = collect($this->client->accounts($connection))->flatMap(function (array $account) use ($connection): array {
-            return collect($this->client->locations($connection, $account['name']))->map(fn (array $location): array => [...$location, 'accountName' => $account['name']])->all();
-        });
+
+        try {
+            $locations = collect($this->client->accounts($connection))->flatMap(function (array $account) use ($connection): array {
+                return collect($this->client->locations($connection, $account['name']))->map(fn (array $location): array => [...$location, 'accountName' => $account['name']])->all();
+            });
+        } catch (RequestException $exception) {
+            return Redirect::route('admin.websites.show', [$website, 'tab' => 'business-profile'])
+                ->with('error', $this->googleRequestErrorMessage($exception));
+        }
 
         return view('admin.websites.business-profile-locations', compact('website', 'locations'));
     }
@@ -62,7 +69,11 @@ class BusinessProfileController extends Controller
         $this->authorizeWebsite($request, $website);
         $data = $request->validate(['account_name' => ['required', 'string', 'starts_with:accounts/'], 'location_name' => ['required', 'string', 'starts_with:locations,accounts/'], 'location_title' => ['required', 'string', 'max:255']]);
         $connection = $website->businessProfileConnection()->firstOrFail();
-        $available = collect($this->client->locations($connection, $data['account_name']))->firstWhere('name', $data['location_name']);
+        try {
+            $available = collect($this->client->locations($connection, $data['account_name']))->firstWhere('name', $data['location_name']);
+        } catch (RequestException $exception) {
+            return back()->with('error', $this->googleRequestErrorMessage($exception));
+        }
         abort_unless($available && ($available['title'] ?? null) === $data['location_title'], 422, 'That location is not available to this Google account.');
         $connection->update($data);
         $audit = $connection->audits()->create(['status' => BusinessProfileAudit::STATUS_PENDING]);
@@ -127,5 +138,18 @@ class BusinessProfileController extends Controller
     protected function authorizeWebsite(Request $request, Website $website): void
     {
         abort_unless($website->isManageableBy($request->user()), 403);
+    }
+
+    protected function googleRequestErrorMessage(RequestException $exception): string
+    {
+        if ($exception->response->status() === 429) {
+            return 'Google Business Profile has reached its request limit. Please wait a minute, then try selecting the profile again.';
+        }
+
+        if (in_array($exception->response->status(), [401, 403], true)) {
+            return 'Google Business Profile could not authorize this request. Reconnect Google and try again.';
+        }
+
+        return 'Google Business Profile could not be reached. Please try again shortly.';
     }
 }

@@ -24,6 +24,11 @@ Schedule::command('business-profiles:dispatch-audits')
     ->hourly()
     ->withoutOverlapping();
 
+Schedule::command('free-site-audits:dispatch-pending-emails')
+    ->everyMinute()
+    ->onOneServer()
+    ->withoutOverlapping();
+
 Schedule::command('search-opportunities:dispatch')
     ->hourly()
     ->withoutOverlapping();

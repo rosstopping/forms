@@ -59,6 +59,26 @@ test('business profile workspace offers selection and reconnection for incomplet
         ->assertDontSee('Sync reviews');
 });
 
+test('location selection handles Google request quotas without an exception page', function () {
+    $owner = User::factory()->create();
+    $website = Website::factory()->for($owner, 'owner')->create();
+    BusinessProfileConnection::factory()->for($website)->create([
+        'access_token_expires_at' => now()->addHour(),
+    ]);
+    Http::preventStrayRequests();
+    Http::fake([
+        'https://mybusinessaccountmanagement.googleapis.com/*' => Http::response([
+            'error' => ['code' => 429, 'message' => 'Quota exceeded.'],
+        ], 429),
+    ]);
+
+    $this->actingAs($owner)
+        ->get(route('admin.business-profile.locations', $website))
+        ->assertRedirect(route('admin.websites.show', [$website, 'tab' => 'business-profile']))
+        ->assertSessionHas('error', 'Google Business Profile has reached its request limit. Please wait a minute, then try selecting the profile again.');
+
+});
+
 test('review sync turns expired Google authorization errors into a reconnectable message', function () {
     $owner = User::factory()->create();
     $website = Website::factory()->for($owner, 'owner')->create();

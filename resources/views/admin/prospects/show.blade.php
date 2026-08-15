@@ -4,10 +4,12 @@
 <div class="space-y-6">
     <div class="flex flex-wrap items-start justify-between gap-4"><div><a href="{{ route('admin.prospects.index') }}" class="text-sm font-medium text-slate-600">← Outreach</a><div class="mt-3 flex flex-wrap items-center gap-3"><h1 class="text-3xl font-semibold tracking-tight">{{ $prospect->business_name }}</h1><span class="rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700">{{ str($prospect->status)->replace('_', ' ')->title() }}</span>@unless ($prospect->website_url)<span class="rounded-full bg-violet-100 px-2.5 py-1 text-xs font-semibold text-violet-800">Website opportunity</span>@endunless</div>@if ($prospect->website_url)<a href="{{ $prospect->website_url }}" target="_blank" rel="noopener noreferrer" class="mt-1 inline-flex text-sm text-teal-700 hover:underline">{{ $prospect->website_url }} ↗</a>@else<p class="mt-1 text-sm text-slate-500">No website was linked from the public listing.</p>@endif</div>
         <div class="flex flex-wrap gap-2">
+            @unless ($isFreeSiteAudit)
             @if ($prospect->website_url && ! in_array($prospect->analysis_status, ['pending', 'running']))<form method="POST" action="{{ route('admin.prospects.analyse', $prospect) }}">@csrf<button class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium">Research again</button></form>@endif
             @if ($prospect->outreach_body && ! $prospect->approved_at)<form method="POST" action="{{ route('admin.prospects.approve', $prospect) }}">@csrf<button class="rounded-lg bg-teal-600 px-3 py-2 text-sm font-semibold text-white hover:bg-teal-700">Approve draft</button></form>@endif
             @if ($prospect->outreach_subject && $prospect->outreach_body)<form method="POST" action="{{ route('admin.prospects.test-email', $prospect) }}">@csrf<button type="submit" class="rounded-lg border border-slate-950/10 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Send test to {{ Auth::user()->email }}</button></form>@endif
             @if ($prospect->approved_at && ! $prospect->sent_at)<form method="POST" action="{{ route('admin.prospects.send', $prospect) }}">@csrf<button class="rounded-lg bg-slate-950 px-3 py-2 text-sm font-semibold text-white">Send approved email</button></form>@endif
+            @endunless
             <form method="POST" action="{{ route('admin.prospects.destroy', $prospect) }}" data-confirm-action-form>
                 @csrf
                 @method('DELETE')
@@ -22,6 +24,18 @@
             <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"><div class="flex items-center justify-between gap-4"><div><h2 class="font-semibold">Website opportunities</h2><p class="text-sm text-slate-500">Verified findings used to personalise the draft.</p></div>@if ($prospect->opportunity_score !== null)<div class="rounded-xl bg-amber-50 px-4 py-2 text-center"><p class="text-2xl font-semibold text-amber-800">{{ $prospect->opportunity_score }}</p><p class="text-[10px] font-semibold uppercase tracking-wide text-amber-700">Opportunity</p></div>@endif</div>
                 <div class="mt-4 space-y-3">@if (! $prospect->website_url)<div class="rounded-lg bg-violet-50 p-4 text-sm text-violet-800">Website audit skipped. This prospect is being treated as an opportunity for a new website.</div>@elseif (in_array($prospect->analysis_status, ['pending', 'running']))<div class="rounded-lg bg-slate-50 p-4 text-sm text-slate-600">Website research is {{ $prospect->analysis_status }}. The draft will appear here automatically when the queue worker finishes.</div>@else @forelse ($prospect->findings ?? [] as $finding)<div class="rounded-lg border border-slate-200 p-3"><div class="flex items-center gap-2"><span class="size-2 rounded-full {{ $finding['severity'] === 'failed' ? 'bg-red-500' : 'bg-amber-400' }}"></span><p class="text-sm font-semibold">{{ $finding['title'] }}</p></div><p class="mt-1 text-sm text-slate-600">{{ $finding['message'] }}</p></div>@empty<div class="rounded-lg bg-emerald-50 p-4 text-sm text-emerald-800">No clear homepage issues were found. Review the general introduction carefully before approving it.</div>@endforelse @endif</div>
             </section>
+            @if ($isFreeSiteAudit)
+                <section class="rounded-xl border border-teal-200 bg-teal-50 p-5 shadow-sm">
+                    <h2 class="font-semibold text-teal-950">Free audit results email</h2>
+                    @if ($prospect->activities->contains('type', 'free_audit_email_sent'))
+                        <p class="mt-2 text-sm text-teal-800">The audit results were emailed automatically to {{ $prospect->email }}.</p>
+                    @elseif ($prospect->activities->contains('type', 'free_audit_email_failed'))
+                        <p class="mt-2 text-sm text-red-700">The audit completed, but the results email could not be delivered. Check the queue failure and mail configuration.</p>
+                    @else
+                        <p class="mt-2 text-sm text-teal-800">The audit is complete and its results email is queued for automatic delivery. No approval or outreach action is required.</p>
+                    @endif
+                </section>
+            @else
             <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"><div class="flex items-center justify-between gap-3"><div><h2 class="font-semibold">Outreach draft</h2><p class="text-sm text-slate-500">Editing the draft or its video link resets approval.</p></div>@if ($prospect->approved_at)<span class="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">Approved</span>@endif</div>
                 <form method="POST" action="{{ route('admin.prospects.update', $prospect) }}" class="mt-4 space-y-4">@csrf @method('PUT')
                     <input type="hidden" name="business_name" value="{{ $prospect->business_name }}"><input type="hidden" name="contact_name" value="{{ $prospect->contact_name }}"><input type="hidden" name="email" value="{{ $prospect->email }}"><input type="hidden" name="website_url" value="{{ $prospect->website_url }}"><input type="hidden" name="status" value="{{ $prospect->status }}">
@@ -31,6 +45,7 @@
                     <button class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold">Save draft</button>
                 </form>
             </section>
+            @endif
         </div>
         <div class="space-y-6">
             <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">

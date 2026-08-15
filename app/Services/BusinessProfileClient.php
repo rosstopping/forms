@@ -3,10 +3,13 @@
 namespace App\Services;
 
 use App\Models\BusinessProfileConnection;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
+use Throwable;
 
 class BusinessProfileClient
 {
@@ -86,7 +89,15 @@ class BusinessProfileClient
             'account' => config('services.google.business_profile_account_url'), 'information' => config('services.google.business_profile_information_url'), default => config('services.google.business_profile_v4_url')
         };
 
-        return Http::baseUrl((string) $url)->acceptJson()->withToken($this->oauth->accessToken($connection))->connectTimeout(5)->timeout(30)->retry([500, 1500], throw: false);
+        return Http::baseUrl((string) $url)
+            ->acceptJson()
+            ->withToken($this->oauth->accessToken($connection))
+            ->connectTimeout(5)
+            ->timeout(30)
+            ->retry([500, 1500], function (Throwable $exception): bool {
+                return $exception instanceof ConnectionException
+                    || ($exception instanceof RequestException && $exception->response->serverError());
+            }, throw: false);
     }
 
     protected function ensureLocation(BusinessProfileConnection $connection): void

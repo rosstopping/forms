@@ -92,6 +92,38 @@ it('retries a results email without repeating a completed audit', function (): v
     Mail::assertSent(FreeSiteAuditResults::class, fn (FreeSiteAuditResults $mail): bool => $mail->hasTo('alex@example.com'));
 });
 
+it('automatically redispatches completed audit emails that have no delivery result', function (): void {
+    Queue::fake();
+    $prospect = Prospect::factory()->create([
+        'email' => 'alex@example.com',
+        'analysis_status' => 'completed',
+    ]);
+    $prospect->recordActivity('free_audit_requested', 'Free site audit requested from the marketing website.');
+
+    $this->artisan('free-site-audits:dispatch-pending-emails')
+        ->expectsOutput('Dispatched 1 pending free site audit email(s).')
+        ->assertSuccessful();
+
+    Queue::assertPushed(GenerateFreeSiteAudit::class, fn (GenerateFreeSiteAudit $job): bool => $job->prospect->is($prospect));
+});
+
+it('shows automatic delivery instead of outreach approval for free audits', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $prospect = Prospect::factory()->for($admin, 'owner')->create([
+        'email' => 'alex@example.com',
+        'analysis_status' => 'completed',
+        'status' => 'researched',
+    ]);
+    $prospect->recordActivity('free_audit_requested', 'Free site audit requested from the marketing website.');
+
+    $this->actingAs($admin)
+        ->get(route('admin.prospects.show', $prospect))
+        ->assertSuccessful()
+        ->assertSee('queued for automatic delivery')
+        ->assertDontSee('Outreach draft')
+        ->assertDontSee('Waiting for research');
+});
+
 it('includes report and contact calls to action in the results email and landing page', function (): void {
     $prospect = Prospect::factory()->create([
         'business_name' => 'Northfield Studio',
