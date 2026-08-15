@@ -16,22 +16,19 @@
         <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
             <div class="@container">
                 <div class="grid divide-y divide-ink/10 border-y border-ink/10 @3xl:grid-cols-3 @3xl:divide-x @3xl:divide-y-0">
-                    @foreach ([
-                        ['Essential', 'For a business that needs its website and leads properly looked after.', '149', 'One website included', ['Free website included if you need one', 'Website health checks and practical fixes', 'Weekly email health reports', 'Forms, spam protection, and automatic replies', 'Lead inbox, CRM, notes, and follow-up reminders'], false],
-                        ['Growth', 'For businesses ready to turn search visibility into a steady growth channel.', '249', 'Everything in Essential', ['Google Search Console performance', 'Search opportunities and recommendations', 'Automated, reviewable content generation', 'Content planning and improvement workflow', 'Priority support'], true],
-                        ['Complete', 'For businesses that want their website and local presence working together.', '399', 'Everything in Growth', ['Google Business Profile management', 'Profile health checks and recommended changes', 'Generated Google post drafts', 'Review replies in approval mode', 'Advanced automations and dedicated support'], false],
-                    ] as [$name, $description, $price, $capacity, $features, $recommended])
+                    @foreach (config('memberships.plans') as $tier => $plan)
+                        @php($recommended = $tier === 'growth')
                         <div class="flex flex-col justify-between gap-10 px-0 py-10 @3xl:px-8 @3xl:first:pl-0 @3xl:last:pr-0">
                             <div>
-                                <div class="flex items-baseline justify-between gap-4"><h2 class="font-display text-2xl font-semibold tracking-tight">{{ $name }}</h2>@if ($recommended)<p class="font-mono text-sm text-garden">Most popular</p>@endif</div>
-                                <p class="mt-3 text-pretty text-base text-ink/55 sm:text-sm">{{ $description }}</p>
-                                <div class="mt-8 flex items-baseline gap-1"><p class="font-display text-5xl font-semibold tracking-tight tabular-nums">£{{ $price }}</p><p class="text-base text-ink/50 sm:text-sm">/month</p></div>
-                                <p class="mt-3 font-mono text-sm text-ink/65">{{ $capacity }}</p>
+                                <div class="flex items-baseline justify-between gap-4"><h2 class="font-display text-2xl font-semibold tracking-tight">{{ $plan['name'] }}</h2>@if ($recommended)<p class="font-mono text-sm text-garden">Most popular</p>@endif</div>
+                                <p class="mt-3 text-pretty text-base text-ink/55 sm:text-sm">{{ $plan['description'] }}</p>
+                                <div class="mt-8 flex items-baseline gap-1"><p class="font-display text-5xl font-semibold tracking-tight tabular-nums">£{{ $plan['price'] }}</p><p class="text-base text-ink/50 sm:text-sm">/month</p></div>
+                                <p class="mt-3 font-mono text-sm text-ink/65">{{ $plan['summary'] }}</p>
                                 <ul class="mt-8 grid gap-3" role="list">
-                                    @foreach ($features as $feature)<li class="text-base text-ink/70 sm:text-sm">— {{ $feature }}</li>@endforeach
+                                    @foreach ($plan['features'] as $feature)<li class="text-base text-ink/70 sm:text-sm">— {{ $feature }}</li>@endforeach
                                 </ul>
                             </div>
-                            <a href="{{ route('marketing.contact', ['plan' => strtolower($name)]) }}" @class(['rounded-md px-3 py-3 text-center text-base font-medium sm:text-sm', 'bg-garden text-white ring-1 ring-garden hover:bg-moss focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden' => $recommended, 'text-ink ring-1 ring-ink/20 hover:bg-white/40' => ! $recommended])>Choose {{ $name }}</a>
+                            <a href="{{ route('marketing.contact', ['plan' => $tier]) }}" @class(['rounded-md px-3 py-3 text-center text-base font-medium sm:text-sm', 'bg-garden text-white ring-1 ring-garden hover:bg-moss focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden' => $recommended, 'text-ink ring-1 ring-ink/20 hover:bg-white/40' => ! $recommended])>Choose {{ $plan['name'] }}</a>
                         </div>
                     @endforeach
                 </div>
