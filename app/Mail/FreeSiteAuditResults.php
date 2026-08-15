@@ -3,8 +3,6 @@
 namespace App\Mail;
 
 use App\Models\Prospect;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
@@ -12,17 +10,14 @@ use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\URL;
 
-class FreeSiteAuditResults extends Mailable implements ShouldQueue
+class FreeSiteAuditResults extends Mailable
 {
-    use Queueable, SerializesModels;
+    use SerializesModels;
 
     /**
      * Create a new message instance.
      */
-    public function __construct(public Prospect $prospect)
-    {
-        $this->afterCommit();
-    }
+    public function __construct(public Prospect $prospect) {}
 
     /**
      * Get the message envelope.

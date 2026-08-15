@@ -36,24 +36,33 @@ class GenerateFreeSiteAudit implements ShouldBeUnique, ShouldQueue
      */
     public function handle(ProspectWebsiteAnalyzer $analyzer): void
     {
-        $this->prospect->update(['analysis_status' => 'running', 'analysis_error' => null]);
-        $analysis = $analyzer->analyze((string) $this->prospect->website_url);
+        if ($this->prospect->analysis_status !== 'completed') {
+            $this->prospect->update(['analysis_status' => 'running', 'analysis_error' => null]);
+            $analysis = $analyzer->analyze((string) $this->prospect->website_url);
 
-        $this->prospect->update([
-            'analysis_status' => 'completed',
-            'opportunity_score' => $analysis['score'],
-            'findings' => $analysis['findings'],
-            'contact_details' => $analysis['contacts'],
-            'analysed_at' => now(),
-            'status' => 'researched',
-        ]);
-        $this->prospect->recordActivity('free_audit_completed', 'Free site audit completed and the results email was queued.');
+            $this->prospect->update([
+                'analysis_status' => 'completed',
+                'opportunity_score' => $analysis['score'],
+                'findings' => $analysis['findings'],
+                'contact_details' => $analysis['contacts'],
+                'analysed_at' => now(),
+                'status' => 'researched',
+            ]);
+            $this->prospect->recordActivity('free_audit_completed', 'Free site audit completed.');
+        }
 
         Mail::to($this->prospect->email)->send(new FreeSiteAuditResults($this->prospect));
+        $this->prospect->recordActivity('free_audit_email_sent', 'Free site audit results email sent to the requester.');
     }
 
     public function failed(?Throwable $exception): void
     {
+        if ($this->prospect->fresh()?->analysis_status === 'completed') {
+            $this->prospect->recordActivity('free_audit_email_failed', 'Free site audit results email could not be sent.');
+
+            return;
+        }
+
         $this->prospect->update([
             'analysis_status' => 'failed',
             'analysis_error' => $exception?->getMessage() ?: 'The free site audit could not be completed.',

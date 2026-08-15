@@ -52,7 +52,7 @@ it('rejects invalid or automated free audit requests', function (): void {
     Queue::assertNothingPushed();
 });
 
-it('stores audit results and queues the customer results email', function (): void {
+it('stores audit results and sends the customer results email', function (): void {
     Mail::fake();
     $prospect = Prospect::factory()->create([
         'email' => 'alex@example.com',
@@ -71,9 +71,25 @@ it('stores audit results and queues the customer results email', function (): vo
     expect($prospect->analysis_status)->toBe('completed')
         ->and($prospect->status)->toBe('researched')
         ->and($prospect->opportunity_score)->toBe(35)
-        ->and($prospect->activities()->where('type', 'free_audit_completed')->exists())->toBeTrue();
+        ->and($prospect->activities()->where('type', 'free_audit_completed')->exists())->toBeTrue()
+        ->and($prospect->activities()->where('type', 'free_audit_email_sent')->exists())->toBeTrue();
 
-    Mail::assertQueued(FreeSiteAuditResults::class, fn (FreeSiteAuditResults $mail): bool => $mail->hasTo('alex@example.com'));
+    Mail::assertSent(FreeSiteAuditResults::class, fn (FreeSiteAuditResults $mail): bool => $mail->hasTo('alex@example.com'));
+});
+
+it('retries a results email without repeating a completed audit', function (): void {
+    Mail::fake();
+    $prospect = Prospect::factory()->create([
+        'email' => 'alex@example.com',
+        'analysis_status' => 'completed',
+        'analysed_at' => now(),
+    ]);
+    $analyzer = Mockery::mock(ProspectWebsiteAnalyzer::class);
+    $analyzer->shouldNotReceive('analyze');
+
+    (new GenerateFreeSiteAudit($prospect))->handle($analyzer);
+
+    Mail::assertSent(FreeSiteAuditResults::class, fn (FreeSiteAuditResults $mail): bool => $mail->hasTo('alex@example.com'));
 });
 
 it('includes report and contact calls to action in the results email and landing page', function (): void {
