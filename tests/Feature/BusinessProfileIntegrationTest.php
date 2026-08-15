@@ -27,6 +27,52 @@ test('business profile oauth requests offline management access', function () {
     expect($query)->toMatchArray(['scope' => 'https://www.googleapis.com/auth/business.manage', 'access_type' => 'offline', 'prompt' => 'consent', 'state' => 'secure-state']);
 });
 
+test('review sync redirects to location selection instead of throwing when no location is selected', function () {
+    $owner = User::factory()->create();
+    $website = Website::factory()->for($owner, 'owner')->create();
+    BusinessProfileConnection::factory()->for($website)->create([
+        'account_name' => null,
+        'location_name' => null,
+        'location_title' => null,
+    ]);
+
+    $this->actingAs($owner)
+        ->post(route('admin.business-profile.reviews.sync', $website))
+        ->assertRedirect(route('admin.business-profile.locations', $website))
+        ->assertSessionHas('error', 'Select a Google Business Profile location before syncing reviews.');
+});
+
+test('business profile workspace offers selection and reconnection for incomplete connections', function () {
+    $owner = User::factory()->create();
+    $website = Website::factory()->for($owner, 'owner')->create();
+    BusinessProfileConnection::factory()->for($website)->create([
+        'account_name' => null,
+        'location_name' => null,
+        'location_title' => null,
+    ]);
+
+    $this->actingAs($owner)
+        ->get(route('admin.websites.show', [$website, 'tab' => 'business-profile']))
+        ->assertSuccessful()
+        ->assertSee('Select a location')
+        ->assertSee('Reconnect Google')
+        ->assertDontSee('Sync reviews');
+});
+
+test('review sync turns expired Google authorization errors into a reconnectable message', function () {
+    $owner = User::factory()->create();
+    $website = Website::factory()->for($owner, 'owner')->create();
+    BusinessProfileConnection::factory()->for($website)->create();
+    $client = $this->mock(BusinessProfileClient::class);
+    $client->shouldReceive('syncReviews')->once()->andThrow(new RuntimeException('Google Business Profile authorization expired. Reconnect it to continue.'));
+
+    $this->actingAs($owner)
+        ->from(route('admin.websites.show', [$website, 'tab' => 'business-profile']))
+        ->post(route('admin.business-profile.reviews.sync', $website))
+        ->assertRedirect(route('admin.websites.show', [$website, 'tab' => 'business-profile']))
+        ->assertSessionHas('error', 'Google Business Profile authorization expired. Reconnect it to continue.');
+});
+
 test('weekly dispatcher queues one audit and one post draft at most', function () {
     Queue::fake();
     $now = now('Europe/London');

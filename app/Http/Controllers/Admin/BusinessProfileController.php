@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\View\View;
+use RuntimeException;
 use Throwable;
 
 class BusinessProfileController extends Controller
@@ -95,7 +96,18 @@ class BusinessProfileController extends Controller
     {
         $this->authorizeWebsite($request, $website);
         $connection = $website->businessProfileConnection()->firstOrFail();
-        $this->client->syncReviews($connection);
+
+        if (blank($connection->location_name)) {
+            return Redirect::route('admin.business-profile.locations', $website)
+                ->with('error', 'Select a Google Business Profile location before syncing reviews.');
+        }
+
+        try {
+            $this->client->syncReviews($connection);
+        } catch (RuntimeException $exception) {
+            return back()->with('error', $exception->getMessage());
+        }
+
         $connection->reviews()->where('reply_status', BusinessProfileReview::STATUS_UNANSWERED)->each(function (BusinessProfileReview $review): void {
             $review->update(['reply_status' => BusinessProfileReview::STATUS_GENERATING]);
             GenerateBusinessProfileReviewReply::dispatch($review);
