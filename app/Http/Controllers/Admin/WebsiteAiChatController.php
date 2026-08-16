@@ -8,10 +8,12 @@ use App\Http\Requests\StoreWebsiteAiQuestionRequest;
 use App\Models\Website;
 use App\Models\WebsiteAiQuestion;
 use App\Services\WebsiteAiContext;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
@@ -32,6 +34,7 @@ class WebsiteAiChatController extends Controller
                 ->whereBelongsTo($website)
                 ->whereBelongsTo($user)
                 ->where('created_at', '>=', $weekStartsAt)
+                ->whereNull('credited_at')
                 ->count();
 
             if ($used >= $limit) {
@@ -80,6 +83,8 @@ class WebsiteAiChatController extends Controller
             $question->update([
                 'status' => 'failed',
                 'error' => "The assistant could not answer this question. Reference: WAI-{$question->id}.",
+                'failure_type' => class_basename($exception),
+                'failure_detail' => $this->safeFailureDetail($exception),
             ]);
 
             return Redirect::route('admin.websites.show', [$website, 'assistant' => 'open'])
@@ -87,5 +92,20 @@ class WebsiteAiChatController extends Controller
         }
 
         return Redirect::route('admin.websites.show', [$website, 'assistant' => 'open']);
+    }
+
+    protected function safeFailureDetail(Throwable $exception): string
+    {
+        $detail = $exception instanceof RequestException
+            ? 'HTTP '.$exception->response->status().': '.(string) ($exception->response->json('error.message') ?: 'The AI provider rejected the request.')
+            : $exception->getMessage();
+
+        $redacted = preg_replace([
+            '/\bBearer\s+\S+/i',
+            '/\bsk-[A-Za-z0-9_-]{10,}/',
+            '/([?&](?:token|key|secret)=)[^&\s]+/i',
+        ], ['Bearer [redacted]', '[redacted]', '$1[redacted]'], $detail) ?? 'No provider detail was available.';
+
+        return Str::limit($redacted, 2000);
     }
 }

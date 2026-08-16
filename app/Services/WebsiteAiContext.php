@@ -6,7 +6,6 @@ use App\Models\SearchConsoleMetric;
 use App\Models\SeoKeyword;
 use App\Models\Website;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
 
 class WebsiteAiContext
 {
@@ -82,7 +81,7 @@ class WebsiteAiContext
 
         $queryMetrics = $searchConsoleMetrics->whereNotNull('query');
 
-        $context = (string) json_encode([
+        $contextData = [
             'website' => ['id' => $website->id, 'name' => $website->name, 'domains' => $website->domains()->pluck('domain')->all()],
             'data_coverage' => [
                 'search_console_first_month_in_context' => $searchConsoleMetrics->min('month')?->toDateString(),
@@ -98,9 +97,40 @@ class WebsiteAiContext
             'seo' => $seo,
             'health_reports' => $healthReports,
             'search_opportunities' => $searchOpportunities,
-        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+        ];
+        $context = $this->encode($contextData);
 
-        return Str::limit($context, 75000, PHP_EOL.'[Lower-priority context truncated. Use data_coverage before making comparisons.]');
+        if (strlen($context) > 60000) {
+            $contextData['health_reports'] = $healthReports->map(fn (array $report): array => collect($report)->except(['notable_checks', 'metrics'])->all());
+            $contextData['search_opportunities'] = array_slice($searchOpportunities, 0, 5);
+
+            if (is_array($contextData['seo'])) {
+                $contextData['seo']['top_keywords'] = array_slice($contextData['seo']['top_keywords'], 0, 10);
+                $contextData['seo']['opportunities'] = array_slice($contextData['seo']['opportunities'], 0, 5);
+            }
+
+            $context = $this->encode($contextData);
+        }
+
+        if (strlen($context) > 60000) {
+            $contextData['health_reports'] = [];
+            $contextData['search_opportunities'] = [];
+
+            if (is_array($contextData['seo'])) {
+                $contextData['seo']['top_keywords'] = [];
+                $contextData['seo']['opportunities'] = [];
+            }
+
+            $context = $this->encode($contextData);
+        }
+
+        return $context;
+    }
+
+    /** @param array<string, mixed> $context */
+    protected function encode(array $context): string
+    {
+        return (string) json_encode($context, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
     }
 
     /**

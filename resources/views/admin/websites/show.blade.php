@@ -667,6 +667,21 @@
                             @else
                                 <p class="text-sm text-slate-500">Preparing an answer…</p>
                             @endif
+                            @if (in_array($websiteAiQuestion->status, ['completed', 'failed'], true))
+                                @if ($websiteAiQuestion->reported_at)
+                                    <p class="px-1 text-right text-[11px] font-medium text-amber-700">Reported for investigation</p>
+                                @else
+                                    <details class="group/report px-1 text-right">
+                                        <summary class="cursor-pointer list-none text-[11px] text-slate-500 hover:text-slate-800 [&::-webkit-details-marker]:hidden">This answer wasn’t helpful?</summary>
+                                        <form method="POST" action="{{ route('admin.websites.assistant.questions.report', [$website, $websiteAiQuestion]) }}" class="mt-2 space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3 text-left">
+                                            @csrf
+                                            <label for="website-assistant-report-{{ $websiteAiQuestion->id }}" class="block text-xs font-medium text-slate-700">What should it have understood? <span class="font-normal text-slate-500">Optional</span></label>
+                                            <textarea id="website-assistant-report-{{ $websiteAiQuestion->id }}" name="reason" rows="2" maxlength="1000" placeholder="Tell us what you expected…" class="w-full resize-none rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs leading-5 text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/20"></textarea>
+                                            <div class="flex items-center justify-between gap-3"><p class="text-[11px] text-slate-500">Our team will receive the question and response.</p><button type="submit" class="shrink-0 rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-700">Report answer</button></div>
+                                        </form>
+                                    </details>
+                                @endif
+                            @endif
                         </article>
                     @empty
                         <div class="space-y-3 p-5 text-center">

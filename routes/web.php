@@ -39,6 +39,8 @@ use App\Http\Controllers\Admin\SeoOpportunityController;
 use App\Http\Controllers\Admin\SeoSnapshotSettingsController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\WebsiteAiChatController;
+use App\Http\Controllers\Admin\WebsiteAiQuestionCreditController;
+use App\Http\Controllers\Admin\WebsiteAiQuestionReportController;
 use App\Http\Controllers\Admin\WebsiteAutoresponderController;
 use App\Http\Controllers\Admin\WebsiteBuilderController;
 use App\Http\Controllers\Admin\WebsiteController;
@@ -134,6 +136,7 @@ Route::middleware(['web', 'auth'])->prefix('admin')->name('admin.')->group(funct
     Route::post('websites/{website}/pixel/rotate-key', PixelKeyController::class)->name('websites.pixel.rotate-key');
     Route::post('websites/{website}/members', [WebsiteMemberController::class, 'store'])->middleware('membership:growth')->name('websites.members.store');
     Route::post('websites/{website}/assistant/questions', WebsiteAiChatController::class)->middleware(['membership:complete', 'throttle:10,1'])->name('websites.assistant.questions.store');
+    Route::post('websites/{website}/assistant/questions/{websiteAiQuestion}/report', [WebsiteAiQuestionReportController::class, 'store'])->middleware('throttle:10,1')->name('websites.assistant.questions.report');
     Route::put('websites/{website}/members/{member}', [WebsiteMemberController::class, 'update'])->name('websites.members.update');
     Route::delete('websites/{website}/members/{member}', [WebsiteMemberController::class, 'destroy'])->name('websites.members.destroy');
     Route::post('websites/{website}/health-reports', [WebsiteHealthReportController::class, 'store'])->name('website-health-reports.store');
@@ -194,6 +197,8 @@ Route::middleware(['web', 'auth'])->prefix('admin')->name('admin.')->group(funct
     Route::patch('form-submissions/{form_submission}/spam', [AdminFormSubmissionController::class, 'markSpam'])->name('form-submissions.spam');
     Route::resource('form-submissions', AdminFormSubmissionController::class);
     Route::middleware(EnsureAdmin::class)->group(function (): void {
+        Route::get('assistant/reports/{websiteAiQuestion}', [WebsiteAiQuestionReportController::class, 'show'])->name('website-ai-question-reports.show');
+        Route::post('assistant/reports/{websiteAiQuestion}/credit', WebsiteAiQuestionCreditController::class)->name('website-ai-question-reports.credit');
         Route::post('websites/{website}/prospect', WebsiteProspectController::class)->name('websites.prospect.store');
         Route::get('prospect-discoveries', [ProspectDiscoveryController::class, 'index'])->name('prospect-discoveries.index');
         Route::post('prospect-discoveries', [ProspectDiscoveryController::class, 'store'])->name('prospect-discoveries.store');

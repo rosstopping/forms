@@ -217,6 +217,7 @@ class WebsiteController extends Controller
                 ->whereBelongsTo($website)
                 ->whereBelongsTo($user)
                 ->where('created_at', '>=', now()->startOfWeek())
+                ->whereNull('credited_at')
                 ->count();
         }
 

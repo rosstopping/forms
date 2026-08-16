@@ -1,6 +1,7 @@
 <?php
 
 use App\Ai\Agents\WebsiteDataAssistant;
+use App\Mail\WebsiteAiQuestionReported;
 use App\Models\SearchConsoleMetric;
 use App\Models\SeoKeyword;
 use App\Models\SeoSnapshot;
@@ -11,6 +12,7 @@ use App\Models\WebsiteHealthReport;
 use App\Services\WebsiteAiContext;
 use App\Support\MembershipPlan;
 use Illuminate\Support\Facades\Exceptions;
+use Illuminate\Support\Facades\Mail;
 
 function completeWebsiteWorkspace(): array
 {
@@ -142,8 +144,77 @@ it('records a traceable reference and reports provider failures', function (): v
 
     $question = WebsiteAiQuestion::query()->sole();
     expect($question->status)->toBe('failed')
-        ->and($question->error)->toBe("The assistant could not answer this question. Reference: WAI-{$question->id}.");
+        ->and($question->error)->toBe("The assistant could not answer this question. Reference: WAI-{$question->id}.")
+        ->and($question->failure_type)->toBe('RuntimeException')
+        ->and($question->failure_detail)->toBe('Provider unavailable');
     Exceptions::assertReported(fn (RuntimeException $exception): bool => $exception->getMessage() === 'Provider unavailable');
+});
+
+it('lets a user report an answer and emails every admin once', function (): void {
+    Mail::fake();
+    [$owner, $website] = completeWebsiteWorkspace();
+    $firstAdmin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $secondAdmin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $question = WebsiteAiQuestion::factory()->for($website)->for($owner, 'user')->create();
+
+    $this->actingAs($owner)
+        ->post(route('admin.websites.assistant.questions.report', [$website, $question]), [
+            'reason' => 'The stored query history should answer this.',
+        ])
+        ->assertRedirect(route('admin.websites.show', [$website, 'assistant' => 'open']))
+        ->assertSessionHas('status', 'Thanks — this answer has been reported for investigation.');
+
+    expect($question->fresh()->reported_at)->not->toBeNull()
+        ->and($question->fresh()->report_reason)->toBe('The stored query history should answer this.');
+    Mail::assertQueued(WebsiteAiQuestionReported::class, 2);
+    Mail::assertQueued(WebsiteAiQuestionReported::class, fn (WebsiteAiQuestionReported $mail): bool => $mail->hasTo($firstAdmin->email));
+    Mail::assertQueued(WebsiteAiQuestionReported::class, fn (WebsiteAiQuestionReported $mail): bool => $mail->hasTo($secondAdmin->email));
+
+    $this->actingAs($owner)
+        ->post(route('admin.websites.assistant.questions.report', [$website, $question]), ['reason' => 'Duplicate'])
+        ->assertSessionHas('status', 'This answer has already been reported.');
+    Mail::assertQueued(WebsiteAiQuestionReported::class, 2);
+});
+
+it('does not let users report another users answer', function (): void {
+    [$owner, $website] = completeWebsiteWorkspace();
+    $otherUser = User::factory()->create();
+    $question = WebsiteAiQuestion::factory()->for($website)->for($otherUser, 'user')->create();
+
+    $this->actingAs($owner)
+        ->post(route('admin.websites.assistant.questions.report', [$website, $question]))
+        ->assertForbidden();
+
+    expect($question->fresh()->reported_at)->toBeNull();
+});
+
+it('lets an admin return a reported request to the weekly allowance only once', function (): void {
+    [$owner, $website] = completeWebsiteWorkspace();
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    config(['memberships.website_ai_questions_per_week' => 1]);
+    $question = WebsiteAiQuestion::factory()->for($website)->for($owner, 'user')->create([
+        'reported_at' => now(),
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.website-ai-question-reports.show', $question))
+        ->assertSuccessful()
+        ->assertSee('Return to allowance');
+    $this->post(route('admin.website-ai-question-reports.credit', $question))
+        ->assertRedirect(route('admin.website-ai-question-reports.show', $question));
+
+    expect($question->fresh()->credited_at)->not->toBeNull()
+        ->and($question->fresh()->credited_by_user_id)->toBe($admin->id);
+
+    $creditedAt = $question->fresh()->credited_at;
+    $this->post(route('admin.website-ai-question-reports.credit', $question))->assertRedirect();
+    expect($question->fresh()->credited_at->equalTo($creditedAt))->toBeTrue();
+
+    WebsiteDataAssistant::fake([['in_scope' => true, 'answer' => 'Credited question replaced.']]);
+    $this->actingAs($owner)
+        ->post(route('admin.websites.assistant.questions.store', $website), ['question' => 'Try again?'])
+        ->assertRedirect(route('admin.websites.show', [$website, 'assistant' => 'open']));
+    expect(WebsiteAiQuestion::query()->whereBelongsTo($owner)->count())->toBe(2);
 });
 
 it('shows a locked assistant preview to lower membership tiers', function (): void {

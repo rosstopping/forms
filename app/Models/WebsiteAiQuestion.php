@@ -12,9 +12,20 @@ class WebsiteAiQuestion extends Model
     /** @use HasFactory<WebsiteAiQuestionFactory> */
     use HasFactory;
 
-    protected $fillable = ['website_id', 'user_id', 'question', 'answer', 'status', 'error'];
+    protected $fillable = [
+        'website_id', 'user_id', 'question', 'answer', 'status', 'error', 'failure_type', 'failure_detail', 'report_reason', 'reported_at',
+        'credited_at', 'credited_by_user_id',
+    ];
 
     protected $attributes = ['status' => 'processing'];
+
+    protected function casts(): array
+    {
+        return [
+            'reported_at' => 'datetime',
+            'credited_at' => 'datetime',
+        ];
+    }
 
     public function website(): BelongsTo
     {
@@ -24,5 +35,10 @@ class WebsiteAiQuestion extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function creditedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'credited_by_user_id');
     }
 }
