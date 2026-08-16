@@ -2,28 +2,23 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Ai\Agents\WebsiteDataAssistant;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreWebsiteAiQuestionRequest;
+use App\Jobs\ProcessWebsiteAiQuestion;
 use App\Models\Website;
 use App\Models\WebsiteAiQuestion;
-use App\Services\WebsiteAiContext;
-use Illuminate\Http\Client\RequestException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use Laravel\Ai\Exceptions\RateLimitedException;
-use Throwable;
 
 class WebsiteAiChatController extends Controller
 {
     /**
      * Handle the incoming request.
      */
-    public function __invoke(StoreWebsiteAiQuestionRequest $request, Website $website, WebsiteAiContext $context): RedirectResponse
+    public function __invoke(StoreWebsiteAiQuestionRequest $request, Website $website): RedirectResponse|JsonResponse
     {
         $user = $request->user();
         $limit = (int) config('memberships.website_ai_questions_per_week', 25);
@@ -51,82 +46,16 @@ class WebsiteAiChatController extends Controller
             ]);
         });
 
-        try {
-            $history = WebsiteAiQuestion::query()
-                ->whereBelongsTo($website)
-                ->whereBelongsTo($user)
-                ->whereKeyNot($question->id)
-                ->where('status', 'completed')
-                ->latest()
-                ->limit(5)
-                ->get(['question', 'answer'])
-                ->reverse()
-                ->values()
-                ->toArray();
-            $prompt = (string) json_encode([
-                'previous_conversation' => $history,
-                'current_question' => $question->question,
-            ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
-            $response = (new WebsiteDataAssistant($website->name, $context->for($website, $question->question)))
-                ->prompt($prompt, timeout: 60);
-            $question->update([
-                'answer' => $response['answer'],
-                'status' => 'completed',
-            ]);
-        } catch (RateLimitedException $exception) {
-            $this->reportFailure($exception, $question, $website, $user->id);
-            $question->update([
-                'status' => 'failed',
-                'error' => "The AI service is temporarily busy. This request has been returned to your allowance. Reference: WAI-{$question->id}.",
-                'failure_type' => class_basename($exception),
-                'failure_detail' => $this->safeFailureDetail($exception),
-                'credited_at' => now(),
-            ]);
+        ProcessWebsiteAiQuestion::dispatch($question->id)->afterCommit();
 
-            return Redirect::route('admin.websites.show', [$website, 'assistant' => 'open'])
-                ->with('error', 'The AI service is temporarily busy. Your request was not counted, so you can try again shortly.');
-        } catch (Throwable $exception) {
-            $this->reportFailure($exception, $question, $website, $user->id);
-            $question->update([
-                'status' => 'failed',
-                'error' => "The assistant could not answer this question. Reference: WAI-{$question->id}.",
-                'failure_type' => class_basename($exception),
-                'failure_detail' => $this->safeFailureDetail($exception),
-            ]);
-
-            return Redirect::route('admin.websites.show', [$website, 'assistant' => 'open'])
-                ->with('error', 'The website assistant could not answer right now. This request still counts towards the weekly safety limit.');
+        if ($request->expectsJson()) {
+            return response()->json([
+                'question' => ['id' => $question->id, 'question' => $question->question, 'status' => $question->status],
+                'status_url' => route('admin.websites.assistant.questions.show', [$website, $question]),
+            ], 202);
         }
 
-        return Redirect::route('admin.websites.show', [$website, 'assistant' => 'open']);
-    }
-
-    protected function reportFailure(Throwable $exception, WebsiteAiQuestion $question, Website $website, int $userId): void
-    {
-        Log::error('Website data assistant request failed.', [
-            'website_ai_question_id' => $question->id,
-            'website_id' => $website->id,
-            'user_id' => $userId,
-            'exception' => $exception,
-        ]);
-        report($exception);
-    }
-
-    protected function safeFailureDetail(Throwable $exception): string
-    {
-        $requestException = $exception instanceof RequestException
-            ? $exception
-            : ($exception->getPrevious() instanceof RequestException ? $exception->getPrevious() : null);
-        $detail = $requestException
-            ? 'HTTP '.$requestException->response->status().': '.(string) ($requestException->response->json('error.message') ?: 'The AI provider rejected the request.')
-            : $exception->getMessage();
-
-        $redacted = preg_replace([
-            '/\bBearer\s+\S+/i',
-            '/\bsk-[A-Za-z0-9_-]{10,}/',
-            '/([?&](?:token|key|secret)=)[^&\s]+/i',
-        ], ['Bearer [redacted]', '[redacted]', '$1[redacted]'], $detail) ?? 'No provider detail was available.';
-
-        return Str::limit($redacted, 2000);
+        return Redirect::route('admin.websites.show', [$website, 'assistant' => 'open'])
+            ->with('status', 'Your question is being answered in the background.');
     }
 }

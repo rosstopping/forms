@@ -106,6 +106,96 @@ document.addEventListener('keydown', (event) => {
     }
 });
 
+const websiteAiForm = document.querySelector('[data-website-ai-form]');
+const websiteAiMessages = document.querySelector('[data-website-ai-messages]');
+
+if (websiteAiForm && websiteAiMessages) {
+    const errorMessage = websiteAiForm.querySelector('[data-website-ai-error]');
+    const questionInput = websiteAiForm.querySelector('textarea[name="question"]');
+    const submitButton = websiteAiForm.querySelector('button[type="submit"]');
+    const responseClasses = 'mr-8 whitespace-pre-line rounded-2xl rounded-bl-md bg-teal-50 px-3 py-2 text-sm leading-6 text-slate-700';
+    const failureClasses = 'mr-8 rounded-2xl rounded-bl-md bg-red-50 px-3 py-2 text-sm text-red-700';
+
+    const pollQuestion = async (article) => {
+        const responseElement = article.querySelector('[data-website-ai-response]');
+
+        for (let attempt = 0; attempt < 150 && article.dataset.status === 'processing'; attempt += 1) {
+            await new Promise((resolve) => window.setTimeout(resolve, attempt === 0 ? 500 : 2000));
+
+            try {
+                const response = await fetch(article.dataset.statusUrl, {
+                    headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                });
+
+                if (!response.ok) {
+                    throw new Error('Status request failed');
+                }
+
+                const result = await response.json();
+                article.dataset.status = result.status;
+
+                if (result.status === 'completed') {
+                    responseElement.className = responseClasses;
+                    responseElement.textContent = result.answer;
+                } else if (result.status === 'failed') {
+                    responseElement.className = failureClasses;
+                    responseElement.textContent = result.error;
+                }
+            } catch {
+                if (attempt === 149) {
+                    responseElement.textContent = 'The answer is still processing. Reopen this chat shortly to check again.';
+                }
+            }
+        }
+    };
+
+    document.querySelectorAll('[data-website-ai-question][data-status="processing"]').forEach(pollQuestion);
+
+    websiteAiForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        errorMessage.classList.add('hidden');
+        submitButton.disabled = true;
+
+        try {
+            const response = await fetch(websiteAiForm.action, {
+                method: 'POST',
+                body: new FormData(websiteAiForm),
+                headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            });
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.message || result.errors?.question?.[0] || 'The question could not be submitted.');
+            }
+
+            websiteAiMessages.querySelector('[data-website-ai-empty]')?.remove();
+            const article = document.createElement('article');
+            article.dataset.websiteAiQuestion = '';
+            article.dataset.statusUrl = result.status_url;
+            article.dataset.status = 'processing';
+            article.className = 'space-y-2 px-4 py-3';
+            const question = document.createElement('div');
+            question.className = 'ml-8 rounded-2xl rounded-br-md bg-slate-100 px-3 py-2 text-sm text-slate-800';
+            question.textContent = result.question.question;
+            const pending = document.createElement('p');
+            pending.dataset.websiteAiResponse = '';
+            pending.className = 'text-sm text-slate-500';
+            pending.textContent = 'Preparing an answer…';
+            article.append(question, pending);
+            websiteAiMessages.append(article);
+            websiteAiMessages.scrollTop = websiteAiMessages.scrollHeight;
+            websiteAiForm.reset();
+            pollQuestion(article);
+        } catch (error) {
+            errorMessage.textContent = error.message;
+            errorMessage.classList.remove('hidden');
+        } finally {
+            submitButton.disabled = false;
+            questionInput.focus();
+        }
+    });
+}
+
 document.querySelectorAll('[data-searchable-select]').forEach((combobox) => {
     const input = combobox.querySelector('[data-searchable-select-input]');
     const nativeSelect = combobox.querySelector('[data-searchable-select-native]');

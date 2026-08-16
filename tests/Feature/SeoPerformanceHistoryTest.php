@@ -1,6 +1,7 @@
 <?php
 
 use App\Jobs\BackfillSeoHistory;
+use App\Jobs\SyncSearchConsoleHistory;
 use App\Models\SearchConsoleConnection;
 use App\Models\SearchConsoleMetric;
 use App\Models\SeoSnapshot;
@@ -215,6 +216,28 @@ test('weekly history sync stores a broad monthly query sample in bounded request
         ->toBe(['northern belle'])
         ->and($connection->metrics()->whereNotNull('query')->count())->toBe(2)
         ->and($connection->metrics()->where('month', '2025-05-01')->value('position'))->toBe(18.0);
+});
+
+test('search console history job syncs its search console connection', function () {
+    $connection = SearchConsoleConnection::factory()->create(['property_url' => 'sc-domain:example.com']);
+    $history = $this->mock(SearchConsoleHistoryStore::class);
+    $history->shouldReceive('syncTracked')->once()->with($connection);
+
+    (new SyncSearchConsoleHistory($connection))->handle($history);
+});
+
+test('search console history command queues connected properties', function () {
+    Queue::fake();
+    $connection = SearchConsoleConnection::factory()->create(['property_url' => 'sc-domain:example.com']);
+
+    $this->artisan('search-console:sync-history')
+        ->expectsOutput('Queued 1 Search Console history sync(s).')
+        ->assertSuccessful();
+
+    Queue::assertPushed(
+        SyncSearchConsoleHistory::class,
+        fn (SyncSearchConsoleHistory $job): bool => $job->searchConsoleConnection->is($connection),
+    );
 });
 
 test('search console history synchronisation is scheduled weekly', function () {

@@ -18,10 +18,10 @@ class SyncSearchConsoleHistory implements ShouldQueue
     /** @var array<int, int> */
     public array $backoff = [60, 300];
 
-    public function __construct(public SearchConsoleConnection $connection) {}
+    public function __construct(public SearchConsoleConnection $searchConsoleConnection) {}
 
     public function handle(SearchConsoleHistoryStore $history): void
     {
-        $history->syncTracked($this->connection);
+        $history->syncTracked($this->searchConsoleConnection);
     }
 }

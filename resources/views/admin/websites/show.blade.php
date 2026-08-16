@@ -656,16 +656,16 @@
                     <span class="shrink-0 rounded-full bg-teal-50 px-2.5 py-1 text-xs font-semibold tabular-nums text-teal-800">{{ max(0, $websiteAiWeeklyLimit - $websiteAiQuestionsUsed) }}/{{ $websiteAiWeeklyLimit }} left</span>
                 </div>
 
-                <div class="min-h-24 flex-1 divide-y divide-slate-100 overflow-y-auto overscroll-contain">
+                <div data-website-ai-messages class="min-h-24 flex-1 divide-y divide-slate-100 overflow-y-auto overscroll-contain">
                     @forelse ($websiteAiQuestions->reverse() as $websiteAiQuestion)
-                        <article class="space-y-2 px-4 py-3">
+                        <article data-website-ai-question data-status-url="{{ route('admin.websites.assistant.questions.show', [$website, $websiteAiQuestion]) }}" data-status="{{ $websiteAiQuestion->status }}" class="space-y-2 px-4 py-3">
                             <div class="ml-8 rounded-2xl rounded-br-md bg-slate-100 px-3 py-2 text-sm text-slate-800">{{ $websiteAiQuestion->question }}</div>
                             @if ($websiteAiQuestion->status === 'completed')
-                                <p class="mr-8 whitespace-pre-line rounded-2xl rounded-bl-md bg-teal-50 px-3 py-2 text-sm leading-6 text-slate-700">{{ $websiteAiQuestion->answer }}</p>
+                                <p data-website-ai-response class="mr-8 whitespace-pre-line rounded-2xl rounded-bl-md bg-teal-50 px-3 py-2 text-sm leading-6 text-slate-700">{{ $websiteAiQuestion->answer }}</p>
                             @elseif ($websiteAiQuestion->status === 'failed')
-                                <p class="mr-8 rounded-2xl rounded-bl-md bg-red-50 px-3 py-2 text-sm text-red-700">{{ $websiteAiQuestion->error }}</p>
+                                <p data-website-ai-response class="mr-8 rounded-2xl rounded-bl-md bg-red-50 px-3 py-2 text-sm text-red-700">{{ $websiteAiQuestion->error }}</p>
                             @else
-                                <p class="text-sm text-slate-500">Preparing an answer…</p>
+                                <p data-website-ai-response class="text-sm text-slate-500">Preparing an answer…</p>
                             @endif
                             @if (in_array($websiteAiQuestion->status, ['completed', 'failed'], true))
                                 @if ($websiteAiQuestion->reported_at)
@@ -684,7 +684,7 @@
                             @endif
                         </article>
                     @empty
-                        <div class="space-y-3 p-5 text-center">
+                        <div data-website-ai-empty class="space-y-3 p-5 text-center">
                             <div><p class="text-sm font-medium text-slate-900">What would you like to understand?</p><p class="mt-1 text-xs leading-5 text-slate-500">Ask about this website’s rankings, search performance, opportunities, or health reports.</p></div>
                             <div class="space-y-1.5 text-left text-xs text-slate-600">
                                 <p class="font-semibold text-slate-700">Try asking:</p>
@@ -696,11 +696,12 @@
                     @endforelse
                 </div>
 
-                <form method="POST" action="{{ route('admin.websites.assistant.questions.store', $website) }}" class="space-y-2 border-t border-slate-200 p-3">
+                <form method="POST" action="{{ route('admin.websites.assistant.questions.store', $website) }}" data-website-ai-form class="space-y-2 border-t border-slate-200 p-3">
                     @csrf
                     <label for="website-assistant-question" class="sr-only">Ask a question about {{ $website->name }}</label>
                     <textarea id="website-assistant-question" name="question" rows="2" maxlength="1000" required placeholder="Ask about this website…" class="w-full resize-none rounded-xl border border-slate-300 px-3 py-2 text-sm leading-5 text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/20">{{ old('question') }}</textarea>
                     @error('question')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
+                    <p data-website-ai-error class="hidden text-xs text-red-600" role="alert"></p>
                     <div class="flex items-center justify-between gap-3">
                         <p class="text-[11px] text-slate-500">Resets Monday · Out-of-scope requests count</p>
                         <button type="submit" @disabled($websiteAiQuestionsUsed >= $websiteAiWeeklyLimit) class="rounded-lg bg-teal-600 px-3 py-2 text-xs font-semibold text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:bg-slate-300">Send</button>
