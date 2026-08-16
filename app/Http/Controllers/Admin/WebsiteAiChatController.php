@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Laravel\Ai\Exceptions\RateLimitedException;
 use Throwable;
 
 class WebsiteAiChatController extends Controller
@@ -34,7 +35,7 @@ class WebsiteAiChatController extends Controller
                 ->whereBelongsTo($website)
                 ->whereBelongsTo($user)
                 ->where('created_at', '>=', $weekStartsAt)
-                ->whereNull('credited_at')
+                ->countsTowardsAllowance()
                 ->count();
 
             if ($used >= $limit) {
@@ -66,20 +67,26 @@ class WebsiteAiChatController extends Controller
                 'previous_conversation' => $history,
                 'current_question' => $question->question,
             ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
-            $response = (new WebsiteDataAssistant($website->name, $context->for($website)))
+            $response = (new WebsiteDataAssistant($website->name, $context->for($website, $question->question)))
                 ->prompt($prompt, timeout: 60);
             $question->update([
                 'answer' => $response['answer'],
                 'status' => 'completed',
             ]);
-        } catch (Throwable $exception) {
-            Log::error('Website data assistant request failed.', [
-                'website_ai_question_id' => $question->id,
-                'website_id' => $website->id,
-                'user_id' => $user->id,
-                'exception' => $exception,
+        } catch (RateLimitedException $exception) {
+            $this->reportFailure($exception, $question, $website, $user->id);
+            $question->update([
+                'status' => 'failed',
+                'error' => "The AI service is temporarily busy. This request has been returned to your allowance. Reference: WAI-{$question->id}.",
+                'failure_type' => class_basename($exception),
+                'failure_detail' => $this->safeFailureDetail($exception),
+                'credited_at' => now(),
             ]);
-            report($exception);
+
+            return Redirect::route('admin.websites.show', [$website, 'assistant' => 'open'])
+                ->with('error', 'The AI service is temporarily busy. Your request was not counted, so you can try again shortly.');
+        } catch (Throwable $exception) {
+            $this->reportFailure($exception, $question, $website, $user->id);
             $question->update([
                 'status' => 'failed',
                 'error' => "The assistant could not answer this question. Reference: WAI-{$question->id}.",
@@ -94,10 +101,24 @@ class WebsiteAiChatController extends Controller
         return Redirect::route('admin.websites.show', [$website, 'assistant' => 'open']);
     }
 
+    protected function reportFailure(Throwable $exception, WebsiteAiQuestion $question, Website $website, int $userId): void
+    {
+        Log::error('Website data assistant request failed.', [
+            'website_ai_question_id' => $question->id,
+            'website_id' => $website->id,
+            'user_id' => $userId,
+            'exception' => $exception,
+        ]);
+        report($exception);
+    }
+
     protected function safeFailureDetail(Throwable $exception): string
     {
-        $detail = $exception instanceof RequestException
-            ? 'HTTP '.$exception->response->status().': '.(string) ($exception->response->json('error.message') ?: 'The AI provider rejected the request.')
+        $requestException = $exception instanceof RequestException
+            ? $exception
+            : ($exception->getPrevious() instanceof RequestException ? $exception->getPrevious() : null);
+        $detail = $requestException
+            ? 'HTTP '.$requestException->response->status().': '.(string) ($requestException->response->json('error.message') ?: 'The AI provider rejected the request.')
             : $exception->getMessage();
 
         $redacted = preg_replace([

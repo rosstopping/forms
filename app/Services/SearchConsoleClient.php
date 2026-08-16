@@ -38,6 +38,14 @@ class SearchConsoleClient
             ->all();
     }
 
+    /** @return array<int, array{query: string, clicks: float, impressions: float, ctr: float, position: float}> */
+    public function queryPerformanceForPeriod(SearchConsoleConnection $connection, Carbon $startDate, Carbon $endDate, int $rowLimit = 1000): array
+    {
+        return collect($this->performanceRows($connection, ['query'], $rowLimit, dates: ['start' => $startDate, 'end' => $endDate]))
+            ->map(fn (array $row): array => ['query' => (string) data_get($row, 'keys.0'), ...$this->formatRow($row)])
+            ->all();
+    }
+
     /** @return array<int, array{query: string, page: string, clicks: float, impressions: float, ctr: float, position: float}> */
     public function queryPagePerformance(SearchConsoleConnection $connection, int $rowLimit, int $startRow = 0): array
     {

@@ -9,9 +9,7 @@ use Illuminate\Support\Carbon;
 
 class SearchConsoleHistoryStore
 {
-    protected const DISCOVERED_QUERY_LIMIT = 25;
-
-    protected const EXISTING_QUERY_LIMIT = 25;
+    protected const MONTHLY_QUERY_LIMIT = 1000;
 
     public function __construct(protected SearchConsoleClient $searchConsole) {}
 
@@ -35,24 +33,53 @@ class SearchConsoleHistoryStore
     public function syncTracked(SearchConsoleConnection $connection): void
     {
         $this->syncSite($connection);
+        $this->syncMonthlyQuerySample($connection);
+    }
 
-        $discoveredQueries = collect($this->searchConsole->queryPerformance($connection, self::DISCOVERED_QUERY_LIMIT))
-            ->pluck('query');
-        $existingQueries = $this->currentPropertyMetrics($connection)
-            ->whereNotNull('query')
-            ->select('query')
-            ->selectRaw('MAX(updated_at) as last_updated_at')
-            ->groupBy('query')
-            ->orderByDesc('last_updated_at')
-            ->limit(self::EXISTING_QUERY_LIMIT)
-            ->pluck('query')
-            ->values();
+    protected function syncMonthlyQuerySample(SearchConsoleConnection $connection): void
+    {
+        $month = now()->subMonthsNoOverflow(16)->startOfMonth();
+        $availableThrough = now()->subDays(3)->endOfDay();
 
-        $discoveredQueries
-            ->merge($existingQueries)
-            ->filter(fn (mixed $query): bool => is_string($query) && $query !== '')
-            ->unique()
-            ->each(fn (string $query) => $this->syncQuery($connection, $query));
+        while ($month->lte($availableThrough)) {
+            $periodEnd = $month->copy()->endOfMonth()->min($availableThrough);
+            $rows = $this->searchConsole->queryPerformanceForPeriod($connection, $month, $periodEnd, self::MONTHLY_QUERY_LIMIT);
+            $this->storeQuerySample($connection, $month, $rows);
+            $month = $month->copy()->addMonthNoOverflow()->startOfMonth();
+        }
+    }
+
+    /** @param array<int, array{query: string, clicks: float, impressions: float, ctr: float, position: float}> $metrics */
+    protected function storeQuerySample(SearchConsoleConnection $connection, Carbon $month, array $metrics): void
+    {
+        $now = now();
+        $propertyUrl = (string) $connection->property_url;
+        $propertyHash = hash('sha256', $propertyUrl);
+        $rows = collect($metrics)
+            ->filter(fn (array $metric): bool => filled($metric['query']))
+            ->map(fn (array $metric): array => [
+                'website_id' => $connection->website_id,
+                'search_console_connection_id' => $connection->id,
+                'property_url' => $propertyUrl,
+                'property_hash' => $propertyHash,
+                'month' => $month->toDateString(),
+                'dimension_key' => $this->queryDimensionKey($metric['query']),
+                'query' => $metric['query'],
+                'clicks' => $metric['clicks'],
+                'impressions' => $metric['impressions'],
+                'ctr' => $metric['ctr'],
+                'position' => $metric['position'],
+                'created_at' => $now,
+                'updated_at' => $now,
+            ])->all();
+
+        if ($rows !== []) {
+            SearchConsoleMetric::query()->upsert(
+                $rows,
+                ['website_id', 'property_hash', 'month', 'dimension_key'],
+                ['search_console_connection_id', 'property_url', 'query', 'clicks', 'impressions', 'ctr', 'position', 'updated_at'],
+            );
+        }
     }
 
     /**

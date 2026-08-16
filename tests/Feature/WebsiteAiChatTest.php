@@ -13,6 +13,7 @@ use App\Services\WebsiteAiContext;
 use App\Support\MembershipPlan;
 use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Mail;
+use Laravel\Ai\Exceptions\RateLimitedException;
 
 function completeWebsiteWorkspace(): array
 {
@@ -84,6 +85,45 @@ it('provides explicit first-party and estimated keyword movements with coverage 
         ->toContain('Provider-reported previous position');
 });
 
+it('uses the month named in a ranking question as the comparison baseline', function (): void {
+    [, $website] = completeWebsiteWorkspace();
+    foreach ([
+        ['2025-04-01', 30.0],
+        ['2025-05-01', 20.0],
+        ['2026-08-01', 5.0],
+    ] as [$month, $position]) {
+        SearchConsoleMetric::factory()->for($website)->create([
+            'month' => $month,
+            'query' => 'roof repairs york',
+            'dimension_key' => hash('sha256', 'query:roof repairs york'),
+            'position' => $position,
+        ]);
+    }
+
+    $context = app(WebsiteAiContext::class)->for($website, 'What improved since May 2025?');
+
+    expect($context)->toContain('"comparison_month": "2025-05-01"')
+        ->toContain('"first_position": 20')
+        ->toContain('"latest_position": 5')
+        ->toContain('"position_change": 15');
+});
+
+it('sends a focused context for ranking questions', function (): void {
+    [, $website] = completeWebsiteWorkspace();
+    WebsiteHealthReport::factory()->for($website)->create([
+        'checks' => [['label' => 'Large unrelated health payload', 'status' => 'warning']],
+    ]);
+    SearchConsoleMetric::factory()->for($website)->create([
+        'query' => 'roofer york', 'dimension_key' => hash('sha256', 'roofer york'),
+    ]);
+
+    $context = app(WebsiteAiContext::class)->for($website, 'Which keywords improved their position?');
+
+    expect($context)->toContain('roofer york')
+        ->not->toContain('Large unrelated health payload')
+        ->and(json_validate($context))->toBeTrue();
+});
+
 it('blocks the assistant unless the website owner has an active complete membership', function (): void {
     $owner = User::factory()->create([
         'membership_tier' => MembershipPlan::GROWTH,
@@ -148,6 +188,46 @@ it('records a traceable reference and reports provider failures', function (): v
         ->and($question->failure_type)->toBe('RuntimeException')
         ->and($question->failure_detail)->toBe('Provider unavailable');
     Exceptions::assertReported(fn (RuntimeException $exception): bool => $exception->getMessage() === 'Provider unavailable');
+});
+
+it('automatically returns provider-rate-limited questions to the weekly allowance', function (): void {
+    [$owner, $website] = completeWebsiteWorkspace();
+    config(['memberships.website_ai_questions_per_week' => 1]);
+    Exceptions::fake();
+    WebsiteDataAssistant::fake(fn (): never => throw RateLimitedException::forProvider('openai'));
+
+    $this->actingAs($owner)
+        ->post(route('admin.websites.assistant.questions.store', $website), ['question' => 'Which keywords improved?'])
+        ->assertRedirect(route('admin.websites.show', [$website, 'assistant' => 'open']))
+        ->assertSessionHas('error', 'The AI service is temporarily busy. Your request was not counted, so you can try again shortly.');
+
+    $question = WebsiteAiQuestion::query()->sole();
+    expect($question->status)->toBe('failed')
+        ->and($question->credited_at)->not->toBeNull()
+        ->and($question->error)->toContain('returned to your allowance');
+
+    WebsiteDataAssistant::fake([['in_scope' => true, 'answer' => 'Several keywords improved.']]);
+    $this->actingAs($owner)
+        ->post(route('admin.websites.assistant.questions.store', $website), ['question' => 'Please try again'])
+        ->assertRedirect(route('admin.websites.show', [$website, 'assistant' => 'open']));
+    expect(WebsiteAiQuestion::query()->count())->toBe(2);
+});
+
+it('retroactively excludes recorded provider rate limits from the weekly allowance', function (): void {
+    [$owner, $website] = completeWebsiteWorkspace();
+    config(['memberships.website_ai_questions_per_week' => 1]);
+    WebsiteAiQuestion::factory()->for($website)->for($owner, 'user')->create([
+        'status' => 'failed',
+        'failure_type' => 'RateLimitedException',
+        'credited_at' => null,
+    ]);
+    WebsiteDataAssistant::fake([['in_scope' => true, 'answer' => 'The retry worked.']]);
+
+    $this->actingAs($owner)
+        ->post(route('admin.websites.assistant.questions.store', $website), ['question' => 'Try after the provider limit'])
+        ->assertRedirect(route('admin.websites.show', [$website, 'assistant' => 'open']));
+
+    expect(WebsiteAiQuestion::query()->count())->toBe(2);
 });
 
 it('lets a user report an answer and emails every admin once', function (): void {

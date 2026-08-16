@@ -11,3 +11,9 @@ Copilot Agent Tasks require a GitHub App user token, not an installation token. 
 
 ## Persist bounded query histories before AI analysis
 The website assistant must analyze stored Search Console data only and must not make live Google calls. Weekly history sync should proactively discover a bounded set of top current queries, retain a bounded set of previously tracked queries, and persist their monthly histories so keyword-movement comparisons do not depend on users opening individual query pages.
+
+## Persist bounded query histories before AI analysis
+The website assistant analyzes stored Search Console data only and never makes live Google calls. Weekly sync persists up to 1,000 highest-click queries for each available month in bounded monthly requests, and question context compares the explicitly requested month with the latest month while reporting sample coverage and Search Console omissions.
+
+## Monthly samples supersede tracked-query refresh
+This supersedes the earlier top-current/previously-tracked query strategy. Do not reintroduce per-query weekly API calls; use the bounded per-month sample so comparisons cover a materially broader and date-aligned query set.

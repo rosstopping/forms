@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Database\Factories\WebsiteAiQuestionFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -40,5 +41,14 @@ class WebsiteAiQuestion extends Model
     public function creditedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'credited_by_user_id');
+    }
+
+    /** @param Builder<WebsiteAiQuestion> $query */
+    public function scopeCountsTowardsAllowance(Builder $query): void
+    {
+        $query->whereNull('credited_at')
+            ->where(fn (Builder $query): Builder => $query
+                ->whereNull('failure_type')
+                ->orWhere('failure_type', '!=', 'RateLimitedException'));
     }
 }
