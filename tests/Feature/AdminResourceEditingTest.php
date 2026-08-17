@@ -3,6 +3,7 @@
 use App\Models\Form;
 use App\Models\User;
 use App\Models\Website;
+use App\Support\MembershipPlan;
 use Illuminate\Support\Facades\Hash;
 
 it('allows an administrator to edit a user and optionally change their password', function (): void {
@@ -55,6 +56,96 @@ it('keeps a users password when the password fields are left blank', function ()
         ->assertSessionDoesntHaveErrors();
 
     expect($user->fresh()->password)->toBe($originalPassword);
+});
+
+it('allows an administrator to create a user with a managed membership', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.users.create'))
+        ->assertSuccessful()
+        ->assertSee('Admin-managed membership')
+        ->assertSee('Complete');
+
+    $this->actingAs($admin)
+        ->post(route('admin.users.store'), [
+            'name' => 'Managed member',
+            'email' => 'managed@example.com',
+            'password' => 'managed-password',
+            'password_confirmation' => 'managed-password',
+            'role' => User::ROLE_USER,
+            'admin_membership_tier' => MembershipPlan::COMPLETE,
+        ])
+        ->assertSessionDoesntHaveErrors()
+        ->assertRedirect(route('admin.users.index'));
+
+    $user = User::query()->where('email', 'managed@example.com')->sole();
+
+    expect($user->admin_membership_tier)->toBe(MembershipPlan::COMPLETE)
+        ->and($user->hasMembershipFeature(MembershipPlan::FEATURE_COMPLETE))->toBeTrue();
+});
+
+it('allows an administrator to grant and remove a membership without Stripe', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $user = User::factory()->create([
+        'stripe_customer_id' => null,
+        'stripe_subscription_id' => null,
+        'membership_tier' => null,
+        'membership_status' => null,
+    ]);
+
+    $this->actingAs($admin)
+        ->put(route('admin.users.update', $user), [
+            'name' => $user->name,
+            'email' => $user->email,
+            'role' => User::ROLE_USER,
+            'admin_membership_tier' => MembershipPlan::GROWTH,
+        ])
+        ->assertSessionDoesntHaveErrors()
+        ->assertRedirect(route('admin.users.index'));
+
+    $user->refresh();
+
+    expect($user->admin_membership_tier)->toBe(MembershipPlan::GROWTH)
+        ->and($user->stripe_customer_id)->toBeNull()
+        ->and($user->stripe_subscription_id)->toBeNull()
+        ->and($user->membership_tier)->toBeNull()
+        ->and($user->membership_status)->toBeNull()
+        ->and($user->effectiveMembershipTier())->toBe(MembershipPlan::GROWTH)
+        ->and($user->hasActiveMembership())->toBeTrue()
+        ->and($user->hasMembershipFeature(MembershipPlan::FEATURE_GROWTH))->toBeTrue()
+        ->and($user->hasMembershipFeature(MembershipPlan::FEATURE_COMPLETE))->toBeFalse();
+
+    $website = Website::factory()->for($user, 'owner')->create();
+
+    $this->actingAs($user)
+        ->post(route('admin.content-requests.store', $website), [
+            'instructions' => 'Create a service page.',
+        ])
+        ->assertRedirect(route('admin.websites.show', $website));
+
+    expect($website->contentRequests()->exists())->toBeTrue();
+
+    $this->actingAs($user)
+        ->get(route('admin.billing.index'))
+        ->assertSuccessful()
+        ->assertSee('Growth')
+        ->assertSee('admin managed');
+
+    $this->actingAs($admin)
+        ->put(route('admin.users.update', $user), [
+            'name' => $user->name,
+            'email' => $user->email,
+            'role' => User::ROLE_USER,
+            'admin_membership_tier' => '',
+        ])
+        ->assertSessionDoesntHaveErrors();
+
+    $user->refresh();
+
+    expect($user->admin_membership_tier)->toBeNull()
+        ->and($user->hasActiveMembership())->toBeFalse()
+        ->and($user->hasMembershipFeature(MembershipPlan::FEATURE_GROWTH))->toBeFalse();
 });
 
 it('prevents normal users from editing user accounts', function (): void {

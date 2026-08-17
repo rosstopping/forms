@@ -49,6 +49,18 @@
                 @error('role')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror
             </div>
 
+            <div>
+                <label class="block text-sm font-medium text-slate-700" for="admin_membership_tier">Admin-managed membership</label>
+                <select id="admin_membership_tier" name="admin_membership_tier" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                    <option value="">No admin-managed membership</option>
+                    @foreach ($plans as $tier => $plan)
+                        <option value="{{ $tier }}" @selected(old('admin_membership_tier', $user->admin_membership_tier) === $tier)>{{ $plan['name'] }}</option>
+                    @endforeach
+                </select>
+                <p class="mt-1 text-xs text-slate-500">This overrides package access without creating or changing a Stripe subscription.</p>
+                @error('admin_membership_tier')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror
+            </div>
+
             <button type="submit" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">Save changes</button>
         </form>
     </div>

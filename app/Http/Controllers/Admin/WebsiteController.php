@@ -104,7 +104,7 @@ class WebsiteController extends Controller
 
         $website->load([
             'domains',
-            'owner:id,name,email,role,membership_tier,membership_status',
+            'owner:id,name,email,role,membership_tier,admin_membership_tier,membership_status',
             'members' => fn ($query) => $query->select('users.id', 'users.name', 'users.email')->orderBy('name'),
             'forms' => fn ($query) => $query->withCount('submissions')->latest('created_at'),
             'healthReports' => fn ($query) => $query->latest('created_at')->limit(8),

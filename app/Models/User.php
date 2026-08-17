@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password', 'role', 'stripe_customer_id', 'stripe_subscription_id', 'membership_tier', 'membership_status', 'membership_current_period_end', 'membership_cancel_at'])]
+#[Fillable(['name', 'email', 'password', 'role', 'stripe_customer_id', 'stripe_subscription_id', 'membership_tier', 'admin_membership_tier', 'membership_status', 'membership_current_period_end', 'membership_cancel_at'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -48,13 +48,24 @@ class User extends Authenticatable
 
     public function hasMembershipFeature(string $feature): bool
     {
-        return $this->isAdmin() || (in_array($this->membership_status, ['active', 'trialing'], true)
-            && MembershipPlan::includes($this->membership_tier, $feature));
+        return $this->isAdmin() || ($this->hasActiveMembership()
+            && MembershipPlan::includes($this->effectiveMembershipTier(), $feature));
     }
 
     public function hasActiveMembership(): bool
     {
-        return in_array($this->membership_status, ['active', 'trialing'], true);
+        return $this->hasAdminManagedMembership()
+            || in_array($this->membership_status, ['active', 'trialing'], true);
+    }
+
+    public function hasAdminManagedMembership(): bool
+    {
+        return $this->admin_membership_tier !== null;
+    }
+
+    public function effectiveMembershipTier(): ?string
+    {
+        return $this->admin_membership_tier ?? $this->membership_tier;
     }
 
     public function websites(): HasMany

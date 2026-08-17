@@ -12,14 +12,14 @@
 
     <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm" aria-labelledby="membership-status-title">
         <div class="flex flex-wrap items-center justify-between gap-4">
-            <div><p class="text-xs font-semibold uppercase tracking-widest text-slate-500">Current membership</p><h2 id="membership-status-title" class="mt-1 text-lg font-semibold text-slate-950">{{ data_get($plans, $user->membership_tier.'.name', 'No active package') }}</h2><p class="mt-1 text-sm text-slate-600">Status: <span class="font-medium capitalize">{{ str_replace('_', ' ', $user->membership_status ?: 'not subscribed') }}</span>@if ($user->membership_current_period_end) · Current period ends {{ $user->membership_current_period_end->format('j F Y') }}@endif</p>@if ($user->membership_cancel_at)<p class="mt-1 text-sm font-medium text-amber-700">Cancellation is scheduled for {{ $user->membership_cancel_at->format('j F Y') }}.</p>@endif</div>
+            <div><p class="text-xs font-semibold uppercase tracking-widest text-slate-500">Current membership</p><h2 id="membership-status-title" class="mt-1 text-lg font-semibold text-slate-950">{{ data_get($plans, $user->effectiveMembershipTier().'.name', 'No active package') }}</h2><p class="mt-1 text-sm text-slate-600">Status: <span class="font-medium capitalize">{{ $user->hasAdminManagedMembership() ? 'admin managed' : str_replace('_', ' ', $user->membership_status ?: 'not subscribed') }}</span>@if (! $user->hasAdminManagedMembership() && $user->membership_current_period_end) · Current period ends {{ $user->membership_current_period_end->format('j F Y') }}@endif</p>@if (! $user->hasAdminManagedMembership() && $user->membership_cancel_at)<p class="mt-1 text-sm font-medium text-amber-700">Cancellation is scheduled for {{ $user->membership_cancel_at->format('j F Y') }}.</p>@endif</div>
             @if ($user->stripe_customer_id)<p class="text-xs text-slate-500">Package changes and cancellation open securely on Stripe.</p>@endif
         </div>
     </section>
 
     <div class="grid gap-5 xl:grid-cols-3">
         @foreach ($plans as $tier => $plan)
-            @php($current = $user->membership_tier === $tier && $user->hasActiveMembership())
+            @php($current = $user->effectiveMembershipTier() === $tier && $user->hasActiveMembership())
             <article @class(['flex flex-col rounded-xl border bg-white p-6 shadow-sm', 'border-teal-500 ring-2 ring-teal-100' => $tier === 'growth', 'border-slate-200' => $tier !== 'growth'])>
                 <div class="flex items-center justify-between gap-3"><h2 class="text-xl font-semibold text-slate-950">{{ $plan['name'] }}</h2>@if ($tier === 'growth')<span class="rounded-full bg-teal-100 px-2.5 py-1 text-xs font-semibold text-teal-800">Most popular</span>@endif</div>
                 <p class="mt-3 min-h-12 text-sm leading-6 text-slate-600">{{ $plan['description'] }}</p>
@@ -29,7 +29,7 @@
                 <form method="POST" action="{{ $user->hasActiveMembership() && $user->stripe_customer_id ? route('admin.billing.portal') : route('admin.billing.checkout') }}" class="mt-auto pt-7">
                     @csrf
                     @unless ($user->hasActiveMembership() && $user->stripe_customer_id)<input type="hidden" name="tier" value="{{ $tier }}">@endunless
-                    <button type="submit" @disabled($current) @class(['w-full rounded-md px-4 py-2.5 text-sm font-semibold', 'cursor-default bg-slate-100 text-slate-500' => $current, 'bg-slate-950 text-white hover:bg-slate-800' => ! $current])>{{ $current ? 'Current package' : ($user->hasActiveMembership() ? 'Change with Stripe' : 'Choose '.$plan['name']) }}</button>
+                    <button type="submit" @disabled($current) @class(['w-full rounded-md px-4 py-2.5 text-sm font-semibold', 'cursor-default bg-slate-100 text-slate-500' => $current, 'bg-slate-950 text-white hover:bg-slate-800' => ! $current])>{{ $current ? 'Current package' : ($user->stripe_customer_id ? 'Change with Stripe' : 'Choose '.$plan['name']) }}</button>
                 </form>
             </article>
         @endforeach

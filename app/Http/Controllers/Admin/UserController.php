@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\MembershipPlan;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -22,14 +23,17 @@ class UserController extends Controller
             ->latest('created_at')
             ->paginate(15);
 
-        return view('admin.users.index', compact('users'));
+        return view('admin.users.index', [
+            'plans' => MembershipPlan::all(),
+            'users' => $users,
+        ]);
     }
 
     public function create(Request $request): View
     {
         abort_unless(Auth::user()?->isAdmin(), 403);
 
-        return view('admin.users.create');
+        return view('admin.users.create', ['plans' => MembershipPlan::all()]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -41,6 +45,7 @@ class UserController extends Controller
             'email' => ['required', 'email', 'max:255', Rule::unique(User::class)],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'role' => ['required', 'string', Rule::in([User::ROLE_ADMIN, User::ROLE_USER])],
+            'admin_membership_tier' => ['nullable', 'string', Rule::in(array_keys(MembershipPlan::all()))],
         ]);
 
         $data['password'] = Hash::make($data['password']);
@@ -54,7 +59,10 @@ class UserController extends Controller
     {
         abort_unless($request->user()?->isAdmin(), 403);
 
-        return view('admin.users.edit', compact('user'));
+        return view('admin.users.edit', [
+            'plans' => MembershipPlan::all(),
+            'user' => $user,
+        ]);
     }
 
     public function update(Request $request, User $user): RedirectResponse
@@ -66,6 +74,7 @@ class UserController extends Controller
             'email' => ['required', 'email', 'max:255', Rule::unique(User::class)->ignore($user)],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
             'role' => ['required', 'string', Rule::in([User::ROLE_ADMIN, User::ROLE_USER])],
+            'admin_membership_tier' => ['nullable', 'string', Rule::in(array_keys(MembershipPlan::all()))],
         ]);
 
         if (filled($data['password'] ?? null)) {
