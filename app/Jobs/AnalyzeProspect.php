@@ -6,6 +6,7 @@ use App\Models\Prospect;
 use App\Services\ProspectWebsiteAnalyzer;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Arr;
 use Throwable;
 
 class AnalyzeProspect implements ShouldQueue
@@ -48,10 +49,11 @@ class AnalyzeProspect implements ShouldQueue
     {
         if (blank($this->prospect->showcase_video_url)) {
             $contactName = $this->prospect->contact_name ?: 'there';
+            $rankingSentence = $this->rankingSentence();
 
             return [
                 'subject' => 'Quick one for '.$this->prospect->business_name,
-                'body' => "Hi {$contactName},\n\nI came across {$this->prospect->business_name} while looking at local search results. You’re already appearing in Google, but I spotted a few opportunities that could help the website bring in more local enquiries.\n\nI can record a quick video showing you exactly what I found. Would you like me to send it over?\n\nCheers,\nRoss",
+                'body' => "Hi {$contactName},\n\nI came across {$this->prospect->business_name} while looking at local search results.{$rankingSentence} I spotted a few opportunities that could help the website bring in more local enquiries.\n\nI’ve put together a short website audit showing some of the issues I found. I can also record a quick video explaining what I’d prioritise.\n\nWould you like me to send the video over?\n\nCheers,\nRoss",
             ];
         }
 
@@ -59,5 +61,23 @@ class AnalyzeProspect implements ShouldQueue
             'subject' => 'Quick one for '.$this->prospect->business_name,
             'body' => "Hi there,\n\nI came across {$this->prospect->business_name} on Google and thought Sitewell might be useful for you.\n\nI ran your website through it and recorded a quick video showing what I found.\n\nNo sales pitch — just thought it might be worth a look.\n\nCheers,\nRoss",
         ];
+    }
+
+    private function rankingSentence(): string
+    {
+        $activity = $this->prospect->activities()
+            ->where('type', 'seo_opportunity_imported')
+            ->latest()
+            ->first();
+        $bestRanking = collect(data_get($activity?->metadata, 'rankings', []))->sortBy('position')->first();
+
+        if (! is_array($bestRanking) || blank(Arr::get($bestRanking, 'keyword')) || ! is_numeric(Arr::get($bestRanking, 'position'))) {
+            return '';
+        }
+
+        $position = max(1, (int) $bestRanking['position']);
+        $page = (int) ceil($position / 10);
+
+        return ' I found your website for “'.$bestRanking['keyword'].'” on page '.$page.' of Google (position '.$position.').';
     }
 }

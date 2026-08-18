@@ -4,6 +4,14 @@
     <main style="max-width:620px;margin:0 auto;padding:32px 20px;">
         <section style="padding:8px 0;">
             <div style="font-size:16px;white-space:pre-line;">{{ $prospect->outreach_body }}</div>
+            @if ($auditReportUrl)
+                <div style="margin:28px 0 0;border:1px solid #99f6e4;border-radius:12px;background:#f0fdfa;padding:20px;">
+                    <p style="margin:0;font-size:18px;font-weight:700;color:#134e4a;">Your website audit</p>
+                    <p style="margin:6px 0 16px;font-size:14px;color:#475569;">See the public website checks and opportunities behind this email.</p>
+                    <a href="{{ $auditReportUrl }}" style="display:inline-block;border-radius:8px;background:#0f766e;padding:12px 18px;color:#ffffff;font-weight:600;text-decoration:none;">View your website audit</a>
+                    <p style="margin:14px 0 0;font-size:12px;color:#64748b;">This private link is available for 30 days.</p>
+                </div>
+            @endif
             @if ($showcaseVideoUrl)
                 <div style="margin:28px 0 0;border:1px solid #cbd5e1;border-radius:12px;background:#f8fafc;padding:20px;">
                     <p style="margin:0;font-size:18px;font-weight:700;color:#0f172a;">Your website video</p>

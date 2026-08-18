@@ -6,6 +6,7 @@ use App\Models\Prospect;
 use App\Models\ProspectOutreachDelivery;
 use App\Models\ProspectOutreachLink;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\URL;
 
 class ProspectOutreachTracker
 {
@@ -19,6 +20,14 @@ class ProspectOutreachTracker
                     'kind' => 'showcase_video',
                     'label' => 'Website video',
                     'destination_url' => $prospect->showcase_video_url,
+                ]);
+            }
+
+            if (filled($prospect->website_url) && $prospect->analysed_at !== null) {
+                $delivery->links()->create([
+                    'kind' => 'website_audit',
+                    'label' => 'Website audit',
+                    'destination_url' => URL::temporarySignedRoute('prospect-reports.show', now()->addDays(30), ['prospect' => $prospect]),
                 ]);
             }
 

@@ -39,14 +39,17 @@ class ProspectOutreach extends Mailable
     public function content(): Content
     {
         $showcaseVideoUrl = $this->prospect->showcase_video_url;
+        $auditReportUrl = $this->auditReportUrl();
         $bookingUrl = 'https://cal.com/ross';
         $trackingOpenUrl = null;
 
         if ($this->delivery) {
             $this->delivery->loadMissing('links');
             $showcaseVideoLink = $this->delivery->links->firstWhere('kind', 'showcase_video');
+            $auditReportLink = $this->delivery->links->firstWhere('kind', 'website_audit');
             $bookingLink = $this->delivery->links->firstWhere('kind', 'book_call');
             $showcaseVideoUrl = $showcaseVideoLink ? URL::signedRoute('prospect-outreach-links.show', $showcaseVideoLink) : null;
+            $auditReportUrl = $auditReportLink ? URL::signedRoute('prospect-outreach-links.show', $auditReportLink) : null;
             $bookingUrl = URL::signedRoute('prospect-outreach-links.show', $bookingLink);
             $trackingOpenUrl = URL::signedRoute('prospect-outreach-opens.show', $this->delivery);
         }
@@ -55,10 +58,20 @@ class ProspectOutreach extends Mailable
             view: 'mail.prospects.outreach',
             with: [
                 'showcaseVideoUrl' => $showcaseVideoUrl,
+                'auditReportUrl' => $auditReportUrl,
                 'bookingUrl' => $bookingUrl,
                 'trackingOpenUrl' => $trackingOpenUrl,
             ],
         );
+    }
+
+    private function auditReportUrl(): ?string
+    {
+        if (blank($this->prospect->website_url) || $this->prospect->analysed_at === null) {
+            return null;
+        }
+
+        return URL::temporarySignedRoute('prospect-reports.show', now()->addDays(30), ['prospect' => $this->prospect]);
     }
 
     /**

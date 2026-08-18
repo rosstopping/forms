@@ -14,6 +14,8 @@ it('adds signed open and click tracking to a live outreach email', function (): 
     $prospect = Prospect::factory()->for($admin, 'owner')->create([
         'outreach_subject' => 'Quick one',
         'outreach_body' => 'Hi there.',
+        'website_url' => 'https://example.com',
+        'analysed_at' => now(),
         'showcase_video_url' => 'https://video.example.com/prospect',
         'approved_at' => now(),
     ]);
@@ -23,11 +25,12 @@ it('adds signed open and click tracking to a live outreach email', function (): 
     $delivery = $prospect->outreachDeliveries()->with('links')->sole();
     expect($delivery->sent_at)->not->toBeNull()
         ->and($delivery->recipient_email)->toBe($prospect->email)
-        ->and($delivery->links->pluck('kind')->sort()->values()->all())->toBe(['book_call', 'showcase_video']);
+        ->and($delivery->links->pluck('kind')->sort()->values()->all())->toBe(['book_call', 'showcase_video', 'website_audit']);
 
     Mail::assertSent(ProspectOutreach::class, function (ProspectOutreach $mail) use ($delivery): bool {
         $mail->assertSeeInHtml('/outreach/open/'.$delivery->uuid)
             ->assertSeeInHtml('/outreach/click/')
+            ->assertSeeInHtml('View your website audit')
             ->assertSeeInHtml('signature=');
 
         return $mail->delivery->is($delivery);
