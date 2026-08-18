@@ -6,4 +6,4 @@ paths:
 # Prospects
 
 ## Track only live prospect outreach
-Create signed open and click tracking only for approved live prospect outreach; administrator test emails must remain untracked. Store delivery/link engagement without IP addresses or user agents, warm a cold lead on verified signed engagement, and keep lead temperature separate from the prospect lifecycle status.
+Create signed open and click tracking only for approved live prospect outreach; administrator test emails remain untracked. Store engagement without IP addresses or user agents. Opens promote cold to warm only; verified link clicks promote any non-hot lead to hot. Keep lead temperature separate from lifecycle status.

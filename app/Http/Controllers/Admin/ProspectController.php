@@ -21,11 +21,15 @@ class ProspectController extends Controller
     {
         $query = Prospect::query()->accessibleTo($request->user());
         $summary = (clone $query)->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
+        $temperatureSummary = (clone $query)->selectRaw('lead_temperature, count(*) as total')->groupBy('lead_temperature')->pluck('total', 'lead_temperature');
+        $temperature = $request->string('temperature')->toString();
         $prospects = $query->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')))
+            ->when(in_array($temperature, Prospect::LEAD_TEMPERATURES, true), fn ($query) => $query->where('lead_temperature', $temperature))
             ->when($request->filled('search'), fn ($query) => $query->where(fn ($query) => $query->where('business_name', 'like', '%'.$request->string('search').'%')->orWhere('email', 'like', '%'.$request->string('search').'%')))
+            ->orderByRaw("case lead_temperature when 'hot' then 1 when 'warm' then 2 else 3 end")
             ->latest()->paginate(20)->withQueryString();
 
-        return view('admin.prospects.index', compact('prospects', 'summary'));
+        return view('admin.prospects.index', compact('prospects', 'summary', 'temperatureSummary'));
     }
 
     /**

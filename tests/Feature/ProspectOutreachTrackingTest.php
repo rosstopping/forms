@@ -55,7 +55,7 @@ it('records opens and warms a cold outreach lead', function (): void {
         ->and($prospect->activities()->where('type', 'email_opened')->count())->toBe(1);
 });
 
-it('records each tracked link click and redirects to its saved destination', function (): void {
+it('records each tracked link click and marks the lead as hot', function (): void {
     $prospect = Prospect::factory()->create(['lead_temperature' => 'cold']);
     $delivery = ProspectOutreachDelivery::factory()->for($prospect)->create();
     $link = ProspectOutreachLink::factory()->for($delivery, 'delivery')->create([
@@ -72,8 +72,17 @@ it('records each tracked link click and redirects to its saved destination', fun
         ->and($link->first_clicked_at)->not->toBeNull()
         ->and($delivery->refresh()->click_count)->toBe(2)
         ->and($delivery->first_clicked_at)->not->toBeNull()
-        ->and($prospect->refresh()->lead_temperature)->toBe('warm')
+        ->and($prospect->refresh()->lead_temperature)->toBe('hot')
         ->and($prospect->activities()->where('type', 'email_clicked')->count())->toBe(1);
+});
+
+it('does not cool a hot lead when another open is recorded', function (): void {
+    $prospect = Prospect::factory()->create(['lead_temperature' => 'hot']);
+    $delivery = ProspectOutreachDelivery::factory()->for($prospect)->create();
+
+    $this->get(URL::signedRoute('prospect-outreach-opens.show', $delivery))->assertSuccessful();
+
+    expect($prospect->refresh()->lead_temperature)->toBe('hot');
 });
 
 it('rejects unsigned tracking requests without recording engagement', function (): void {
@@ -111,7 +120,7 @@ it('does not add tracking or create a delivery for administrator test emails', f
 
 it('shows email engagement timing and clicked destinations on the outreach lead', function (): void {
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
-    $prospect = Prospect::factory()->for($admin, 'owner')->create(['lead_temperature' => 'warm']);
+    $prospect = Prospect::factory()->for($admin, 'owner')->create(['lead_temperature' => 'hot']);
     $delivery = ProspectOutreachDelivery::factory()->for($prospect)->create([
         'first_opened_at' => '2026-08-18 09:15:00',
         'last_opened_at' => '2026-08-18 10:30:00',
@@ -129,9 +138,27 @@ it('shows email engagement timing and clicked destinations on the outreach lead'
 
     $this->actingAs($admin)->get(route('admin.prospects.show', $prospect))
         ->assertSuccessful()
-        ->assertSee('Warm lead')
+        ->assertSee('Hot lead')
         ->assertSee('Email engagement')
         ->assertSee('18 Aug 2026, 09:15')
         ->assertSee('18 Aug 2026, 09:20')
         ->assertSee('Website video');
+});
+
+it('shows hot leads first and supports filtering by engagement', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    Prospect::factory()->for($admin, 'owner')->create(['business_name' => 'Cold Prospect', 'lead_temperature' => 'cold']);
+    Prospect::factory()->for($admin, 'owner')->create(['business_name' => 'Warm Prospect', 'lead_temperature' => 'warm']);
+    Prospect::factory()->for($admin, 'owner')->create(['business_name' => 'Hot Prospect', 'lead_temperature' => 'hot']);
+
+    $this->actingAs($admin)->get(route('admin.prospects.index'))
+        ->assertSuccessful()
+        ->assertSee('Hot leads')
+        ->assertSeeInOrder(['Hot Prospect', 'Warm Prospect', 'Cold Prospect']);
+
+    $this->get(route('admin.prospects.index', ['temperature' => 'hot']))
+        ->assertSuccessful()
+        ->assertSee('Hot Prospect')
+        ->assertDontSee('Warm Prospect')
+        ->assertDontSee('Cold Prospect');
 });

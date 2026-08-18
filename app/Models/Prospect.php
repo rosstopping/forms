@@ -16,6 +16,8 @@ class Prospect extends Model
 
     public const STATUSES = ['new', 'researched', 'drafted', 'approved', 'contacted', 'replied', 'converted', 'not_interested'];
 
+    public const LEAD_TEMPERATURES = ['cold', 'warm', 'hot'];
+
     protected $fillable = ['user_id', 'website_id', 'business_name', 'contact_name', 'email', 'website_url', 'status', 'lead_temperature', 'analysis_status', 'opportunity_score', 'findings', 'analysis_error', 'contact_details', 'analysed_at', 'outreach_subject', 'outreach_body', 'showcase_video_url', 'showcase_video_thumbnail_url', 'approved_at', 'approved_by', 'sent_at', 'next_follow_up_at', 'replied_at', 'converted_at', 'suppressed_at', 'notes'];
 
     protected $attributes = ['lead_temperature' => 'cold'];

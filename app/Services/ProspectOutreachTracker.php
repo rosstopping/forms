@@ -52,7 +52,7 @@ class ProspectOutreachTracker
                 'last_opened_at' => $openedAt,
                 'open_count' => $delivery->open_count + 1,
             ]);
-            $this->warmProspect($delivery->prospect);
+            $this->warmProspectFromOpen($delivery->prospect);
 
             if ($firstOpen) {
                 $delivery->prospect->recordActivity('email_opened', 'Outreach email opened.');
@@ -78,7 +78,7 @@ class ProspectOutreachTracker
                 'last_clicked_at' => $clickedAt,
                 'click_count' => $delivery->click_count + 1,
             ]);
-            $this->warmProspect($delivery->prospect);
+            $this->markProspectHot($delivery->prospect);
 
             if ($firstLinkClick) {
                 $delivery->prospect->recordActivity('email_clicked', 'Clicked the “'.$link->label.'” link in the outreach email.');
@@ -86,10 +86,17 @@ class ProspectOutreachTracker
         });
     }
 
-    private function warmProspect(Prospect $prospect): void
+    private function warmProspectFromOpen(Prospect $prospect): void
     {
         if ($prospect->lead_temperature === 'cold') {
             $prospect->update(['lead_temperature' => 'warm']);
+        }
+    }
+
+    private function markProspectHot(Prospect $prospect): void
+    {
+        if ($prospect->lead_temperature !== 'hot') {
+            $prospect->update(['lead_temperature' => 'hot']);
         }
     }
 }
