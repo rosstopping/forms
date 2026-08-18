@@ -6,15 +6,21 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreSeoProspectSearchRequest;
 use App\Jobs\DiscoverSeoProspects;
 use App\Models\SeoProspectSearch;
+use App\Services\SeoProspectCostEstimator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class SeoProspectSearchController extends Controller
 {
-    public function store(StoreSeoProspectSearchRequest $request): RedirectResponse
+    public function store(StoreSeoProspectSearchRequest $request, SeoProspectCostEstimator $costEstimator): RedirectResponse
     {
-        $search = SeoProspectSearch::query()->create(['user_id' => $request->user()->id, ...$request->validated()]);
+        $data = $request->validated();
+        $search = SeoProspectSearch::query()->create([
+            'user_id' => $request->user()->id,
+            ...$data,
+            'estimated_api_cost' => $costEstimator->estimate($data['keywords'], $data['maximum_position']),
+        ]);
         DiscoverSeoProspects::dispatch($search);
 
         return redirect()->route('admin.seo-prospect-searches.show', $search)->with('status', 'SEO opportunity search queued. No prospects have been added and no emails will be sent.');

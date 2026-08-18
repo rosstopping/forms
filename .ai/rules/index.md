@@ -6,6 +6,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | --- | --- |
 | app/{Models/User.php,Support/MembershipPlan.php,Http/Middleware/EnsureMembershipFeature.php,Http/Controllers/{Account/BillingController.php,StripeWebhookController.php}},config/memberships.php,routes/web.php | .ai/rules/account.md |
 | app/{Jobs,Services/SeoIntelligence,Http/Controllers/Admin}/**/*Seo*.php,app/Models/Website.php | .ai/rules/admin-models.md |
+| app/{Http/Controllers/Admin,Services,Jobs}/**/*SeoProspect*.php | .ai/rules/admin-services-jobs.md |
 | resources/views/admin/websites/**,routes/web.php, resources/views/admin/websites/show.blade.php | .ai/rules/admin-websites.md |
 | app/{Ai,Jobs,Mail,Models,Http/Controllers/Admin}/**/*Prospect*.php | .ai/rules/admin.md |
 | app/{Http/Controllers/Admin/WebsiteAiQuestion*Controller.php,Mail/WebsiteAiQuestionReported.php,Models/WebsiteAiQuestion.php},resources/views/admin/{websites/show.blade.php,website-ai-question-report.blade.php} | .ai/rules/adminwebsites.md |
@@ -21,11 +22,13 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Models/Optimisation*.php,Services/*Deployment*.php,Contracts/DeploymentDriver.php} | .ai/rules/models.md |
 | app/{Http/Controllers/Admin/BusinessProfileController.php,Services/BusinessProfileClient.php},resources/views/admin/websites/partials/business-profile.blade.php | .ai/rules/partials.md |
 | app/{Jobs,Services,Http/Controllers/Admin}/**/*SeoProspect*.php,resources/views/admin/prospect-discoveries/seo-show.blade.php | .ai/rules/prospect-discoveries.md |
+| app/{Mail,Models,Services,Http/Controllers}/**/*ProspectOutreach*.php,resources/views/mail/prospects/outreach.blade.php,resources/views/admin/prospects/**,routes/web.php | .ai/rules/prospects.md |
 | public/pixel.js | .ai/rules/public.md |
 | app/{Models/Website.php,Http/Controllers/Admin/**,Http/Requests/**} | .ai/rules/requests.md |
 | app/Services/SeoIntelligence/**,app/Models/SeoOpportunity.php | .ai/rules/seo-intelligence-models.md |
 | app/Services/SeoIntelligence/** | .ai/rules/seo-intelligence.md |
 | app/{Services/Github*,Http/Controllers/**/*Github*,Models/{GithubInstallation,WebsiteRepository,RemediationRun}.php}, app/{Services/PixelUrlNormalizer.php,Services/PixelPayloadBuilder.php,Http/Controllers/PixelPayloadController.php,Models/Optimisation.php} | .ai/rules/services-controllers.md |
+| app/{Services,Jobs,Http/Controllers/Admin}/**/*SeoProspect*.php | .ai/rules/services-jobs-http-controllers-admin.md |
 | app/{Services,Jobs,Http/Controllers}/**/*Content*.php | .ai/rules/services-jobs-http-controllers.md |
 | app/Services/WebsiteCrawler.php, app/Services/Pixel*.php | .ai/rules/services.md |
 | app/{Ai/Agents/WebsiteDataAssistant.php,Services/WebsiteAiContext.php,Http/Controllers/Admin/WebsiteAiChatController.php,Models/WebsiteAiQuestion.php},resources/views/admin/websites/show.blade.php,routes/web.php | .ai/rules/views-admin-websites.md |

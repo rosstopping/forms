@@ -3,7 +3,7 @@
 namespace App\Providers;
 
 use App\Contracts\SerpProvider;
-use App\Services\DataForSEO\DataForSEOSerpProvider;
+use App\Services\CachedSerpProvider;
 use App\View\Composers\NavigationComposer;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -15,7 +15,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->bind(SerpProvider::class, DataForSEOSerpProvider::class);
+        $this->app->bind(SerpProvider::class, CachedSerpProvider::class);
     }
 
     /**

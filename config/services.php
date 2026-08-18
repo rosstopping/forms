@@ -86,6 +86,8 @@ return [
         'pending_timeout_minutes' => (int) env('DATAFORSEO_PENDING_TIMEOUT_MINUTES', 30),
         'location_code' => (int) env('DATAFORSEO_LOCATION_CODE', 2826),
         'language_code' => env('DATAFORSEO_LANGUAGE_CODE', 'en'),
+        'serp_cache_days' => (int) env('DATAFORSEO_SERP_CACHE_DAYS', 7),
+        'serp_live_cost_per_ten' => (float) env('DATAFORSEO_SERP_LIVE_COST_PER_TEN', 0.002),
         'opportunities' => [
             'high_volume_minimum' => (int) env('DATAFORSEO_HIGH_VOLUME_MINIMUM', 100),
             'commercial_volume_minimum' => (int) env('DATAFORSEO_COMMERCIAL_VOLUME_MINIMUM', 20),

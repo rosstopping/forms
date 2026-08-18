@@ -38,7 +38,16 @@ class DiscoverSeoProspects implements ShouldBeUnique, ShouldQueue
 
     public function handle(SerpProvider $provider, PixelUrlNormalizer $urls): void
     {
-        $this->search->update(['status' => 'running', 'error' => null, 'started_at' => now(), 'completed_at' => null]);
+        $this->search->update([
+            'status' => 'running',
+            'error' => null,
+            'api_cost' => 0,
+            'fresh_keyword_count' => 0,
+            'cached_keyword_count' => 0,
+            'serp_freshness' => [],
+            'started_at' => now(),
+            'completed_at' => null,
+        ]);
         $errors = [];
         $successfulKeywords = 0;
 
@@ -46,7 +55,11 @@ class DiscoverSeoProspects implements ShouldBeUnique, ShouldQueue
             try {
                 $response = $provider->search($keyword, $this->search->location, $this->search->maximum_position);
                 $successfulKeywords++;
-                $this->recordUsage($keyword, $response);
+                $this->recordSource($keyword, $response);
+
+                if (! $response->cached) {
+                    $this->recordUsage($keyword, $response);
+                }
 
                 foreach ($response->results as $result) {
                     if ($result->position > $this->search->maximum_position) {
@@ -104,6 +117,18 @@ class DiscoverSeoProspects implements ShouldBeUnique, ShouldQueue
             'requested_at' => now(),
         ]);
         $this->search->increment('api_cost', $response->cost);
+    }
+
+    private function recordSource(string $keyword, SerpSearchResponse $response): void
+    {
+        $counter = $response->cached ? 'cached_keyword_count' : 'fresh_keyword_count';
+        $freshness = $this->search->fresh()->serp_freshness ?? [];
+        $freshness[$keyword] = [
+            'source' => $response->cached ? 'cache' : 'provider',
+            'fetched_at' => $response->fetchedAt ?? now()->toIso8601String(),
+        ];
+        $this->search->increment($counter);
+        $this->search->update(['serp_freshness' => $freshness]);
     }
 
     private function existingProspect(string $domain): ?Prospect

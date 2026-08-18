@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\GeneratePageOptimisationsController;
 use App\Http\Controllers\Admin\GenerateReportOptimisationsController;
 use App\Http\Controllers\Admin\GithubConnectionController;
 use App\Http\Controllers\Admin\ImportProspectDiscoveryCandidatesController;
+use App\Http\Controllers\Admin\ImportSeoProspectCandidatesController;
 use App\Http\Controllers\Admin\OptimisationController;
 use App\Http\Controllers\Admin\OptimisationDeploymentController;
 use App\Http\Controllers\Admin\OptimisationVersionController;
@@ -31,6 +32,7 @@ use App\Http\Controllers\Admin\ProspectDiscoveryController;
 use App\Http\Controllers\Admin\ProspectSendController;
 use App\Http\Controllers\Admin\ProspectTestEmailController;
 use App\Http\Controllers\Admin\RemediationRunController;
+use App\Http\Controllers\Admin\RerunSeoProspectSearchController;
 use App\Http\Controllers\Admin\SearchConsoleController;
 use App\Http\Controllers\Admin\SearchOpportunityController;
 use App\Http\Controllers\Admin\SeoIntelligenceController;
@@ -59,6 +61,8 @@ use App\Http\Controllers\FreeSiteAuditController;
 use App\Http\Controllers\GithubWebhookController;
 use App\Http\Controllers\MarketingController;
 use App\Http\Controllers\OnboardingEnquiryController;
+use App\Http\Controllers\ProspectOutreachClickController;
+use App\Http\Controllers\ProspectOutreachOpenController;
 use App\Http\Controllers\ProspectReportController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\WebsiteHealthReportController as PublicWebsiteHealthReportController;
@@ -76,6 +80,13 @@ Route::controller(MarketingController::class)->group(function () {
     Route::get('/journal/{slug}', 'article')->name('marketing.article');
     Route::get('/contact', 'contact')->name('marketing.contact');
 });
+
+Route::get('/outreach/open/{delivery}', ProspectOutreachOpenController::class)
+    ->middleware(['signed', 'throttle:120,1'])
+    ->name('prospect-outreach-opens.show');
+Route::get('/outreach/click/{link}', ProspectOutreachClickController::class)
+    ->middleware(['signed', 'throttle:120,1'])
+    ->name('prospect-outreach-links.show');
 
 Route::post('/contact', OnboardingEnquiryController::class)
     ->middleware('throttle:6,1')
@@ -209,6 +220,8 @@ Route::middleware(['web', 'auth'])->prefix('admin')->name('admin.')->group(funct
         Route::post('prospect-discoveries/{prospectDiscovery}/import', ImportProspectDiscoveryCandidatesController::class)->name('prospect-discoveries.import');
         Route::post('prospect-discoveries/seo-opportunities', [SeoProspectSearchController::class, 'store'])->name('seo-prospect-searches.store');
         Route::get('prospect-discoveries/seo-opportunities/{seoProspectSearch}', [SeoProspectSearchController::class, 'show'])->name('seo-prospect-searches.show');
+        Route::post('prospect-discoveries/seo-opportunities/{seoProspectSearch}/import', ImportSeoProspectCandidatesController::class)->name('seo-prospect-searches.import');
+        Route::post('prospect-discoveries/seo-opportunities/{seoProspectSearch}/rerun', RerunSeoProspectSearchController::class)->name('seo-prospect-searches.rerun');
         Route::post('prospects/{prospect}/analyse', ProspectAnalysisController::class)->name('prospects.analyse');
         Route::post('prospects/{prospect}/approve', ProspectApprovalController::class)->name('prospects.approve');
         Route::post('prospects/{prospect}/send', ProspectSendController::class)->name('prospects.send');

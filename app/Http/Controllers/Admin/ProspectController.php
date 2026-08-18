@@ -64,7 +64,7 @@ class ProspectController extends Controller
     {
         abort_unless($prospect->isAccessibleBy($request->user()), 403);
 
-        $prospect->load('activities.user');
+        $prospect->load(['activities.user', 'outreachDeliveries.links']);
 
         return view('admin.prospects.show', [
             'prospect' => $prospect,

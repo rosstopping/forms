@@ -106,6 +106,28 @@ document.addEventListener('keydown', (event) => {
     }
 });
 
+document.querySelectorAll('[data-seo-cost-estimate-form]').forEach((form) => {
+    const keywords = form.querySelector('[data-seo-cost-keywords]');
+    const depth = form.querySelector('[data-seo-cost-depth]');
+    const output = form.querySelector('[data-seo-cost-output]');
+    const costPerTen = Number(form.dataset.costPerTen);
+
+    const updateEstimate = () => {
+        const keywordCount = [...new Set(keywords.value
+            .split(/[\n,]+/)
+            .map((keyword) => keyword.trim().toLowerCase())
+            .filter(Boolean))].length;
+        const searchDepth = Math.min(100, Math.max(10, Number(depth.value) || 100));
+        const estimate = keywordCount * Math.ceil(searchDepth / 10) * costPerTen;
+
+        output.textContent = `$${estimate.toFixed(4)}`;
+    };
+
+    keywords.addEventListener('input', updateEstimate);
+    depth.addEventListener('input', updateEstimate);
+    updateEstimate();
+});
+
 const websiteAiForm = document.querySelector('[data-website-ai-form]');
 const websiteAiMessages = document.querySelector('[data-website-ai-messages]');
 

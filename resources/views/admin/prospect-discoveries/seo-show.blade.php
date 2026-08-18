@@ -8,17 +8,35 @@
             <h1 class="text-3xl font-semibold tracking-tight">{{ $search->industry }} in {{ $search->location }}</h1>
             <p class="mt-1 text-sm text-slate-600">{{ count($search->keywords) }} keywords · positions {{ $search->minimum_position }}–{{ $search->maximum_position }} · max {{ $search->maximum_pages }} pages</p>
         </div>
-        <a href="{{ route('admin.prospect-discoveries.index') }}#seo-opportunities" class="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50">Back to Find Prospects</a>
+        <div class="flex flex-wrap gap-2"><form method="POST" action="{{ route('admin.seo-prospect-searches.rerun', $search) }}">@csrf<button type="submit" name="refresh_serps" value="0" @disabled(in_array($search->status, ['pending', 'running', 'analyzing'])) class="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">Rerun with cache</button><button type="submit" name="refresh_serps" value="1" @disabled(in_array($search->status, ['pending', 'running', 'analyzing'])) class="ml-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-900 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50">Force fresh SERPs</button></form><a href="{{ route('admin.prospect-discoveries.index') }}#seo-opportunities" class="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50">Back to Find Prospects</a></div>
     </div>
     @if (session('status'))<div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{{ session('status') }}</div>@endif
     @if ($search->error)<div class="whitespace-pre-line rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">{{ $search->error }}</div>@endif
+    @error('candidate_ids')<div class="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">{{ $message }}</div>@enderror
 
-    <div class="grid gap-3 sm:grid-cols-4">
+    <div class="grid gap-3 sm:grid-cols-3 xl:grid-cols-6">
         <div class="border-l-2 border-slate-300 pl-3"><p class="text-xs font-medium uppercase text-slate-500">Status</p><p class="mt-1 font-semibold text-slate-950">{{ str($search->status)->replace('_', ' ')->title() }}</p></div>
         <div class="border-l-2 border-slate-300 pl-3"><p class="text-xs font-medium uppercase text-slate-500">Domains</p><p class="mt-1 font-semibold text-slate-950">{{ $search->candidate_count }}</p></div>
         <div class="border-l-2 border-slate-300 pl-3"><p class="text-xs font-medium uppercase text-slate-500">Suitable</p><p class="mt-1 font-semibold text-slate-950">{{ $search->suitable_count }}</p></div>
         <div class="border-l-2 border-slate-300 pl-3"><p class="text-xs font-medium uppercase text-slate-500">API cost</p><p class="mt-1 font-semibold text-slate-950">${{ number_format((float) $search->api_cost, 4) }}</p></div>
+        <div class="border-l-2 border-slate-300 pl-3"><p class="text-xs font-medium uppercase text-slate-500">Estimate</p><p class="mt-1 font-semibold text-slate-950">${{ number_format((float) $search->estimated_api_cost, 4) }}</p></div>
+        <div class="border-l-2 border-slate-300 pl-3"><p class="text-xs font-medium uppercase text-slate-500">SERP source</p><p class="mt-1 font-semibold text-slate-950">{{ $search->fresh_keyword_count }} fresh · {{ $search->cached_keyword_count }} cached</p></div>
     </div>
+
+    @if (filled($search->serp_freshness))
+        <details class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+            <summary class="cursor-pointer text-sm font-semibold text-slate-800">SERP freshness by keyword</summary>
+            <dl class="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+                @foreach ($search->serp_freshness as $keyword => $freshness)
+                    <div class="flex items-center justify-between gap-3 border-b border-slate-200 pb-2">
+                        <dt class="text-slate-700">{{ $keyword }}</dt>
+                        <dd class="shrink-0 text-xs font-medium text-slate-500">{{ str($freshness['source'] ?? 'unknown')->title() }} · {{ isset($freshness['fetched_at']) ? \Illuminate\Support\Carbon::parse($freshness['fetched_at'])->diffForHumans() : 'Unknown' }}</dd>
+                    </div>
+                @endforeach
+            </dl>
+            <p class="mt-3 text-xs text-slate-500">Cached SERPs are reused for {{ config('services.dataforseo.serp_cache_days') }} days unless a fresh rerun is requested.</p>
+        </details>
+    @endif
 
     <form method="GET" action="{{ route('admin.seo-prospect-searches.show', $search) }}" class="grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4 sm:grid-cols-4 sm:items-end">
         <label class="grid gap-1 text-sm font-medium text-slate-700">
@@ -49,13 +67,17 @@
         </div>
     </form>
 
+    <form method="POST" action="{{ route('admin.seo-prospect-searches.import', $search) }}" class="space-y-3">
+        @csrf
+        <div class="flex flex-wrap items-center justify-between gap-3"><p class="text-xs text-slate-500">Select suitable domains that are not already in Outreach.</p><button type="submit" class="rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-800">Add selected to Outreach</button></div>
     <div class="overflow-x-auto border-y border-slate-200 bg-white">
         <table class="min-w-full divide-y divide-slate-200 text-sm">
-            <thead class="bg-slate-50 text-left text-xs font-semibold uppercase text-slate-500"><tr><th class="px-4 py-3">Business / domain</th><th class="px-4 py-3">Score</th><th class="px-4 py-3">Pages</th><th class="px-4 py-3">Best ranking</th><th class="px-4 py-3">Audit issues</th><th class="px-4 py-3">Migration</th><th class="px-4 py-3">Observations</th><th class="px-4 py-3">Qualification</th><th class="px-4 py-3">Outreach</th></tr></thead>
+            <thead class="bg-slate-50 text-left text-xs font-semibold uppercase text-slate-500"><tr><th class="px-4 py-3"><span class="sr-only">Select</span></th><th class="px-4 py-3">Business / domain</th><th class="px-4 py-3">Score</th><th class="px-4 py-3">Pages</th><th class="px-4 py-3">Best ranking</th><th class="px-4 py-3">Audit issues</th><th class="px-4 py-3">Migration</th><th class="px-4 py-3">Observations</th><th class="px-4 py-3">Qualification</th><th class="px-4 py-3">Outreach</th></tr></thead>
             <tbody class="divide-y divide-slate-100">
                 @forelse ($search->candidates as $candidate)
                     @php($bestRanking = $candidate->rankings->sortBy('position')->first())
                     <tr>
+                        <td class="px-4 py-4"><input type="checkbox" name="candidate_ids[]" value="{{ $candidate->id }}" @disabled($candidate->qualification_status !== 'suitable' || $candidate->prospect) aria-label="Select {{ $candidate->business_name ?: $candidate->domain }}" class="size-4 rounded border-slate-300 text-teal-700 disabled:cursor-not-allowed disabled:opacity-40"></td>
                         <td class="px-4 py-4"><a href="{{ $candidate->website_url }}" target="_blank" rel="noreferrer" class="font-semibold text-teal-700 hover:underline">{{ $candidate->business_name ?: $candidate->domain }}</a><p class="mt-1 text-xs text-slate-500">{{ $candidate->domain }}</p></td>
                         <td class="px-4 py-4">@if ($candidate->opportunity_score !== null)<span class="text-lg font-semibold tabular-nums text-slate-950">{{ $candidate->opportunity_score }}</span><span class="text-xs text-slate-500">/100</span>@if (filled($candidate->score_breakdown))<details class="mt-1"><summary class="cursor-pointer text-xs font-medium text-teal-700">Breakdown</summary><ul class="mt-2 grid gap-1 text-xs text-slate-600">@foreach ($candidate->score_breakdown as $component)<li>{{ $component['score'] }}/{{ $component['maximum'] }} · {{ $component['explanation'] }}</li>@endforeach</ul></details>@endif @else<span class="text-slate-500">—</span>@endif</td>
                         <td class="px-4 py-4">@if ($candidate->page_count !== null)<span class="font-semibold tabular-nums">{{ $candidate->page_count }}</span><p class="mt-1 text-xs text-slate-500">{{ str(data_get($candidate->observations, 'page_count_band', 'unknown'))->headline() }}</p>@else<span class="text-slate-500">—</span>@endif</td>
@@ -67,11 +89,12 @@
                         <td class="px-4 py-4">@if ($candidate->prospect)<a href="{{ route('admin.prospects.show', $candidate->prospect) }}" class="font-semibold text-teal-700 hover:underline">Already in Outreach</a>@else<span class="text-slate-500">Not imported</span>@endif</td>
                     </tr>
                 @empty
-                    <tr><td colspan="9" class="px-4 py-12 text-center text-slate-500">No candidates match these filters.</td></tr>
+                    <tr><td colspan="10" class="px-4 py-12 text-center text-slate-500">No candidates match these filters.</td></tr>
                 @endforelse
             </tbody>
         </table>
     </div>
-    <p class="text-xs text-slate-500">Scores and observations are generated only from stored ranking, crawl, and audit evidence. Add to Outreach remains disabled until the next phase is complete.</p>
+    </form>
+    <p class="text-xs text-slate-500">Scores and observations are generated only from stored ranking, crawl, and audit evidence. Import prepares a draft but never sends email; approval remains mandatory.</p>
 </div>
 @endsection

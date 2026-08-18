@@ -47,7 +47,7 @@
     <section id="seo-opportunities" class="space-y-4 border-t border-slate-200 pt-6 scroll-mt-6">
         <div><h2 class="text-xl font-semibold text-slate-950">SEO Opportunities</h2><p class="mt-1 text-sm text-slate-600">Find websites already appearing in Google with room to improve for useful local searches.</p></div>
         <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            <form method="POST" action="{{ route('admin.seo-prospect-searches.store') }}" class="grid gap-4">
+            <form method="POST" action="{{ route('admin.seo-prospect-searches.store') }}" class="grid gap-4" data-seo-cost-estimate-form data-cost-per-ten="{{ $serpLiveCostPerTen }}">
                 @csrf
                 <div class="grid gap-4 md:grid-cols-2">
                     <label class="grid gap-1.5 text-sm font-medium text-slate-700">Industry / service<input name="industry" value="{{ old('industry') }}" required placeholder="e.g. Roofing" class="rounded-lg border border-slate-300 px-3 py-2.5 text-sm"></label>
@@ -55,22 +55,23 @@
                 </div>
                 <div class="grid gap-4 md:grid-cols-2">
                     <label class="grid gap-1.5 text-sm font-medium text-slate-700">Service keywords<textarea name="service_keywords" rows="5" required placeholder="roofer&#10;roof repairs&#10;flat roofing" class="rounded-lg border border-slate-300 px-3 py-2.5 text-sm">{{ is_array(old('service_keywords')) ? implode("\n", old('service_keywords')) : old('service_keywords') }}</textarea></label>
-                    <label class="grid gap-1.5 text-sm font-medium text-slate-700">Final search keywords<textarea name="keywords" rows="5" placeholder="roofer barnsley&#10;roof repairs barnsley&#10;flat roofing barnsley" class="rounded-lg border border-slate-300 px-3 py-2.5 text-sm">{{ is_array(old('keywords')) ? implode("\n", old('keywords')) : old('keywords') }}</textarea></label>
+                    <label class="grid gap-1.5 text-sm font-medium text-slate-700">Final search keywords<textarea name="keywords" rows="5" placeholder="roofer barnsley&#10;roof repairs barnsley&#10;flat roofing barnsley" class="rounded-lg border border-slate-300 px-3 py-2.5 text-sm" data-seo-cost-keywords>{{ is_array(old('keywords')) ? implode("\n", old('keywords')) : old('keywords') }}</textarea></label>
                 </div>
                 <div class="grid gap-4 sm:grid-cols-3">
                     <label class="grid gap-1.5 text-sm font-medium text-slate-700">Minimum position<input type="number" name="minimum_position" value="{{ old('minimum_position', 20) }}" min="1" max="100" required class="rounded-lg border border-slate-300 px-3 py-2.5 text-sm"></label>
-                    <label class="grid gap-1.5 text-sm font-medium text-slate-700">Maximum position<input type="number" name="maximum_position" value="{{ old('maximum_position', 100) }}" min="10" max="100" required class="rounded-lg border border-slate-300 px-3 py-2.5 text-sm"></label>
+                    <label class="grid gap-1.5 text-sm font-medium text-slate-700">Maximum position<input type="number" name="maximum_position" value="{{ old('maximum_position', 100) }}" min="10" max="100" required class="rounded-lg border border-slate-300 px-3 py-2.5 text-sm" data-seo-cost-depth></label>
                     <label class="grid gap-1.5 text-sm font-medium text-slate-700">Maximum site size<input type="number" name="maximum_pages" value="{{ old('maximum_pages', 20) }}" min="1" max="100" required class="rounded-lg border border-slate-300 px-3 py-2.5 text-sm"></label>
                 </div>
                 @if (! $dataForSeoConfigured)<p class="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">DataForSEO credentials are required before SEO opportunity searches can run.</p>@endif
                 @if ($errors->any())<div class="text-sm text-rose-700">{{ $errors->first() }}</div>@endif
+                <div class="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700"><span class="font-semibold">Estimated provider cost:</span> <output data-seo-cost-output>$0.0000</output><span class="text-xs text-slate-500"> · identical SERPs up to {{ $serpCacheDays }} days old are reused at no provider cost</span></div>
                 <div><button @disabled(! $dataForSeoConfigured) class="rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-50">Find ranking opportunities</button></div>
             </form>
-            <p class="mt-4 text-xs leading-5 text-slate-500">Search results are saved for review. This phase does not add prospects to Outreach or send email.</p>
+            <p class="mt-4 text-xs leading-5 text-slate-500">Search results are saved for review. Suitable candidates are added to Outreach only when you select them; outreach still requires manual approval.</p>
         </div>
         <div class="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm"><div class="divide-y divide-slate-100">
             @forelse ($seoSearches as $search)
-                <a href="{{ route('admin.seo-prospect-searches.show', $search) }}" class="grid gap-2 p-4 hover:bg-slate-50 md:grid-cols-[1fr_auto_auto] md:items-center"><div><p class="font-semibold text-slate-900">{{ $search->industry }} in {{ $search->location }}</p><p class="mt-1 text-sm text-slate-500">{{ count($search->keywords) }} keywords · max {{ $search->maximum_pages }} pages · {{ $search->created_at->format('j M Y') }}</p></div><span class="text-sm text-slate-600">{{ $search->candidates_count }} domains</span><span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">{{ str($search->status)->replace('_', ' ')->title() }}</span></a>
+                <a href="{{ route('admin.seo-prospect-searches.show', $search) }}" class="grid gap-2 p-4 hover:bg-slate-50 md:grid-cols-[1fr_auto_auto] md:items-center"><div><p class="font-semibold text-slate-900">{{ $search->industry }} in {{ $search->location }}</p><p class="mt-1 text-sm text-slate-500">{{ count($search->keywords) }} keywords · {{ $search->fresh_keyword_count }} fresh / {{ $search->cached_keyword_count }} cached · ${{ number_format((float) $search->api_cost, 4) }} actual · {{ $search->created_at->format('j M Y') }}</p></div><span class="text-sm text-slate-600">{{ $search->candidates_count }} domains</span><span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">{{ str($search->status)->replace('_', ' ')->title() }}</span></a>
             @empty
                 <div class="p-10 text-center"><p class="font-medium">No SEO opportunity searches yet</p><p class="mt-1 text-sm text-slate-500">Set the services and location to discover ranking domains.</p></div>
             @endforelse

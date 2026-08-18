@@ -23,6 +23,8 @@ class ProspectDiscoveryController extends Controller
             'seoSearches' => $seoSearches,
             'businessTypes' => OpenStreetMapProspectFinder::BUSINESS_TYPES,
             'dataForSeoConfigured' => filled(config('services.dataforseo.login')) && filled(config('services.dataforseo.password')),
+            'serpLiveCostPerTen' => (float) config('services.dataforseo.serp_live_cost_per_ten'),
+            'serpCacheDays' => (int) config('services.dataforseo.serp_cache_days'),
         ]);
     }
 

@@ -13,5 +13,7 @@ final readonly class SerpSearchResponse
         public Collection $results,
         public float $cost = 0,
         public ?string $taskId = null,
+        public bool $cached = false,
+        public ?string $fetchedAt = null,
     ) {}
 }

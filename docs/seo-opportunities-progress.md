@@ -4,12 +4,12 @@ Last updated: 18 August 2026
 
 ## Current phase
 
-Phase 3 scoring and observations is complete. The existing Outreach > Find Prospects page has two discovery modes:
+All five planned phases are complete. The existing Outreach > Find Prospects page has two discovery modes:
 
 - Local Businesses: the existing OpenStreetMap workflow, unchanged.
-- SEO Opportunities: persisted keyword searches, queued organic SERP retrieval, domain deduplication, ranking evidence, search history, isolated candidate crawling/auditing, contact enrichment, page-count qualification, deterministic opportunity scoring, evidence-backed observations, result filters, and read-only candidate results.
+- SEO Opportunities: persisted keyword searches, queued organic SERP retrieval, domain deduplication, ranking evidence, search history, isolated candidate crawling/auditing, contact enrichment, page-count qualification, deterministic opportunity scoring, evidence-backed observations, result filters, manual import into Outreach, cached reruns, forced fresh reruns, freshness reporting, and cost estimates.
 
-The workflow still stops before importing. No SEO candidate can yet be added to Outreach, and no email is sent.
+Suitable SEO candidates can now be selected and added to the existing Outreach workflow. Import prepares the existing analysis/draft flow and never sends an email; approval remains mandatory.
 
 ## Existing implementation
 
@@ -43,7 +43,7 @@ Search Console opportunities are first-party data for managed websites and must 
 
 ### Separate search aggregate, shared Outreach destination
 
-SEO discovery uses `SeoProspectSearch`, `SeoProspectCandidate`, and `SeoProspectRanking`. These are search/history/evidence records, not a second CRM or lead model. In a later phase, selected qualified candidates will create or link the existing `Prospect` exactly as the OpenStreetMap importer does.
+SEO discovery uses `SeoProspectSearch`, `SeoProspectCandidate`, and `SeoProspectRanking`. These are search/history/evidence records, not a second CRM or lead model. Selected qualified candidates create or link the existing `Prospect` exactly as the OpenStreetMap importer does.
 
 ### Provider boundary
 
@@ -89,9 +89,15 @@ Only candidates with a `suitable` qualification are scored. The deterministic 10
 
 Each component stores its score, maximum, deterministic explanation, and supporting record or field references. Structured outreach observations are generated only from stored ranking rows, crawl observations, and audit findings. They retain ranking IDs or candidate JSON field/index references so later outreach drafting can trace every statement back to its source.
 
-### Cost records
+### Import into Outreach
 
-Every provider response creates an `ExternalApiUsage` row. Its metadata contains the SEO search ID, keyword, and location. The provider-reported cost is also accumulated on the search for history display. No Google HTML is scraped.
+Only manually selected, suitable candidates can be imported. The importer locks the search and candidates in a transaction, links an existing prospect by normalized domain where possible, creates only missing prospects, and stores the rankings, score breakdown, and observations as prospect activity evidence. Newly created prospects are queued for the existing analysis/draft preparation after commit. Import never sends outreach.
+
+### Cost records, cache, and reruns
+
+Fresh provider responses create an `ExternalApiUsage` row whose metadata contains the SEO search ID, keyword, and location. Cached responses cost zero and do not create a paid usage record. Estimated and actual costs, fresh/cached keyword totals, and per-keyword fetch times are stored and displayed.
+
+SERPs are cached for seven days by normalized keyword, location, depth, language, and device. A rerun creates a separate dated search so previous evidence remains immutable. Admins can reuse eligible cached results or explicitly force fresh provider requests. No Google HTML is scraped.
 
 ## Database structure
 
@@ -119,7 +125,7 @@ As of 18 August 2026, DataForSEO prices Google Organic SERPs per ten results:
 - Standard queue: $0.0006 per ten results. Depth 100 is approximately $0.006 per keyword, or $0.03 for five keywords.
 - Priority queue: $0.0012 per ten results. Depth 100 is approximately $0.012 per keyword, or $0.06 for five keywords.
 
-Phase 1 uses Live because the existing client is a synchronous POST client running inside a queued Sitewell job. A later cost-optimisation phase should add DataForSEO Standard task POST/GET support and a result cache before wider use. Optional SERP parameters can add multipliers and are not enabled.
+The implementation uses Live because the existing client is a synchronous POST client running inside a queued Sitewell job. Standard queue support was evaluated but would require a separate asynchronous task-posting and polling lifecycle. Seven-day provider-neutral caching now makes unchanged reruns cost-free while preserving the simpler and already-tested Live adapter. Standard queue support remains an optional future optimisation for always-fresh, high-volume workloads. Optional SERP parameters can add multipliers and are not enabled.
 
 ## External configuration
 
@@ -153,24 +159,16 @@ Free-form UK place names are resolved against DataForSEO’s free Google locatio
 - Added evidence-referenced ranking, crawl, and audit outreach observations without AI-generated claims.
 - Added qualification, migration, and minimum-score result filters.
 - Added score details and default score-descending ordering to the results table.
+- Added manual selection and transactional import of suitable candidates into Outreach.
+- Added normalized-domain prospect deduplication and attached discovery evidence.
+- Kept approval mandatory and dispatches prospect analysis only after commit.
+- Added seven-day provider-neutral SERP caching and visible per-keyword freshness.
+- Added immutable dated reruns with cached and force-fresh options.
+- Added live cost estimates plus actual, fresh, and cached totals in search history.
 
 ## Remaining work
 
-### Phase 4: import into Outreach
-
-- Add manual candidate selection and Add to Outreach.
-- Use a transaction and row locks following the existing OpenStreetMap importer.
-- Deduplicate by normalized domain against existing prospects, link rather than duplicate, and attach discovery evidence.
-- Dispatch existing prospect enrichment/draft behavior only after commit.
-- Keep approval mandatory and never send automatically.
-
-### Phase 5: cost and reruns
-
-- Add cached SERP reuse with a visible freshness policy.
-- Add a rerun action that creates a new dated run or explicitly refreshes the existing run without duplicating candidates.
-- Consider DataForSEO Standard queue support for roughly 70% lower SERP cost.
-- Add provider location-code resolution and cache.
-- Add per-search cost estimates before submission and cost totals in search history.
+No work remains in the planned five-phase V1. DataForSEO Standard queue support is an optional future optimisation rather than a completion requirement because repeat searches already use the zero-cost cache.
 
 ## Architecture concerns
 
