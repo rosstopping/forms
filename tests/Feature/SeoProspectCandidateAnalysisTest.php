@@ -4,6 +4,7 @@ use App\Jobs\AnalyzeSeoProspectCandidate;
 use App\Models\SeoProspectCandidate;
 use App\Models\SeoProspectSearch;
 use App\Services\ProspectWebsiteAnalyzer;
+use App\Services\SeoOpportunityScoringService;
 use App\Services\SeoProspectCandidateAnalyzer;
 use App\Services\WebsiteCrawler;
 use App\Services\WebsiteMigrationAssessor;
@@ -127,8 +128,9 @@ it('persists successful job analysis and completes search progress idempotently'
     ]);
     $job = new AnalyzeSeoProspectCandidate($candidate);
 
-    $job->handle($analyzer);
-    $job->handle($analyzer);
+    $scoringService = app(SeoOpportunityScoringService::class);
+    $job->handle($analyzer, $scoringService);
+    $job->handle($analyzer, $scoringService);
 
     expect($job->uniqueId())->toBe((string) $candidate->id)
         ->and($candidate->refresh()->qualification_status)->toBe('suitable')
@@ -136,6 +138,9 @@ it('persists successful job analysis and completes search progress idempotently'
         ->and(data_get($candidate->contact_details, 'emails.0.value'))->toBe('hello@example.com')
         ->and($candidate->analysis_error)->toBeNull()
         ->and($candidate->analyzed_at)->not->toBeNull()
+        ->and($candidate->opportunity_score)->toBe(49)
+        ->and(data_get($candidate->score_breakdown, 'ranking.maximum'))->toBe(40)
+        ->and(data_get($candidate->observations, 'outreach.0.type'))->toBe('crawl')
         ->and($search->refresh()->status)->toBe('analyzed')
         ->and($search->suitable_count)->toBe(1);
 });

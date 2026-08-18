@@ -4,12 +4,12 @@ Last updated: 18 August 2026
 
 ## Current phase
 
-Phase 2 candidate analysis is complete. The existing Outreach > Find Prospects page has two discovery modes:
+Phase 3 scoring and observations is complete. The existing Outreach > Find Prospects page has two discovery modes:
 
 - Local Businesses: the existing OpenStreetMap workflow, unchanged.
-- SEO Opportunities: persisted keyword searches, queued organic SERP retrieval, domain deduplication, ranking evidence, search history, isolated candidate crawling/auditing, contact enrichment, page-count qualification, and read-only candidate results.
+- SEO Opportunities: persisted keyword searches, queued organic SERP retrieval, domain deduplication, ranking evidence, search history, isolated candidate crawling/auditing, contact enrichment, page-count qualification, deterministic opportunity scoring, evidence-backed observations, result filters, and read-only candidate results.
 
-The workflow still stops before opportunity scoring, generated outreach observations, and importing. No SEO candidate can yet be added to Outreach, and no email is sent.
+The workflow still stops before importing. No SEO candidate can yet be added to Outreach, and no email is sent.
 
 ## Existing implementation
 
@@ -78,6 +78,17 @@ Migration difficulty is deterministic and stored with a reason:
 - Hard: 40+ pages or ecommerce/account/membership indicators.
 - Unknown: no indexable pages could be confirmed or analysis failed.
 
+### Opportunity scoring and observations
+
+Only candidates with a `suitable` qualification are scored. The deterministic 100-point score uses four stored-evidence components:
+
+- Ranking visibility (40): the candidate's average stored organic position, normalized between the search's configured minimum and maximum positions. A result at or above the minimum receives 40; one at the maximum receives 0.
+- Audit opportunity (25): the inverse of the stored audit score, scaled to 25 points. A lower current audit score represents more demonstrable improvement opportunity.
+- Site fit (20): 20 points for 1-10 indexable pages, 15 for 11 pages through the configured maximum, and 0 when no suitable page count is available.
+- Migration ease (15): Easy 15, Medium 8, Hard 2, and Unknown 0.
+
+Each component stores its score, maximum, deterministic explanation, and supporting record or field references. Structured outreach observations are generated only from stored ranking rows, crawl observations, and audit findings. They retain ranking IDs or candidate JSON field/index references so later outreach drafting can trace every statement back to its source.
+
 ### Cost records
 
 Every provider response creates an `ExternalApiUsage` row. Its metadata contains the SEO search ID, keyword, and location. The provider-reported cost is also accumulated on the search for history display. No Google HTML is scraped.
@@ -138,15 +149,12 @@ Free-form UK place names are resolved against DataForSEO’s free Google locatio
 - Added Easy/Medium/Hard/Unknown migration assessment with stored reasons.
 - Added candidate analysis status, error, and aggregate search progress tracking.
 - Added page count, audit findings, contacts, migration difficulty, and qualification to the results table.
+- Added the deterministic 40/25/20/15 opportunity score and stored component explanations.
+- Added evidence-referenced ranking, crawl, and audit outreach observations without AI-generated claims.
+- Added qualification, migration, and minimum-score result filters.
+- Added score details and default score-descending ordering to the results table.
 
 ## Remaining work
-
-### Phase 3: scoring and observations
-
-- Implement `SeoOpportunityScoringService` with the agreed 40/25/20/15 breakdown.
-- Store each component and generate deterministic explanations from stored data.
-- Generate structured outreach observations only from ranking, crawl, and audit records, with references to their supporting row/data.
-- Add result filters and default score-descending ordering.
 
 ### Phase 4: import into Outreach
 

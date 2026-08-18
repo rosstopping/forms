@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\SeoProspectCandidate;
 use App\Models\SeoProspectSearch;
+use App\Services\SeoOpportunityScoringService;
 use App\Services\SeoProspectCandidateAnalyzer;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -32,7 +33,7 @@ class AnalyzeSeoProspectCandidate implements ShouldBeUnique, ShouldQueue
         return [30, 120];
     }
 
-    public function handle(SeoProspectCandidateAnalyzer $analyzer): void
+    public function handle(SeoProspectCandidateAnalyzer $analyzer, SeoOpportunityScoringService $scoringService): void
     {
         $this->candidate->update(['qualification_status' => 'analyzing', 'analysis_error' => null]);
         $this->candidate->update([
@@ -40,6 +41,8 @@ class AnalyzeSeoProspectCandidate implements ShouldBeUnique, ShouldQueue
             'analysis_error' => null,
             'analyzed_at' => now(),
         ]);
+        $this->candidate->refresh()->load(['rankings', 'search']);
+        $this->candidate->update($scoringService->score($this->candidate));
         $this->updateSearchProgress();
     }
 
@@ -50,6 +53,8 @@ class AnalyzeSeoProspectCandidate implements ShouldBeUnique, ShouldQueue
             'migration_difficulty' => 'unknown',
             'migration_difficulty_reason' => 'Candidate analysis could not be completed.',
             'analysis_error' => $exception?->getMessage(),
+            'opportunity_score' => null,
+            'score_breakdown' => null,
             'analyzed_at' => now(),
         ]);
         $this->updateSearchProgress();
