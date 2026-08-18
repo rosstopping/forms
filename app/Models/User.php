@@ -95,6 +95,11 @@ class User extends Authenticatable
         return $this->hasMany(ProspectDiscovery::class);
     }
 
+    public function seoProspectSearches(): HasMany
+    {
+        return $this->hasMany(SeoProspectSearch::class);
+    }
+
     public function websiteAiQuestions(): HasMany
     {
         return $this->hasMany(WebsiteAiQuestion::class);

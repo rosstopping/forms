@@ -36,6 +36,7 @@ use App\Http\Controllers\Admin\SearchOpportunityController;
 use App\Http\Controllers\Admin\SeoIntelligenceController;
 use App\Http\Controllers\Admin\SeoKeywordController;
 use App\Http\Controllers\Admin\SeoOpportunityController;
+use App\Http\Controllers\Admin\SeoProspectSearchController;
 use App\Http\Controllers\Admin\SeoSnapshotSettingsController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\WebsiteAiChatController;
@@ -206,6 +207,8 @@ Route::middleware(['web', 'auth'])->prefix('admin')->name('admin.')->group(funct
         Route::post('prospect-discoveries', [ProspectDiscoveryController::class, 'store'])->name('prospect-discoveries.store');
         Route::get('prospect-discoveries/{prospectDiscovery}', [ProspectDiscoveryController::class, 'show'])->name('prospect-discoveries.show');
         Route::post('prospect-discoveries/{prospectDiscovery}/import', ImportProspectDiscoveryCandidatesController::class)->name('prospect-discoveries.import');
+        Route::post('prospect-discoveries/seo-opportunities', [SeoProspectSearchController::class, 'store'])->name('seo-prospect-searches.store');
+        Route::get('prospect-discoveries/seo-opportunities/{seoProspectSearch}', [SeoProspectSearchController::class, 'show'])->name('seo-prospect-searches.show');
         Route::post('prospects/{prospect}/analyse', ProspectAnalysisController::class)->name('prospects.analyse');
         Route::post('prospects/{prospect}/approve', ProspectApprovalController::class)->name('prospects.approve');
         Route::post('prospects/{prospect}/send', ProspectSendController::class)->name('prospects.send');

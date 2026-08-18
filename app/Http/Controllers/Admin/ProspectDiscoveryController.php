@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreProspectDiscoveryRequest;
 use App\Jobs\DiscoverProspects;
 use App\Models\ProspectDiscovery;
+use App\Models\SeoProspectSearch;
 use App\Services\OpenStreetMapProspectFinder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -14,9 +15,15 @@ class ProspectDiscoveryController extends Controller
 {
     public function index(): View
     {
-        $discoveries = ProspectDiscovery::query()->withCount('candidates')->latest()->paginate(12);
+        $discoveries = ProspectDiscovery::query()->withCount('candidates')->latest()->paginate(12, pageName: 'local_page');
+        $seoSearches = SeoProspectSearch::query()->withCount('candidates')->latest()->paginate(12, pageName: 'seo_page');
 
-        return view('admin.prospect-discoveries.index', ['discoveries' => $discoveries, 'businessTypes' => OpenStreetMapProspectFinder::BUSINESS_TYPES]);
+        return view('admin.prospect-discoveries.index', [
+            'discoveries' => $discoveries,
+            'seoSearches' => $seoSearches,
+            'businessTypes' => OpenStreetMapProspectFinder::BUSINESS_TYPES,
+            'dataForSeoConfigured' => filled(config('services.dataforseo.login')) && filled(config('services.dataforseo.password')),
+        ]);
     }
 
     public function store(StoreProspectDiscoveryRequest $request): RedirectResponse
