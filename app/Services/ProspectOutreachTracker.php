@@ -5,7 +5,10 @@ namespace App\Services;
 use App\Models\Prospect;
 use App\Models\ProspectOutreachDelivery;
 use App\Models\ProspectOutreachLink;
+use App\Models\User;
+use App\Notifications\ProspectBecameHot;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\URL;
 
 class ProspectOutreachTracker
@@ -62,9 +65,10 @@ class ProspectOutreachTracker
 
     public function recordClick(ProspectOutreachLink $link): void
     {
-        DB::transaction(function () use ($link): void {
+        $hotProspect = DB::transaction(function () use ($link): ?Prospect {
             $link = ProspectOutreachLink::query()->lockForUpdate()->findOrFail($link->id);
             $delivery = ProspectOutreachDelivery::query()->lockForUpdate()->findOrFail($link->prospect_outreach_delivery_id);
+            $prospect = Prospect::query()->lockForUpdate()->findOrFail($delivery->prospect_id);
             $clickedAt = now();
             $firstLinkClick = $link->first_clicked_at === null;
 
@@ -78,12 +82,21 @@ class ProspectOutreachTracker
                 'last_clicked_at' => $clickedAt,
                 'click_count' => $delivery->click_count + 1,
             ]);
-            $this->markProspectHot($delivery->prospect);
+            $becameHot = $this->markProspectHot($prospect);
 
             if ($firstLinkClick) {
-                $delivery->prospect->recordActivity('email_clicked', 'Clicked the “'.$link->label.'” link in the outreach email.');
+                $prospect->recordActivity('email_clicked', 'Clicked the “'.$link->label.'” link in the outreach email.');
             }
+
+            return $becameHot ? $prospect : null;
         });
+
+        if ($hotProspect) {
+            Notification::send(
+                User::query()->where('role', User::ROLE_ADMIN)->get(),
+                new ProspectBecameHot($hotProspect, $link->label),
+            );
+        }
     }
 
     private function warmProspectFromOpen(Prospect $prospect): void
@@ -93,10 +106,14 @@ class ProspectOutreachTracker
         }
     }
 
-    private function markProspectHot(Prospect $prospect): void
+    private function markProspectHot(Prospect $prospect): bool
     {
-        if ($prospect->lead_temperature !== 'hot') {
-            $prospect->update(['lead_temperature' => 'hot']);
+        if ($prospect->lead_temperature === 'hot') {
+            return false;
         }
+
+        $prospect->update(['lead_temperature' => 'hot']);
+
+        return true;
     }
 }

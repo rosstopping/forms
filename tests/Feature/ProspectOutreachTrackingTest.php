@@ -5,7 +5,9 @@ use App\Models\Prospect;
 use App\Models\ProspectOutreachDelivery;
 use App\Models\ProspectOutreachLink;
 use App\Models\User;
+use App\Notifications\ProspectBecameHot;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\URL;
 
 it('adds signed open and click tracking to a live outreach email', function (): void {
@@ -56,7 +58,9 @@ it('records opens and warms a cold outreach lead', function (): void {
 });
 
 it('records each tracked link click and marks the lead as hot', function (): void {
-    $prospect = Prospect::factory()->create(['lead_temperature' => 'cold']);
+    Notification::fake();
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $prospect = Prospect::factory()->for($admin, 'owner')->create(['lead_temperature' => 'cold']);
     $delivery = ProspectOutreachDelivery::factory()->for($prospect)->create();
     $link = ProspectOutreachLink::factory()->for($delivery, 'delivery')->create([
         'label' => 'Website video',
@@ -74,6 +78,27 @@ it('records each tracked link click and marks the lead as hot', function (): voi
         ->and($delivery->first_clicked_at)->not->toBeNull()
         ->and($prospect->refresh()->lead_temperature)->toBe('hot')
         ->and($prospect->activities()->where('type', 'email_clicked')->count())->toBe(1);
+    Notification::assertSentTo($admin, ProspectBecameHot::class, function (ProspectBecameHot $notification) use ($admin, $prospect): bool {
+        $message = $notification->toMail($admin);
+
+        return $notification->prospect->is($prospect)
+            && $notification->clickedLink === 'Website video'
+            && $message->subject === 'Hot prospect: '.$prospect->business_name
+            && $message->actionUrl === route('admin.prospects.show', $prospect);
+    });
+    Notification::assertSentToTimes($admin, ProspectBecameHot::class, 1);
+});
+
+it('does not notify administrators again when an already hot prospect clicks', function (): void {
+    Notification::fake();
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $prospect = Prospect::factory()->for($admin, 'owner')->create(['lead_temperature' => 'hot']);
+    $delivery = ProspectOutreachDelivery::factory()->for($prospect)->create();
+    $link = ProspectOutreachLink::factory()->for($delivery, 'delivery')->create();
+
+    $this->get(URL::signedRoute('prospect-outreach-links.show', $link))->assertRedirect();
+
+    Notification::assertNothingSent();
 });
 
 it('does not cool a hot lead when another open is recorded', function (): void {
