@@ -11,10 +11,11 @@ class OnboardingEnquiryController extends Controller
 {
     public function __invoke(StoreOnboardingEnquiryRequest $request): RedirectResponse
     {
-        $enquiry = $request->safe()->only(['name', 'email', 'agency', 'website_count', 'goals']);
+        $enquiry = $request->safe()->only(['name', 'email', 'agency', 'website', 'goals']);
         $enquiry['agency'] ??= null;
+        $enquiry['website'] ??= null;
         Mail::to(config('forms.default_recipient'))->send(new OnboardingEnquiryReceived($enquiry));
 
-        return back()->with('status', 'Thanks — your onboarding request is with us. We’ll be in touch shortly.');
+        return back()->with('status', 'Thanks — your request is with us. We’ll be in touch shortly.');
     }
 }

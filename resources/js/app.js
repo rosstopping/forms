@@ -128,6 +128,34 @@ document.querySelectorAll('[data-seo-cost-estimate-form]').forEach((form) => {
     updateEstimate();
 });
 
+document.querySelectorAll('[data-outreach-selection-form]').forEach((form) => {
+    const selectAll = form.querySelector('[data-outreach-select-all]');
+    const candidates = [...form.querySelectorAll('[data-outreach-candidate]:not(:disabled)')];
+
+    if (!selectAll) {
+        return;
+    }
+
+    const updateSelectAll = () => {
+        const selectedCount = candidates.filter((candidate) => candidate.checked).length;
+
+        selectAll.checked = candidates.length > 0 && selectedCount === candidates.length;
+        selectAll.indeterminate = selectedCount > 0 && selectedCount < candidates.length;
+        selectAll.disabled = candidates.length === 0;
+    };
+
+    selectAll.addEventListener('change', () => {
+        candidates.forEach((candidate) => {
+            candidate.checked = selectAll.checked;
+        });
+
+        updateSelectAll();
+    });
+
+    candidates.forEach((candidate) => candidate.addEventListener('change', updateSelectAll));
+    updateSelectAll();
+});
+
 const websiteAiForm = document.querySelector('[data-website-ai-form]');
 const websiteAiMessages = document.querySelector('[data-website-ai-messages]');
 

@@ -11,7 +11,7 @@ return [
             'summary' => 'One website included',
             'features' => [
                 'Free website included if you need one',
-                'Website health checks and practical fixes',
+                'Website health and SEO audits with practical fixes',
                 'Weekly email health reports',
                 'Forms, spam protection, and automatic replies',
                 'Lead inbox, CRM, notes, and follow-up reminders',
@@ -24,8 +24,10 @@ return [
             'description' => 'For businesses ready to turn search visibility into a steady growth channel.',
             'summary' => 'Everything in Essential',
             'features' => [
+                'Free website included if you need one',
                 'Google Search Console performance',
-                'Search opportunities and recommendations',
+                'Striking-distance keywords and SEO opportunities',
+                'Content recommendations for existing pages',
                 'Automated, reviewable content generation',
                 'Content planning and improvement workflow',
                 'Priority support',
@@ -38,6 +40,8 @@ return [
             'description' => 'For businesses that want their website and local presence working together.',
             'summary' => 'Everything in Growth',
             'features' => [
+                'Free website included if you need one',
+                'SEO audits, striking-distance keywords, and content recommendations',
                 'Google Business Profile management',
                 'Profile health checks and recommended changes',
                 'Generated Google post drafts',

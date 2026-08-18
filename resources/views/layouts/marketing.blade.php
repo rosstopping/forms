@@ -22,7 +22,7 @@
                 </nav>
                 <div class="hidden flex-1 items-center justify-end gap-5 text-sm lg:flex">
                     <a href="{{ route('login') }}" class="text-ink/65 hover:text-ink">Log in</a>
-                    <a href="{{ route('marketing.contact') }}" class="rounded-md px-3 py-2 text-ink ring-1 ring-ink/20 hover:bg-white/40">Start onboarding</a>
+                    <a href="{{ route('marketing.contact') }}" class="rounded-md px-3 py-2 text-ink ring-1 ring-ink/20 hover:bg-white/40">Get started</a>
                 </div>
                 <details class="relative lg:hidden">
                     <summary class="relative list-none rounded-md px-3 py-2 text-base font-medium ring-1 ring-ink/20">Menu<span class="absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2 pointer-fine:hidden" aria-hidden="true"></span></summary>
@@ -56,7 +56,7 @@
                         <a href="{{ route('marketing.features') }}" class="font-normal hover:text-paper">Features</a>
                         <a href="{{ route('marketing.pricing') }}" class="font-normal hover:text-paper">Pricing</a>
                         <a href="{{ route('marketing.free-site-audit') }}" class="font-normal hover:text-paper">Free site audit</a>
-                        <a href="{{ route('marketing.contact') }}" class="font-normal hover:text-paper">Onboarding</a>
+                        <a href="{{ route('marketing.contact') }}" class="font-normal hover:text-paper">Get started</a>
                     </nav>
                     <nav class="grid content-start gap-3 text-base text-paper/70 sm:text-sm" aria-label="Company">
                         <p class="font-medium text-paper">Company</p>

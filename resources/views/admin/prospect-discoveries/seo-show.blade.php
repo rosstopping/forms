@@ -67,9 +67,15 @@
         </div>
     </form>
 
-    <form method="POST" action="{{ route('admin.seo-prospect-searches.import', $search) }}" class="space-y-3">
+    <form method="POST" action="{{ route('admin.seo-prospect-searches.import', $search) }}" class="space-y-3" data-outreach-selection-form>
         @csrf
-        <div class="flex flex-wrap items-center justify-between gap-3"><p class="text-xs text-slate-500">Select suitable domains that are not already in Outreach.</p><button type="submit" class="rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-800">Add selected to Outreach</button></div>
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="flex flex-wrap items-center gap-4">
+                <label class="inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-700"><input type="checkbox" data-outreach-select-all class="size-4 rounded border-slate-300 text-teal-700 disabled:cursor-not-allowed disabled:opacity-40">Select all eligible</label>
+                <p class="text-xs text-slate-500">Selects suitable domains that are not already in Outreach.</p>
+            </div>
+            <button type="submit" class="rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-800">Add selected to Outreach</button>
+        </div>
     <div class="overflow-x-auto border-y border-slate-200 bg-white">
         <table class="min-w-full divide-y divide-slate-200 text-sm">
             <thead class="bg-slate-50 text-left text-xs font-semibold uppercase text-slate-500"><tr><th class="px-4 py-3"><span class="sr-only">Select</span></th><th class="px-4 py-3">Business / domain</th><th class="px-4 py-3">Score</th><th class="px-4 py-3">Pages</th><th class="px-4 py-3">Best ranking</th><th class="px-4 py-3">Audit issues</th><th class="px-4 py-3">Migration</th><th class="px-4 py-3">Observations</th><th class="px-4 py-3">Qualification</th><th class="px-4 py-3">Outreach</th></tr></thead>
@@ -77,7 +83,7 @@
                 @forelse ($search->candidates as $candidate)
                     @php($bestRanking = $candidate->rankings->sortBy('position')->first())
                     <tr>
-                        <td class="px-4 py-4"><input type="checkbox" name="candidate_ids[]" value="{{ $candidate->id }}" @disabled($candidate->qualification_status !== 'suitable' || $candidate->prospect) aria-label="Select {{ $candidate->business_name ?: $candidate->domain }}" class="size-4 rounded border-slate-300 text-teal-700 disabled:cursor-not-allowed disabled:opacity-40"></td>
+                        <td class="px-4 py-4"><input type="checkbox" name="candidate_ids[]" value="{{ $candidate->id }}" data-outreach-candidate @disabled($candidate->qualification_status !== 'suitable' || $candidate->prospect) aria-label="Select {{ $candidate->business_name ?: $candidate->domain }}" class="size-4 rounded border-slate-300 text-teal-700 disabled:cursor-not-allowed disabled:opacity-40"></td>
                         <td class="px-4 py-4"><a href="{{ $candidate->website_url }}" target="_blank" rel="noreferrer" class="font-semibold text-teal-700 hover:underline">{{ $candidate->business_name ?: $candidate->domain }}</a><p class="mt-1 text-xs text-slate-500">{{ $candidate->domain }}</p></td>
                         <td class="px-4 py-4">@if ($candidate->opportunity_score !== null)<span class="text-lg font-semibold tabular-nums text-slate-950">{{ $candidate->opportunity_score }}</span><span class="text-xs text-slate-500">/100</span>@if (filled($candidate->score_breakdown))<details class="mt-1"><summary class="cursor-pointer text-xs font-medium text-teal-700">Breakdown</summary><ul class="mt-2 grid gap-1 text-xs text-slate-600">@foreach ($candidate->score_breakdown as $component)<li>{{ $component['score'] }}/{{ $component['maximum'] }} · {{ $component['explanation'] }}</li>@endforeach</ul></details>@endif @else<span class="text-slate-500">—</span>@endif</td>
                         <td class="px-4 py-4">@if ($candidate->page_count !== null)<span class="font-semibold tabular-nums">{{ $candidate->page_count }}</span><p class="mt-1 text-xs text-slate-500">{{ str(data_get($candidate->observations, 'page_count_band', 'unknown'))->headline() }}</p>@else<span class="text-slate-500">—</span>@endif</td>

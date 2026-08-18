@@ -8,7 +8,8 @@
         <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
             <p class="font-mono text-sm uppercase tracking-wide text-garden">Straightforward monthly plans</p>
             <h1 class="mt-5 max-w-[20ch] font-display text-5xl font-semibold tracking-tight text-balance sm:text-6xl">Everything your website needs to work harder</h1>
-            <p class="mt-6 max-w-[48ch] text-pretty text-lg text-ink/65 sm:text-base">Start with a healthier website and a better way to handle leads. Add search, content, and local business automation as your business grows.</p>
+            <p class="mt-6 max-w-[52ch] text-pretty text-lg text-ink/65 sm:text-base">Every plan includes a free website if you need one, plus the care needed to keep it healthy. Add deeper search insight, content recommendations, and local business tools as you grow.</p>
+            <p class="mt-5 inline-flex rounded-full bg-lichen px-4 py-2 font-mono text-sm font-medium text-moss ring-1 ring-moss/15">Free website included with every plan</p>
         </div>
     </section>
 
@@ -41,7 +42,7 @@
         <div class="mx-auto grid max-w-7xl gap-12 px-5 sm:px-8 lg:grid-cols-[2fr_3fr] lg:px-10">
             <div><p class="font-mono text-sm uppercase tracking-wide text-garden">Included in every plan</p><h2 class="mt-4 max-w-[24ch] font-display text-4xl font-semibold tracking-tight text-balance sm:text-5xl">A solid foundation, without the extras</h2></div>
             <dl class="grid gap-8 sm:grid-cols-2">
-                @foreach ([['A website if you need one', 'Essential includes a new website for businesses that do not already have one.'], ['Guided setup', 'We set up your website, forms, notifications, and reporting rhythm.'], ['Human review', 'Content, fixes, posts, and review replies remain under your control.'], ['Clear portability', 'Your website and connected accounts remain yours.']] as [$title, $copy])
+                @foreach ([['A free website if you need one', 'Essential, Growth, and Complete all include a professionally set-up website for businesses that need one.'], ['Guided setup', 'We set up your website, forms, notifications, and reporting rhythm.'], ['Human review', 'Content, fixes, posts, and review replies remain under your control.'], ['Clear portability', 'Your website and connected accounts remain yours.']] as [$title, $copy])
                     <div class="border-t border-ink/15 pt-4"><dt class="text-base font-medium sm:text-sm">{{ $title }}</dt><dd class="mt-2 text-pretty text-base text-ink/55 sm:text-sm">{{ $copy }}</dd></div>
                 @endforeach
             </dl>
@@ -53,7 +54,7 @@
             <p class="font-mono text-sm uppercase tracking-wide text-garden">Questions before you start</p>
             <h2 class="mt-4 max-w-[24ch] font-display text-4xl font-semibold tracking-tight text-balance sm:text-5xl">Pricing, plainly answered</h2>
             <div class="mt-12 max-w-4xl divide-y divide-ink/10 border-y border-ink/10">
-                @foreach ([['Is a website really included?', 'Yes. Essential includes a website for businesses starting without one. We will agree the scope during onboarding.'], ['Can I change plans later?', 'Yes. Move up as you are ready for search, content, and Google Business Profile automation.'], ['Are form submissions limited?', 'No. Every plan includes unlimited form submissions, subject to fair-use and spam controls.'], ['What does setup include?', 'We set up your website, verify forms and notifications, and agree a clear reporting rhythm. Growth and Complete add the relevant Google connections.']] as [$question, $answer])
+                @foreach ([['Is a website really included?', 'Yes. Every plan includes a website if you need one. We will agree the scope when you get started.'], ['Can I change plans later?', 'Yes. Move up as you are ready for search, content, and Google Business Profile tools.'], ['Are form submissions limited?', 'No. Every plan includes unlimited form submissions, subject to fair-use and spam controls.'], ['What does setup include?', 'We set up your website, verify forms and notifications, and agree a clear reporting rhythm. Growth and Complete add the relevant Google connections.']] as [$question, $answer])
                     <details class="group py-5"><summary class="flex list-none items-center justify-between gap-6 text-base font-medium sm:text-sm">{{ $question }}<span class="shrink-0 font-mono text-garden group-open:hidden">+</span><span class="hidden shrink-0 font-mono text-garden group-open:inline">−</span></summary><p class="mt-4 max-w-[70ch] text-pretty text-base text-ink/60 sm:text-sm">{{ $answer }}</p></details>
                 @endforeach
             </div>

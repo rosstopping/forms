@@ -21,7 +21,7 @@
 
     <section class="border-y border-ink/10">
         <div class="mx-auto grid max-w-7xl px-5 sm:grid-cols-2 sm:px-8 lg:grid-cols-4 lg:px-10">
-            @foreach ([['Healthier website', 'Issues spotted before they cost you business.'], ['Every lead captured', 'No enquiry missed, every time.'], ['Clear next steps', 'Plain-English reports and practical fixes.'], ['Built to grow with you', 'More search and automation when you are ready.']] as [$title, $copy])
+            @foreach ([['Free website included', 'Need a new website? It is included with every plan.'], ['Healthier website', 'Health and SEO issues spotted before they cost you business.'], ['Every lead captured', 'No enquiry missed, every time.'], ['Clear growth opportunities', 'Striking-distance keywords and practical content recommendations.']] as [$title, $copy])
                 <div class="border-t border-ink/10 py-7 first:border-t-0 sm:border-t-0 sm:px-6 sm:[&:nth-child(2n)]:border-l sm:[&:nth-child(2n)]:border-ink/10 sm:[&:nth-child(odd)]:pl-0 lg:[&:not(:first-child)]:border-l lg:[&:not(:first-child)]:border-ink/10 lg:[&:nth-child(odd)]:pl-6 lg:first:pr-6 lg:last:pr-0">
                     <p class="text-base font-medium sm:text-sm">{{ $title }}</p>
                     <p class="mt-2 text-base text-ink/55 sm:text-sm">{{ $copy }}</p>
@@ -38,7 +38,7 @@
                 <p class="mt-5 max-w-[48ch] text-pretty text-lg text-ink/60 sm:text-base">Everything your business needs to make its website a more dependable part of how you grow.</p>
             </div>
             <dl class="mt-14 grid gap-10 lg:grid-cols-3">
-                @foreach ([['01', 'Capture every enquiry', 'Forms, spam protection, automatic acknowledgements, and a clear CRM make sure every potential customer gets the attention they deserve.'], ['02', 'Know what needs attention', 'Weekly health checks and email reports turn technical website problems into plain next steps.'], ['03', 'Improve with confidence', 'When you are ready, connect search data, automated content, and local business tools to keep moving forward.']] as [$number, $title, $copy])
+                @foreach ([['01', 'Capture every enquiry', 'Forms, spam protection, automatic acknowledgements, and a clear CRM make sure every potential customer gets the attention they deserve.'], ['02', 'Know what needs attention', 'Website health and SEO audits turn technical problems into plain next steps, with weekly reports that keep you informed.'], ['03', 'Improve with confidence', 'Search data reveals striking-distance keywords, content gaps, and clear recommendations for improving the pages you already have.']] as [$number, $title, $copy])
                     <div class="border-t border-ink/15 pt-6">
                         <dt><p class="font-mono text-base text-garden sm:text-sm">{{ $number }}</p><p class="mt-6 font-display text-2xl font-semibold tracking-tight">{{ $title }}</p></dt>
                         <dd class="mt-4 max-w-[56ch] text-pretty text-base text-ink/60 sm:text-sm">{{ $copy }}</dd>
@@ -57,7 +57,7 @@
                 <a href="{{ route('marketing.features') }}" class="mt-7 inline-flex text-base font-medium underline decoration-ink/20 underline-offset-4 hover:decoration-ink sm:text-sm">Explore every feature →</a>
             </div>
             <div class="grid gap-4">
-                @foreach ([['Forms & CRM', 'Submissions, spam review, automatic replies, and follow-ups.'], ['Health', 'Scheduled website checks, clear findings, and email reports.'], ['Search', 'Google visibility and content opportunities when you are ready.'], ['Local presence', 'Google Business Profile checks, posts, and review replies on the complete plan.']] as [$title, $copy])
+                @foreach ([['Forms & CRM', 'Submissions, spam review, automatic replies, and follow-ups.'], ['Health & SEO audits', 'Scheduled checks, clear findings, and practical recommendations.'], ['Search growth', 'Striking-distance keywords, page-level opportunities, and content recommendations.'], ['Local presence', 'Google Business Profile checks, posts, and review replies on the Complete plan.']] as [$title, $copy])
                     <div class="grid grid-cols-[7rem_1fr] gap-4 border-t border-ink/15 pt-4"><p class="font-mono text-base text-garden sm:text-sm">{{ $title }}</p><p class="text-pretty text-base text-ink/65 sm:text-sm">{{ $copy }}</p></div>
                 @endforeach
             </div>

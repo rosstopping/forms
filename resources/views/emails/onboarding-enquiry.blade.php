@@ -1,10 +1,10 @@
 <x-mail::message>
-# New onboarding enquiry
+# New Sitewell enquiry
 
 **Name:** {{ $enquiry['name'] }}  
 **Email:** {{ $enquiry['email'] }}  
 **Agency:** {{ $enquiry['agency'] ?: 'Not provided' }}  
-**Number of websites:** {{ $enquiry['website_count'] }}
+**Current website:** {{ $enquiry['website'] ?: 'Not provided' }}
 
 ## What they need
 

@@ -15,7 +15,7 @@ class OnboardingEnquiryReceived extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
-    /** @param array{name: string, email: string, agency: string|null, website_count: string, goals: string} $enquiry */
+    /** @param array{name: string, email: string, agency: string|null, website: string|null, goals: string} $enquiry */
     public function __construct(public readonly array $enquiry) {}
 
     /**
@@ -25,7 +25,7 @@ class OnboardingEnquiryReceived extends Mailable implements ShouldQueue
     {
         return new Envelope(
             replyTo: [new Address($this->enquiry['email'], $this->enquiry['name'])],
-            subject: 'New Sitewell onboarding enquiry from '.$this->enquiry['name'],
+            subject: 'New Sitewell enquiry from '.$this->enquiry['name'],
         );
     }
 

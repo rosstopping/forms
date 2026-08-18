@@ -26,7 +26,7 @@ class StoreOnboardingEnquiryRequest extends FormRequest
             'name' => ['required', 'string', 'max:100'],
             'email' => ['required', 'email', 'max:255'],
             'agency' => ['nullable', 'string', 'max:150'],
-            'website_count' => ['required', 'string', 'in:1,2-5,6-15,16-40,40+'],
+            'website' => ['nullable', 'url:http,https', 'max:2048'],
             'goals' => ['required', 'string', 'max:3000'],
             '_sitewell_check' => ['nullable', 'string', 'max:0'],
         ];

@@ -26,7 +26,29 @@ it('shows journal articles and returns not found for unknown slugs', function ()
     $this->get(route('marketing.article', 'missing-article'))->assertNotFound();
 });
 
-it('validates and queues onboarding enquiries', function (): void {
+it('markets customer-facing SEO features and a free website on every plan', function (): void {
+    $this->get(route('marketing.features'))
+        ->assertSuccessful()
+        ->assertSee('Website health &amp; SEO audits', false)
+        ->assertSee('Striking-distance keywords')
+        ->assertSee('Page-level SEO and content recommendations')
+        ->assertSee('A free website, if you need one')
+        ->assertDontSee('Outreach')
+        ->assertDontSee('Website builder');
+
+    $this->get(route('marketing.pricing'))
+        ->assertSuccessful()
+        ->assertSee('Free website included with every plan')
+        ->assertSeeInOrder(['Essential', 'Free website included if you need one', 'Growth', 'Free website included if you need one', 'Complete', 'Free website included if you need one']);
+
+    $this->get(route('marketing.contact'))
+        ->assertSuccessful()
+        ->assertSee('Current website')
+        ->assertDontSee('How many websites')
+        ->assertDontSee('Start onboarding');
+});
+
+it('validates and queues get started enquiries with an optional current website', function (): void {
     Mail::fake();
 
     $this->from(route('marketing.contact'))
@@ -34,7 +56,7 @@ it('validates and queues onboarding enquiries', function (): void {
             'name' => 'Alex Morgan',
             'email' => 'alex@example.com',
             'agency' => 'Northfield Studio',
-            'website_count' => '6-15',
+            'website' => 'https://northfield.example',
             'goals' => 'We need reliable forms, health reports, and a clearer content workflow.',
             '_sitewell_check' => '',
         ])
@@ -44,23 +66,24 @@ it('validates and queues onboarding enquiries', function (): void {
     Mail::assertQueued(OnboardingEnquiryReceived::class, function (OnboardingEnquiryReceived $mail): bool {
         return $mail->hasTo(config('forms.default_recipient'))
             && $mail->hasReplyTo('alex@example.com')
-            && $mail->enquiry['agency'] === 'Northfield Studio';
+            && $mail->enquiry['agency'] === 'Northfield Studio'
+            && $mail->enquiry['website'] === 'https://northfield.example';
     });
 });
 
-it('rejects incomplete and automated onboarding enquiries', function (): void {
+it('rejects incomplete and automated get started enquiries', function (): void {
     Mail::fake();
 
     $this->from(route('marketing.contact'))
         ->post(route('marketing.contact.store'), [
             'name' => '',
             'email' => 'not-an-email',
-            'website_count' => '1000',
+            'website' => 'not-a-url',
             'goals' => '',
             '_sitewell_check' => 'filled by a bot',
         ])
         ->assertRedirect(route('marketing.contact'))
-        ->assertSessionHasErrors(['name', 'email', 'website_count', 'goals', '_sitewell_check']);
+        ->assertSessionHasErrors(['name', 'email', 'website', 'goals', '_sitewell_check']);
 
     Mail::assertNothingOutgoing();
 });
