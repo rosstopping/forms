@@ -14,6 +14,31 @@ use Throwable;
 
 class DataForSEOClient
 {
+    public function get(string $endpoint): DataForSEOResponse
+    {
+        $this->ensureConfigured();
+
+        try {
+            $response = $this->request()->get($endpoint);
+        } catch (Throwable $exception) {
+            $this->logFailure($endpoint, null, null, null, $exception);
+
+            throw new DataForSEOException('DataForSEO could not be reached.', $endpoint, previous: $exception);
+        }
+
+        if ($response->failed()) {
+            $this->logFailure($endpoint, $response->status());
+
+            throw new DataForSEOException(
+                $response->status() === 429 ? 'DataForSEO rate limit reached.' : 'DataForSEO request failed.',
+                $endpoint,
+                $response->status(),
+            );
+        }
+
+        return $this->validatedResponse($endpoint, $response);
+    }
+
     /** @param array<string, mixed> $task */
     public function post(string $endpoint, array $task): DataForSEOResponse
     {
@@ -22,7 +47,7 @@ class DataForSEOClient
         try {
             $response = $this->request()->post($endpoint, [$task]);
         } catch (Throwable $exception) {
-            $this->logFailure($endpoint, null, null, $exception);
+            $this->logFailure($endpoint, null, null, null, $exception);
 
             throw new DataForSEOException('DataForSEO could not be reached.', $endpoint, previous: $exception);
         }
@@ -60,11 +85,17 @@ class DataForSEOClient
         $task = is_array($body) ? data_get($body, 'tasks.0') : null;
         $providerStatus = is_array($body) && is_numeric($body['status_code'] ?? null) ? (int) $body['status_code'] : null;
         $taskStatus = is_array($task) && is_numeric($task['status_code'] ?? null) ? (int) $task['status_code'] : null;
+        $providerMessage = is_array($task) && is_string($task['status_message'] ?? null)
+            ? $task['status_message']
+            : (is_array($body) && is_string($body['status_message'] ?? null) ? $body['status_message'] : null);
 
         if (! is_array($body) || $providerStatus !== 20000 || ! is_array($task) || $taskStatus !== 20000 || ! is_array($task['result'] ?? null)) {
-            $this->logFailure($endpoint, $response->status(), $taskStatus ?? $providerStatus);
+            $this->logFailure($endpoint, $response->status(), $taskStatus ?? $providerStatus, $providerMessage);
 
-            throw new DataForSEOException('DataForSEO returned an invalid or unsuccessful response.', $endpoint, $taskStatus ?? $providerStatus);
+            $status = $taskStatus ?? $providerStatus;
+            $detail = collect([$status, $providerMessage])->filter(fn (mixed $value): bool => filled($value))->implode(': ');
+
+            throw new DataForSEOException('DataForSEO rejected the request'.($detail ? " ({$detail})." : '.'), $endpoint, $status);
         }
 
         return new DataForSEOResponse(
@@ -83,13 +114,14 @@ class DataForSEOClient
         }
     }
 
-    protected function logFailure(string $endpoint, ?int $httpStatus = null, ?int $providerStatus = null, ?Throwable $exception = null): void
+    protected function logFailure(string $endpoint, ?int $httpStatus = null, ?int $providerStatus = null, ?string $providerMessage = null, ?Throwable $exception = null): void
     {
         Log::warning('DataForSEO request failed.', array_filter([
             'provider' => 'dataforseo',
             'endpoint' => $endpoint,
             'http_status' => $httpStatus,
             'provider_status_code' => $providerStatus,
+            'provider_status_message' => $providerMessage,
             'exception' => $exception ? $exception::class : null,
         ], fn (mixed $value): bool => $value !== null));
     }

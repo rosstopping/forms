@@ -10,13 +10,16 @@ class DataForSEOSerpProvider implements SerpProvider
 {
     public const ENDPOINT = 'serp/google/organic/live/advanced';
 
-    public function __construct(private DataForSEOClient $client) {}
+    public function __construct(
+        private DataForSEOClient $client,
+        private DataForSEOLocationResolver $locations,
+    ) {}
 
     public function search(string $keyword, string $location, int $depth = 100): SerpSearchResponse
     {
         $response = $this->client->post(self::ENDPOINT, [
             'keyword' => $keyword,
-            'location_name' => $location,
+            'location_code' => $this->locations->resolve($location),
             'language_code' => (string) config('services.dataforseo.language_code'),
             'device' => 'desktop',
             'depth' => min(max($depth, 10), 100),

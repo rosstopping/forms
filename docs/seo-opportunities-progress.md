@@ -99,7 +99,7 @@ Phase 1 uses Live because the existing client is a synchronous POST client runni
 
 The existing `DATAFORSEO_LOGIN` and `DATAFORSEO_PASSWORD` values are required. No new provider key is required. The UI disables starting an SEO search when these credentials are absent.
 
-DataForSEO location names may need canonical provider values for all UK towns. Before production rollout, add location resolution/cache against DataForSEO’s locations endpoint or store a location code. The current adapter sends the entered location name directly and combines location into each final keyword.
+Free-form UK place names are resolved against DataForSEO’s free Google locations endpoint and cached for 30 days. SERP requests use the resulting numeric location code while retaining the location in each final keyword.
 
 ## Completed work
 
@@ -109,6 +109,7 @@ DataForSEO location names may need canonical provider values for all UK towns. B
 - Added validated service/final keywords, ranking range, and maximum page settings.
 - Added provider-neutral SERP contract and typed response data.
 - Added DataForSEO Google Organic Live adapter.
+- Added cached UK location-code resolution using DataForSEO’s free locations endpoint.
 - Added unique queued discovery with per-keyword failure isolation.
 - Added normalized-domain deduplication and per-keyword ranking evidence.
 - Added existing Outreach prospect detection.

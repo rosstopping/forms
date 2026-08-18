@@ -43,6 +43,17 @@ test('it authenticates and returns a validated provider response', function (): 
     });
 });
 
+test('it authenticates get requests and returns a validated provider response', function (): void {
+    Http::fake(['api.dataforseo.test/*' => Http::response(successfulDataForSEOResponse())]);
+
+    $response = app(DataForSEOClient::class)->get('serp/google/locations/gb');
+
+    expect($response->results)->toHaveCount(1);
+    Http::assertSent(fn (Request $request): bool => $request->method() === 'GET'
+        && $request->url() === 'https://api.dataforseo.test/v3/serp/google/locations/gb'
+        && $request->hasHeader('Authorization', 'Basic '.base64_encode('api-login:api-password')));
+});
+
 test('it fails before sending a request when credentials are missing', function (): void {
     config()->set('services.dataforseo.login');
 
@@ -64,12 +75,13 @@ test('it rejects unsuccessful provider task responses and logs safe context', fu
     ])]);
 
     expect(fn () => app(DataForSEOClient::class)->post('backlinks/summary/live', ['target' => 'example.com']))
-        ->toThrow(DataForSEOException::class, 'invalid or unsuccessful');
+        ->toThrow(DataForSEOException::class, 'DataForSEO rejected the request (40501: Internal provider detail).');
 
     Log::shouldHaveReceived('warning')->once()->withArgs(function (string $message, array $context): bool {
         return $message === 'DataForSEO request failed.'
             && $context['endpoint'] === 'backlinks/summary/live'
             && $context['provider_status_code'] === 40501
+            && $context['provider_status_message'] === 'Internal provider detail'
             && ! array_key_exists('password', $context);
     });
 });
