@@ -13,12 +13,15 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\URL;
 
-it('instructs generated outreach to use the approved wording and omit audit findings', function () {
+it('instructs generated outreach to use the approved video and no-video wording', function () {
     $instructions = (string) app(ProspectOutreachWriter::class)->instructions();
 
     expect($instructions)
-        ->toContain('this exact wording')
+        ->toContain('When a showcase video URL is supplied')
         ->toContain('I ran your website through it and recorded a quick video showing what I found.')
+        ->toContain('When no showcase video URL is supplied')
+        ->toContain('I’ll be upfront — this is a cold email.')
+        ->toContain('I manage the whole lot for £149/month')
         ->toContain('do not add website audit findings');
 });
 
@@ -135,10 +138,29 @@ it('fills an empty prospect email from published website contact details', funct
         ->and($prospect->sent_at)->toBeNull();
 });
 
-it('prepares the approved outreach wording with the prospect company name', function () {
+it('prepares the no-video outreach wording with the prospect contact and company names', function () {
+    $prospect = Prospect::factory()->create([
+        'business_name' => 'New Bould Roofing',
+        'contact_name' => 'James',
+        'website_url' => 'https://newbould.example',
+    ]);
+    $analyzer = Mockery::mock(ProspectWebsiteAnalyzer::class);
+    $analyzer->shouldReceive('analyze')->once()->andReturn([
+        'score' => 0,
+        'findings' => [],
+        'contacts' => ['emails' => [], 'phones' => [], 'addresses' => [], 'contact_page_url' => null, 'contact_form_url' => null],
+    ]);
+
+    (new AnalyzeProspect($prospect))->handle($analyzer);
+
+    expect($prospect->refresh()->outreach_body)->toBe("Hi James,\n\nI’ll be upfront — this is a cold email. I’m a web developer and I’m trying to pick up a few new clients locally.\n\nI came across New Bould Roofing and had a look at your website. You’re already appearing in Google, but you’re quite a way down for some searches that could probably be bringing you work.\n\nI manage the whole lot for £149/month — website, hosting, SEO and ongoing improvements.\n\nIf you’d like, I’ll send you a quick video showing what I found on yours and what I’d change. No hard sell afterwards.\n\nCheers,\nRoss");
+});
+
+it('keeps the existing outreach wording when a showcase video is available', function () {
     $prospect = Prospect::factory()->create([
         'business_name' => 'New Bould Roofing',
         'website_url' => 'https://newbould.example',
+        'showcase_video_url' => 'https://www.loom.com/share/new-bould-roofing',
     ]);
     $analyzer = Mockery::mock(ProspectWebsiteAnalyzer::class);
     $analyzer->shouldReceive('analyze')->once()->andReturn([
@@ -319,12 +341,30 @@ it('will not send to a suppressed prospect', function () {
     Mail::assertNothingSent();
 });
 
-it('will not send test or live outreach without a prospect showcase video', function () {
+it('sends approved test and live outreach without a prospect showcase video', function () {
     Mail::fake();
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     $prospect = Prospect::factory()->for($admin, 'owner')->create([
         'outreach_subject' => 'Quick one',
         'outreach_body' => 'Hi there.',
+        'approved_at' => now(),
+    ]);
+
+    $this->actingAs($admin)
+        ->post(route('admin.prospects.test-email', $prospect))
+        ->assertRedirect();
+    $this->post(route('admin.prospects.send', $prospect))->assertRedirect();
+
+    Mail::assertSent(ProspectOutreach::class, 2);
+});
+
+it('still requires a showcase video for website opportunities', function () {
+    Mail::fake();
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $prospect = Prospect::factory()->for($admin, 'owner')->create([
+        'website_url' => null,
+        'outreach_subject' => 'Quick one',
+        'outreach_body' => 'I have included a quick video below.',
         'approved_at' => now(),
     ]);
 
