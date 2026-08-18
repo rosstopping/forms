@@ -20,9 +20,11 @@ it('instructs generated outreach to use the approved video and no-video wording'
         ->toContain('When a showcase video URL is supplied')
         ->toContain('I ran your website through it and recorded a quick video showing what I found.')
         ->toContain('When no showcase video URL is supplied')
-        ->toContain('I’ll be upfront — this is a cold email.')
-        ->toContain('I manage the whole lot for £149/month')
-        ->toContain('do not add website audit findings');
+        ->toContain('I spotted a few opportunities that could help the website bring in more local enquiries.')
+        ->toContain('Would you like me to send it over?')
+        ->not->toContain('£149/month')
+        ->toContain('do not add prices')
+        ->toContain('website audit findings');
 });
 
 it('adds a prospect and automatically queues website research', function () {
@@ -153,7 +155,7 @@ it('prepares the no-video outreach wording with the prospect contact and company
 
     (new AnalyzeProspect($prospect))->handle($analyzer);
 
-    expect($prospect->refresh()->outreach_body)->toBe("Hi James,\n\nI’ll be upfront — this is a cold email. I’m a web developer and I’m trying to pick up a few new clients locally.\n\nI came across New Bould Roofing and had a look at your website. You’re already appearing in Google, but you’re quite a way down for some searches that could probably be bringing you work.\n\nI manage the whole lot for £149/month — website, hosting, SEO and ongoing improvements.\n\nIf you’d like, I’ll send you a quick video showing what I found on yours and what I’d change. No hard sell afterwards.\n\nCheers,\nRoss");
+    expect($prospect->refresh()->outreach_body)->toBe("Hi James,\n\nI came across New Bould Roofing while looking at local search results. You’re already appearing in Google, but I spotted a few opportunities that could help the website bring in more local enquiries.\n\nI can record a quick video showing you exactly what I found. Would you like me to send it over?\n\nCheers,\nRoss");
 });
 
 it('keeps the existing outreach wording when a showcase video is available', function () {

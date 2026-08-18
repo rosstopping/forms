@@ -51,7 +51,7 @@ class AnalyzeProspect implements ShouldQueue
 
             return [
                 'subject' => 'Quick one for '.$this->prospect->business_name,
-                'body' => "Hi {$contactName},\n\nI’ll be upfront — this is a cold email. I’m a web developer and I’m trying to pick up a few new clients locally.\n\nI came across {$this->prospect->business_name} and had a look at your website. You’re already appearing in Google, but you’re quite a way down for some searches that could probably be bringing you work.\n\nI manage the whole lot for £149/month — website, hosting, SEO and ongoing improvements.\n\nIf you’d like, I’ll send you a quick video showing what I found on yours and what I’d change. No hard sell afterwards.\n\nCheers,\nRoss",
+                'body' => "Hi {$contactName},\n\nI came across {$this->prospect->business_name} while looking at local search results. You’re already appearing in Google, but I spotted a few opportunities that could help the website bring in more local enquiries.\n\nI can record a quick video showing you exactly what I found. Would you like me to send it over?\n\nCheers,\nRoss",
             ];
         }
 
