@@ -21,7 +21,7 @@
                 @if (session('status'))
                     <div class="mb-8 rounded-md bg-lichen px-4 py-3 text-base text-moss sm:text-sm" role="status">{{ session('status') }}</div>
                 @endif
-                <form method="POST" action="https://digizuforms.on-forge.com/submit">
+                <form method="POST" action="https://digizuforms.on-forge.com/submit" class="grid grid-cols-1 gap-y-4">
                     <input type="hidden" name="_form_name" value="Contact form">
 
                     <div
