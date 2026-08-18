@@ -4,12 +4,12 @@ Last updated: 18 August 2026
 
 ## Current phase
 
-Phase 1 foundation is complete. The existing Outreach > Find Prospects page now has two discovery modes:
+Phase 2 candidate analysis is complete. The existing Outreach > Find Prospects page has two discovery modes:
 
 - Local Businesses: the existing OpenStreetMap workflow, unchanged.
-- SEO Opportunities: persisted keyword searches, queued organic SERP retrieval, domain deduplication, ranking evidence, search history, and read-only candidate results.
+- SEO Opportunities: persisted keyword searches, queued organic SERP retrieval, domain deduplication, ranking evidence, search history, isolated candidate crawling/auditing, contact enrichment, page-count qualification, and read-only candidate results.
 
-Phase 1 deliberately stops before crawling, auditing, scoring, qualification, and importing. No SEO candidate can yet be added to Outreach, and no email is sent.
+The workflow still stops before opportunity scoring, generated outreach observations, and importing. No SEO candidate can yet be added to Outreach, and no email is sent.
 
 ## Existing implementation
 
@@ -31,7 +31,7 @@ The existing routes, tables, service, job, result screen, and import behavior we
 
 `WebsiteCrawler` is the full multi-page crawler used by website health reports. It discovers sitemap and internal links, handles canonical/indexability signals, and respects configured page/depth limits. `WebsiteHealthAuditor` and the website health report models provide the deeper audit path. `ProspectWebsiteAnalyzer` is reusable for lightweight prospect checks and contact enrichment but is not a substitute for the requested page count and multi-page audit.
 
-The crawler currently operates around a managed `Website` aggregate. A later phase should introduce a candidate analysis adapter/orchestrator around the crawler rather than creating a second crawler or prematurely creating managed websites for unqualified prospects.
+`WebsiteCrawler` now exposes a candidate-safe URL entry point that shares its existing SSRF checks, request limits, sitemap/link traversal, URL normalization, blocked paths, and page checks. Managed website crawling still retains its audit-history prioritisation. Candidate analysis does not create temporary `Website` records.
 
 ### Existing ranking integrations
 
@@ -63,6 +63,21 @@ The search stores the requested minimum and maximum positions, defaulting to 20-
 
 `DiscoverSeoProspects` is unique per search and uses `updateOrCreate` for both domains and keyword rankings. Each keyword request is isolated; one failed keyword is recorded without discarding successful keyword results. If every request fails, the job is retried and ultimately marks the search failed.
 
+After discovery, one unique `AnalyzeSeoProspectCandidate` job is dispatched per deduplicated domain. Each job updates only its candidate, can be retried safely, and updates aggregate search progress under a database row lock. A terminal failure marks that candidate `analysis_failed` without failing sibling candidates or importing anything.
+
+### Candidate analysis
+
+Candidate crawling counts unique, successful, indexable canonical pages. Query-string duplicates, assets, admin/login/cart/feed paths, tag/author archives, obvious pagination, external links, duplicate canonicals, and noindex pages are excluded. The crawl is bounded at enough pages to classify the configured maximum and the 40+ unsuitable band.
+
+Sites above the search's configurable page maximum are retained as `too_large`. Their page count and migration assessment are stored, but the heavier homepage audit and contact enrichment are skipped. Suitable sites reuse `ProspectWebsiteAnalyzer`, `WebsiteHealthAuditor` checks, and `ProspectContactFinder`; non-homepage crawler issues are retained with source URLs.
+
+Migration difficulty is deterministic and stored with a reason:
+
+- Easy: small brochure-style site with no detected complex paths.
+- Medium: above the configured page limit, 21-40 pages, or booking/archive indicators.
+- Hard: 40+ pages or ecommerce/account/membership indicators.
+- Unknown: no indexable pages could be confirmed or analysis failed.
+
 ### Cost records
 
 Every provider response creates an `ExternalApiUsage` row. Its metadata contains the SEO search ID, keyword, and location. The provider-reported cost is also accumulated on the search for history display. No Google HTML is scraped.
@@ -75,7 +90,7 @@ Stores owner, industry, location, service keywords, manually editable final keyw
 
 ### `seo_prospect_candidates`
 
-Stores one normalized domain per search, its representative URL/name/location, an optional existing `prospect_id`, and nullable fields reserved for page count, audit score, migration assessment, score breakdown, observations, and qualification status.
+Stores one normalized domain per search, its representative URL/name/location, an optional existing `prospect_id`, page count, existing audit score/findings, evidence-backed contact details, migration assessment/reason, crawl observations, qualification status, analysis errors, and completion time. Score breakdown remains reserved for Phase 3.
 
 ### `seo_prospect_rankings`
 
@@ -115,18 +130,16 @@ Free-form UK place names are resolved against DataForSEO’s free Google locatio
 - Added existing Outreach prospect detection.
 - Added provider cost/task usage records.
 - Added focused coverage with a fake provider; tests do not make paid calls.
+- Added one unique, retry-safe analysis job per candidate domain.
+- Added candidate URL crawling without creating managed websites.
+- Added canonical/indexable page counting and 1-10, 11-20, 21-40, and 40+ bands.
+- Added oversized-site retention with audit/contact short-circuiting.
+- Reused the existing prospect audit and contact enrichment for suitable sites.
+- Added Easy/Medium/Hard/Unknown migration assessment with stored reasons.
+- Added candidate analysis status, error, and aggregate search progress tracking.
+- Added page count, audit findings, contacts, migration difficulty, and qualification to the results table.
 
 ## Remaining work
-
-### Phase 2: candidate analysis
-
-- Create an idempotent per-candidate analysis job so one crawl/audit failure cannot fail the search.
-- Adapt the existing `WebsiteCrawler` for an unowned candidate URL without creating a managed `Website` prematurely.
-- Count canonical, indexable pages and flag 1-10, 11-20, 21-40, and 40+ page bands.
-- Stop expensive audit work after a candidate is known to exceed the configured maximum, while retaining it as too large/unsuitable.
-- Reuse `ProspectContactFinder` for evidence-backed contact enrichment.
-- Add simple Easy/Medium/Hard/Unknown migration heuristics and a reason.
-- Reuse existing Sitewell audit checks and store the resulting score/key issues.
 
 ### Phase 3: scoring and observations
 
@@ -153,9 +166,8 @@ Free-form UK place names are resolved against DataForSEO’s free Google locatio
 
 ## Architecture concerns
 
-- Candidate crawling must retain SSRF protections equivalent to `ProspectWebsiteAnalyzer` before arbitrary discovered domains are fetched.
-- `WebsiteCrawler` currently expects a managed website/domain context; do not work around that by creating fake managed websites.
+- Candidate crawling retains the existing crawler's DNS/private-network checks and disables redirect following before arbitrary discovered domains are fetched.
 - SERP directories, social networks, aggregators, and national publishers will appear and need an explicit exclusion/qualification policy before analysis fan-out.
-- Search depth 100 can return hundreds of domains across several keywords. Candidate analysis must be fan-out queued, rate-limited, and bounded.
+- Search depth 100 can return hundreds of domains across several keywords. Candidate analysis is fan-out queued and bounded; production Horizon concurrency remains the current throttle and should be monitored before increasing worker counts.
 - Existing `SeoOpportunity` and `SearchOpportunity` names describe managed-site content opportunities. Keep prospect discovery naming distinct to avoid mixing third-party prospect evidence with managed-site recommendations.
 - Ratings and reviews are optional for V1. Organic result rating fields may occasionally be present, but they are not reliable enough to make qualification depend on them.

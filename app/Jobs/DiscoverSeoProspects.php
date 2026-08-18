@@ -77,7 +77,13 @@ class DiscoverSeoProspects implements ShouldBeUnique, ShouldQueue
             throw new RuntimeException($errors[0] ?? 'No SERP searches completed.');
         }
 
-        $this->search->update(['status' => $errors === [] ? 'discovered' : 'discovered_with_errors', 'candidate_count' => $this->search->candidates()->count(), 'error' => $errors === [] ? null : implode("\n", $errors), 'completed_at' => now()]);
+        $candidates = $this->search->candidates()->whereIn('qualification_status', ['pending_analysis', 'analysis_failed'])->get();
+        $terminalStatus = $errors === [] ? 'analyzed' : 'analyzed_with_errors';
+        $this->search->update(['status' => $candidates->isEmpty() ? $terminalStatus : 'analyzing', 'candidate_count' => $this->search->candidates()->count(), 'error' => $errors === [] ? null : implode("\n", $errors), 'completed_at' => $candidates->isEmpty() ? now() : null]);
+
+        foreach ($candidates as $candidate) {
+            AnalyzeSeoProspectCandidate::dispatch($candidate);
+        }
     }
 
     public function failed(?Throwable $exception): void
@@ -109,7 +115,8 @@ class DiscoverSeoProspects implements ShouldBeUnique, ShouldQueue
     private function origin(string $url, string $domain): string
     {
         $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+        $host = strtolower((string) parse_url($url, PHP_URL_HOST));
 
-        return (in_array($scheme, ['http', 'https'], true) ? $scheme : 'https').'://'.$domain;
+        return (in_array($scheme, ['http', 'https'], true) ? $scheme : 'https').'://'.($host ?: $domain);
     }
 }

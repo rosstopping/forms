@@ -20,7 +20,7 @@ return [
         'max_pages' => (int) env('FORMS_HEALTH_REPORT_MAX_PAGES', 40),
         'max_depth' => (int) env('FORMS_HEALTH_REPORT_MAX_DEPTH', 2),
         'crawl_delay_ms' => (int) env('FORMS_HEALTH_REPORT_CRAWL_DELAY_MS', 100),
-        'blocked_paths' => ['/admin', '/login', '/logout', '/cart', '/checkout', '/search', '/wp-admin', '/feed'],
+        'blocked_paths' => ['/admin', '/login', '/logout', '/cart', '/checkout', '/search', '/wp-admin', '/feed', '/tag', '/author'],
     ],
 
     'pagespeed' => [

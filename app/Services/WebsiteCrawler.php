@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Website;
 use App\Models\WebsiteHealthReport;
 use DOMDocument;
+use DOMElement;
 use DOMXPath;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
@@ -35,13 +36,53 @@ class WebsiteCrawler
             $this->ensurePublicDomain($allowedHost);
         }
 
-        $queue = [['url' => $baseUrl, 'depth' => 0]];
         ['last_audited_at' => $lastAuditedAt, 'healthy_cooldown' => $healthyCooldown] = $this->auditHistory($website);
+
+        return $this->crawlTarget(
+            $baseUrl,
+            $allowedHosts,
+            (int) config('forms.health_reports.max_pages', 40),
+            (int) config('forms.health_reports.max_depth', 2),
+            $lastAuditedAt,
+            $healthyCooldown,
+        );
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    public function crawlUrl(string $url, int $maximumPages): array
+    {
+        $scheme = Str::lower((string) parse_url($url, PHP_URL_SCHEME));
+        $host = (string) parse_url($url, PHP_URL_HOST);
+        $port = parse_url($url, PHP_URL_PORT);
+
+        if (! in_array($scheme, ['http', 'https'], true) || $host === '') {
+            throw new RuntimeException('The candidate website URL must be an absolute HTTP or HTTPS URL.');
+        }
+
+        $this->ensurePublicDomain($host);
+        $baseUrl = $scheme.'://'.$host.($port ? ':'.$port : '');
+
+        return $this->crawlTarget(
+            $baseUrl,
+            [$this->normaliseHost($host)],
+            max(1, $maximumPages),
+            (int) config('forms.health_reports.max_depth', 2),
+        );
+    }
+
+    /**
+     * @param  array<int, string>  $allowedHosts
+     * @param  array<string, int>  $lastAuditedAt
+     * @param  array<string, true>  $healthyCooldown
+     * @return array<int, array<string, mixed>>
+     */
+    protected function crawlTarget(string $baseUrl, array $allowedHosts, int $maximumPages, int $maximumDepth, array $lastAuditedAt = [], array $healthyCooldown = []): array
+    {
+        $queue = [['url' => $baseUrl, 'depth' => 0]];
         $queue = [...$queue, ...$this->prioritiseByAuditHistory($this->sitemapUrls($baseUrl, $allowedHosts), $lastAuditedAt)];
         $seen = [];
+        $validatedHosts = [];
         $pages = [];
-        $maximumPages = (int) config('forms.health_reports.max_pages', 40);
-        $maximumDepth = (int) config('forms.health_reports.max_depth', 2);
 
         while ($queue !== [] && count($pages) < $maximumPages) {
             $candidate = array_shift($queue);
@@ -55,6 +96,12 @@ class WebsiteCrawler
 
             if ($url !== $this->normaliseUrl($baseUrl) && isset($healthyCooldown[$url])) {
                 continue;
+            }
+
+            $requestHost = (string) parse_url($url, PHP_URL_HOST);
+            if (! isset($validatedHosts[$requestHost])) {
+                $this->ensurePublicDomain($requestHost);
+                $validatedHosts[$requestHost] = true;
             }
 
             $startedAt = microtime(true);
@@ -265,6 +312,10 @@ class WebsiteCrawler
         }
 
         foreach ($nodes as $node) {
+            if (! $node instanceof DOMElement) {
+                continue;
+            }
+
             $resolved = $this->resolveUrl($currentUrl, trim($node->getAttribute('href')));
 
             if ($resolved) {
@@ -313,9 +364,12 @@ class WebsiteCrawler
             return null;
         }
 
+        $scheme = in_array(Str::lower((string) ($parts['scheme'] ?? '')), ['http', 'https'], true)
+            ? Str::lower($parts['scheme'])
+            : 'https';
         $path = preg_replace('#/+#', '/', $parts['path'] ?? '/') ?: '/';
 
-        return 'https://'.Str::lower($parts['host']).$path;
+        return $scheme.'://'.Str::lower($parts['host']).$path;
     }
 
     protected function isCrawlable(string $url, array $allowedHosts): bool
@@ -328,6 +382,10 @@ class WebsiteCrawler
         }
 
         if (preg_match('/\.(?:avif|css|csv|docx?|gif|jpe?g|js|json|mp3|mp4|pdf|png|svg|webp|xlsx?|xml|zip)$/i', $path)) {
+            return false;
+        }
+
+        if (preg_match('#/(?:page|paged)/\d+(?:/|$)#', $path)) {
             return false;
         }
 

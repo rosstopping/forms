@@ -4,6 +4,7 @@ use App\Contracts\SerpProvider;
 use App\Data\SerpResult;
 use App\Data\SerpSearchResponse;
 use App\Jobs\AnalyzeProspect;
+use App\Jobs\AnalyzeSeoProspectCandidate;
 use App\Jobs\DiscoverProspects;
 use App\Jobs\DiscoverSeoProspects;
 use App\Models\ExternalApiUsage;
@@ -56,6 +57,7 @@ it('queues an SEO opportunity search with editable keywords and default limits',
 });
 
 it('deduplicates SEO candidates by domain and stores provider-backed rankings', function () {
+    Queue::fake();
     $prospect = Prospect::factory()->create(['website_url' => 'https://www.acme-roofing.example/contact']);
     $search = SeoProspectSearch::factory()->create([
         'keywords' => ['roofer barnsley', 'roof repairs barnsley'],
@@ -80,7 +82,7 @@ it('deduplicates SEO candidates by domain and stores provider-backed rankings', 
     (new DiscoverSeoProspects($search))->handle($provider, app(PixelUrlNormalizer::class));
 
     $candidate = $search->refresh()->candidates()->sole();
-    expect($search->status)->toBe('discovered')
+    expect($search->status)->toBe('analyzing')
         ->and($search->candidate_count)->toBe(1)
         ->and($search->api_cost)->toBe('0.040000')
         ->and($candidate->domain)->toBe('acme-roofing.example')
@@ -88,6 +90,7 @@ it('deduplicates SEO candidates by domain and stores provider-backed rankings', 
         ->and($candidate->rankings()->orderBy('position')->pluck('position')->all())->toBe([12, 38])
         ->and(ExternalApiUsage::query()->count())->toBe(2)
         ->and(ExternalApiUsage::query()->first()->metadata['seo_prospect_search_id'])->toBe($search->id);
+    Queue::assertPushed(AnalyzeSeoProspectCandidate::class, fn (AnalyzeSeoProspectCandidate $job): bool => $job->candidate->is($candidate));
 });
 
 it('shows stored SEO ranking evidence without enabling import', function () {
