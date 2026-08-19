@@ -8,7 +8,15 @@
             @if ($prospect->website_url && ! in_array($prospect->analysis_status, ['pending', 'running']))<form method="POST" action="{{ route('admin.prospects.analyse', $prospect) }}">@csrf<button class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium">Research again</button></form>@endif
             @if ($prospect->outreach_body && ! $prospect->approved_at)<form method="POST" action="{{ route('admin.prospects.approve', $prospect) }}">@csrf<button class="rounded-lg bg-teal-600 px-3 py-2 text-sm font-semibold text-white hover:bg-teal-700">Approve draft</button></form>@endif
             @if ($prospect->outreach_subject && $prospect->outreach_body)<form method="POST" action="{{ route('admin.prospects.test-email', $prospect) }}">@csrf<button type="submit" class="rounded-lg border border-slate-950/10 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Send test to {{ Auth::user()->email }}</button></form>@endif
-            @if ($prospect->approved_at && ! $prospect->sent_at)<form method="POST" action="{{ route('admin.prospects.send', $prospect) }}">@csrf<button class="rounded-lg bg-slate-950 px-3 py-2 text-sm font-semibold text-white">Send approved email</button></form>@endif
+            @if ($prospect->approved_at && ! $prospect->sent_at)
+                <form method="POST" action="{{ route('admin.prospects.schedule', $prospect) }}" class="flex flex-wrap items-center gap-2 rounded-lg border border-slate-300 bg-white p-1">
+                    @csrf
+                    <label for="scheduled_send_at" class="sr-only">Schedule email (UK time)</label>
+                    <input id="scheduled_send_at" type="datetime-local" name="scheduled_send_at" value="{{ old('scheduled_send_at', $prospect->scheduled_send_at?->setTimezone('Europe/London')->format('Y-m-d\TH:i')) }}" min="{{ now('Europe/London')->addMinute()->format('Y-m-d\TH:i') }}" required class="rounded-md border-0 px-2 py-1 text-sm">
+                    <button class="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700">{{ $prospect->scheduled_send_at ? 'Reschedule email' : 'Schedule email' }}</button>
+                </form>
+                <form method="POST" action="{{ route('admin.prospects.send', $prospect) }}">@csrf<button class="rounded-lg bg-slate-950 px-3 py-2 text-sm font-semibold text-white">Send approved email</button></form>
+            @endif
             @endunless
             <form method="POST" action="{{ route('admin.prospects.destroy', $prospect) }}" data-confirm-action-form>
                 @csrf
@@ -18,6 +26,7 @@
         </div>
     </div>
     @if (session('status'))<div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{{ session('status') }}</div>@endif
+    @error('scheduled_send_at')<div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{{ $message }}</div>@enderror
     @if ($prospect->analysis_status === 'failed')<div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"><strong>Research failed:</strong> {{ $prospect->analysis_error }}</div>@endif
     <div class="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         <div class="space-y-6">

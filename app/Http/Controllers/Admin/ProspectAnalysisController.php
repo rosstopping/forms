@@ -18,7 +18,7 @@ class ProspectAnalysisController extends Controller
         abort_unless($prospect->isAccessibleBy($request->user()), 403);
         abort_unless($prospect->website_url, 422, 'Add a website before running research.');
         abort_if(in_array($prospect->analysis_status, ['pending', 'running']), 422, 'Research is already running.');
-        $prospect->update(['analysis_status' => 'pending', 'analysis_error' => null]);
+        $prospect->update(['analysis_status' => 'pending', 'analysis_error' => null, 'scheduled_send_at' => null]);
         $prospect->recordActivity('analysis_queued', 'Website research queued again.', $request->user());
         AnalyzeProspect::dispatch($prospect);
 

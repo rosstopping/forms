@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Account\BillingController;
 use App\Http\Controllers\Admin\BulkFormSubmissionController;
+use App\Http\Controllers\Admin\BulkProspectActionController;
 use App\Http\Controllers\Admin\BusinessProfileController;
 use App\Http\Controllers\Admin\BusinessProfilePostController;
 use App\Http\Controllers\Admin\BusinessProfileRecommendationController;
@@ -29,6 +30,7 @@ use App\Http\Controllers\Admin\ProspectAnalysisController;
 use App\Http\Controllers\Admin\ProspectApprovalController;
 use App\Http\Controllers\Admin\ProspectController;
 use App\Http\Controllers\Admin\ProspectDiscoveryController;
+use App\Http\Controllers\Admin\ProspectScheduleController;
 use App\Http\Controllers\Admin\ProspectSendController;
 use App\Http\Controllers\Admin\ProspectTestEmailController;
 use App\Http\Controllers\Admin\RemediationRunController;
@@ -224,8 +226,10 @@ Route::middleware(['web', 'auth'])->prefix('admin')->name('admin.')->group(funct
         Route::post('prospect-discoveries/seo-opportunities/{seoProspectSearch}/rerun', RerunSeoProspectSearchController::class)->name('seo-prospect-searches.rerun');
         Route::post('prospects/{prospect}/analyse', ProspectAnalysisController::class)->name('prospects.analyse');
         Route::post('prospects/{prospect}/approve', ProspectApprovalController::class)->name('prospects.approve');
+        Route::post('prospects/{prospect}/schedule', ProspectScheduleController::class)->name('prospects.schedule');
         Route::post('prospects/{prospect}/send', ProspectSendController::class)->name('prospects.send');
         Route::post('prospects/{prospect}/test-email', ProspectTestEmailController::class)->name('prospects.test-email');
+        Route::post('prospects/bulk', BulkProspectActionController::class)->name('prospects.bulk');
         Route::resource('prospects', ProspectController::class);
     });
     Route::resource('users', UserController::class)->only(['index', 'create', 'store', 'edit', 'update']);

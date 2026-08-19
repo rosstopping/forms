@@ -34,7 +34,7 @@ class AnalyzeProspect implements ShouldQueue
                 'analysis_status' => 'completed', 'opportunity_score' => $analysis['score'], 'findings' => $analysis['findings'],
                 'contact_details' => $analysis['contacts'], 'email' => $this->prospect->email ?: data_get($analysis, 'contacts.emails.0.value'),
                 'analysed_at' => now(), 'outreach_subject' => $draft['subject'], 'outreach_body' => $draft['body'], 'status' => 'drafted',
-                'approved_at' => null, 'approved_by' => null,
+                'approved_at' => null, 'approved_by' => null, 'scheduled_send_at' => null,
             ]);
             $this->prospect->recordActivity('analysed', 'Website analysed and an outreach draft prepared.');
         } catch (Throwable $exception) {

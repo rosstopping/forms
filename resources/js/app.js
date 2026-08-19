@@ -517,3 +517,86 @@ document.querySelectorAll('[data-progress-chart]').forEach((chart) => {
         point.addEventListener('click', () => showPoint(point));
     });
 });
+
+document.querySelectorAll('[data-bulk-prospects-form]').forEach((form) => {
+    const checkboxes = [...form.querySelectorAll('[data-bulk-prospects-checkbox]')];
+    const selectPage = form.querySelector('[data-bulk-prospects-select-page]');
+    const selectAll = form.querySelector('[data-bulk-prospects-select-all]');
+    const clear = form.querySelector('[data-bulk-prospects-clear]');
+    const count = form.querySelector('[data-bulk-prospects-count]');
+    const scope = form.querySelector('[data-bulk-prospects-scope]');
+    const action = form.querySelector('[data-bulk-prospects-action]');
+    const apply = form.querySelector('[data-bulk-prospects-apply]');
+    const schedule = form.querySelector('[data-bulk-prospects-schedule]');
+    const scheduledSendAt = form.querySelector('[name="scheduled_send_at"]');
+    const total = Number(form.dataset.bulkProspectsTotal || 0);
+
+    const update = () => {
+        const selectedOnPage = checkboxes.filter((checkbox) => checkbox.checked).length;
+        const allMatching = scope.value === 'all';
+        const selected = allMatching ? total : selectedOnPage;
+
+        count.textContent = String(selected);
+        selectPage.checked = checkboxes.length > 0 && selectedOnPage === checkboxes.length;
+        selectPage.indeterminate = selectedOnPage > 0 && selectedOnPage < checkboxes.length;
+        action.disabled = selected === 0;
+        apply.disabled = selected === 0 || action.value === '';
+        clear?.classList.toggle('hidden', selected === 0);
+        selectAll?.classList.toggle('hidden', selectedOnPage !== checkboxes.length || allMatching);
+    };
+
+    const usePageScope = () => {
+        scope.value = 'page';
+    };
+
+    selectPage?.addEventListener('change', () => {
+        usePageScope();
+        checkboxes.forEach((checkbox) => {
+            checkbox.checked = selectPage.checked;
+        });
+        update();
+    });
+
+    checkboxes.forEach((checkbox) => checkbox.addEventListener('change', () => {
+        usePageScope();
+        update();
+    }));
+
+    selectAll?.addEventListener('click', () => {
+        scope.value = 'all';
+        checkboxes.forEach((checkbox) => {
+            checkbox.checked = true;
+        });
+        update();
+    });
+
+    clear?.addEventListener('click', () => {
+        usePageScope();
+        checkboxes.forEach((checkbox) => {
+            checkbox.checked = false;
+        });
+        action.value = '';
+        update();
+    });
+
+    action?.addEventListener('change', () => {
+        const isScheduling = action.value === 'schedule_approved_email';
+        schedule?.classList.toggle('hidden', !isScheduling);
+        scheduledSendAt.required = isScheduling;
+        update();
+    });
+
+    form.addEventListener('submit', (event) => {
+        const selected = scope.value === 'all' ? total : checkboxes.filter((checkbox) => checkbox.checked).length;
+        const confirmations = {
+            delete: `Permanently delete ${selected} selected prospect${selected === 1 ? '' : 's'}?`,
+            send_approved_email: `Send every eligible approved email for ${selected} selected prospect${selected === 1 ? '' : 's'} now?`,
+        };
+
+        if (confirmations[action.value] && !window.confirm(confirmations[action.value])) {
+            event.preventDefault();
+        }
+    });
+
+    update();
+});

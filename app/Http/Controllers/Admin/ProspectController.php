@@ -23,13 +23,15 @@ class ProspectController extends Controller
         $summary = (clone $query)->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
         $temperatureSummary = (clone $query)->selectRaw('lead_temperature, count(*) as total')->groupBy('lead_temperature')->pluck('total', 'lead_temperature');
         $temperature = $request->string('temperature')->toString();
-        $prospects = $query->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')))
+        $query->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')))
             ->when(in_array($temperature, Prospect::LEAD_TEMPERATURES, true), fn ($query) => $query->where('lead_temperature', $temperature))
-            ->when($request->filled('search'), fn ($query) => $query->where(fn ($query) => $query->where('business_name', 'like', '%'.$request->string('search').'%')->orWhere('email', 'like', '%'.$request->string('search').'%')))
+            ->when($request->filled('search'), fn ($query) => $query->where(fn ($query) => $query->where('business_name', 'like', '%'.$request->string('search').'%')->orWhere('email', 'like', '%'.$request->string('search').'%')));
+        $matchingProspectsCount = (clone $query)->count();
+        $prospects = $query
             ->orderByRaw("case lead_temperature when 'hot' then 1 when 'warm' then 2 else 3 end")
             ->latest()->paginate(20)->withQueryString();
 
-        return view('admin.prospects.index', compact('prospects', 'summary', 'temperatureSummary'));
+        return view('admin.prospects.index', compact('prospects', 'summary', 'temperatureSummary', 'matchingProspectsCount'));
     }
 
     /**
@@ -91,6 +93,9 @@ class ProspectController extends Controller
     {
         $data = $request->validated();
         $data['suppressed_at'] = $request->boolean('suppressed') ? ($prospect->suppressed_at ?: now()) : null;
+        if ($data['suppressed_at']) {
+            $data['scheduled_send_at'] = null;
+        }
         unset($data['suppressed']);
         $draftChanged = $prospect->outreach_subject !== ($data['outreach_subject'] ?? null)
             || $prospect->outreach_body !== ($data['outreach_body'] ?? null)
@@ -99,6 +104,7 @@ class ProspectController extends Controller
         if ($draftChanged) {
             $data['approved_at'] = null;
             $data['approved_by'] = null;
+            $data['scheduled_send_at'] = null;
             $data['status'] = 'drafted';
         }
         $prospect->update($data);
