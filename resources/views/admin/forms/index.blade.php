@@ -24,9 +24,9 @@
                 @forelse ($forms as $form)
                     <tr class="hover:bg-slate-50">
                         <td class="px-4 py-3">
-                            <a href="{{ route('admin.forms.show', $form) }}" class="font-medium text-slate-900 hover:text-slate-700">{{ e($form->name) }}</a>
+                            <a href="{{ route('admin.forms.show', $form) }}" class="font-medium text-slate-900 hover:text-slate-700">{{ $form->name }}</a>
                         </td>
-                        <td class="px-4 py-3 text-sm text-slate-600">{{ e($form->website?->name ?: 'Unknown website') }}</td>
+                        <td class="px-4 py-3 text-sm text-slate-600">{{ $form->website?->name ?: 'Unknown website' }}</td>
                         <td class="px-4 py-3 text-sm text-slate-600">{{ $form->is_active ? 'Active' : 'Disabled' }}</td>
                         <td class="px-4 py-3 text-sm text-slate-600">{{ $form->submissions_count }}</td>
                         <td class="px-4 py-3 text-sm text-slate-500">{{ $form->created_at?->diffForHumans() }}</td>

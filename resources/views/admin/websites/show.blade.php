@@ -10,7 +10,7 @@
     @endif
     <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
-            <h1 class="text-2xl font-semibold">{{ e($website->name) }}</h1>
+            <h1 class="text-2xl font-semibold">{{ $website->name }}</h1>
             <p class="text-sm text-slate-600">Audit health, search visibility, content activity, forms, and submissions.</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
@@ -465,7 +465,7 @@
             <ul class="mt-3 space-y-2 text-sm">
                 @forelse ($website->domains as $domain)
                     <li class="flex items-center justify-between">
-                        <span>{{ e($domain->domain) }}</span>
+                        <span>{{ $domain->domain }}</span>
                         <span class="text-slate-500">{{ $domain->is_primary ? 'Primary' : 'Alias' }}</span>
                     </li>
                 @empty
@@ -536,7 +536,7 @@
                 <div class="min-w-0">
                     <p class="font-mono text-sm font-medium uppercase tracking-wide text-blue-700">Form setup</p>
                     <h2 id="form-onboarding-title" class="mt-1 text-xl font-semibold text-balance text-blue-950">Connect a website form</h2>
-                    <p class="mt-2 text-base text-pretty text-blue-900 sm:text-sm">Paste the example into the website, then replace or add the fields you need. Submissions from {{ e($website->domains->firstWhere('is_primary', true)?->domain ?? $website->domains->first()?->domain ?? 'this website') }} will be matched automatically.</p>
+                    <p class="mt-2 text-base text-pretty text-blue-900 sm:text-sm">Paste the example into the website, then replace or add the fields you need. Submissions from {{ $website->domains->firstWhere('is_primary', true)?->domain ?? $website->domains->first()?->domain ?? 'this website' }} will be matched automatically.</p>
 
                     <dl class="mt-5 grid gap-4">
                         <div>
@@ -629,7 +629,7 @@
                 <thead class="bg-slate-50"><tr><th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Name</th><th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Website</th><th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Status</th><th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Submissions</th><th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Seen</th></tr></thead>
                 <tbody class="divide-y divide-slate-100">
                 @forelse ($website->forms as $form)
-                    <tr class="hover:bg-slate-50"><td class="px-4 py-3"><a href="{{ route('admin.forms.show', $form) }}" class="font-medium text-slate-900 hover:text-slate-700">{{ e($form->name) }}</a></td><td class="px-4 py-3 text-sm text-slate-600">{{ e($website->name) }}</td><td class="px-4 py-3 text-sm text-slate-600">{{ $form->is_active ? 'Active' : 'Disabled' }}</td><td class="px-4 py-3 text-sm tabular-nums text-slate-600">{{ $form->submissions_count }}</td><td class="px-4 py-3 text-sm text-slate-500">{{ $form->created_at?->diffForHumans() }}</td></tr>
+                    <tr class="hover:bg-slate-50"><td class="px-4 py-3"><a href="{{ route('admin.forms.show', $form) }}" class="font-medium text-slate-900 hover:text-slate-700">{{ $form->name }}</a></td><td class="px-4 py-3 text-sm text-slate-600">{{ $website->name }}</td><td class="px-4 py-3 text-sm text-slate-600">{{ $form->is_active ? 'Active' : 'Disabled' }}</td><td class="px-4 py-3 text-sm tabular-nums text-slate-600">{{ $form->submissions_count }}</td><td class="px-4 py-3 text-sm text-slate-500">{{ $form->created_at?->diffForHumans() }}</td></tr>
                 @empty
                     <tr><td colspan="5" class="px-4 py-6 text-center text-sm text-slate-500">No forms registered for this website.</td></tr>
                 @endforelse

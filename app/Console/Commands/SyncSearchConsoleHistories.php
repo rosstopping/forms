@@ -18,6 +18,7 @@ class SyncSearchConsoleHistories extends Command
 
         SearchConsoleConnection::query()
             ->whereNotNull('property_url')
+            ->whereHas('website', fn ($query) => $query->where('is_active', true))
             ->each(function (SearchConsoleConnection $connection) use (&$queued): void {
                 SyncSearchConsoleHistory::dispatch($connection);
                 $queued++;

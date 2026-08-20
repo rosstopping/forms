@@ -21,6 +21,11 @@ test('it creates a complete demo website walkthrough', function () {
         ->firstOrFail();
 
     expect($website->name)->toBe('Willow & Stone Garden Rooms')
+        ->and($website->is_active)->toBeFalse()
+        ->and($website->email_enabled)->toBeFalse()
+        ->and($website->email_recipients)->toBeEmpty()
+        ->and($website->autoresponder_enabled)->toBeFalse()
+        ->and($website->health_reports_enabled)->toBeFalse()
         ->and($website->owner->email)->toBe(DemoWebsiteSeeder::OWNER_EMAIL)
         ->and($website->members)->toHaveCount(2)
         ->and($website->forms)->toHaveCount(3)
@@ -31,9 +36,11 @@ test('it creates a complete demo website walkthrough', function () {
         ->and($website->repository)->not->toBeNull()
         ->and($website->searchConsoleConnection)->not->toBeNull()
         ->and($website->searchOpportunities)->toHaveCount(4)
-        ->and($website->contentPlan?->enabled)->toBeTrue()
+        ->and($website->contentPlan?->enabled)->toBeFalse()
         ->and($website->contentRequests)->toHaveCount(2)
         ->and($website->businessProfileConnection)->not->toBeNull()
+        ->and($website->businessProfileConnection?->weekly_audits_enabled)->toBeFalse()
+        ->and($website->businessProfileConnection?->weekly_posts_enabled)->toBeFalse()
         ->and($website->businessProfileConnection?->reviews)->toHaveCount(3);
 
     expect(FormSubmission::query()->whereBelongsTo($website)->whereNotNull('follow_up_at')->count())->toBe(4)
@@ -41,14 +48,17 @@ test('it creates a complete demo website walkthrough', function () {
         ->and(ContentGeneration::query()->count())->toBe(1)
         ->and(BusinessProfileReview::query()->where('reply_status', BusinessProfileReview::STATUS_PENDING_APPROVAL)->count())->toBe(2);
 
-    Http::fake(['*' => Http::response(['rows' => []])]);
+    Http::preventStrayRequests();
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
 
     $this->actingAs($admin)
         ->get(route('admin.websites.show', $website))
         ->assertOk()
-        ->assertSee('Willow & Stone Garden Rooms')
+        ->assertSee('Willow &amp; Stone Garden Rooms', false)
+        ->assertDontSee('Willow &amp;amp; Stone Garden Rooms', false)
         ->assertSee('luxury garden office surrey');
+
+    Http::assertNothingSent();
 
     $this->get(route('admin.website-health-reports.show', [$website, $website->latestHealthReport]))
         ->assertOk()

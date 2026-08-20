@@ -31,7 +31,7 @@
                 @forelse ($websites as $website)
                     <tr class="hover:bg-slate-50">
                         <td class="px-4 py-3">
-                            <a href="{{ route('admin.websites.show', $website) }}" class="font-medium text-slate-900 hover:text-slate-700">{{ e($website->name) }}</a>
+                            <a href="{{ route('admin.websites.show', $website) }}" class="font-medium text-slate-900 hover:text-slate-700">{{ $website->name }}</a>
                         </td>
                         @php($report = $website->latestHealthReport)
                         <td class="px-4 py-3 text-sm">

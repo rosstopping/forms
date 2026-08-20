@@ -27,8 +27,8 @@
             <tbody class="divide-y divide-slate-100">
                 @forelse ($users as $user)
                     <tr class="hover:bg-slate-50">
-                        <td class="px-4 py-3 text-sm font-medium text-slate-900">{{ e($user->name) }}</td>
-                        <td class="px-4 py-3 text-sm text-slate-600">{{ e($user->email) }}</td>
+                        <td class="px-4 py-3 text-sm font-medium text-slate-900">{{ $user->name }}</td>
+                        <td class="px-4 py-3 text-sm text-slate-600">{{ $user->email }}</td>
                         <td class="px-4 py-3 text-sm text-slate-600">{{ $user->isAdmin() ? 'Admin' : 'User' }}</td>
                         <td class="px-4 py-3 text-sm text-slate-600">
                             {{ data_get($plans, $user->effectiveMembershipTier().'.name', 'None') }}

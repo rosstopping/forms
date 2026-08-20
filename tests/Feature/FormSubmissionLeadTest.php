@@ -58,6 +58,8 @@ it('filters scheduled follow-ups and shows their reminder count', function () {
         ->assertOk()
         ->assertSee('Overdue Person')
         ->assertDontSee('Future Person')
+        ->assertSee('md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_10rem]', false)
+        ->assertSee('break-words font-medium', false)
         ->assertSee('aria-label="1 lead follow-ups due"', false);
 });
 
@@ -316,10 +318,13 @@ it('lets a website owner configure the site wide automatic reply', function () {
 
 it('links form settings back to the parent website forms tab', function () {
     $owner = User::factory()->create();
-    $website = Website::factory()->create(['user_id' => $owner->id]);
-    $form = Form::factory()->create(['website_id' => $website->id]);
+    $website = Website::factory()->create(['user_id' => $owner->id, 'name' => 'Willow & Stone']);
+    $form = Form::factory()->create(['website_id' => $website->id, 'name' => 'Design & Build']);
 
     $this->actingAs($owner)->get(route('admin.forms.show', $form))
         ->assertOk()
+        ->assertSee('Willow &amp; Stone', false)
+        ->assertSee('Design &amp; Build', false)
+        ->assertDontSee('&amp;amp;', false)
         ->assertSee('href="'.route('admin.websites.show', [$website, 'tab' => 'forms']).'"', false);
 });

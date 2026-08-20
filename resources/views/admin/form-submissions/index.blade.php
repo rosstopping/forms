@@ -90,14 +90,14 @@
                     @else
                         <span class="size-4 shrink-0" title="Read-only lead"></span>
                     @endif
-                    <a href="{{ route('admin.form-submissions.show', $submission) }}" class="grid min-w-0 flex-1 gap-2 md:grid-cols-[2fr_1fr_1fr_auto] md:items-center">
+                    <a href="{{ route('admin.form-submissions.show', $submission) }}" class="grid min-w-0 flex-1 gap-2 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_10rem] md:items-start">
                         <div class="min-w-0"><div class="font-medium text-slate-900">{{ $submission->displayName() }}</div><div class="truncate text-sm text-slate-500">{{ $submission->replyToEmail() ?: $submission->messageExcerpt() ?: 'No contact details supplied' }}</div></div>
                         <div class="text-sm"><div class="text-slate-700">{{ $submission->form?->name ?: 'Unknown form' }}</div><div class="text-xs text-slate-500">{{ $submission->website?->name }}</div></div>
                         <div class="text-sm"><span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">{{ $submission->resolvedStatusLabel() }}</span><div class="mt-2 text-xs text-slate-500">{{ $submission->assignee?->name ?: 'Unassigned' }}</div></div>
-                        <div class="text-xs md:text-right">
+                        <div class="min-w-0 text-xs md:text-right">
                             <div class="text-slate-500">{{ $submission->created_at?->diffForHumans() }}</div>
                             @if ($submission->follow_up_at)
-                                <div class="mt-1 font-medium {{ $submission->follow_up_at->isPast() && ! in_array($submission->status, ['won', 'lost']) ? 'text-red-600' : 'text-amber-700' }}">Follow up {{ $submission->follow_up_at->diffForHumans() }}</div>
+                                <div class="mt-1 break-words font-medium {{ $submission->follow_up_at->isPast() && ! in_array($submission->status, ['won', 'lost']) ? 'text-red-600' : 'text-amber-700' }}">Follow up {{ $submission->follow_up_at->diffForHumans() }}</div>
                             @endif
                         </div>
                     </a>

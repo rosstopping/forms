@@ -30,12 +30,12 @@
         <div class="rounded-lg border bg-white p-4 shadow-sm">
             <h2 class="font-semibold">Lead overview</h2>
             <dl class="mt-3 space-y-2 text-sm">
-                <div class="flex justify-between"><dt class="text-slate-500">Source domain</dt><dd class="font-medium">{{ e($formSubmission->source_domain ?: 'Unknown') }}</dd></div>
-                <div class="flex justify-between"><dt class="text-slate-500">Source URL</dt><dd class="font-medium break-all">{{ e($formSubmission->source_url ?: 'Unknown') }}</dd></div>
-                <div class="flex justify-between"><dt class="text-slate-500">Form</dt><dd class="font-medium">{{ e($formSubmission->form?->name ?: 'Unknown form') }}</dd></div>
-                <div class="flex justify-between"><dt class="text-slate-500">Website</dt><dd class="font-medium">{{ e($formSubmission->website?->name ?: 'Unknown website') }}</dd></div>
+                <div class="flex justify-between"><dt class="text-slate-500">Source domain</dt><dd class="font-medium">{{ $formSubmission->source_domain ?: 'Unknown' }}</dd></div>
+                <div class="flex justify-between"><dt class="text-slate-500">Source URL</dt><dd class="font-medium break-all">{{ $formSubmission->source_url ?: 'Unknown' }}</dd></div>
+                <div class="flex justify-between"><dt class="text-slate-500">Form</dt><dd class="font-medium">{{ $formSubmission->form?->name ?: 'Unknown form' }}</dd></div>
+                <div class="flex justify-between"><dt class="text-slate-500">Website</dt><dd class="font-medium">{{ $formSubmission->website?->name ?: 'Unknown website' }}</dd></div>
                 <div class="flex justify-between"><dt class="text-slate-500">Status</dt><dd class="font-medium"><span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">{{ $formSubmission->resolvedStatusLabel() }}</span></dd></div>
-                {{-- <div class="flex justify-between"><dt class="text-slate-500">Owner</dt><dd class="font-medium">{{ e($formSubmission->assignee?->name ?: 'Unassigned') }}</dd></div> --}}
+                {{-- <div class="flex justify-between"><dt class="text-slate-500">Owner</dt><dd class="font-medium">{{ $formSubmission->assignee?->name ?: 'Unassigned' }}</dd></div> --}}
             </dl>
 
             <form method="POST" action="{{ route('admin.form-submissions.update', $formSubmission) }}" class="mt-5 space-y-4">
@@ -54,7 +54,7 @@
                     <select id="assigned_to" name="assigned_to" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
                         <option value="">Unassigned</option>
                         @foreach ($users as $user)
-                            <option value="{{ $user->id }}" @selected($formSubmission->assigned_to === $user->id)>{{ e($user->name) }}</option>
+                            <option value="{{ $user->id }}" @selected($formSubmission->assigned_to === $user->id)>{{ $user->name }}</option>
                         @endforeach
                     </select>
                 </div> --}}

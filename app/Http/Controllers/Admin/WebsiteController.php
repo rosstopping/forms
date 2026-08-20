@@ -187,7 +187,7 @@ class WebsiteController extends Controller
                 ->withQueryString();
         }
 
-        if ($canUseGrowthFeatures && $website->searchConsoleConnection?->property_url) {
+        if ($website->is_active && $canUseGrowthFeatures && $website->searchConsoleConnection?->property_url) {
             try {
                 $connection = $website->searchConsoleConnection;
                 $cacheKey = 'search-console-report:'.$connection->id.':'.hash('sha256', $connection->property_url).':'.$connection->updated_at->timestamp;

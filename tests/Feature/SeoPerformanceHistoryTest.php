@@ -229,6 +229,9 @@ test('search console history job syncs its search console connection', function 
 test('search console history command queues connected properties', function () {
     Queue::fake();
     $connection = SearchConsoleConnection::factory()->create(['property_url' => 'sc-domain:example.com']);
+    $inactiveConnection = SearchConsoleConnection::factory()
+        ->for(Website::factory()->state(['is_active' => false]))
+        ->create(['property_url' => 'sc-domain:demo.test']);
 
     $this->artisan('search-console:sync-history')
         ->expectsOutput('Queued 1 Search Console history sync(s).')
@@ -237,6 +240,10 @@ test('search console history command queues connected properties', function () {
     Queue::assertPushed(
         SyncSearchConsoleHistory::class,
         fn (SyncSearchConsoleHistory $job): bool => $job->searchConsoleConnection->is($connection),
+    );
+    Queue::assertNotPushed(
+        SyncSearchConsoleHistory::class,
+        fn (SyncSearchConsoleHistory $job): bool => $job->searchConsoleConnection->is($inactiveConnection),
     );
 });
 
