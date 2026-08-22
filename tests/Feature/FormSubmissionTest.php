@@ -89,6 +89,23 @@ it('detects honeypot spam without sending notifications', function (): void {
     Http::assertNothingSent();
 });
 
+it('detects the site honeypot field without storing it', function (): void {
+    $this->withHeader('Origin', 'https://site-honeypot.example')
+        ->post('/submit', [
+            '_form_name' => 'Contact form',
+            '_sitewell_check' => 'filled',
+            'name' => 'Automated visitor',
+        ])
+        ->assertRedirectContains('/submitted');
+
+    $submission = FormSubmission::query()->latest('id')->firstOrFail();
+
+    expect($submission->is_spam)->toBeTrue()
+        ->and($submission->data)->not->toHaveKey('_sitewell_check');
+    Mail::assertNothingSent();
+    Http::assertNothingSent();
+});
+
 it('quarantines link-heavy submissions without sending notifications', function (): void {
     $this->withHeader('Origin', 'https://spam-check.example')
         ->post('/submit', [
@@ -252,10 +269,54 @@ it('quarantines shortened and obfuscated links', function (string $message): voi
     'obfuscated shortened link' => 'Remove us by visiting brnd .li/delist',
 ]);
 
+it('quarantines fingerprints found repeatedly in marked spam', function (array $payload): void {
+    $this->withHeader('Origin', 'https://learned-spam.example')
+        ->post('/submit', ['_form_name' => 'Contact form', ...$payload])
+        ->assertRedirectContains('/submitted');
+
+    expect(FormSubmission::query()->latest('id')->firstOrFail()->is_spam)->toBeTrue();
+    Mail::assertNothingSent();
+})->with([
+    'known sender identity' => [[
+        'name' => 'RobertRoori',
+        'email' => 'rotating@example.com',
+        'message' => 'Hi, I wanted to know your price.',
+    ]],
+    'generated company and phone combination' => [[
+        'name' => 'A new rotating name',
+        'company' => 'google',
+        'phone' => '81673542565',
+        'message' => 'A short translated price enquiry.',
+    ]],
+    'unsolicited listing lure' => [[
+        'name' => 'Directory checker',
+        'email' => 'checker@example.com',
+        'message' => 'Is this your business listing on this web index? https://example.com/check',
+    ]],
+]);
+
 it('rate limits repeated submissions from the same domain and IP address', function (): void {
     config()->set('forms.rate_limit_per_minute', 2);
+    config()->set('forms.rate_limit_per_hour', 10);
 
     $request = fn (): TestResponse => $this->withHeader('Origin', 'https://rate-limit.example')
+        ->postJson('/submit', [
+            '_form_name' => 'Contact form',
+            'name' => 'Grace Hopper',
+        ]);
+
+    $request()->assertSuccessful();
+    $request()->assertSuccessful();
+    $request()->assertTooManyRequests();
+
+    $this->assertDatabaseCount('form_submissions', 2);
+});
+
+it('rate limits submissions across the hourly window', function (): void {
+    config()->set('forms.rate_limit_per_minute', 10);
+    config()->set('forms.rate_limit_per_hour', 2);
+
+    $request = fn (): TestResponse => $this->withHeader('Origin', 'https://hourly-rate-limit.example')
         ->postJson('/submit', [
             '_form_name' => 'Contact form',
             'name' => 'Grace Hopper',

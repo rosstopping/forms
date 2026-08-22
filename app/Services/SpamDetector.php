@@ -47,6 +47,18 @@ class SpamDetector
             $score += 2;
         }
 
+        if (Str::contains(Str::lower($content), config('forms.spam.unsolicited_phrases', []))) {
+            $score += config('forms.spam.unsolicited_phrase_score', 3);
+        }
+
+        if ($this->containsKnownValue($fields->all())) {
+            $score += config('forms.spam.threshold', 3);
+        }
+
+        if ($this->hasSuspiciousIdentity($payload)) {
+            $score += config('forms.spam.suspicious_identity_score', 3);
+        }
+
         if (Str::contains(Str::lower($normalizedContent), config('forms.spam.shortened_link_domains', []))) {
             $score += config('forms.spam.shortened_link_score', 3);
         }
@@ -56,6 +68,24 @@ class SpamDetector
         }
 
         return $score >= config('forms.spam.threshold', 3);
+    }
+
+    protected function containsKnownValue(array $fields): bool
+    {
+        $knownValues = config('forms.spam.known_values', []);
+
+        return collect($fields)->contains(
+            fn (string $value): bool => in_array(Str::lower(trim($value)), $knownValues, true),
+        );
+    }
+
+    protected function hasSuspiciousIdentity(array $payload): bool
+    {
+        $company = Str::lower(trim((string) Arr::get($payload, 'company', '')));
+        $phone = preg_replace('/\D+/', '', (string) (Arr::get($payload, 'phone') ?? Arr::get($payload, 'mobile', ''))) ?? '';
+
+        return in_array($company, config('forms.spam.suspicious_company_values', []), true)
+            && preg_match(config('forms.spam.suspicious_phone_pattern', '/^$/'), $phone) === 1;
     }
 
     protected function containsInvalidEmail(array $payload): bool

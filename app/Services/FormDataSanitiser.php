@@ -21,7 +21,15 @@ class FormDataSanitiser
 
     public function isInternalField(string $key): bool
     {
-        $internal = ['_token', '_form_name', '_form_success_url', '_form_error_url', '_honeypot', 'g-recaptcha-response', 'cf-turnstile-response'];
+        $internal = [
+            '_token',
+            '_form_name',
+            '_form_success_url',
+            '_form_error_url',
+            ...config('forms.spam.honeypot_fields', []),
+            'g-recaptcha-response',
+            'cf-turnstile-response',
+        ];
 
         return in_array($key, $internal, true);
     }

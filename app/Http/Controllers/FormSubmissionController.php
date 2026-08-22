@@ -37,9 +37,9 @@ class FormSubmissionController extends Controller
             return response()->json(['message' => 'Too many requests.'], 429);
         }
 
-        RateLimiter::hit($this->rateLimitKey($request), 60);
+        $this->hitRateLimits($request);
 
-        if ($request->filled('_honeypot')) {
+        if ($this->honeypotIsFilled($request)) {
             $website = $this->resolveWebsite($request);
             $form = $this->resolveForm($request, $website);
             $submission = $this->createSubmission($request, $website, $form, true);
@@ -253,13 +253,26 @@ class FormSubmissionController extends Controller
 
     protected function isRateLimited(Request $request): bool
     {
-        return RateLimiter::tooManyAttempts($this->rateLimitKey($request), config('forms.rate_limit_per_minute'));
+        return RateLimiter::tooManyAttempts($this->rateLimitKey($request, 'minute'), config('forms.rate_limit_per_minute'))
+            || RateLimiter::tooManyAttempts($this->rateLimitKey($request, 'hour'), config('forms.rate_limit_per_hour'));
     }
 
-    protected function rateLimitKey(Request $request): string
+    protected function hitRateLimits(Request $request): void
+    {
+        RateLimiter::hit($this->rateLimitKey($request, 'minute'), 60);
+        RateLimiter::hit($this->rateLimitKey($request, 'hour'), 3600);
+    }
+
+    protected function rateLimitKey(Request $request, string $window): string
     {
         $domain = $this->domainFromRequest($request);
 
-        return 'forms:'.($domain ?: 'unknown').':'.$request->ip();
+        return 'forms:'.$window.':'.($domain ?: 'unknown').':'.$request->ip();
+    }
+
+    protected function honeypotIsFilled(Request $request): bool
+    {
+        return collect(config('forms.spam.honeypot_fields', []))
+            ->contains(fn (string $field): bool => $request->filled($field));
     }
 }
