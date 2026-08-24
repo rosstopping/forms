@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Prospect;
+use App\Services\ProspectLifecycleManager;
 use App\Services\ProspectWebsiteAnalyzer;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -23,7 +24,7 @@ class AnalyzeProspect implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(ProspectWebsiteAnalyzer $analyzer): void
+    public function handle(ProspectWebsiteAnalyzer $analyzer, ProspectLifecycleManager $lifecycleManager): void
     {
         $this->prospect->update(['analysis_status' => 'running', 'analysis_error' => null]);
 
@@ -36,6 +37,7 @@ class AnalyzeProspect implements ShouldQueue
                 'analysed_at' => now(), 'outreach_subject' => $draft['subject'], 'outreach_body' => $draft['body'], 'status' => 'drafted',
                 'approved_at' => null, 'approved_by' => null, 'scheduled_send_at' => null,
             ]);
+            $lifecycleManager->markQualified($this->prospect);
             $this->prospect->recordActivity('analysed', 'Website analysed and an outreach draft prepared.');
         } catch (Throwable $exception) {
             $this->prospect->update(['analysis_status' => 'failed', 'analysis_error' => $exception->getMessage()]);

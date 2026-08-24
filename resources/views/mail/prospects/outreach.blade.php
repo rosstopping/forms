@@ -3,7 +3,7 @@
 <body style="margin:0;background:#ffffff;color:#1e293b;font-family:Arial,sans-serif;line-height:1.6;">
     <main style="max-width:620px;margin:0 auto;padding:32px 20px;">
         <section style="padding:8px 0;">
-            <div style="font-size:16px;white-space:pre-line;">{{ $prospect->outreach_body }}</div>
+            <div style="font-size:16px;white-space:pre-line;">{{ $messageBody }}</div>
             @if ($auditReportUrl)
                 <div style="margin:28px 0 0;border:1px solid #99f6e4;border-radius:12px;background:#f0fdfa;padding:20px;">
                     <p style="margin:0;font-size:18px;font-weight:700;color:#134e4a;">Your website audit</p>
@@ -25,12 +25,12 @@
                     <p style="margin:14px 0 0;font-size:12px;color:#64748b;word-break:break-all;">If the button does not work, open: <a href="{{ $showcaseVideoUrl }}" style="color:#0f766e;">{{ $showcaseVideoUrl }}</a></p>
                 </div>
             @endif
-            <div style="margin:20px 0 0;border:1px solid #cbd5e1;border-radius:12px;padding:20px;">
+            @if ($bookingUrl)<div style="margin:20px 0 0;border:1px solid #cbd5e1;border-radius:12px;padding:20px;">
                 <p style="margin:0;font-size:18px;font-weight:700;color:#0f172a;">Want to have a quick chat?</p>
                 <p style="margin:6px 0 16px;font-size:14px;color:#475569;">Pick any time that works for you.</p>
                 <a href="{{ $bookingUrl }}" style="display:inline-block;border-radius:8px;background:#0f766e;padding:12px 18px;color:#ffffff;font-weight:600;text-decoration:none;">Book a call with Ross</a>
                 <p style="margin:14px 0 0;font-size:12px;color:#64748b;">Or use this <a href="{{ $bookingUrl }}" style="color:#0f766e;">booking link</a></p>
-            </div>
+            </div>@endif
             <p style="margin:24px 0 0;font-size:13px;line-height:1.6;color:#64748b;">Full disclosure, because we don’t currently manage your website, the data we can see is fairly limited. If you decided to work with us, we’d connect tools like Google Search Console, giving us a much clearer picture of how your website is actually performing.</p>
         </section>
         @if ($trackingOpenUrl)

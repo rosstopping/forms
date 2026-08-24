@@ -29,6 +29,11 @@ Schedule::command('free-site-audits:dispatch-pending-emails')
     ->onOneServer()
     ->withoutOverlapping();
 
+Schedule::command('outreach:dispatch-due')
+    ->everyMinute()
+    ->onOneServer()
+    ->withoutOverlapping();
+
 Schedule::command('search-opportunities:dispatch')
     ->hourly()
     ->withoutOverlapping();

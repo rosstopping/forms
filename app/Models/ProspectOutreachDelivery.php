@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ProspectOutreachMessageType;
 use Database\Factories\ProspectOutreachDeliveryFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -14,7 +15,7 @@ class ProspectOutreachDelivery extends Model
     /** @use HasFactory<ProspectOutreachDeliveryFactory> */
     use HasFactory;
 
-    protected $fillable = ['uuid', 'prospect_id', 'recipient_email', 'sent_at', 'first_opened_at', 'last_opened_at', 'open_count', 'first_clicked_at', 'last_clicked_at', 'click_count'];
+    protected $fillable = ['uuid', 'prospect_id', 'recipient_email', 'message_type', 'idempotency_key', 'status', 'subject', 'body', 'scheduled_at', 'sent_at', 'failed_at', 'failure_reason', 'first_opened_at', 'last_opened_at', 'open_count', 'first_clicked_at', 'last_clicked_at', 'click_count'];
 
     protected static function booted(): void
     {
@@ -25,7 +26,7 @@ class ProspectOutreachDelivery extends Model
 
     protected function casts(): array
     {
-        return ['sent_at' => 'datetime', 'first_opened_at' => 'datetime', 'last_opened_at' => 'datetime', 'first_clicked_at' => 'datetime', 'last_clicked_at' => 'datetime'];
+        return ['message_type' => ProspectOutreachMessageType::class, 'scheduled_at' => 'datetime', 'sent_at' => 'datetime', 'failed_at' => 'datetime', 'first_opened_at' => 'datetime', 'last_opened_at' => 'datetime', 'first_clicked_at' => 'datetime', 'last_clicked_at' => 'datetime'];
     }
 
     public function getRouteKeyName(): string

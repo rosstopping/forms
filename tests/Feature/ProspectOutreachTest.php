@@ -6,6 +6,7 @@ use App\Mail\ProspectOutreach;
 use App\Models\Prospect;
 use App\Models\User;
 use App\Services\LoomVideoThumbnail;
+use App\Services\ProspectLifecycleManager;
 use App\Services\ProspectWebsiteAnalyzer;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
@@ -132,7 +133,7 @@ it('fills an empty prospect email from published website contact details', funct
         ],
     ]);
 
-    (new AnalyzeProspect($prospect))->handle($analyzer);
+    (new AnalyzeProspect($prospect))->handle($analyzer, app(ProspectLifecycleManager::class));
 
     expect($prospect->refresh()->email)->toBe('hello@example.com')
         ->and(data_get($prospect->contact_details, 'emails.0.source_url'))->toBe('https://example.com/contact')
@@ -153,7 +154,7 @@ it('prepares the no-video outreach wording with the prospect contact and company
         'contacts' => ['emails' => [], 'phones' => [], 'addresses' => [], 'contact_page_url' => null, 'contact_form_url' => null],
     ]);
 
-    (new AnalyzeProspect($prospect))->handle($analyzer);
+    (new AnalyzeProspect($prospect))->handle($analyzer, app(ProspectLifecycleManager::class));
 
     expect($prospect->refresh()->outreach_body)->toBe("Hi James,\n\nI came across New Bould Roofing while looking at local search results. I spotted a few opportunities that could help the website bring in more local enquiries.\n\nI’ve put together a short website audit showing some of the issues I found. I can also record a quick video explaining what I’d prioritise.\n\nWould you like me to send the video over?\n\nCheers,\nRoss");
 });
@@ -176,7 +177,7 @@ it('includes the strongest verified search term and Google results page in the d
         'contacts' => ['emails' => [], 'phones' => [], 'addresses' => [], 'contact_page_url' => null, 'contact_form_url' => null],
     ]);
 
-    (new AnalyzeProspect($prospect))->handle($analyzer);
+    (new AnalyzeProspect($prospect))->handle($analyzer, app(ProspectLifecycleManager::class));
 
     expect($prospect->refresh()->outreach_body)
         ->toContain('“roof repairs doncaster”')
@@ -196,7 +197,7 @@ it('keeps the existing outreach wording when a showcase video is available', fun
         'contacts' => ['emails' => [], 'phones' => [], 'addresses' => [], 'contact_page_url' => null, 'contact_form_url' => null],
     ]);
 
-    (new AnalyzeProspect($prospect))->handle($analyzer);
+    (new AnalyzeProspect($prospect))->handle($analyzer, app(ProspectLifecycleManager::class));
 
     expect($prospect->refresh()->outreach_body)->toBe("Hi there,\n\nI came across New Bould Roofing on Google and thought Sitewell might be useful for you.\n\nI ran your website through it and recorded a quick video showing what I found.\n\nNo sales pitch — just thought it might be worth a look.\n\nCheers,\nRoss");
 });
@@ -254,7 +255,7 @@ it('allows another approved email when the next follow-up is due', function () {
     $prospect->refresh();
 
     expect($prospect->outreachDeliveries)->toHaveCount(2)
-        ->and($prospect->next_follow_up_at->equalTo(now()->addWeek()))->toBeTrue();
+        ->and($prospect->next_follow_up_at->equalTo(now()->addDays((int) config('outreach.timing.cold_retry_days'))->startOfSecond()))->toBeTrue();
     Mail::assertSent(ProspectOutreach::class, 2);
 });
 

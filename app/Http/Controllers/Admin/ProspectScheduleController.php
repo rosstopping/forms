@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\ScheduleProspectOutreachRequest;
 use App\Jobs\SendScheduledProspectOutreach;
 use App\Models\Prospect;
+use App\Services\ProspectLifecycleManager;
 use App\Services\ProspectOutreachSender;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
@@ -15,13 +16,14 @@ class ProspectScheduleController extends Controller
     /**
      * Handle the incoming request.
      */
-    public function __invoke(ScheduleProspectOutreachRequest $request, Prospect $prospect, ProspectOutreachSender $sender): RedirectResponse
+    public function __invoke(ScheduleProspectOutreachRequest $request, Prospect $prospect, ProspectOutreachSender $sender, ProspectLifecycleManager $lifecycleManager): RedirectResponse
     {
         abort_unless($prospect->isAccessibleBy($request->user()), 403);
         abort_if($eligibilityError = $sender->eligibilityError($prospect), 422, $eligibilityError);
 
         $scheduledFor = CarbonImmutable::parse($request->validated('scheduled_send_at'), 'Europe/London')->utc();
         $prospect->update(['scheduled_send_at' => $scheduledFor]);
+        $lifecycleManager->markScheduled($prospect);
         $prospect->recordActivity('send_scheduled', 'Approved outreach email scheduled for '.$scheduledFor->setTimezone('Europe/London')->format('j M Y, H:i').' UK time.', $request->user());
         SendScheduledProspectOutreach::dispatch($prospect->id, $scheduledFor)->delay($scheduledFor)->afterCommit();
 

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Prospect extends Model
 {
@@ -23,6 +24,13 @@ class Prospect extends Model
     protected $attributes = ['lead_temperature' => 'cold'];
 
     protected $casts = ['findings' => 'array', 'contact_details' => 'array', 'analysed_at' => 'datetime', 'approved_at' => 'datetime', 'sent_at' => 'datetime', 'scheduled_send_at' => 'datetime', 'next_follow_up_at' => 'datetime', 'replied_at' => 'datetime', 'converted_at' => 'datetime', 'suppressed_at' => 'datetime'];
+
+    protected static function booted(): void
+    {
+        static::created(function (Prospect $prospect): void {
+            $prospect->outreachState()->create(ProspectOutreachState::initialAttributesFor($prospect));
+        });
+    }
 
     public function owner(): BelongsTo
     {
@@ -47,6 +55,16 @@ class Prospect extends Model
     public function outreachDeliveries(): HasMany
     {
         return $this->hasMany(ProspectOutreachDelivery::class)->latest('sent_at');
+    }
+
+    public function outreachState(): HasOne
+    {
+        return $this->hasOne(ProspectOutreachState::class);
+    }
+
+    public function engagementEvents(): HasMany
+    {
+        return $this->hasMany(ProspectEngagementEvent::class)->latest('occurred_at');
     }
 
     public function scopeAccessibleTo(Builder $query, User $user): Builder

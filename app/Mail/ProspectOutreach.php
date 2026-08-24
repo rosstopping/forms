@@ -29,7 +29,7 @@ class ProspectOutreach extends Mailable
     {
         return new Envelope(
             from: new Address(config('mail.from.address'), 'Ross'),
-            subject: $this->prospect->outreach_subject,
+            subject: $this->delivery?->subject ?? $this->prospect->outreach_subject,
         );
     }
 
@@ -50,7 +50,7 @@ class ProspectOutreach extends Mailable
             $bookingLink = $this->delivery->links->firstWhere('kind', 'book_call');
             $showcaseVideoUrl = $showcaseVideoLink ? URL::signedRoute('prospect-outreach-links.show', $showcaseVideoLink) : null;
             $auditReportUrl = $auditReportLink ? URL::signedRoute('prospect-outreach-links.show', $auditReportLink) : null;
-            $bookingUrl = URL::signedRoute('prospect-outreach-links.show', $bookingLink);
+            $bookingUrl = $bookingLink ? URL::signedRoute('prospect-outreach-links.show', $bookingLink) : null;
             $trackingOpenUrl = URL::signedRoute('prospect-outreach-opens.show', $this->delivery);
         }
 
@@ -61,6 +61,7 @@ class ProspectOutreach extends Mailable
                 'auditReportUrl' => $auditReportUrl,
                 'bookingUrl' => $bookingUrl,
                 'trackingOpenUrl' => $trackingOpenUrl,
+                'messageBody' => $this->delivery?->body ?? $this->prospect->outreach_body,
             ],
         );
     }

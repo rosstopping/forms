@@ -6,6 +6,7 @@ use App\Http\Requests\StoreFreeSiteAuditRequest;
 use App\Jobs\GenerateFreeSiteAudit;
 use App\Models\Prospect;
 use App\Models\User;
+use App\Services\ProspectLifecycleManager;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -17,7 +18,7 @@ class FreeSiteAuditController extends Controller
         return view('marketing.free-site-audit');
     }
 
-    public function store(StoreFreeSiteAuditRequest $request): RedirectResponse
+    public function store(StoreFreeSiteAuditRequest $request, ProspectLifecycleManager $lifecycleManager): RedirectResponse
     {
         $owner = User::query()->where('role', User::ROLE_ADMIN)->oldest('id')->firstOrFail();
         $data = $request->safe()->only(['name', 'email', 'business_name', 'website_url']);
@@ -37,6 +38,8 @@ class FreeSiteAuditController extends Controller
 
             return $prospect;
         });
+
+        $lifecycleManager->pause($prospect, description: 'Inbound free-audit lead excluded from cold outreach automation.');
 
         GenerateFreeSiteAudit::dispatch($prospect)->afterCommit();
 

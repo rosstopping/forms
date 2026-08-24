@@ -1,14 +1,20 @@
 <?php
 
+use App\Enums\ProspectEngagementEventType;
+use App\Enums\ProspectLifecycleState;
 use App\Mail\ProspectOutreach;
 use App\Models\Prospect;
 use App\Models\ProspectOutreachDelivery;
 use App\Models\ProspectOutreachLink;
 use App\Models\User;
 use App\Notifications\ProspectBecameHot;
+use App\Services\ProspectOutreachTracker;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\URL;
+
+afterEach(fn () => CarbonImmutable::setTestNow());
 
 it('adds signed open and click tracking to a live outreach email', function (): void {
     Mail::fake();
@@ -39,7 +45,8 @@ it('adds signed open and click tracking to a live outreach email', function (): 
     });
 });
 
-it('records opens and warms a cold outreach lead', function (): void {
+it('records opens as weak bounded intent without overstating temperature', function (): void {
+    CarbonImmutable::setTestNow('2026-08-24 09:00:00');
     $prospect = Prospect::factory()->create(['lead_temperature' => 'cold']);
     $delivery = ProspectOutreachDelivery::factory()->for($prospect)->create();
     $trackingUrl = URL::signedRoute('prospect-outreach-opens.show', $delivery);
@@ -47,13 +54,16 @@ it('records opens and warms a cold outreach lead', function (): void {
     $this->get($trackingUrl)
         ->assertSuccessful()
         ->assertHeader('content-type', 'image/gif');
+    CarbonImmutable::setTestNow(now()->addMinutes(61));
     $this->get($trackingUrl)->assertSuccessful();
 
     $delivery->refresh();
     expect($delivery->first_opened_at)->not->toBeNull()
         ->and($delivery->last_opened_at)->not->toBeNull()
         ->and($delivery->open_count)->toBe(2)
-        ->and($prospect->refresh()->lead_temperature)->toBe('warm')
+        ->and($prospect->refresh()->lead_temperature)->toBe('cold')
+        ->and($prospect->outreachState->fresh()->engagement_score)->toBe(2)
+        ->and($prospect->engagementEvents()->where('event_type', ProspectEngagementEventType::EmailOpened)->count())->toBe(2)
         ->and($prospect->activities()->where('type', 'email_opened')->count())->toBe(1);
 });
 
@@ -77,6 +87,8 @@ it('records each tracked link click and marks the lead as hot', function (): voi
         ->and($delivery->refresh()->click_count)->toBe(2)
         ->and($delivery->first_clicked_at)->not->toBeNull()
         ->and($prospect->refresh()->lead_temperature)->toBe('hot')
+        ->and($prospect->outreachState->fresh()->engagement_score)->toBe(10)
+        ->and($prospect->engagementEvents()->where('event_type', ProspectEngagementEventType::PersonalisedVideoClicked)->count())->toBe(2)
         ->and($prospect->activities()->where('type', 'email_clicked')->count())->toBe(1);
     Notification::assertSentTo($admin, ProspectBecameHot::class, function (ProspectBecameHot $notification) use ($admin, $prospect): bool {
         $message = $notification->toMail($admin);
@@ -108,6 +120,80 @@ it('does not cool a hot lead when another open is recorded', function (): void {
     $this->get(URL::signedRoute('prospect-outreach-opens.show', $delivery))->assertSuccessful();
 
     expect($prospect->refresh()->lead_temperature)->toBe('hot');
+});
+
+it('scores an attributable audit click and only awards a meaningful revisit later', function (): void {
+    CarbonImmutable::setTestNow('2026-08-24 09:00:00');
+    Notification::fake();
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $prospect = Prospect::factory()->for($admin, 'owner')->create([
+        'website_url' => 'https://example.com',
+        'analysed_at' => now(),
+    ]);
+    $delivery = app(ProspectOutreachTracker::class)->createDelivery($prospect);
+    $auditLink = $delivery->links->firstWhere('kind', 'website_audit');
+    $trackingUrl = URL::signedRoute('prospect-outreach-links.show', $auditLink);
+
+    $this->get($trackingUrl)->assertRedirect($auditLink->destination_url);
+    $this->get($auditLink->destination_url)->assertSuccessful();
+
+    expect($prospect->outreachState->fresh()->engagement_score)->toBe(5)
+        ->and($prospect->fresh()->lead_temperature)->toBe('warm')
+        ->and($prospect->engagementEvents()->pluck('score_delta')->sort()->values()->all())->toBe([0, 5]);
+    Notification::assertNothingSent();
+
+    CarbonImmutable::setTestNow(now()->addMinutes(61));
+    $this->get($auditLink->destination_url)->assertSuccessful();
+
+    expect($prospect->outreachState->fresh()->engagement_score)->toBe(10)
+        ->and($prospect->fresh()->lead_temperature)->toBe('hot')
+        ->and($prospect->engagementEvents()->where('event_type', ProspectEngagementEventType::AuditClicked)->count())->toBe(3);
+    Notification::assertSentTo($admin, ProspectBecameHot::class, fn (ProspectBecameHot $notification): bool => $notification->clickedLink === 'Website audit revisit');
+});
+
+it('records known scanner clicks with zero score and does not block a later genuine click', function (): void {
+    Notification::fake();
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $prospect = Prospect::factory()->for($admin, 'owner')->create(['lead_temperature' => 'cold']);
+    $delivery = ProspectOutreachDelivery::factory()->for($prospect)->create();
+    $link = ProspectOutreachLink::factory()->for($delivery, 'delivery')->create();
+    $trackingUrl = URL::signedRoute('prospect-outreach-links.show', $link);
+
+    $this->withHeader('User-Agent', 'Proofpoint URL Defense')->get($trackingUrl)->assertRedirect();
+
+    $scannerEvent = $prospect->engagementEvents()->sole();
+    expect($scannerEvent->source)->toBe('scanner')
+        ->and($scannerEvent->score_delta)->toBe(0)
+        ->and($scannerEvent->metadata)->not->toHaveKey('user_agent')
+        ->and($prospect->outreachState->fresh()->engagement_score)->toBe(0)
+        ->and($prospect->fresh()->lead_temperature)->toBe('cold');
+    Notification::assertNothingSent();
+
+    $this->withHeader('User-Agent', 'Mozilla/5.0')->get($trackingUrl)->assertRedirect();
+
+    expect($prospect->engagementEvents()->count())->toBe(2)
+        ->and($prospect->outreachState->fresh()->engagement_score)->toBe(20)
+        ->and($prospect->fresh()->lead_temperature)->toBe('hot');
+    Notification::assertSentToTimes($admin, ProspectBecameHot::class, 1);
+});
+
+it('keeps protected lifecycle outcomes unchanged when an old tracked link is visited', function (): void {
+    Notification::fake();
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $prospect = Prospect::factory()->for($admin, 'owner')->create([
+        'status' => 'converted',
+        'lead_temperature' => 'cold',
+        'converted_at' => now(),
+    ]);
+    $delivery = ProspectOutreachDelivery::factory()->for($prospect)->create();
+    $link = ProspectOutreachLink::factory()->for($delivery, 'delivery')->create();
+
+    $this->get(URL::signedRoute('prospect-outreach-links.show', $link))->assertRedirect();
+
+    expect($prospect->outreachState->fresh()->lifecycle_state)->toBe(ProspectLifecycleState::Customer)
+        ->and($prospect->outreachState->engagement_score)->toBe(20)
+        ->and($prospect->fresh()->lead_temperature)->toBe('cold');
+    Notification::assertNothingSent();
 });
 
 it('rejects unsigned tracking requests without recording engagement', function (): void {

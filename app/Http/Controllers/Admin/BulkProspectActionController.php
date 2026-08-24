@@ -7,6 +7,7 @@ use App\Http\Requests\BulkProspectActionRequest;
 use App\Jobs\AnalyzeProspect;
 use App\Jobs\SendScheduledProspectOutreach;
 use App\Models\Prospect;
+use App\Services\ProspectLifecycleManager;
 use App\Services\ProspectOutreachSender;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -18,7 +19,7 @@ class BulkProspectActionController extends Controller
     /**
      * Handle the incoming request.
      */
-    public function __invoke(BulkProspectActionRequest $request, ProspectOutreachSender $sender): RedirectResponse
+    public function __invoke(BulkProspectActionRequest $request, ProspectOutreachSender $sender, ProspectLifecycleManager $lifecycleManager): RedirectResponse
     {
         $data = $request->validated();
         $prospects = $this->selectedProspects($request, $data);
@@ -27,10 +28,10 @@ class BulkProspectActionController extends Controller
 
         foreach ($prospects->cursor() as $prospect) {
             $wasProcessed = match ($data['action']) {
-                'approve' => $this->approve($prospect, $request),
+                'approve' => $this->approve($prospect, $request, $lifecycleManager),
                 'research_again' => $this->researchAgain($prospect, $request),
                 'delete' => $this->delete($prospect),
-                'schedule_approved_email' => $this->schedule($prospect, $data['scheduled_send_at'], $request, $sender),
+                'schedule_approved_email' => $this->schedule($prospect, $data['scheduled_send_at'], $request, $sender, $lifecycleManager),
                 'send_approved_email' => $this->send($prospect, $request, $sender),
             };
 
@@ -70,13 +71,14 @@ class BulkProspectActionController extends Controller
                 ->orWhere('email', 'like', '%'.$data['search'].'%')));
     }
 
-    private function approve(Prospect $prospect, BulkProspectActionRequest $request): bool
+    private function approve(Prospect $prospect, BulkProspectActionRequest $request, ProspectLifecycleManager $lifecycleManager): bool
     {
         if (blank($prospect->outreach_subject) || blank($prospect->outreach_body) || $prospect->approved_at || $prospect->sent_at) {
             return false;
         }
 
         $prospect->update(['status' => 'approved', 'approved_at' => now(), 'approved_by' => $request->user()->id]);
+        $lifecycleManager->markApproved($prospect, $request->user());
         $prospect->recordActivity('approved', 'Outreach email approved in bulk.', $request->user());
 
         return true;
@@ -100,7 +102,7 @@ class BulkProspectActionController extends Controller
         return (bool) $prospect->delete();
     }
 
-    private function schedule(Prospect $prospect, string $scheduledSendAt, BulkProspectActionRequest $request, ProspectOutreachSender $sender): bool
+    private function schedule(Prospect $prospect, string $scheduledSendAt, BulkProspectActionRequest $request, ProspectOutreachSender $sender, ProspectLifecycleManager $lifecycleManager): bool
     {
         if ($sender->eligibilityError($prospect) !== null) {
             return false;
@@ -108,6 +110,7 @@ class BulkProspectActionController extends Controller
 
         $scheduledFor = CarbonImmutable::parse($scheduledSendAt, 'Europe/London')->utc();
         $prospect->update(['scheduled_send_at' => $scheduledFor]);
+        $lifecycleManager->markScheduled($prospect);
         $prospect->recordActivity('send_scheduled', 'Approved outreach email scheduled for '.$scheduledFor->setTimezone('Europe/London')->format('j M Y, H:i').' UK time.', $request->user());
         SendScheduledProspectOutreach::dispatch($prospect->id, $scheduledFor)->delay($scheduledFor)->afterCommit();
 

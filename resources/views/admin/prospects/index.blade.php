@@ -7,6 +7,56 @@
         <div class="flex items-center gap-3"><a href="{{ route('admin.prospect-discoveries.index') }}" class="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50">Find prospects</a><a href="{{ route('admin.prospects.create') }}" class="rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">Add prospect</a></div>
     </div>
     @if (session('status'))<div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{{ session('status') }}</div>@endif
+    @if ($hotVideoProspects->isNotEmpty())
+        <section class="rounded-2xl border border-red-200 bg-red-50/70 p-5 shadow-sm">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+                <div><p class="text-xs font-semibold uppercase tracking-wider text-red-700">Manual action queue</p><h2 class="mt-1 text-xl font-semibold text-red-950">Needs Personalised Video</h2><p class="mt-1 text-sm text-red-800">These prospects crossed the hot threshold. Their automated cold sequence is paused.</p></div>
+                <span class="rounded-full bg-red-600 px-3 py-1 text-sm font-semibold text-white">{{ $hotVideoProspectsCount }} {{ str('lead')->plural($hotVideoProspectsCount) }}</span>
+            </div>
+            <div class="mt-5 grid gap-4 lg:grid-cols-2">
+                @foreach ($hotVideoProspects as $hotProspect)
+                    @php($auditLink = $hotProspect->outreachDeliveries->flatMap->links->firstWhere('kind', 'website_audit'))
+                    <article class="rounded-xl border border-red-100 bg-white p-4 shadow-sm">
+                        <div class="flex items-start justify-between gap-4">
+                            <div class="min-w-0"><h3 class="truncate font-semibold text-slate-950">{{ $hotProspect->business_name }}</h3><p class="truncate text-sm text-slate-500">{{ parse_url($hotProspect->website_url, PHP_URL_HOST) ?: $hotProspect->website_url }}</p></div>
+                            <span class="shrink-0 rounded-full bg-red-100 px-2.5 py-1 text-xs font-bold text-red-800">Score {{ $hotProspect->outreachState->engagement_score }}</span>
+                        </div>
+                        <div class="mt-3 space-y-1.5">
+                            @foreach ($hotProspect->engagementEvents as $event)
+                                <p class="flex items-center justify-between gap-3 text-xs text-slate-600"><span>{{ $event->event_type->label() }} <span class="font-semibold text-emerald-700">+{{ $event->score_delta }}</span></span><span class="shrink-0 text-slate-400">{{ $event->occurred_at->diffForHumans() }}</span></p>
+                            @endforeach
+                        </div>
+                        <div class="mt-4 flex flex-wrap items-center gap-2">
+                            <a href="{{ route('admin.prospects.show', $hotProspect) }}#personalised-video" class="rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700">Add Personalised Video</a>
+                            @if ($auditLink)<a href="{{ $auditLink->destination_url }}" target="_blank" rel="noopener noreferrer" class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">View audit ↗</a>@endif
+                            <span class="text-xs text-slate-500">Initial email {{ $hotProspect->outreachState->initial_email_sent_at?->diffForHumans() ?? 'not recorded' }}</span>
+                        </div>
+                    </article>
+                @endforeach
+            </div>
+        </section>
+    @endif
+    @if ($manualFollowUpProspects->isNotEmpty())
+        <section class="rounded-2xl border border-violet-200 bg-violet-50/70 p-5 shadow-sm">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+                <div><p class="text-xs font-semibold uppercase tracking-wider text-violet-700">Personal attention recommended</p><h2 class="mt-1 text-xl font-semibold text-violet-950">Manual Follow-up Recommended</h2><p class="mt-1 text-sm text-violet-800">These prospects kept engaging after their personalised video. No more automatic email will be sent.</p></div>
+                <span class="rounded-full bg-violet-600 px-3 py-1 text-sm font-semibold text-white">{{ $manualFollowUpProspectsCount }} {{ str('lead')->plural($manualFollowUpProspectsCount) }}</span>
+            </div>
+            <div class="mt-5 grid gap-4 lg:grid-cols-2">
+                @foreach ($manualFollowUpProspects as $manualProspect)
+                    <article class="rounded-xl border border-violet-100 bg-white p-4 shadow-sm">
+                        <div class="flex items-start justify-between gap-4"><div class="min-w-0"><h3 class="truncate font-semibold text-slate-950">{{ $manualProspect->business_name }}</h3><p class="truncate text-sm text-slate-500">{{ parse_url($manualProspect->website_url, PHP_URL_HOST) ?: $manualProspect->email }}</p></div><span class="shrink-0 rounded-full bg-violet-100 px-2.5 py-1 text-xs font-bold text-violet-800">Score {{ $manualProspect->outreachState->engagement_score }}</span></div>
+                        <ul class="mt-3 space-y-1.5">
+                            @foreach ($manualProspect->outreachState->manual_follow_up_reason ?? [] as $reason)
+                                <li class="flex items-center justify-between gap-3 text-xs text-slate-600"><span>{{ $reason['label'] }}</span><span class="shrink-0 text-slate-400">{{ \Carbon\CarbonImmutable::parse($reason['last_at'])->diffForHumans() }}</span></li>
+                            @endforeach
+                        </ul>
+                        <div class="mt-4 flex flex-wrap items-center gap-2"><a href="{{ route('admin.prospects.show', $manualProspect) }}" class="rounded-lg bg-violet-600 px-3 py-2 text-sm font-semibold text-white hover:bg-violet-700">Review and follow up</a><span class="text-xs text-slate-500">Video sent {{ $manualProspect->outreachState->video_sent_at?->diffForHumans() }}</span></div>
+                    </article>
+                @endforeach
+            </div>
+        </section>
+    @endif
     <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <a href="{{ route('admin.prospects.index', ['temperature' => 'hot']) }}" class="rounded-xl border border-red-200 bg-red-50 p-4 shadow-sm hover:border-red-400"><p class="text-xs font-semibold uppercase tracking-wide text-red-700">Hot leads</p><p class="mt-2 text-2xl font-semibold text-red-950">{{ $temperatureSummary['hot'] ?? 0 }}</p></a>
         @foreach (['new' => 'New', 'drafted' => 'Ready to review', 'contacted' => 'Contacted', 'replied' => 'Replied'] as $value => $label)

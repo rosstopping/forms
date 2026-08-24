@@ -29,7 +29,18 @@
     </div>
     @if (session('status'))<div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{{ session('status') }}</div>@endif
     @error('scheduled_send_at')<div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{{ $message }}</div>@enderror
+    @foreach (['video_url', 'subject', 'body', 'action'] as $videoField)@error($videoField)<div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{{ $message }}</div>@enderror @endforeach
     @if ($prospect->analysis_status === 'failed')<div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"><strong>Research failed:</strong> {{ $prospect->analysis_error }}</div>@endif
+    @if ($prospect->outreachState->manual_follow_up_required_at)
+        <section class="rounded-xl border border-violet-200 bg-violet-50 p-5 shadow-sm">
+            <div class="flex flex-wrap items-start justify-between gap-3"><div><p class="text-xs font-semibold uppercase tracking-wider text-violet-700">Personal action recommended</p><h2 class="mt-1 text-lg font-semibold text-violet-950">Follow up directly</h2><p class="mt-1 text-sm text-violet-800">Engagement continued after the personalised video. Automatic email is paused so you can decide the next conversation.</p></div><span class="rounded-full bg-white px-3 py-1 text-xs font-bold text-violet-800 shadow-sm">Score {{ $prospect->outreachState->engagement_score }}</span></div>
+            <ul class="mt-4 grid gap-2 sm:grid-cols-2">
+                @foreach ($prospect->outreachState->manual_follow_up_reason ?? [] as $reason)
+                    <li class="flex items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 text-sm text-slate-700"><span class="font-medium">{{ $reason['label'] }}</span><span class="shrink-0 text-xs text-slate-400">{{ \Carbon\CarbonImmutable::parse($reason['last_at'])->diffForHumans() }}</span></li>
+                @endforeach
+            </ul>
+        </section>
+    @endif
     <div class="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         <div class="space-y-6">
             <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"><div class="flex items-center justify-between gap-4"><div><h2 class="font-semibold">Website opportunities</h2><p class="text-sm text-slate-500">Verified findings used to personalise the draft.</p></div>@if ($prospect->opportunity_score !== null)<div class="rounded-xl bg-amber-50 px-4 py-2 text-center"><p class="text-2xl font-semibold text-amber-800">{{ $prospect->opportunity_score }}</p><p class="text-[10px] font-semibold uppercase tracking-wide text-amber-700">Opportunity</p></div>@endif</div>
@@ -47,6 +58,24 @@
                     @endif
                 </section>
             @else
+            @if ($needsPersonalisedVideo)
+                <section id="personalised-video" class="scroll-mt-6 rounded-xl border border-red-200 bg-red-50 p-5 shadow-sm">
+                    <div class="flex flex-wrap items-start justify-between gap-3"><div><p class="text-xs font-semibold uppercase tracking-wider text-red-700">Hot lead · manual action</p><h2 class="mt-1 text-lg font-semibold text-red-950">Add / Send Personalised Video</h2><p class="mt-1 text-sm text-red-800">Cold automation is paused. Paste the video you recorded, review the message, then send or schedule it.</p></div><span class="rounded-full bg-white px-3 py-1 text-xs font-bold text-red-800 shadow-sm">Score {{ $prospect->outreachState->engagement_score }}</span></div>
+                    @if ($scheduledVideoDelivery)
+                        <p class="mt-4 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-sm text-violet-800">Scheduled for {{ $scheduledVideoDelivery->scheduled_at->setTimezone('Europe/London')->format('j M Y, H:i') }} UK time. Saving another schedule will replace it; Send now will send the reserved message immediately.</p>
+                    @endif
+                    <form method="POST" action="{{ route('admin.prospects.personalised-video', $prospect) }}" class="mt-4 space-y-4">
+                        @csrf
+                        <div><label for="video_url" class="text-sm font-semibold text-slate-800">Personalised video URL</label><input id="video_url" type="url" name="video_url" required value="{{ old('video_url', $prospect->showcase_video_url) }}" placeholder="https://www.loom.com/share/..." class="mt-1 w-full rounded-lg border border-red-200 bg-white px-3 py-2 text-sm focus:border-red-400 focus:ring-red-400"></div>
+                        <div><label for="video_subject" class="text-sm font-semibold text-slate-800">Subject</label><input id="video_subject" name="subject" required value="{{ old('subject', $scheduledVideoDelivery?->subject ?? $personalisedVideoSubject) }}" class="mt-1 w-full rounded-lg border border-red-200 bg-white px-3 py-2 text-sm focus:border-red-400 focus:ring-red-400"></div>
+                        <div><label for="video_body" class="text-sm font-semibold text-slate-800">Message</label><textarea id="video_body" name="body" rows="8" required class="mt-1 w-full rounded-lg border border-red-200 bg-white px-3 py-2 text-sm focus:border-red-400 focus:ring-red-400">{{ old('body', $scheduledVideoDelivery?->body ?? $personalisedVideoBody) }}</textarea></div>
+                        <div class="flex flex-col gap-3 rounded-lg border border-red-100 bg-white/70 p-3 sm:flex-row sm:items-end">
+                            <div class="flex-1"><label for="video_scheduled_send_at" class="text-sm font-semibold text-slate-800">Schedule time <span class="font-normal text-slate-500">(optional, UK time)</span></label><input id="video_scheduled_send_at" type="datetime-local" name="scheduled_send_at" value="{{ old('scheduled_send_at', $scheduledVideoDelivery?->scheduled_at?->setTimezone('Europe/London')->format('Y-m-d\TH:i')) }}" min="{{ now('Europe/London')->addMinute()->format('Y-m-d\TH:i') }}" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"></div>
+                            <div class="flex flex-wrap gap-2"><button type="submit" name="action" value="schedule" class="rounded-lg border border-red-300 bg-white px-4 py-2 text-sm font-semibold text-red-800 hover:bg-red-50">Schedule video</button><button type="submit" name="action" value="send_now" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700">Send video now</button></div>
+                        </div>
+                    </form>
+                </section>
+            @endif
             <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"><div class="flex items-center justify-between gap-3"><div><h2 class="font-semibold">Outreach draft</h2><p class="text-sm text-slate-500">Editing the draft or its video link resets approval.</p></div>@if ($prospect->approved_at)<span class="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">Approved</span>@endif</div>
                 <form method="POST" action="{{ route('admin.prospects.update', $prospect) }}" class="mt-4 space-y-4">@csrf @method('PUT')
                     <input type="hidden" name="business_name" value="{{ $prospect->business_name }}"><input type="hidden" name="contact_name" value="{{ $prospect->contact_name }}"><input type="hidden" name="email" value="{{ $prospect->email }}"><input type="hidden" name="website_url" value="{{ $prospect->website_url }}"><input type="hidden" name="status" value="{{ $prospect->status }}">
