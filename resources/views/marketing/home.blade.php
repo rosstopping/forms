@@ -59,9 +59,9 @@
                 <h2 class="mt-4 max-w-[24ch] font-display text-4xl font-semibold tracking-tight text-balance sm:text-5xl">We’re a local, UK-based company</h2>
                 <p class="mt-4 max-w-[56ch] text-pretty text-lg text-ink/65 sm:text-base">Have a question about your website? Call us and speak directly with our team.</p>
             </div>
-            <a href="tel:+447512091084" class="group shrink-0 border-t border-ink/20 pt-5 focus-visible:outline-offset-4 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-10">
+            <a href="tel:+441302985828" class="group shrink-0 border-t border-ink/20 pt-5 focus-visible:outline-offset-4 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-10">
                 <p class="font-mono text-sm uppercase tracking-wide text-ink/60">Call us</p>
-                <p class="mt-3 font-display text-4xl font-semibold tracking-tight tabular-nums underline decoration-ink/20 underline-offset-8 group-hover:decoration-ink sm:text-5xl">07512 091084</p>
+                <p class="mt-3 font-display text-4xl font-semibold tracking-tight tabular-nums underline decoration-ink/20 underline-offset-8 group-hover:decoration-ink sm:text-5xl">01302 985 828</p>
             </a>
         </div>
     </section>
