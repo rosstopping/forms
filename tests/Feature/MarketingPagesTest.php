@@ -26,6 +26,24 @@ it('shows journal articles and returns not found for unknown slugs', function ()
     $this->get(route('marketing.article', 'missing-article'))->assertNotFound();
 });
 
+it('publishes an XML sitemap for the marketing site', function (): void {
+    $this->get(route('marketing.sitemap'))
+        ->assertSuccessful()
+        ->assertHeader('Content-Type', 'application/xml')
+        ->assertSee('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">', false)
+        ->assertSee('<loc>'.route('marketing.home').'</loc>', false)
+        ->assertSee('<loc>'.route('marketing.features').'</loc>', false)
+        ->assertSee('<loc>'.route('marketing.pricing').'</loc>', false)
+        ->assertSee('<loc>'.route('marketing.free-site-audit').'</loc>', false)
+        ->assertSee('<loc>'.route('marketing.journal').'</loc>', false)
+        ->assertSee('<loc>'.route('marketing.contact').'</loc>', false)
+        ->assertSee('<loc>'.route('marketing.article', 'a-clean-website-handover').'</loc>', false)
+        ->assertSee('<loc>'.route('marketing.article', 'forms-that-never-lose-a-lead').'</loc>', false)
+        ->assertSee('<loc>'.route('marketing.article', 'search-data-to-content-decisions').'</loc>', false)
+        ->assertDontSee(route('login'))
+        ->assertDontSee('/admin');
+});
+
 it('features the product video and contact call to action on the home page', function (): void {
     $this->get(route('marketing.home'))
         ->assertSuccessful()

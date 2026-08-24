@@ -81,6 +81,7 @@ Route::controller(MarketingController::class)->group(function () {
     Route::get('/journal', 'journal')->name('marketing.journal');
     Route::get('/journal/{slug}', 'article')->name('marketing.article');
     Route::get('/contact', 'contact')->name('marketing.contact');
+    Route::get('/sitemap.xml', 'sitemap')->name('marketing.sitemap');
 });
 
 Route::get('/outreach/open/{delivery}', ProspectOutreachOpenController::class)

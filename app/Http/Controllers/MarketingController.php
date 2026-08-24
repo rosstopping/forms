@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\Response;
 use Illuminate\View\View;
 
 class MarketingController extends Controller
@@ -37,6 +38,25 @@ class MarketingController extends Controller
     public function contact(): View
     {
         return view('marketing.contact');
+    }
+
+    public function sitemap(): Response
+    {
+        $urls = collect([
+            'marketing.home',
+            'marketing.features',
+            'marketing.pricing',
+            'marketing.free-site-audit',
+            'marketing.journal',
+            'marketing.contact',
+        ])->map(fn (string $routeName): string => route($routeName))
+            ->merge(collect($this->articles())->map(
+                fn (array $article): string => route('marketing.article', $article['slug'])
+            ));
+
+        return response()
+            ->view('marketing.sitemap', compact('urls'))
+            ->header('Content-Type', 'application/xml');
     }
 
     /** @return array<int, array<string, mixed>> */
