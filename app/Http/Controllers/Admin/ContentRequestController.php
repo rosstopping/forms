@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreContentRequestRequest;
+use App\Jobs\GenerateContentRequestPixelOptimisations;
 use App\Models\ContentRequest;
 use App\Models\SearchOpportunity;
 use App\Models\SeoOpportunity;
@@ -17,10 +18,14 @@ class ContentRequestController extends Controller
 {
     public function store(StoreContentRequestRequest $request, Website $website): RedirectResponse
     {
-        $website->contentRequests()->create([
+        $contentRequest = $website->contentRequests()->create([
             ...$request->validated(),
             'created_by' => $request->user()->id,
         ]);
+
+        if ($request->user()->isAdmin() && config('forms.pixel_ui_enabled') && $website->pixel_enabled) {
+            GenerateContentRequestPixelOptimisations::dispatch($contentRequest, $request->user());
+        }
 
         return Redirect::route('admin.websites.show', $website)->with('status', 'Content request added for the next generation.');
     }

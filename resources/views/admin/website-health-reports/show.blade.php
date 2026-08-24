@@ -43,18 +43,28 @@
         $hasRemediableFindings = collect($report->checks)->whereIn('status', ['warning', 'failed'])->isNotEmpty() || $report->pages->contains(fn ($page) => collect($page->checks)->whereIn('status', ['warning', 'failed'])->isNotEmpty());
         $pixelEligiblePages = $report->pages->filter(fn ($page) => collect($page->checks)->whereIn('status', ['warning', 'failed'])->whereIn('key', ['page_title', 'meta_description'])->isNotEmpty());
         $reviewablePixelOptimisations = $report->pages->flatMap->optimisations->whereIn('status', [\App\Enums\OptimisationStatus::Draft, \App\Enums\OptimisationStatus::Approved]);
+        $pixelRemediationAvailable = config('forms.pixel_ui_enabled') && $report->website->pixel_enabled && $pixelEligiblePages->isNotEmpty();
+        $githubRemediationAvailable = $report->website->repository && Auth::user()?->githubAuthorization()->exists() && $hasRemediableFindings;
     @endphp
     @if ($canManageWebsite || $aiPrompt)
         <div class="grid gap-4 lg:grid-cols-2">
-        @if (config('forms.pixel_ui_enabled') && Auth::user()?->isAdmin() && $canManageWebsite && $report->status === 'completed' && $pixelEligiblePages->isNotEmpty())
+        @if (Auth::user()?->isAdmin() && $canManageWebsite && $report->status === 'completed' && ($pixelRemediationAvailable || $githubRemediationAvailable))
             <section class="rounded-lg border border-teal-200 bg-teal-50 p-4 shadow-sm">
-                <p class="text-xs font-medium uppercase tracking-wide text-teal-700">Pixel remediation</p>
-                <h2 class="mt-1 font-semibold text-teal-950">Prepare Pixel fixes</h2>
-                <p class="mt-1 text-sm text-teal-800">Generate structured AI fixes for all {{ $pixelEligiblePages->count() }} eligible {{ Str::plural('page', $pixelEligiblePages->count()) }}. Review is required before anything becomes live.</p>
+                <p class="text-xs font-medium uppercase tracking-wide text-teal-700">Automated remediation</p>
+                <h2 class="mt-1 font-semibold text-teal-950">Prepare available fixes</h2>
+                <p class="mt-1 text-sm text-teal-800">Sitewell will use every connected delivery path that fits the findings. Nothing is published without review.</p>
+                <div class="mt-3 flex flex-wrap gap-2 text-xs font-medium">
+                    @if ($pixelRemediationAvailable)
+                        <span class="rounded-full bg-white px-2.5 py-1 text-teal-800 ring-1 ring-teal-700/20">Pixel · {{ $pixelEligiblePages->count() }} {{ Str::plural('page', $pixelEligiblePages->count()) }}</span>
+                    @endif
+                    @if ($githubRemediationAvailable)
+                        <span class="rounded-full bg-white px-2.5 py-1 text-slate-700 ring-1 ring-slate-700/20">GitHub · repository findings</span>
+                    @endif
+                </div>
                 <div class="mt-4 flex flex-wrap gap-2">
-                    <form method="POST" action="{{ route('admin.report-optimisations.generate', [$report->website, $report]) }}">
+                    <form method="POST" action="{{ route('admin.report-remediation.store', [$report->website, $report]) }}">
                         @csrf
-                        <button type="submit" class="rounded-md bg-teal-700 px-3 py-2 text-sm font-medium text-white hover:bg-teal-800">Generate all Pixel fixes</button>
+                        <button type="submit" class="rounded-md bg-teal-700 px-3 py-2 text-sm font-medium text-white hover:bg-teal-800">Prepare fixes</button>
                     </form>
                     @if ($reviewablePixelOptimisations->isNotEmpty())
                         <form method="POST" action="{{ route('admin.report-optimisations.deploy', [$report->website, $report]) }}">
@@ -85,28 +95,10 @@
                     <p class="mt-3 text-sm text-red-700">{{ $remediationRun->error }}</p>
                 @endif
             </section>
-        @elseif ($report->website->repository && $hasRemediableFindings)
-            <section class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-                <p class="text-xs font-medium uppercase tracking-wide text-slate-500">GitHub remediation</p>
-                <h2 class="mt-1 font-semibold">Prepare repository fix</h2>
-                <p class="mt-1 text-sm text-slate-600">Prepare fixes for the current warnings and failures in a cloud environment. Sitewell will open a pull request for review; it will not merge or deploy code.</p>
-                <form method="POST" action="{{ route('admin.remediation-runs.store', [$report->website, $report]) }}" class="mt-4">
-                    @csrf
-                    @foreach (collect($report->checks)->whereIn('status', ['warning', 'failed']) as $finding)
-                        <input type="hidden" name="findings[]" value="site:{{ $finding['category'] }}:{{ $finding['key'] }}">
-                    @endforeach
-                    @foreach ($report->pages as $page)
-                        @foreach (collect($page->checks)->whereIn('status', ['warning', 'failed']) as $finding)
-                            <input type="hidden" name="findings[]" value="page:{{ $page->id }}:{{ $finding['key'] }}">
-                        @endforeach
-                    @endforeach
-                    <button type="submit" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">Start automated remediation</button>
-                </form>
-            </section>
-        @elseif (! $report->website->repository)
+        @elseif (! $pixelRemediationAvailable && ! $report->website->repository)
             <section class="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                <h2 class="font-semibold text-slate-900">Connect GitHub to prepare fixes</h2>
-                <p class="mt-1 text-sm text-slate-600">Choose the source repository from the website settings before creating a remediation.</p>
+                <h2 class="font-semibold text-slate-900">Connect a remediation path</h2>
+                <p class="mt-1 text-sm text-slate-600">Enable the Sitewell Pixel for supported page fixes or connect GitHub for repository changes.</p>
                 <a href="{{ route('admin.website-repositories.create', $report->website) }}" class="mt-3 inline-flex rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">Connect GitHub</a>
             </section>
         @endif

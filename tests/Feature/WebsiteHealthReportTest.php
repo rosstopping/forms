@@ -326,6 +326,7 @@ it('shows administrators a copyable AI prompt containing every report issue', fu
 
 it('hides the manual AI prompt when a GitHub repository is connected', function (): void {
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    GithubUserAuthorization::factory()->for($admin)->create();
     $website = websiteWithDomain();
     WebsiteRepository::factory()->for($website)->create(['full_name' => 'acme/example-site']);
     $report = WebsiteHealthReport::factory()->for($website)->create([
@@ -339,8 +340,9 @@ it('hides the manual AI prompt when a GitHub repository is connected', function 
         ->assertSuccessful()
         ->assertDontSee('AI remediation prompt')
         ->assertDontSee('Copy prompt')
-        ->assertSee('Prepare repository fix')
-        ->assertSee('Start automated remediation');
+        ->assertSee('Prepare available fixes')
+        ->assertSee('Prepare fixes')
+        ->assertDontSee('Start automated remediation');
 });
 
 it('stores page titles longer than the varchar limit', function (): void {

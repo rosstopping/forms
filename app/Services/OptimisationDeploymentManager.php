@@ -28,10 +28,22 @@ class OptimisationDeploymentManager
         array $data,
         ?User $author = null,
     ): Optimisation {
-        return DB::transaction(function () use ($website, $page, $data, $author): Optimisation {
+        return $this->createForUrl($website, $page->url, $data, $author, $page);
+    }
+
+    /** @param array{type: string, selector?: ?string, target_description?: ?string, attribute?: ?string, original_value?: ?string, new_value: string, content_request_id?: ?int} $data */
+    public function createForUrl(
+        Website $website,
+        string $url,
+        array $data,
+        ?User $author = null,
+        ?WebsiteHealthReportPage $page = null,
+    ): Optimisation {
+        return DB::transaction(function () use ($website, $url, $page, $data, $author): Optimisation {
             $optimisation = $website->optimisations()->create([
-                'website_health_report_page_id' => $page->id,
-                'url' => $page->url,
+                'website_health_report_page_id' => $page?->id,
+                'content_request_id' => $data['content_request_id'] ?? null,
+                'url' => $url,
                 'type' => $data['type'],
                 'selector' => $data['selector'] ?? null,
                 'target_description' => $data['target_description'] ?? null,

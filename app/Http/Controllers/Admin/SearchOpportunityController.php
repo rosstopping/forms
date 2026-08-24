@@ -25,7 +25,7 @@ class SearchOpportunityController extends Controller
     public function queue(Request $request, Website $website, SearchOpportunity $searchOpportunity, ContentOpportunityQueuer $queuer): RedirectResponse
     {
         $this->authorizeOpportunity($request, $website, $searchOpportunity);
-        abort_unless($website->repository, 422, 'Connect the website repository before preparing an opportunity.');
+        abort_unless($website->repository || ($request->user()->isAdmin() && config('forms.pixel_ui_enabled') && $website->pixel_enabled), 422, 'Connect GitHub or enable Pixel before preparing an opportunity.');
         abort_unless($searchOpportunity->status === SearchOpportunity::STATUS_OPEN, 422, 'Only open opportunities can be queued.');
 
         $queuer->queueSearch($searchOpportunity, $request->user());

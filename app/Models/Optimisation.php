@@ -22,6 +22,7 @@ class Optimisation extends Model
     protected $fillable = [
         'website_id',
         'website_health_report_page_id',
+        'content_request_id',
         'url',
         'type',
         'selector',
@@ -73,6 +74,11 @@ class Optimisation extends Model
     public function page(): BelongsTo
     {
         return $this->belongsTo(WebsiteHealthReportPage::class, 'website_health_report_page_id');
+    }
+
+    public function contentRequest(): BelongsTo
+    {
+        return $this->belongsTo(ContentRequest::class);
     }
 
     public function versions(): HasMany

@@ -80,8 +80,10 @@ it('shows bulk Pixel remediation and recommendations only for pages with issues'
     $response = $this->actingAs($owner)->get(route('admin.website-health-reports.show', [$website, $report]));
 
     $response->assertSuccessful()
-        ->assertSee('Prepare Pixel fixes')
-        ->assertSee('Generate all Pixel fixes')
+        ->assertSee('Prepare available fixes')
+        ->assertSee('Prepare fixes')
+        ->assertDontSee('Generate all Pixel fixes')
+        ->assertDontSee('Start automated remediation')
         ->assertSee(route('admin.website-health-report-pages.show', [$website, $report, $eligible]))
         ->assertDontSee(route('admin.website-health-report-pages.show', [$website, $report, $healthy]));
 });

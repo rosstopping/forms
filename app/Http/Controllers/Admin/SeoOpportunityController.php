@@ -16,7 +16,7 @@ class SeoOpportunityController extends Controller
     {
         abort_unless($website->isManageableBy($request->user()), 403);
         abort_unless($seoOpportunity->website_id === $website->id, 404);
-        abort_unless($website->repository, 422, 'Connect the website repository before adding an opportunity to the content queue.');
+        abort_unless($website->repository || ($request->user()->isAdmin() && config('forms.pixel_ui_enabled') && $website->pixel_enabled), 422, 'Connect GitHub or enable Pixel before adding an opportunity to the content queue.');
         abort_unless($seoOpportunity->status === SeoOpportunity::STATUS_OPEN, 422, 'Only open opportunities can be queued.');
 
         $queuer->queueSeo($seoOpportunity, $request->user());

@@ -16,7 +16,7 @@ class ContentSuggestionController extends Controller
     public function __invoke(Request $request, Website $website, ContentOpportunityQueuer $queuer): RedirectResponse
     {
         abort_unless($website->isManageableBy($request->user()), 403);
-        abort_unless($website->repository, 422, 'Connect the website repository before adding an opportunity.');
+        abort_unless($website->repository || ($request->user()->isAdmin() && config('forms.pixel_ui_enabled') && $website->pixel_enabled), 422, 'Connect GitHub or enable Pixel before adding an opportunity.');
 
         $type = $request->string('type')->toString();
         $id = $request->integer('opportunity');

@@ -6,6 +6,7 @@ use Database\Factories\ContentRequestFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class ContentRequest extends Model
@@ -13,11 +14,11 @@ class ContentRequest extends Model
     /** @use HasFactory<ContentRequestFactory> */
     use HasFactory;
 
-    protected $fillable = ['website_id', 'created_by', 'content_generation_id', 'instructions', 'picked_up_at'];
+    protected $fillable = ['website_id', 'created_by', 'content_generation_id', 'instructions', 'picked_up_at', 'pixel_processed_at', 'pixel_error'];
 
     protected function casts(): array
     {
-        return ['picked_up_at' => 'datetime'];
+        return ['picked_up_at' => 'datetime', 'pixel_processed_at' => 'datetime'];
     }
 
     public function website(): BelongsTo
@@ -43,5 +44,10 @@ class ContentRequest extends Model
     public function seoOpportunity(): HasOne
     {
         return $this->hasOne(SeoOpportunity::class);
+    }
+
+    public function optimisations(): HasMany
+    {
+        return $this->hasMany(Optimisation::class);
     }
 }

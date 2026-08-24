@@ -202,6 +202,13 @@ class WebsiteController extends Controller
         $dataForSeoConfigured = filled(config('services.dataforseo.login')) && filled(config('services.dataforseo.password'));
         $outreachProspect = $user?->isAdmin() ? $websiteProspects->find($website) : null;
         $pixelInstallationSnippet = $pixelInstallation->for($website);
+        $pixelOptimisations = $user?->isAdmin()
+            ? $website->optimisations()
+                ->with(['currentVersion', 'page.report', 'contentRequest', 'deployments' => fn ($query) => $query->with(['version', 'performer'])->latest('performed_at')])
+                ->latest('updated_at')
+                ->limit(500)
+                ->get()
+            : collect();
         $websiteAiWeeklyLimit = (int) config('memberships.website_ai_questions_per_week', 25);
         $websiteAiQuestions = collect();
         $websiteAiQuestionsUsed = 0;
@@ -226,7 +233,7 @@ class WebsiteController extends Controller
             'searchConsoleReport', 'searchConsoleHistory', 'searchConsoleReportUnavailable', 'seoGeneration', 'seoSnapshot', 'seoHistory',
             'seoKeywords', 'seoReferringDomains', 'seoCompetitors', 'seoOpportunities', 'seoFilter', 'seoSort', 'seoDirection', 'strikingDistanceCount',
             'dataForSeoConfigured', 'outreachProspect', 'pixelInstallationSnippet', 'canUseGrowthFeatures', 'canUseCompleteFeatures',
-            'websiteAiQuestions', 'websiteAiQuestionsUsed', 'websiteAiWeeklyLimit',
+            'websiteAiQuestions', 'websiteAiQuestionsUsed', 'websiteAiWeeklyLimit', 'pixelOptimisations',
         ));
     }
 
