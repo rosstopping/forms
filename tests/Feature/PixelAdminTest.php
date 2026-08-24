@@ -9,10 +9,21 @@ beforeEach(fn () => config(['forms.pixel_ui_enabled' => true]));
 
 it('hides the pixel workspace while the feature is disabled', function (): void {
     config(['forms.pixel_ui_enabled' => false]);
-    $user = User::factory()->create();
+    $user = User::factory()->create(['role' => User::ROLE_ADMIN]);
     $website = Website::factory()->for($user, 'owner')->create();
 
     $this->actingAs($user)->get(route('admin.websites.show', $website))
+        ->assertSuccessful()
+        ->assertDontSee('data-tab="pixel"', false)
+        ->assertDontSee('data-tab-panel="pixel"', false)
+        ->assertDontSee('Sitewell Pixel');
+});
+
+it('hides the pixel workspace from non-administrators', function (): void {
+    $user = User::factory()->create();
+    $website = Website::factory()->for($user, 'owner')->create();
+
+    $this->actingAs($user)->get(route('admin.websites.show', ['website' => $website, 'tab' => 'pixel']))
         ->assertSuccessful()
         ->assertDontSee('data-tab="pixel"', false)
         ->assertDontSee('data-tab-panel="pixel"', false)
@@ -24,7 +35,7 @@ it('shows configured pixel installation and connection information', function ()
         'services.sitewell.pixel_asset_url' => 'https://cdn.sitewell.test/pixel.js',
         'services.sitewell.pixel_api_url' => 'https://api.sitewell.test/api/pixel',
     ]);
-    $user = User::factory()->create();
+    $user = User::factory()->create(['role' => User::ROLE_ADMIN]);
     $website = Website::factory()->for($user, 'owner')->create([
         'pixel_last_seen_at' => now()->subMinutes(2),
         'pixel_last_seen_url' => 'https://example.com/services',

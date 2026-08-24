@@ -46,7 +46,7 @@
     @endphp
     @if ($canManageWebsite || $aiPrompt)
         <div class="grid gap-4 lg:grid-cols-2">
-        @if (config('forms.pixel_ui_enabled') && $canManageWebsite && $report->status === 'completed' && $pixelEligiblePages->isNotEmpty())
+        @if (config('forms.pixel_ui_enabled') && Auth::user()?->isAdmin() && $canManageWebsite && $report->status === 'completed' && $pixelEligiblePages->isNotEmpty())
             <section class="rounded-lg border border-teal-200 bg-teal-50 p-4 shadow-sm">
                 <p class="text-xs font-medium uppercase tracking-wide text-teal-700">Pixel remediation</p>
                 <h2 class="mt-1 font-semibold text-teal-950">Prepare Pixel fixes</h2>

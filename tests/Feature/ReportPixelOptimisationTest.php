@@ -15,7 +15,7 @@ beforeEach(fn () => config(['forms.pixel_ui_enabled' => true]));
 
 function reportPixelWorkspace(): array
 {
-    $owner = User::factory()->create();
+    $owner = User::factory()->create(['role' => User::ROLE_ADMIN]);
     $website = Website::factory()->for($owner, 'owner')->create(['name' => 'Example Ltd']);
     $website->domains()->create(['domain' => 'example.com', 'is_primary' => true]);
     $report = WebsiteHealthReport::factory()->for($website)->create();

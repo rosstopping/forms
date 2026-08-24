@@ -6,7 +6,7 @@ return [
     'from_name' => env('FORMS_FROM_NAME', 'Central Forms'),
     'auto_register_websites' => filter_var(env('FORMS_AUTO_REGISTER_WEBSITES', true), FILTER_VALIDATE_BOOL),
     'auto_register_forms' => filter_var(env('FORMS_AUTO_REGISTER_FORMS', true), FILTER_VALIDATE_BOOL),
-    'pixel_ui_enabled' => filter_var(env('FORMS_PIXEL_UI_ENABLED', false), FILTER_VALIDATE_BOOL),
+    'pixel_ui_enabled' => filter_var(env('FORMS_PIXEL_UI_ENABLED', true), FILTER_VALIDATE_BOOL),
     'rate_limit_per_minute' => (int) env('FORMS_RATE_LIMIT_PER_MINUTE', 5),
     'rate_limit_per_hour' => (int) env('FORMS_RATE_LIMIT_PER_HOUR', 10),
     'max_payload_kb' => (int) env('FORMS_MAX_PAYLOAD_KB', 256),

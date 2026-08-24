@@ -46,7 +46,7 @@
         <button type="button" id="website-tab-search" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-search" tabindex="-1" data-tab="search">Search</button>
         <button type="button" id="website-tab-seo" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-seo" tabindex="-1" data-tab="seo">SEO Intelligence</button>
         <button type="button" id="website-tab-content" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-content" tabindex="-1" data-tab="content">Content</button>
-        @if (config('forms.pixel_ui_enabled'))
+        @if (config('forms.pixel_ui_enabled') && Auth::user()?->isAdmin())
             <button type="button" id="website-tab-pixel" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-pixel" tabindex="-1" data-tab="pixel">Pixel</button>
         @endif
         <button type="button" id="website-tab-business-profile" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-business-profile" tabindex="-1" data-tab="business-profile">Business Profile</button>
@@ -360,7 +360,7 @@
         @endif
     </div>
 
-    @if (config('forms.pixel_ui_enabled'))
+    @if (config('forms.pixel_ui_enabled') && Auth::user()?->isAdmin())
         @include('admin.websites.partials.pixel', [
             'website' => $website,
             'pixelInstallationSnippet' => $pixelInstallationSnippet,

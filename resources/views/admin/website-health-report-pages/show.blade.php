@@ -40,7 +40,7 @@
         @endif
     </section>
 
-    @if (config('forms.pixel_ui_enabled'))
+    @if (config('forms.pixel_ui_enabled') && Auth::user()?->isAdmin())
     <section class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm" aria-labelledby="optimisations-title">
         <div>
             <p class="text-xs font-medium uppercase tracking-widest text-teal-700">Automated deployment</p>
