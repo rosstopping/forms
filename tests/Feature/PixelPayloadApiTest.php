@@ -53,8 +53,10 @@ it('returns only the public deployed pixel payload for a valid site and URL', fu
         ->assertJsonMissing(['id' => $optimisation->id]);
 
     expect($response->headers->get('Cache-Control'))
-        ->toContain('public')
-        ->toContain('s-maxage=300');
+        ->toContain('private')
+        ->toContain('no-store')
+        ->toContain('max-age=0')
+        ->not->toContain('stale-if-error');
 });
 
 it('does not reveal whether a site key or hostname was invalid', function (): void {

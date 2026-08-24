@@ -138,3 +138,11 @@ test('throttles heartbeats to one per browser page each day', () => {
     assert.equal(api.shouldReportHeartbeat('sw_abcdefghijklmnopqrstuvwxyz'), true);
     assert.equal(api.shouldReportHeartbeat('sw_abcdefghijklmnopqrstuvwxyz'), false);
 });
+
+test('always bypasses cached payloads so disabling Pixel takes effect immediately', () => {
+    const { api } = runtime();
+    const options = api.payloadRequestOptions(null);
+
+    assert.equal(options.cache, 'no-store');
+    assert.equal(options.headers.Accept, 'application/json');
+});

@@ -10,6 +10,7 @@ use App\Models\GithubInstallation;
 use App\Models\GithubUserAuthorization;
 use App\Models\PixelPageSighting;
 use App\Models\RemediationRun;
+use App\Models\SearchOpportunity;
 use App\Models\User;
 use App\Models\Website;
 use App\Models\WebsiteHealthReport;
@@ -123,5 +124,21 @@ it('queues existing pending content todos from the pixel tab', function (): void
         ->post(route('admin.websites.pixel.content-requests.store', $website))
         ->assertRedirect(route('admin.websites.show', ['website' => $website, 'tab' => 'pixel']));
 
+    Queue::assertPushed(fn (GenerateContentRequestPixelOptimisations $job): bool => $job->contentRequest->is($contentRequest));
+});
+
+it('queues a search opportunity through pixel without a github repository', function (): void {
+    Queue::fake();
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $website = Website::factory()->for($admin, 'owner')->create(['pixel_enabled' => true]);
+    $opportunity = SearchOpportunity::factory()->for($website)->create();
+
+    $this->actingAs($admin)
+        ->post(route('admin.search-opportunities.queue', [$website, $opportunity]))
+        ->assertRedirect(route('admin.websites.show', [$website, 'tab' => 'search']));
+
+    $contentRequest = $opportunity->fresh()->contentRequest;
+
+    expect($contentRequest)->toBeInstanceOf(ContentRequest::class);
     Queue::assertPushed(fn (GenerateContentRequestPixelOptimisations $job): bool => $job->contentRequest->is($contentRequest));
 });

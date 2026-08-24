@@ -12,7 +12,7 @@
     ]);
     var ALLOWED_ATTRIBUTES = new Set(['aria-label', 'href', 'title']);
     var ALLOWED_CHANGE_ATTRIBUTES = new Set(['alt', 'aria-label', 'href', 'title']);
-    var PIXEL_VERSION = '1.0.0';
+    var PIXEL_VERSION = '1.0.1';
     var script = document.currentScript;
 
     function safeHref(value, internalOnly) {
@@ -243,6 +243,14 @@
         }).catch(function () {});
     }
 
+    function payloadRequestOptions(controller) {
+        return {
+            cache: 'no-store',
+            headers: { Accept: 'application/json' },
+            signal: controller ? controller.signal : undefined,
+        };
+    }
+
     async function load() {
         var siteKey = script && script.dataset ? script.dataset.site : '';
 
@@ -258,10 +266,7 @@
         }, 4000);
 
         try {
-            var response = await fetch(endpoint, {
-                headers: { Accept: 'application/json' },
-                signal: controller ? controller.signal : undefined,
-            });
+            var response = await fetch(endpoint, payloadRequestOptions(controller));
 
             if (!response.ok) {
                 return;
@@ -282,6 +287,7 @@
         window.__SITEWELL_PIXEL_TEST_API__ = {
             applyChange: applyChange,
             applyPayload: applyPayload,
+            payloadRequestOptions: payloadRequestOptions,
             safeHref: safeHref,
             shouldReportHeartbeat: shouldReportHeartbeat,
         };

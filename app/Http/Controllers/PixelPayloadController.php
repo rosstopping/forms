@@ -34,7 +34,7 @@ class PixelPayloadController extends Controller
             $response->setNotModified();
         }
 
-        $response->headers->set('Cache-Control', 'public, max-age=60, s-maxage=300, stale-if-error=86400');
+        $response->headers->set('Cache-Control', 'private, no-store, max-age=0, must-revalidate');
 
         return $response;
     }

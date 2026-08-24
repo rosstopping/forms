@@ -218,8 +218,8 @@
             </div>
         </div>
 
-        @if ($website->repository)
-        @if (Auth::user()?->isAdmin())
+        @if ($website->repository || (Auth::user()?->isAdmin() && config('forms.pixel_ui_enabled') && $website->pixel_enabled))
+        @if ($website->repository && Auth::user()?->isAdmin())
         @php
             $contentPlan = $website->contentPlan;
         @endphp
@@ -262,7 +262,7 @@
         <div>
             <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Content ideas</p>
             <h2 id="content-requests-title" class="mt-1 font-semibold">Manual content requests</h2>
-            <p class="mt-1 text-sm text-slate-600">Suggest a landing page, blog post, or other useful content change. The two oldest pending requests will be prioritised in the next weekly or manually started content run.</p>
+            <p class="mt-1 text-sm text-slate-600">Suggest a landing page, blog post, or other useful content change. Eligible changes to existing page titles and descriptions can be prepared as Pixel drafts; larger changes remain available to the GitHub content workflow.</p>
         </div>
 
         <form method="POST" action="{{ route('admin.content-requests.store', $website) }}" class="mt-4">
