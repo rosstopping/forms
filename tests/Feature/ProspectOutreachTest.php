@@ -224,6 +224,40 @@ it('requires approval before sending outreach and schedules a follow-up', functi
     Mail::assertSent(ProspectOutreach::class, fn (ProspectOutreach $mail): bool => $mail->hasTo($prospect->email));
 });
 
+it('allows another approved email when the next follow-up is due', function () {
+    Mail::fake();
+    $this->freezeTime();
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $prospect = Prospect::factory()->for($admin, 'owner')->create([
+        'status' => 'approved',
+        'outreach_subject' => 'A website opportunity',
+        'outreach_body' => 'Hi Alex, I noticed a missing page description.',
+        'approved_at' => now(),
+        'approved_by' => $admin->id,
+    ]);
+
+    $this->actingAs($admin)->post(route('admin.prospects.send', $prospect))->assertRedirect();
+    $nextFollowUpAt = $prospect->fresh()->next_follow_up_at;
+
+    $this->get(route('admin.prospects.show', $prospect))
+        ->assertSuccessful()
+        ->assertDontSee('Send approved email');
+    $this->post(route('admin.prospects.send', $prospect))->assertUnprocessable();
+
+    $this->travelTo($nextFollowUpAt);
+
+    $this->get(route('admin.prospects.show', $prospect))
+        ->assertSuccessful()
+        ->assertSee('Send approved email');
+    $this->post(route('admin.prospects.send', $prospect))->assertRedirect();
+
+    $prospect->refresh();
+
+    expect($prospect->outreachDeliveries)->toHaveCount(2)
+        ->and($prospect->next_follow_up_at->equalTo(now()->addWeek()))->toBeTrue();
+    Mail::assertSent(ProspectOutreach::class, 2);
+});
+
 it('sends the exact saved draft as a test to the administrator without contacting the prospect', function () {
     Mail::fake();
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN, 'email' => 'admin@sitewell.example']);

@@ -59,6 +59,13 @@ class Prospect extends Model
         return $user !== null && ($user->isAdmin() || $this->user_id === $user->id);
     }
 
+    public function isOutreachFollowUpDue(): bool
+    {
+        return $this->sent_at !== null
+            && $this->next_follow_up_at !== null
+            && $this->next_follow_up_at->lessThanOrEqualTo(now());
+    }
+
     public function recordActivity(string $type, string $description, ?User $user = null): ProspectActivity
     {
         return $this->activities()->create(['user_id' => $user?->id, 'type' => $type, 'description' => $description]);

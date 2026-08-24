@@ -18,7 +18,7 @@ class ProspectOutreachSender
     {
         return match (true) {
             $prospect->approved_at === null => 'Approve this draft before sending.',
-            $prospect->sent_at !== null => 'This outreach email has already been sent.',
+            $prospect->sent_at !== null && ! $prospect->isOutreachFollowUpDue() => 'This prospect is not due for another outreach email yet.',
             $prospect->suppressed_at !== null => 'This prospect is on the suppression list.',
             blank($prospect->email) => 'Add an email address before sending.',
             blank($prospect->website_url) && blank($prospect->showcase_video_url) => 'Add this prospect\'s showcase video URL before sending.',
