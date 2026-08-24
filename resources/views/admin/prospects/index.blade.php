@@ -7,8 +7,20 @@
         <div class="flex items-center gap-3"><a href="{{ route('admin.prospect-discoveries.index') }}" class="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50">Find prospects</a><a href="{{ route('admin.prospects.create') }}" class="rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">Add prospect</a></div>
     </div>
     @if (session('status'))<div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{{ session('status') }}</div>@endif
+    @unless (request()->hasAny(['status', 'temperature', 'search']))
+    <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div><p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Daily command centre</p><h2 class="mt-1 text-xl font-semibold text-slate-950">Today’s priorities</h2></div>
+        <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <a href="#needs-personalised-video" class="rounded-xl bg-red-50 p-4 text-sm font-medium text-red-900 hover:bg-red-100">🔥 <strong>{{ $hotVideoProspectsCount }}</strong> hot {{ str('lead')->plural($hotVideoProspectsCount) }} need personalised videos</a>
+            <a href="#warm-leads" class="rounded-xl bg-orange-50 p-4 text-sm font-medium text-orange-900 hover:bg-orange-100">🟠 <strong>{{ $priorityCounts['warm'] }}</strong> warm {{ str('lead')->plural($priorityCounts['warm']) }} are engaging</a>
+            <a href="#recent-replies" class="rounded-xl bg-emerald-50 p-4 text-sm font-medium text-emerald-900 hover:bg-emerald-100">💬 <strong>{{ $priorityCounts['replied'] }}</strong> {{ str('prospect')->plural($priorityCounts['replied']) }} replied today</a>
+            <div class="rounded-xl bg-violet-50 p-4 text-sm font-medium text-violet-900">📅 <strong>{{ $priorityCounts['booking'] }}</strong> {{ str('prospect')->plural($priorityCounts['booking']) }} visited the booking page today</div>
+            <div class="rounded-xl bg-sky-50 p-4 text-sm font-medium text-sky-900">🧊 <strong>{{ $priorityCounts['cold_followed_up'] }}</strong> cold {{ str('prospect')->plural($priorityCounts['cold_followed_up']) }} automatically followed up today</div>
+            <div class="rounded-xl bg-slate-100 p-4 text-sm font-medium text-slate-800">💤 <strong>{{ $priorityCounts['nurtured'] }}</strong> {{ str('prospect')->plural($priorityCounts['nurtured']) }} moved to nurture today</div>
+        </div>
+    </section>
     @if ($hotVideoProspects->isNotEmpty())
-        <section class="rounded-2xl border border-red-200 bg-red-50/70 p-5 shadow-sm">
+        <section id="needs-personalised-video" class="scroll-mt-6 rounded-2xl border border-red-200 bg-red-50/70 p-5 shadow-sm">
             <div class="flex flex-wrap items-start justify-between gap-3">
                 <div><p class="text-xs font-semibold uppercase tracking-wider text-red-700">Manual action queue</p><h2 class="mt-1 text-xl font-semibold text-red-950">Needs Personalised Video</h2><p class="mt-1 text-sm text-red-800">These prospects crossed the hot threshold. Their automated cold sequence is paused.</p></div>
                 <span class="rounded-full bg-red-600 px-3 py-1 text-sm font-semibold text-white">{{ $hotVideoProspectsCount }} {{ str('lead')->plural($hotVideoProspectsCount) }}</span>
@@ -36,6 +48,22 @@
             </div>
         </section>
     @endif
+    @if ($warmProspects->isNotEmpty())
+        <section id="warm-leads" class="scroll-mt-6 rounded-2xl border border-orange-200 bg-orange-50/70 p-5 shadow-sm">
+            <div class="flex flex-wrap items-start justify-between gap-3"><div><p class="text-xs font-semibold uppercase tracking-wider text-orange-700">Recent intent</p><h2 class="mt-1 text-xl font-semibold text-orange-950">Warm Leads</h2><p class="mt-1 text-sm text-orange-800">Sorted by most recent engagement. Monitor these without crowding them.</p></div><span class="rounded-full bg-orange-600 px-3 py-1 text-sm font-semibold text-white">{{ $priorityCounts['warm'] }}</span></div>
+            <div class="mt-5 grid gap-4 lg:grid-cols-2">
+                @foreach ($warmProspects as $warmProspect)
+                    <article class="rounded-xl border border-orange-100 bg-white p-4 shadow-sm"><div class="flex items-start justify-between gap-4"><div class="min-w-0"><h3 class="truncate font-semibold text-slate-950">{{ $warmProspect->business_name }}</h3><p class="truncate text-sm text-slate-500">{{ parse_url($warmProspect->website_url, PHP_URL_HOST) ?: $warmProspect->email }}</p></div><span class="shrink-0 rounded-full bg-orange-100 px-2.5 py-1 text-xs font-bold text-orange-800">Score {{ $warmProspect->outreachState->engagement_score }}</span></div><div class="mt-3 space-y-1.5">@foreach ($warmProspect->engagementEvents as $event)<p class="flex items-center justify-between gap-3 text-xs text-slate-600"><span>{{ $event->event_type->label() }} <span class="font-semibold text-emerald-700">+{{ $event->score_delta }}</span></span><span class="shrink-0 text-slate-400">{{ $event->occurred_at->diffForHumans() }}</span></p>@endforeach</div><a href="{{ route('admin.prospects.show', $warmProspect) }}" class="mt-4 inline-flex rounded-lg border border-orange-300 px-3 py-2 text-sm font-semibold text-orange-800 hover:bg-orange-50">Review activity</a></article>
+                @endforeach
+            </div>
+        </section>
+    @endif
+    @if ($recentReplies->isNotEmpty())
+        <section id="recent-replies" class="scroll-mt-6 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-5 shadow-sm">
+            <div><p class="text-xs font-semibold uppercase tracking-wider text-emerald-700">Conversation required</p><h2 class="mt-1 text-xl font-semibold text-emerald-950">Recent Replies</h2><p class="mt-1 text-sm text-emerald-800">Automation is stopped for these prospects.</p></div>
+            <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">@foreach ($recentReplies as $reply)<a href="{{ route('admin.prospects.show', $reply) }}" class="rounded-xl border border-emerald-100 bg-white p-4 shadow-sm hover:border-emerald-300"><p class="font-semibold text-slate-950">{{ $reply->business_name }}</p><p class="mt-1 text-sm text-slate-500">Replied {{ $reply->replied_at?->diffForHumans() ?? $reply->outreachState->stopped_at?->diffForHumans() }}</p></a>@endforeach</div>
+        </section>
+    @endif
     @if ($manualFollowUpProspects->isNotEmpty())
         <section class="rounded-2xl border border-violet-200 bg-violet-50/70 p-5 shadow-sm">
             <div class="flex flex-wrap items-start justify-between gap-3">
@@ -57,6 +85,7 @@
             </div>
         </section>
     @endif
+    @endunless
     <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <a href="{{ route('admin.prospects.index', ['temperature' => 'hot']) }}" class="rounded-xl border border-red-200 bg-red-50 p-4 shadow-sm hover:border-red-400"><p class="text-xs font-semibold uppercase tracking-wide text-red-700">Hot leads</p><p class="mt-2 text-2xl font-semibold text-red-950">{{ $temperatureSummary['hot'] ?? 0 }}</p></a>
         @foreach (['new' => 'New', 'drafted' => 'Ready to review', 'contacted' => 'Contacted', 'replied' => 'Replied'] as $value => $label)

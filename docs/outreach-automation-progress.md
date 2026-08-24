@@ -10,8 +10,8 @@ Last updated: 24 August 2026
 - [x] Phase 4 — Automated cold follow-up sequence
 - [x] Phase 5 — Hot-lead and personalised-video workflow
 - [x] Phase 6 — Post-video follow-up and manual recommendations
-- [ ] Phase 7 — Outreach dashboard and activity timeline
-- [ ] Phase 8 — Full lifecycle and duplicate-send test coverage
+- [x] Phase 7 — Outreach dashboard and activity timeline
+- [x] Phase 8 — Full lifecycle and duplicate-send test coverage
 
 No application structure was changed in Phase 1. This document is the only Phase 1 codebase change.
 
@@ -100,6 +100,34 @@ Completed on 24 August 2026.
 - Added Manual Follow-up Recommended cards to the outreach index and a prominent explanation panel on the prospect page. Both explain why the lead was surfaced and how recent each signal was.
 - Applied the Phase 6 state migration to the local database.
 - Verification: 81 focused outreach tests pass with 472 assertions; Pint and `git diff --check` pass.
+
+## Phase 7 implementation
+
+Completed on 24 August 2026.
+
+- Added an attention-first Today’s Priorities panel covering hot leads awaiting videos, all warm leads, replies today, booking-page visitors today, automatic cold follow-ups sent today, and prospects exhausted into nurture today.
+- Preserved the Phase 5/6 personalised-video and manual-follow-up queues and added dedicated Warm Leads and Recent Replies queues. Warm leads are ordered by latest engagement and show their score and strongest recent scored events.
+- Moved dashboard query composition into `ProspectOutreachDashboard`; queues are bounded, relationships are eager-loaded, and current-state ordering uses Eloquent subqueries rather than queries inside Blade.
+- Expanded the prospect activity display into a chronological visual timeline with event names, descriptions, actors, absolute timestamps, relative times, and visual distinction for engagement, video/manual, and stopping events.
+- Added authenticated administrator controls to pause, resume, or stop automation; mark replied, not interested, future opportunity, customer, or pilot; force warm/hot; clear a temperature override; and adjust or reset engagement score.
+- Contact-later actions accept an optional future date in UK time and store UTC. Stop-state actions clear scheduled outreach and future automatic actions.
+- Destructive or sequence-stopping controls use the existing explicit confirmation dialog. Manual actions remain queryable through lifecycle and score activities while the immutable engagement ledger is preserved.
+- Forced-hot leads enter Needs Personalised Video and pause automation; protected lifecycle outcomes cannot be forced back into an active temperature state.
+- Verification: 86 focused outreach tests pass with 510 assertions; Pint, route inspection, and `git diff --check` pass.
+- Full-suite verification after Phase 7: 477 of 479 tests pass with 2,647 assertions. The same two unrelated `WebsiteAiChatTest` provider-failure/rate-limit cases documented after Phase 6 remain the only failures.
+
+## Phase 8 implementation
+
+Completed on 24 August 2026.
+
+- Added a lifecycle safeguard matrix proving that Replied, Not Interested, Future Opportunity, Customer, Pilot, Closed, and Exhausted prospects cannot be evaluated or sent another automatic message.
+- Added reply-before-delivery race coverage for both scheduled initial outreach and scheduled personalised video. The initial job becomes a no-op after its schedule is cleared; the reserved video delivery is marked Cancelled with queryable activity.
+- Added replay coverage proving that a second call at the initial send boundary cannot create or send a duplicate message once the first delivery has advanced the sequence.
+- Added configuration-bound coverage proving the maximum follow-up attempt count exhausts the sequence before another cold message can be sent.
+- Added queue uniqueness contract coverage for overlapping lifecycle evaluations and scheduled-video jobs, including stable prospect/delivery-specific unique identities.
+- The complete focused suite also covers bounded/fingerprinted scoring, scanner suppression, signed tracking, hot notifications, mail snapshots, failed-send retries, stale schedules, cold/final exhaustion, video delivery, post-video restraint, dashboards, timelines, and manual protected outcomes.
+- Verification: 98 focused outreach tests pass with 551 assertions.
+- Full-suite verification after Phase 8: 489 of 491 tests pass with 2,688 assertions. The same two unrelated `WebsiteAiChatTest` provider-failure/rate-limit cases remain the only failures.
 
 ## Phase 1 findings
 

@@ -30,6 +30,7 @@ use App\Http\Controllers\Admin\ProspectAnalysisController;
 use App\Http\Controllers\Admin\ProspectApprovalController;
 use App\Http\Controllers\Admin\ProspectController;
 use App\Http\Controllers\Admin\ProspectDiscoveryController;
+use App\Http\Controllers\Admin\ProspectLifecycleActionController;
 use App\Http\Controllers\Admin\ProspectPersonalisedVideoController;
 use App\Http\Controllers\Admin\ProspectScheduleController;
 use App\Http\Controllers\Admin\ProspectSendController;
@@ -231,6 +232,7 @@ Route::middleware(['web', 'auth'])->prefix('admin')->name('admin.')->group(funct
         Route::post('prospects/{prospect}/schedule', ProspectScheduleController::class)->name('prospects.schedule');
         Route::post('prospects/{prospect}/send', ProspectSendController::class)->name('prospects.send');
         Route::post('prospects/{prospect}/personalised-video', ProspectPersonalisedVideoController::class)->name('prospects.personalised-video');
+        Route::patch('prospects/{prospect}/lifecycle', ProspectLifecycleActionController::class)->name('prospects.lifecycle');
         Route::post('prospects/{prospect}/test-email', ProspectTestEmailController::class)->name('prospects.test-email');
         Route::post('prospects/bulk', BulkProspectActionController::class)->name('prospects.bulk');
         Route::resource('prospects', ProspectController::class);

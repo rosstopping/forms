@@ -110,8 +110,22 @@ class ProspectLifecycleManager
 
         return DB::transaction(function () use ($prospect, $temperature, $actor): ProspectOutreachState {
             $outreachState = $this->lockedState($prospect);
-            $outreachState->update(['temperature_override' => $temperature]);
+
+            if ($outreachState->lifecycle_state->stopsNormalOutreach()) {
+                throw new InvalidArgumentException('A prospect in a stopped lifecycle state cannot be forced warm or hot.');
+            }
+
+            $outreachState->update([
+                'temperature_override' => $temperature,
+                'lifecycle_state' => $temperature === 'hot' ? ProspectLifecycleState::NeedsPersonalisedVideo : ProspectLifecycleState::Warm,
+                'automation_status' => $temperature === 'hot' ? ProspectAutomationStatus::Paused : $outreachState->automation_status,
+                'sequence_step' => $temperature === 'hot' ? ProspectSequenceStep::AwaitingPersonalisedVideo : $outreachState->sequence_step,
+                'next_action_at' => $temperature === 'hot' ? null : $outreachState->next_action_at,
+            ]);
             $prospect->update(['lead_temperature' => $temperature]);
+            if ($temperature === 'hot') {
+                $prospect->update(['next_follow_up_at' => null]);
+            }
             $prospect->recordActivity('temperature_manually_changed', 'Lead temperature manually changed to '.str($temperature)->title().'.', $actor);
 
             return $outreachState->refresh();

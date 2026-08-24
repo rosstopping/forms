@@ -13,6 +13,7 @@ use App\Models\Prospect;
 use App\Models\ProspectOutreachState;
 use App\Services\LoomVideoThumbnail;
 use App\Services\ProspectLifecycleManager;
+use App\Services\ProspectOutreachDashboard;
 use App\Services\ProspectPersonalisedVideo;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -23,7 +24,7 @@ class ProspectController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request): View
+    public function index(Request $request, ProspectOutreachDashboard $dashboard): View
     {
         $query = Prospect::query()->accessibleTo($request->user());
         $summary = (clone $query)->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
@@ -67,7 +68,10 @@ class ProspectController extends Controller
             ->orderByRaw("case lead_temperature when 'hot' then 1 when 'warm' then 2 else 3 end")
             ->latest()->paginate(20)->withQueryString();
 
-        return view('admin.prospects.index', compact('prospects', 'summary', 'temperatureSummary', 'matchingProspectsCount', 'hotVideoProspects', 'hotVideoProspectsCount', 'manualFollowUpProspects', 'manualFollowUpProspectsCount'));
+        return view('admin.prospects.index', array_merge(
+            compact('prospects', 'summary', 'temperatureSummary', 'matchingProspectsCount', 'hotVideoProspects', 'hotVideoProspectsCount', 'manualFollowUpProspects', 'manualFollowUpProspectsCount'),
+            $dashboard->for($request->user()),
+        ));
     }
 
     /**
