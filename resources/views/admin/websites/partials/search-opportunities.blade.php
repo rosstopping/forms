@@ -47,7 +47,7 @@
                 <p class="mt-3 flex-1 rounded-md bg-slate-50 p-3 text-sm leading-6 text-slate-700">{{ $opportunity->recommendation }}</p>
                 @if ($opportunity->status === 'open')
                     <div class="mt-4 flex flex-wrap gap-2">
-                        @if ($website->repository || (Auth::user()?->isAdmin() && config('forms.pixel_ui_enabled') && $website->pixel_enabled))
+                        @if ($website->repository || ($canUseGrowthFeatures && config('forms.pixel_ui_enabled') && $website->pixel_enabled))
                             <form method="POST" action="{{ route('admin.search-opportunities.queue', [$website, $opportunity]) }}">@csrf<button class="rounded-md bg-slate-900 px-3 py-2 text-xs font-medium text-white hover:bg-slate-800">Prepare improvement</button></form>
                         @else
                             <a href="{{ route('admin.website-repositories.create', $website) }}" class="rounded-md bg-slate-900 px-3 py-2 text-xs font-medium text-white">Connect GitHub or enable Pixel</a>

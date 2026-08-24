@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Account\BillingController;
+use App\Http\Controllers\Account\ProfileController;
 use App\Http\Controllers\Admin\BulkFormSubmissionController;
 use App\Http\Controllers\Admin\BulkProspectActionController;
 use App\Http\Controllers\Admin\BusinessProfileController;
@@ -145,6 +146,8 @@ Route::middleware(['web', 'signed', 'throttle:20,1'])->group(function () {
 Route::middleware(['web', 'auth'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('account/billing', [BillingController::class, 'index'])->name('billing.index');
+    Route::get('account/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('account/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('account/billing/checkout', [BillingController::class, 'checkout'])->middleware('throttle:10,1')->name('billing.checkout');
     Route::post('account/billing/portal', [BillingController::class, 'portal'])->middleware('throttle:10,1')->name('billing.portal');
     Route::resource('websites', WebsiteController::class);
@@ -152,8 +155,8 @@ Route::middleware(['web', 'auth'])->prefix('admin')->name('admin.')->group(funct
     Route::post('website-builder', [WebsiteBuilderController::class, 'store'])->name('website-builder.store');
     Route::get('website-builder/github/connect', [GithubConnectionController::class, 'authorizeBuilder'])->name('website-builder.github.connect');
     Route::put('websites/{website}/autoresponder', WebsiteAutoresponderController::class)->name('websites.autoresponder.update');
-    Route::put('websites/{website}/pixel', [PixelSettingsController::class, 'update'])->name('websites.pixel.update');
-    Route::post('websites/{website}/pixel/rotate-key', PixelKeyController::class)->name('websites.pixel.rotate-key');
+    Route::put('websites/{website}/pixel', [PixelSettingsController::class, 'update'])->middleware('membership:growth')->name('websites.pixel.update');
+    Route::post('websites/{website}/pixel/rotate-key', PixelKeyController::class)->middleware('membership:growth')->name('websites.pixel.rotate-key');
     Route::post('websites/{website}/members', [WebsiteMemberController::class, 'store'])->middleware('membership:growth')->name('websites.members.store');
     Route::post('websites/{website}/assistant/questions', WebsiteAiChatController::class)->middleware(['membership:complete', 'throttle:10,1'])->name('websites.assistant.questions.store');
     Route::get('websites/{website}/assistant/questions/{websiteAiQuestion}', WebsiteAiQuestionStatusController::class)->middleware(['membership:complete', 'throttle:120,1'])->name('websites.assistant.questions.show');
@@ -162,19 +165,19 @@ Route::middleware(['web', 'auth'])->prefix('admin')->name('admin.')->group(funct
     Route::delete('websites/{website}/members/{member}', [WebsiteMemberController::class, 'destroy'])->name('websites.members.destroy');
     Route::post('websites/{website}/health-reports', [WebsiteHealthReportController::class, 'store'])->name('website-health-reports.store');
     Route::get('websites/{website}/health-reports/{websiteHealthReport}', [WebsiteHealthReportController::class, 'show'])->name('website-health-reports.show');
-    Route::post('websites/{website}/health-reports/{websiteHealthReport}/optimisations/generate', GenerateReportOptimisationsController::class)->name('report-optimisations.generate');
-    Route::post('websites/{website}/health-reports/{websiteHealthReport}/remediate', ReportRemediationController::class)->name('report-remediation.store');
-    Route::post('websites/{website}/health-reports/{websiteHealthReport}/optimisations/deploy-all', DeployReportOptimisationsController::class)->name('report-optimisations.deploy');
+    Route::post('websites/{website}/health-reports/{websiteHealthReport}/optimisations/generate', GenerateReportOptimisationsController::class)->middleware('membership:growth')->name('report-optimisations.generate');
+    Route::post('websites/{website}/health-reports/{websiteHealthReport}/remediate', ReportRemediationController::class)->middleware('membership:growth')->name('report-remediation.store');
+    Route::post('websites/{website}/health-reports/{websiteHealthReport}/optimisations/deploy-all', DeployReportOptimisationsController::class)->middleware('membership:growth')->name('report-optimisations.deploy');
     Route::get('websites/{website}/health-reports/{websiteHealthReport}/pages/{websiteHealthReportPage}', [WebsiteHealthReportPageController::class, 'show'])->name('website-health-report-pages.show');
-    Route::post('websites/{website}/health-reports/{websiteHealthReport}/pages/{websiteHealthReportPage}/optimisations/generate', GeneratePageOptimisationsController::class)->name('optimisations.generate');
-    Route::post('websites/{website}/health-reports/{websiteHealthReport}/pages/{websiteHealthReportPage}/optimisations/deploy-all', DeployPageOptimisationsController::class)->name('optimisations.deploy-page');
-    Route::post('websites/{website}/health-reports/{websiteHealthReport}/pages/{websiteHealthReportPage}/optimisations', [OptimisationController::class, 'store'])->name('optimisations.store');
-    Route::post('websites/{website}/health-reports/{websiteHealthReport}/pages/{websiteHealthReportPage}/optimisations/{optimisation}/versions', [OptimisationVersionController::class, 'store'])->name('optimisation-versions.store');
-    Route::post('websites/{website}/health-reports/{websiteHealthReport}/pages/{websiteHealthReportPage}/optimisations/{optimisation}/deploy', [OptimisationDeploymentController::class, 'deploy'])->name('optimisations.deploy');
-    Route::post('websites/{website}/health-reports/{websiteHealthReport}/pages/{websiteHealthReportPage}/optimisations/{optimisation}/rollback', [OptimisationDeploymentController::class, 'rollback'])->name('optimisations.rollback');
-    Route::post('websites/{website}/health-reports/{websiteHealthReport}/pages/{websiteHealthReportPage}/optimisations/rollback-all', PageOptimisationRollbackController::class)->name('optimisations.rollback-page');
+    Route::post('websites/{website}/health-reports/{websiteHealthReport}/pages/{websiteHealthReportPage}/optimisations/generate', GeneratePageOptimisationsController::class)->middleware('membership:growth')->name('optimisations.generate');
+    Route::post('websites/{website}/health-reports/{websiteHealthReport}/pages/{websiteHealthReportPage}/optimisations/deploy-all', DeployPageOptimisationsController::class)->middleware('membership:growth')->name('optimisations.deploy-page');
+    Route::post('websites/{website}/health-reports/{websiteHealthReport}/pages/{websiteHealthReportPage}/optimisations', [OptimisationController::class, 'store'])->middleware('membership:growth')->name('optimisations.store');
+    Route::post('websites/{website}/health-reports/{websiteHealthReport}/pages/{websiteHealthReportPage}/optimisations/{optimisation}/versions', [OptimisationVersionController::class, 'store'])->middleware('membership:growth')->name('optimisation-versions.store');
+    Route::post('websites/{website}/health-reports/{websiteHealthReport}/pages/{websiteHealthReportPage}/optimisations/{optimisation}/deploy', [OptimisationDeploymentController::class, 'deploy'])->middleware('membership:growth')->name('optimisations.deploy');
+    Route::post('websites/{website}/health-reports/{websiteHealthReport}/pages/{websiteHealthReportPage}/optimisations/{optimisation}/rollback', [OptimisationDeploymentController::class, 'rollback'])->middleware('membership:growth')->name('optimisations.rollback');
+    Route::post('websites/{website}/health-reports/{websiteHealthReport}/pages/{websiteHealthReportPage}/optimisations/rollback-all', PageOptimisationRollbackController::class)->middleware('membership:growth')->name('optimisations.rollback-page');
     Route::post('websites/{website}/health-reports/{websiteHealthReport}/remediations', [RemediationRunController::class, 'store'])->name('remediation-runs.store');
-    Route::post('websites/{website}/pixel/content-requests', ContentRequestPixelController::class)->name('websites.pixel.content-requests.store');
+    Route::post('websites/{website}/pixel/content-requests', ContentRequestPixelController::class)->middleware('membership:growth')->name('websites.pixel.content-requests.store');
     Route::get('websites/{website}/github/connect', [GithubConnectionController::class, 'create'])->name('github.connect');
     Route::get('github/callback', [GithubConnectionController::class, 'callback'])->name('github.callback');
     Route::get('websites/{website}/repository/create', [WebsiteRepositoryController::class, 'create'])->name('website-repositories.create');
@@ -241,7 +244,7 @@ Route::middleware(['web', 'auth'])->prefix('admin')->name('admin.')->group(funct
         Route::post('prospects/bulk', BulkProspectActionController::class)->name('prospects.bulk');
         Route::resource('prospects', ProspectController::class);
     });
-    Route::resource('users', UserController::class)->only(['index', 'create', 'store', 'edit', 'update']);
+    Route::resource('users', UserController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
 });
 
 Route::post('/stripe/webhook', StripeWebhookController::class)

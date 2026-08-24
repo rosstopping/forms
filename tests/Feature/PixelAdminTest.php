@@ -4,6 +4,7 @@ use App\Models\Optimisation;
 use App\Models\PixelPageSighting;
 use App\Models\User;
 use App\Models\Website;
+use App\Support\MembershipPlan;
 
 beforeEach(fn () => config(['forms.pixel_ui_enabled' => true]));
 
@@ -19,8 +20,11 @@ it('hides the pixel workspace while the feature is disabled', function (): void 
         ->assertDontSee('Sitewell Pixel');
 });
 
-it('hides the pixel workspace from non-administrators', function (): void {
-    $user = User::factory()->create();
+it('hides the pixel workspace below the growth membership', function (): void {
+    $user = User::factory()->create([
+        'membership_tier' => MembershipPlan::ESSENTIAL,
+        'membership_status' => 'active',
+    ]);
     $website = Website::factory()->for($user, 'owner')->create();
 
     $this->actingAs($user)->get(route('admin.websites.show', ['website' => $website, 'tab' => 'pixel']))
@@ -28,6 +32,25 @@ it('hides the pixel workspace from non-administrators', function (): void {
         ->assertDontSee('data-tab="pixel"', false)
         ->assertDontSee('data-tab-panel="pixel"', false)
         ->assertDontSee('Sitewell Pixel');
+});
+
+it('shows the pixel workspace to growth members', function (): void {
+    $user = User::factory()->create([
+        'admin_membership_tier' => MembershipPlan::GROWTH,
+    ]);
+    $website = Website::factory()->for($user, 'owner')->create();
+
+    $this->actingAs($user)->get(route('admin.websites.show', ['website' => $website, 'tab' => 'pixel']))
+        ->assertSuccessful()
+        ->assertSee('data-tab="pixel"', false)
+        ->assertSee('data-tab-panel="pixel"', false)
+        ->assertSee('Sitewell Pixel');
+
+    $this->actingAs($user)
+        ->put(route('admin.websites.pixel.update', $website), ['pixel_enabled' => false])
+        ->assertRedirect(route('admin.websites.show', ['website' => $website, 'tab' => 'pixel']));
+
+    expect($website->fresh()->pixel_enabled)->toBeFalse();
 });
 
 it('shows configured pixel installation and connection information', function (): void {

@@ -18,7 +18,7 @@ class ReportRemediationController extends Controller
 {
     public function __invoke(Request $request, Website $website, WebsiteHealthReport $websiteHealthReport): RedirectResponse
     {
-        abort_unless($request->user()?->isAdmin() && $website->isManageableBy($request->user()), 403);
+        abort_unless($website->isManageableBy($request->user()), 403);
         abort_unless($websiteHealthReport->website_id === $website->id, 404);
         abort_unless($websiteHealthReport->status === WebsiteHealthReport::STATUS_COMPLETED, 422);
 

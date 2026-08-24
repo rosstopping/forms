@@ -186,7 +186,7 @@
                                 @endif
                                 @if ($canManageWebsite && $opportunity->status === 'open')
                                     <div class="mt-4">
-                                        @if ($website->repository || (Auth::user()?->isAdmin() && config('forms.pixel_ui_enabled') && $website->pixel_enabled))
+                                        @if ($website->repository || ($canUseGrowthFeatures && config('forms.pixel_ui_enabled') && $website->pixel_enabled))
                                             <form method="POST" action="{{ route('admin.seo-opportunities.queue', [$website, $opportunity]) }}">
                                                 @csrf
                                                 <button type="submit" class="relative rounded-md border border-slate-950/10 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600">

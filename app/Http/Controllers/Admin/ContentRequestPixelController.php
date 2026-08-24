@@ -13,7 +13,7 @@ class ContentRequestPixelController extends Controller
 {
     public function __invoke(Request $request, Website $website): RedirectResponse
     {
-        abort_unless($request->user()?->isAdmin() && $website->isManageableBy($request->user()), 403);
+        abort_unless($website->isManageableBy($request->user()), 403);
         abort_unless(config('forms.pixel_ui_enabled') && $website->pixel_enabled, 422, 'Enable Pixel before preparing content todos.');
 
         $contentRequests = $website->contentRequests()

@@ -7,6 +7,7 @@ use App\Jobs\GenerateWebsiteHealthReport;
 use App\Models\Website;
 use App\Models\WebsiteHealthReport;
 use App\Services\WebsiteHealthReportPromptGenerator;
+use App\Support\MembershipPlan;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
@@ -51,6 +52,7 @@ class WebsiteHealthReportController extends Controller
         return view('admin.website-health-reports.show', [
             'report' => $websiteHealthReport,
             'canManageWebsite' => $website->isManageableBy($request->user()),
+            'canUsePixel' => config('forms.pixel_ui_enabled') && ($request->user()?->isAdmin() || $website->owner?->hasMembershipFeature(MembershipPlan::FEATURE_GROWTH)),
             'aiPrompt' => $request->user()?->isAdmin() && $websiteHealthReport->status === WebsiteHealthReport::STATUS_COMPLETED
                 ? $this->promptGenerator->generate($websiteHealthReport)
                 : null,

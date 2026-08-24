@@ -165,6 +165,37 @@ it('prevents normal users from editing user accounts', function (): void {
         ->assertForbidden();
 });
 
+it('allows an administrator to delete a user without owned websites', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $user = User::factory()->create();
+
+    $this->actingAs($admin)
+        ->delete(route('admin.users.destroy', $user))
+        ->assertRedirect(route('admin.users.index'))
+        ->assertSessionHas('status', 'User deleted.');
+
+    $this->assertModelMissing($user);
+});
+
+it('does not delete the current administrator or a website owner', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $owner = User::factory()->create();
+    Website::factory()->for($owner, 'owner')->create();
+
+    $this->actingAs($admin)
+        ->from(route('admin.users.index'))
+        ->delete(route('admin.users.destroy', $admin))
+        ->assertSessionHasErrors('user');
+
+    $this->actingAs($admin)
+        ->from(route('admin.users.index'))
+        ->delete(route('admin.users.destroy', $owner))
+        ->assertSessionHasErrors('user');
+
+    $this->assertModelExists($admin);
+    $this->assertModelExists($owner);
+});
+
 it('allows an administrator to rename and delete a website', function (): void {
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     $website = Website::factory()->create(['name' => 'Original website']);

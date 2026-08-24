@@ -72,10 +72,10 @@
                 <div class="mt-auto border-t border-white/10 pt-4">
                     <div class="flex items-center gap-3 px-2">
                         <span class="grid size-9 shrink-0 place-items-center rounded-full bg-teal-400/15 text-sm font-semibold text-teal-300">{{ Str::upper(Str::substr(Auth::user()->name, 0, 1)) }}</span>
-                        <div class="min-w-0 flex-1">
+                        <a href="{{ route('admin.profile.edit') }}" class="min-w-0 flex-1 rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-400">
                             <p class="truncate text-sm font-medium text-white">{{ Auth::user()->name }}</p>
-                            <p class="truncate text-xs text-slate-500">{{ Auth::user()->email }}</p>
-                        </div>
+                            <p class="truncate text-xs text-slate-500 hover:text-slate-300">{{ Auth::user()->email }}</p>
+                        </a>
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
                             <button type="submit" class="relative rounded-md px-2 py-2 text-xs font-medium text-slate-400 hover:bg-white/5 hover:text-white" aria-label="Log out">
@@ -108,6 +108,7 @@
                             <a href="{{ route('admin.websites.index') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Websites</a>
                             <a href="{{ route('admin.form-submissions.index') }}" class="flex items-center justify-between gap-3 rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5"><span>Leads</span><span class="flex gap-1">@if ($newLeadCount > 0)<span data-new-leads-count class="min-w-7 rounded-full bg-teal-400 px-2 py-0.5 text-center text-xs font-semibold tabular-nums text-slate-950" aria-label="{{ $newLeadCount }} new leads">{{ $newLeadCount > 99 ? '99+' : $newLeadCount }}</span>@endif @if ($followUpReminderCount > 0)<span class="min-w-7 rounded-full bg-amber-300 px-2 py-0.5 text-center text-xs font-semibold tabular-nums text-slate-950" aria-label="{{ $followUpReminderCount }} lead follow-ups due">{{ $followUpReminderCount > 99 ? '99+' : $followUpReminderCount }}</span>@endif</span></a>
                             <a href="{{ route('admin.billing.index') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Billing</a>
+                            <a href="{{ route('admin.profile.edit') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Profile</a>
                             @if (Auth::user()?->isAdmin())<a href="{{ route('admin.website-builder.create') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Website builder</a><a href="{{ route('admin.prospects.index') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Outreach</a><a href="{{ route('admin.users.index') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Users</a>@endif
                         </nav>
                         <form method="POST" action="{{ route('logout') }}" class="mt-auto border-t border-white/10 pt-4">

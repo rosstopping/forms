@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\ContentPlan;
 use App\Models\Form;
 use App\Models\User;
 use App\Models\Website;
@@ -25,7 +26,7 @@ it('prioritises website audit health on the dashboard', function (): void {
     $this->actingAs($user)
         ->get(route('admin.dashboard'))
         ->assertOk()
-        ->assertSee('Site health overview')
+        ->assertSee('What needs attention next')
         ->assertSee('Audit workspace')
         ->assertSee('data-mobile-nav-toggle', false)
         ->assertSee('data-mobile-nav', false)
@@ -35,6 +36,27 @@ it('prioritises website audit health on the dashboard', function (): void {
         ->assertSee('Recent audit activity')
         ->assertDontSee('href="'.route('admin.forms.index').'"', false)
         ->assertSee('href="'.route('admin.form-submissions.index').'"', false);
+});
+
+it('shows the next site audit and content queue jobs', function (): void {
+    $user = User::factory()->create();
+    $website = Website::factory()->for($user, 'owner')->create([
+        'name' => 'Scheduled website',
+        'health_reports_enabled' => true,
+    ]);
+    ContentPlan::factory()->for($website)->for($user, 'creator')->create([
+        'enabled' => true,
+        'weekday' => now('Europe/London')->addDay()->dayOfWeek,
+        'hour' => 9,
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('admin.dashboard'))
+        ->assertSuccessful()
+        ->assertSee('Automation schedule')
+        ->assertSee('Site audit')
+        ->assertSee('Content queue')
+        ->assertSee('Scheduled website');
 });
 
 it('keeps forms and submissions inside the website workspace', function (): void {
@@ -49,7 +71,7 @@ it('keeps forms and submissions inside the website workspace', function (): void
         ->assertSee('data-tab="content"', false)
         ->assertSee('data-tab-panel="content"', false)
         ->assertSee('Connect GitHub')
-        ->assertDontSee('Manual content requests')
+        ->assertSee('Manual content requests')
         ->assertSee('>Forms</button>', false)
         ->assertSee('role="tablist"', false)
         ->assertSee('data-tab-panel="health"', false)

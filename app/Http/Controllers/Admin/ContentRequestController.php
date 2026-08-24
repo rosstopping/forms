@@ -23,7 +23,7 @@ class ContentRequestController extends Controller
             'created_by' => $request->user()->id,
         ]);
 
-        if ($request->user()->isAdmin() && config('forms.pixel_ui_enabled') && $website->pixel_enabled) {
+        if (config('forms.pixel_ui_enabled') && $website->pixel_enabled) {
             GenerateContentRequestPixelOptimisations::dispatch($contentRequest, $request->user());
         }
 

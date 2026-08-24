@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class UserController extends Controller
@@ -86,5 +87,26 @@ class UserController extends Controller
         $user->update($data);
 
         return Redirect::route('admin.users.index')->with('status', 'User updated.');
+    }
+
+    public function destroy(Request $request, User $user): RedirectResponse
+    {
+        abort_unless($request->user()?->isAdmin(), 403);
+
+        if ($request->user()->is($user)) {
+            throw ValidationException::withMessages(['user' => 'You cannot delete your own account.']);
+        }
+
+        if ($user->websites()->exists()) {
+            throw ValidationException::withMessages(['user' => 'Reassign or delete this user’s websites before deleting their account.']);
+        }
+
+        if ($user->isAdmin() && User::query()->where('role', User::ROLE_ADMIN)->count() === 1) {
+            throw ValidationException::withMessages(['user' => 'The final administrator account cannot be deleted.']);
+        }
+
+        $user->delete();
+
+        return Redirect::route('admin.users.index')->with('status', 'User deleted.');
     }
 }

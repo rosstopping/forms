@@ -2,6 +2,9 @@
 
 @section('content')
 <div class="space-y-6">
+    @if ($errors->has('user'))
+        <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{{ $errors->first('user') }}</div>
+    @endif
     <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
             <h1 class="text-2xl font-semibold">Users</h1>
@@ -35,7 +38,18 @@
                             @if ($user->hasAdminManagedMembership())<span class="text-xs text-teal-700">(admin managed)</span>@endif
                         </td>
                         <td class="px-4 py-3 text-sm text-slate-500">{{ $user->created_at?->diffForHumans() }}</td>
-                        <td class="px-4 py-3 text-right"><a href="{{ route('admin.users.edit', $user) }}" class="text-sm font-medium text-slate-700 hover:text-slate-950">Edit</a></td>
+                        <td class="px-4 py-3 text-right">
+                            <div class="flex items-center justify-end gap-3">
+                                <a href="{{ route('admin.users.edit', $user) }}" class="text-sm font-medium text-slate-700 hover:text-slate-950">Edit</a>
+                                @unless (Auth::user()->is($user))
+                                    <form method="POST" action="{{ route('admin.users.destroy', $user) }}" onsubmit="return confirm('Delete this user? This cannot be undone.')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="text-sm font-medium text-red-700 hover:text-red-900">Delete</button>
+                                    </form>
+                                @endunless
+                            </div>
+                        </td>
                     </tr>
                 @empty
                     <tr>

@@ -202,7 +202,7 @@ class WebsiteController extends Controller
         $dataForSeoConfigured = filled(config('services.dataforseo.login')) && filled(config('services.dataforseo.password'));
         $outreachProspect = $user?->isAdmin() ? $websiteProspects->find($website) : null;
         $pixelInstallationSnippet = $pixelInstallation->for($website);
-        $pixelOptimisations = $user?->isAdmin()
+        $pixelOptimisations = $canUseGrowthFeatures
             ? $website->optimisations()
                 ->with(['currentVersion', 'page.report', 'contentRequest', 'deployments' => fn ($query) => $query->with(['version', 'performer'])->latest('performed_at')])
                 ->latest('updated_at')

@@ -43,12 +43,12 @@
         $hasRemediableFindings = collect($report->checks)->whereIn('status', ['warning', 'failed'])->isNotEmpty() || $report->pages->contains(fn ($page) => collect($page->checks)->whereIn('status', ['warning', 'failed'])->isNotEmpty());
         $pixelEligiblePages = $report->pages->filter(fn ($page) => collect($page->checks)->whereIn('status', ['warning', 'failed'])->whereIn('key', ['page_title', 'meta_description'])->isNotEmpty());
         $reviewablePixelOptimisations = $report->pages->flatMap->optimisations->whereIn('status', [\App\Enums\OptimisationStatus::Draft, \App\Enums\OptimisationStatus::Approved]);
-        $pixelRemediationAvailable = config('forms.pixel_ui_enabled') && $report->website->pixel_enabled && $pixelEligiblePages->isNotEmpty();
+        $pixelRemediationAvailable = $canUsePixel && $report->website->pixel_enabled && $pixelEligiblePages->isNotEmpty();
         $githubRemediationAvailable = $report->website->repository && Auth::user()?->githubAuthorization()->exists() && $hasRemediableFindings;
     @endphp
     @if ($canManageWebsite || $aiPrompt)
         <div class="grid gap-4 lg:grid-cols-2">
-        @if (Auth::user()?->isAdmin() && $canManageWebsite && $report->status === 'completed' && ($pixelRemediationAvailable || $githubRemediationAvailable))
+        @if ($canManageWebsite && $report->status === 'completed' && ($pixelRemediationAvailable || $githubRemediationAvailable))
             <section class="rounded-lg border border-teal-200 bg-teal-50 p-4 shadow-sm">
                 <p class="text-xs font-medium uppercase tracking-wide text-teal-700">Automated remediation</p>
                 <h2 class="mt-1 font-semibold text-teal-950">Prepare available fixes</h2>

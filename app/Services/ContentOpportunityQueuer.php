@@ -52,7 +52,7 @@ class ContentOpportunityQueuer
 
     private function dispatchPixelDraft(ContentRequest $request, User $user): void
     {
-        if ($user->isAdmin() && config('forms.pixel_ui_enabled') && $request->website->pixel_enabled) {
+        if (config('forms.pixel_ui_enabled') && $request->website->pixel_enabled) {
             GenerateContentRequestPixelOptimisations::dispatch($request, $user)->afterCommit();
         }
     }

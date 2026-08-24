@@ -6,9 +6,9 @@
         <div class="absolute -top-24 right-0 size-64 rounded-full bg-teal-400/15 blur-3xl" aria-hidden="true"></div>
         <div class="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
             <div>
-                <p class="font-mono text-xs font-medium uppercase tracking-widest text-teal-300">Website monitoring</p>
-                <h1 class="mt-2 text-white">Site health overview</h1>
-                <p class="mt-2 max-w-2xl text-base text-slate-300 sm:text-sm">Review audit findings across every website and open a site to investigate its search performance, content, forms, and submissions.</p>
+                <p class="font-mono text-xs font-medium uppercase tracking-widest text-teal-300">Workspace overview</p>
+                <h1 class="mt-2 text-white">What needs attention next</h1>
+                <p class="mt-2 max-w-2xl text-base text-slate-300 sm:text-sm">See website health, active work, and the next scheduled audits and content runs in one place.</p>
             </div>
             <a href="{{ route('admin.websites.index') }}" class="inline-flex shrink-0 items-center justify-center rounded-lg bg-teal-400 px-3 py-2 text-sm font-medium text-slate-950 hover:bg-teal-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-400">View websites</a>
         </div>
@@ -17,10 +17,42 @@
     <div class="@container">
         <dl class="grid grid-cols-2 gap-3 @2xl:grid-cols-4">
             <div class="rounded-xl border border-slate-200 bg-white p-5"><dt class="truncate text-sm font-medium text-slate-500">Websites</dt><dd class="mt-3 text-3xl font-semibold tabular-nums text-slate-950">{{ $websites->count() }}</dd><div class="mt-4 h-1 w-10 rounded-full bg-slate-300"></div></div>
-            <div class="rounded-xl border border-slate-200 bg-white p-5"><dt class="truncate text-sm font-medium text-slate-500">Healthy</dt><dd class="mt-3 text-3xl font-semibold tabular-nums text-emerald-700">{{ $healthyCount }}</dd><div class="mt-4 h-1 w-10 rounded-full bg-emerald-400"></div></div>
             <div class="rounded-xl border border-slate-200 bg-white p-5"><dt class="truncate text-sm font-medium text-slate-500">Needs attention</dt><dd class="mt-3 text-3xl font-semibold tabular-nums text-amber-700">{{ $needsAttentionCount }}</dd><div class="mt-4 h-1 w-10 rounded-full bg-amber-400"></div></div>
-            <div class="rounded-xl border border-slate-200 bg-white p-5"><dt class="truncate text-sm font-medium text-slate-500">Not yet audited</dt><dd class="mt-3 text-3xl font-semibold tabular-nums text-slate-700">{{ $notAuditedCount }}</dd><div class="mt-4 h-1 w-10 rounded-full bg-slate-300"></div></div>
+            <div class="rounded-xl border border-slate-200 bg-white p-5"><dt class="truncate text-sm font-medium text-slate-500">Pending content</dt><dd class="mt-3 text-3xl font-semibold tabular-nums text-violet-700">{{ $pendingContentCount }}</dd><div class="mt-4 h-1 w-10 rounded-full bg-violet-400"></div></div>
+            <div class="rounded-xl border border-slate-200 bg-white p-5"><dt class="truncate text-sm font-medium text-slate-500">Live Pixel changes</dt><dd class="mt-3 text-3xl font-semibold tabular-nums text-teal-700">{{ $livePixelChangesCount }}</dd><div class="mt-4 h-1 w-10 rounded-full bg-teal-400"></div></div>
         </dl>
+    </div>
+
+    <div class="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(20rem,0.65fr)]">
+        <section class="overflow-hidden rounded-xl border border-slate-200 bg-white" aria-labelledby="automation-schedule-heading">
+            <div class="border-b border-slate-200 p-5">
+                <p class="text-xs font-medium uppercase tracking-widest text-teal-700">Upcoming work</p>
+                <h2 id="automation-schedule-heading" class="mt-1 font-semibold text-slate-950">Automation schedule</h2>
+                <p class="mt-1 text-sm text-slate-600">The next enabled audit and content jobs, shown in {{ config('app.timezone') }}.</p>
+            </div>
+            <div class="divide-y divide-slate-100">
+                @forelse ($automationSchedule as $scheduledJob)
+                    <a href="{{ route('admin.websites.show', $scheduledJob['website']) }}" class="grid gap-2 p-4 hover:bg-teal-50/40 sm:grid-cols-[9rem_minmax(0,1fr)_auto] sm:items-center">
+                        <span class="text-sm font-semibold text-slate-950">{{ $scheduledJob['type'] }}</span>
+                        <span class="min-w-0"><span class="block truncate text-sm font-medium text-slate-800">{{ $scheduledJob['website']->name }}</span><span class="block truncate text-xs text-slate-500">{{ $scheduledJob['detail'] }}</span></span>
+                        <time datetime="{{ $scheduledJob['next_run_at']->toIso8601String() }}" class="text-sm font-medium tabular-nums text-teal-700 sm:text-right">{{ $scheduledJob['next_run_at']->format('D j M, H:i') }}<span class="block text-xs font-normal text-slate-500">{{ $scheduledJob['next_run_at']->diffForHumans() }}</span></time>
+                    </a>
+                @empty
+                    <p class="p-5 text-sm text-slate-500">No site audits or content plans are currently scheduled.</p>
+                @endforelse
+            </div>
+        </section>
+
+        <section class="rounded-xl border border-slate-200 bg-white p-5" aria-labelledby="workspace-stats-heading">
+            <p class="text-xs font-medium uppercase tracking-widest text-slate-500">Activity</p>
+            <h2 id="workspace-stats-heading" class="mt-1 font-semibold text-slate-950">Workspace totals</h2>
+            <dl class="mt-5 space-y-4">
+                <div class="flex items-center justify-between gap-4"><dt class="text-sm text-slate-600">Healthy websites</dt><dd class="text-lg font-semibold tabular-nums text-emerald-700">{{ $healthyCount }}</dd></div>
+                <div class="flex items-center justify-between gap-4"><dt class="text-sm text-slate-600">Not yet audited</dt><dd class="text-lg font-semibold tabular-nums text-slate-900">{{ $notAuditedCount }}</dd></div>
+                <div class="flex items-center justify-between gap-4"><dt class="text-sm text-slate-600">Form submissions</dt><dd class="text-lg font-semibold tabular-nums text-slate-900">{{ $submissionsCount }}</dd></div>
+                <div class="flex items-center justify-between gap-4"><dt class="text-sm text-slate-600">Scheduled jobs shown</dt><dd class="text-lg font-semibold tabular-nums text-slate-900">{{ $automationSchedule->count() }}</dd></div>
+            </dl>
+        </section>
     </div>
 
     <section class="overflow-hidden rounded-xl border border-slate-200 bg-white" aria-labelledby="websites-heading">

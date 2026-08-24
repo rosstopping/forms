@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Controllers\Controller;
 use App\Enums\OptimisationType;
+use App\Http\Controllers\Controller;
 use App\Models\Website;
 use App\Models\WebsiteHealthReport;
 use App\Models\WebsiteHealthReportPage;
+use App\Support\MembershipPlan;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -34,6 +35,7 @@ class WebsiteHealthReportPageController extends Controller
             'page' => $websiteHealthReportPage,
             'optimisationTypes' => OptimisationType::cases(),
             'canManageWebsite' => $website->isManageableBy($request->user()),
+            'canUsePixel' => config('forms.pixel_ui_enabled') && ($request->user()?->isAdmin() || $website->owner?->hasMembershipFeature(MembershipPlan::FEATURE_GROWTH)),
         ]);
     }
 }
