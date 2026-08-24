@@ -19,6 +19,39 @@
         </div>
     </section>
 
+    <section class="bg-ink py-16 text-paper sm:py-20">
+        <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
+            <div>
+                <p class="font-mono text-sm uppercase tracking-wide text-apricot">See Sitewell in action</p>
+                <h2 class="mt-4 max-w-[24ch] font-display text-4xl font-semibold tracking-tight text-balance sm:text-5xl">A closer look at calmer website care</h2>
+                <p class="mt-5 max-w-[48ch] text-pretty text-lg text-paper/65 sm:text-base">Watch how Sitewell brings your website health, leads, and next growth opportunities into one clear place.</p>
+            </div>
+
+            <div class="mt-10 overflow-hidden rounded-[min(1vw,var(--radius-xl))] bg-paper shadow-2xl shadow-black/30 ring-1 ring-white/15 sm:mt-12">
+                <iframe
+                    src="https://www.loom.com/embed/d406218f4a2843f7a7d8abbf804f2ba6"
+                    title="See how Sitewell looks after your website"
+                    class="aspect-[2000/1299] w-full bg-black"
+                    loading="lazy"
+                    allow="fullscreen"
+                    allowfullscreen
+                ></iframe>
+
+                <a href="{{ route('marketing.contact') }}" class="group flex flex-col gap-6 border-t border-ink/10 bg-paper p-6 text-ink hover:bg-lichen focus-visible:outline-offset-4 sm:flex-row sm:items-center sm:justify-between sm:p-8">
+                    <div class="min-w-0">
+                        <p class="font-mono text-sm uppercase tracking-wide text-garden">Your website could be next</p>
+                        <p class="mt-3 max-w-[40ch] font-display text-2xl font-semibold tracking-tight text-balance sm:text-3xl">Let’s make your website work harder for your business</p>
+                        <p class="mt-3 max-w-[56ch] text-pretty text-base text-ink/65 sm:text-sm">Tell us what you need and we will help you find the right next step.</p>
+                    </div>
+                    <div class="flex shrink-0 items-center gap-3 font-medium">
+                        <p class="text-base underline decoration-ink/20 underline-offset-4 group-hover:decoration-ink sm:text-sm">Talk to us</p>
+                        <span class="grid size-12 shrink-0 place-items-center rounded-full bg-garden text-paper group-hover:bg-moss" aria-hidden="true">→</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </section>
+
     <section class="border-y border-ink/10">
         <div class="mx-auto grid max-w-7xl px-5 sm:grid-cols-2 sm:px-8 lg:grid-cols-4 lg:px-10">
             @foreach ([['Free website included', 'Need a new website? It is included with every plan.'], ['Healthier website', 'Health and SEO issues spotted before they cost you business.'], ['Every lead captured', 'No enquiry missed, every time.'], ['Clear growth opportunities', 'Striking-distance keywords and practical content recommendations.']] as [$title, $copy])

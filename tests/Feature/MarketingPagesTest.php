@@ -26,6 +26,15 @@ it('shows journal articles and returns not found for unknown slugs', function ()
     $this->get(route('marketing.article', 'missing-article'))->assertNotFound();
 });
 
+it('features the product video and contact call to action on the home page', function (): void {
+    $this->get(route('marketing.home'))
+        ->assertSuccessful()
+        ->assertSee('https://www.loom.com/embed/d406218f4a2843f7a7d8abbf804f2ba6')
+        ->assertSee('A closer look at calmer website care')
+        ->assertSee('Let’s make your website work harder for your business')
+        ->assertSee('href="'.route('marketing.contact').'"', false);
+});
+
 it('markets customer-facing SEO features and a free website on every plan', function (): void {
     $this->get(route('marketing.features'))
         ->assertSuccessful()
