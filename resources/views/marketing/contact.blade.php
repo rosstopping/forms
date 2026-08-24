@@ -10,6 +10,14 @@
                 <p class="font-mono text-sm uppercase tracking-wide text-garden">Get started</p>
                 <h1 class="mt-5 max-w-[20ch] font-display text-5xl font-semibold tracking-tight text-balance sm:text-6xl">A better website starts here</h1>
                 <p class="mt-6 max-w-[48ch] text-pretty text-lg text-ink/65 sm:text-base">Tell us about your business and your website. We’ll come back with a practical plan to get it healthier, more dependable, and better at handling leads.</p>
+                <div class="mt-8 border-y border-ink/15 py-5">
+                    <p class="font-mono text-sm uppercase tracking-wide text-garden">Prefer to talk?</p>
+                    <a href="tel:+441302985828" class="group mt-3 inline-flex items-center gap-3 focus-visible:outline-offset-4">
+                        <p class="font-display text-3xl font-semibold tracking-tight tabular-nums underline decoration-ink/20 underline-offset-8 group-hover:decoration-ink sm:text-4xl">01302 985 828</p>
+                        <span class="text-garden" aria-hidden="true">→</span>
+                    </a>
+                    <p class="mt-3 text-pretty text-base text-ink/55 sm:text-sm">Call our UK team for a straightforward conversation about your website.</p>
+                </div>
                 <dl class="mt-12 grid gap-8">
                     @foreach ([['01', 'We understand your website', 'Your goals, current website, forms, and the things that need attention.'], ['02', 'We set up the essentials', 'Health checks, lead handling, reports, and the right connections for your plan.'], ['03', 'You stay in control', 'A clear workspace, practical updates, and support when you need it.']] as [$number, $title, $copy])
                         <div class="grid grid-cols-[3rem_1fr] gap-4 border-t border-ink/15 pt-5"><dt class="font-mono text-base text-garden sm:text-sm">{{ $number }}</dt><dd><p class="text-base font-medium sm:text-sm">{{ $title }}</p><p class="mt-2 text-pretty text-base text-ink/55 sm:text-sm">{{ $copy }}</p></dd></div>

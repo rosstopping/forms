@@ -39,8 +39,16 @@ it('features the local UK phone call to action on the home page', function (): v
     $this->get(route('marketing.home'))
         ->assertSuccessful()
         ->assertSee('We’re a local, UK-based company')
-        ->assertSee('07512 091084')
-        ->assertSee('href="tel:+447512091084"', false);
+        ->assertSee('01302 985 828')
+        ->assertSee('href="tel:+441302985828"', false);
+});
+
+it('offers the UK phone number on the contact page', function (): void {
+    $this->get(route('marketing.contact'))
+        ->assertSuccessful()
+        ->assertSee('Prefer to talk?')
+        ->assertSee('01302 985 828')
+        ->assertSee('href="tel:+441302985828"', false);
 });
 
 it('markets customer-facing SEO features and a free website on every plan', function (): void {
