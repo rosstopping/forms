@@ -135,6 +135,8 @@ Route::middleware(['web', 'signed', 'throttle:20,1'])->group(function () {
 Route::middleware(['web', 'signed', 'throttle:20,1'])->group(function () {
     Route::get('/website-health-reports/{websiteHealthReport}', PublicWebsiteHealthReportController::class)
         ->name('website-health-reports.show');
+    Route::get('/admin/websites/{website}/content-suggestions/queue', ContentSuggestionController::class)
+        ->name('admin.content-suggestions.store');
     Route::get('/form-submissions/{formSubmission}/spam', [FormSubmissionSpamController::class, 'show'])
         ->name('form-submissions.spam.confirm');
     Route::post('/form-submissions/{formSubmission}/spam', [FormSubmissionSpamController::class, 'store'])
@@ -213,7 +215,6 @@ Route::middleware(['web', 'auth'])->prefix('admin')->name('admin.')->group(funct
     Route::put('websites/{website}/business-profile/reviews/{review}', [BusinessProfileReviewController::class, 'update'])->middleware('membership:complete')->name('business-profile.reviews.update');
     Route::put('websites/{website}/content-plan', [ContentPlanController::class, 'update'])->middleware('membership:growth')->name('content-plans.update');
     Route::post('websites/{website}/content-generations', [ContentPlanController::class, 'generate'])->middleware('membership:growth')->name('content-generations.store');
-    Route::get('websites/{website}/content-suggestions/queue', ContentSuggestionController::class)->middleware(['signed', 'membership:growth'])->name('content-suggestions.store');
     Route::post('websites/{website}/content-generations/{contentGeneration}/sync', [ContentPlanController::class, 'syncGeneration'])->middleware('membership:growth')->name('content-generations.sync');
     Route::delete('websites/{website}/content-generations/{contentGeneration}', [ContentPlanController::class, 'cancelGeneration'])->middleware('membership:growth')->name('content-generations.destroy');
     Route::post('websites/{website}/content-requests', [ContentRequestController::class, 'store'])->middleware('membership:growth')->name('content-requests.store');

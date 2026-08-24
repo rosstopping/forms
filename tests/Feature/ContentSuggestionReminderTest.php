@@ -54,27 +54,29 @@ test('a signed email suggestion link adds the opportunity to the content queue',
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     $website = Website::factory()->create();
     WebsiteRepository::factory()->for($website)->create();
+    ContentPlan::factory()->for($website)->for($admin, 'creator')->create();
     $opportunity = SearchOpportunity::factory()->for($website)->create([
         'status' => SearchOpportunity::STATUS_OPEN,
         'query' => 'roof repairs doncaster',
     ]);
     $url = URL::temporarySignedRoute('admin.content-suggestions.store', now()->addHour(), [$website, 'type' => 'search', 'opportunity' => $opportunity->id]);
 
-    $this->actingAs($admin)->get($url)
-        ->assertRedirect(route('admin.websites.show', $website))
-        ->assertSessionHas('status', 'Suggestion added to the next content run.');
+    $this->get($url)
+        ->assertSuccessful()
+        ->assertSee('Added to the content queue')
+        ->assertSee($website->name);
 
     expect($opportunity->fresh()->status)->toBe(SearchOpportunity::STATUS_QUEUED)
-        ->and($website->contentRequests()->sole()->instructions)->toContain('roof repairs doncaster');
+        ->and($website->contentRequests()->sole()->instructions)->toContain('roof repairs doncaster')
+        ->and($website->contentRequests()->sole()->created_by)->toBe($admin->id);
 });
 
 test('an unsigned suggestion link is rejected', function () {
-    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     $website = Website::factory()->create();
     WebsiteRepository::factory()->for($website)->create();
     $opportunity = SearchOpportunity::factory()->for($website)->create();
 
-    $this->actingAs($admin)->get(route('admin.content-suggestions.store', [$website, 'type' => 'search', 'opportunity' => $opportunity->id]))->assertForbidden();
+    $this->get(route('admin.content-suggestions.store', [$website, 'type' => 'search', 'opportunity' => $opportunity->id]))->assertForbidden();
 
     expect($opportunity->fresh()->status)->toBe(SearchOpportunity::STATUS_OPEN);
 });

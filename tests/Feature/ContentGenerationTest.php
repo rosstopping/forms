@@ -544,8 +544,9 @@ test('content synchronization stores the pull request resolved from the automati
         ->and($generation->fresh()->pull_request_url)->not->toContain('999999');
 });
 
-test('content completion email explains the consumed todos and is only queued once', function () {
+test('content completion email explains the consumed todos and is only queued once to admins', function () {
     Mail::fake();
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN, 'email' => 'admin@example.com']);
     $owner = User::factory()->create(['email' => 'owner@example.com']);
     $website = Website::factory()->for($owner, 'owner')->create();
     $plan = ContentPlan::factory()->for($website)->create();
@@ -561,7 +562,8 @@ test('content completion email explains the consumed todos and is only queued on
     $notifier->ready($generation);
 
     Mail::assertQueued(ContentGenerationReady::class, 1);
-    Mail::assertQueued(ContentGenerationReady::class, fn (ContentGenerationReady $mail): bool => $mail->hasTo('owner@example.com'));
+    Mail::assertQueued(ContentGenerationReady::class, fn (ContentGenerationReady $mail): bool => $mail->hasTo($admin->email));
+    Mail::assertNotQueued(ContentGenerationReady::class, fn (ContentGenerationReady $mail): bool => $mail->hasTo($owner->email));
     expect($generation->fresh()->notification_emailed_at)->not->toBeNull();
     (new ContentGenerationReady($generation->fresh()->load(['plan.website', 'contentRequests.searchOpportunity', 'contentRequests.seoOpportunity'])))
         ->assertSeeInHtml('Create a guide to luxury train journeys.')

@@ -4,12 +4,11 @@ namespace App\Services;
 
 use App\Mail\ContentGenerationReady;
 use App\Models\ContentGeneration;
+use App\Models\User;
 use Illuminate\Support\Facades\Mail;
 
 class ContentGenerationNotifier
 {
-    public function __construct(protected WebsiteMailRecipients $recipients) {}
-
     public function ready(ContentGeneration $generation): void
     {
         $generation->refresh();
@@ -17,8 +16,8 @@ class ContentGenerationNotifier
             return;
         }
 
-        $generation->loadMissing(['plan.website.owner', 'contentRequests.searchOpportunity', 'contentRequests.seoOpportunity']);
-        foreach ($this->recipients->for($generation->plan->website) as $recipient) {
+        $generation->loadMissing(['plan.website', 'contentRequests.searchOpportunity', 'contentRequests.seoOpportunity']);
+        foreach (User::query()->where('role', User::ROLE_ADMIN)->pluck('email') as $recipient) {
             Mail::to($recipient)->send(new ContentGenerationReady($generation));
         }
 
