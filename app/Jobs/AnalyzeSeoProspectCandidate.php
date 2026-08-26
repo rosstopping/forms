@@ -36,11 +36,17 @@ class AnalyzeSeoProspectCandidate implements ShouldBeUnique, ShouldQueue
     public function handle(SeoProspectCandidateAnalyzer $analyzer, SeoOpportunityScoringService $scoringService): void
     {
         $this->candidate->update(['qualification_status' => 'analyzing', 'analysis_error' => null]);
-        $this->candidate->update([
-            ...$analyzer->analyze($this->candidate),
-            'analysis_error' => null,
-            'analyzed_at' => now(),
-        ]);
+        $reusableAnalysis = SeoProspectCandidate::query()
+            ->where('domain', $this->candidate->domain)
+            ->whereKeyNot($this->candidate->id)
+            ->whereIn('qualification_status', ['suitable', 'too_large', 'unsuitable'])
+            ->where('analyzed_at', '>=', now()->subDays(30))
+            ->latest('analyzed_at')
+            ->first();
+        $analysis = $reusableAnalysis
+            ? $reusableAnalysis->only(['page_count', 'audit_score', 'audit_findings', 'contact_details', 'migration_difficulty', 'migration_difficulty_reason', 'observations', 'qualification_status'])
+            : $analyzer->analyze($this->candidate);
+        $this->candidate->update([...$analysis, 'analysis_error' => null, 'analyzed_at' => now()]);
         $this->candidate->refresh()->load(['rankings', 'search']);
         $this->candidate->update($scoringService->score($this->candidate));
         $this->updateSearchProgress();
@@ -62,11 +68,11 @@ class AnalyzeSeoProspectCandidate implements ShouldBeUnique, ShouldQueue
 
     private function updateSearchProgress(): void
     {
-        DB::transaction(function (): void {
+        $automaticSearch = DB::transaction(function (): ?SeoProspectSearch {
             $search = SeoProspectSearch::query()->lockForUpdate()->find($this->candidate->seo_prospect_search_id);
 
             if (! $search) {
-                return;
+                return null;
             }
 
             $pending = $search->candidates()->whereIn('qualification_status', ['pending_analysis', 'analyzing'])->exists();
@@ -76,6 +82,24 @@ class AnalyzeSeoProspectCandidate implements ShouldBeUnique, ShouldQueue
                 'suitable_count' => $search->candidates()->where('qualification_status', 'suitable')->count(),
                 'completed_at' => $pending ? $search->completed_at : now(),
             ]);
+
+            if (! $pending && $search->automated && $search->automatic_import_dispatched_at === null) {
+                $search->update(['automatic_import_dispatched_at' => now()]);
+
+                return $search;
+            }
+
+            return null;
         });
+
+        if ($automaticSearch) {
+            try {
+                ImportAutomaticSeoProspects::dispatch($automaticSearch);
+            } catch (Throwable $exception) {
+                $automaticSearch->update(['automatic_import_dispatched_at' => null]);
+
+                throw $exception;
+            }
+        }
     }
 }

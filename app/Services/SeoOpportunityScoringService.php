@@ -18,7 +18,7 @@ class SeoOpportunityScoringService
             ];
         }
 
-        $candidate->loadMissing(['rankings', 'search']);
+        $candidate->loadMissing(['rankings', 'search.industryProfile']);
         $ranking = $this->rankingScore($candidate);
         $audit = $this->auditScore($candidate);
         $siteFit = $this->siteFitScore($candidate);
@@ -28,11 +28,59 @@ class SeoOpportunityScoringService
         return [
             'opportunity_score' => collect($breakdown)->sum('score'),
             'score_breakdown' => $breakdown,
+            ...$this->commercialScore($candidate),
             'observations' => [
                 ...($candidate->observations ?? []),
                 'outreach' => $this->outreachObservations($candidate),
             ],
         ];
+    }
+
+    /** @return array{commercial_opportunity_score: int|null, commercial_score_breakdown: array<string, mixed>|null} */
+    private function commercialScore(SeoProspectCandidate $candidate): array
+    {
+        $profile = $candidate->search->industryProfile;
+
+        if (! $profile) {
+            return ['commercial_opportunity_score' => null, 'commercial_score_breakdown' => null];
+        }
+
+        $bestPosition = $this->commercialOpportunityRanking($candidate)?->position ?? 0;
+        $ranking = match (true) {
+            $bestPosition >= 8 && $bestPosition <= 30 => 40,
+            $bestPosition >= 31 && $bestPosition <= 50 => 25,
+            $bestPosition >= 1 && $bestPosition <= 7 => 8,
+            default => 0,
+        };
+        $customerValue = match ($profile->customer_value_band) {
+            'very_high' => 25,
+            'high' => 20,
+            'medium' => 12,
+            default => 6,
+        };
+        $siteManageability = match (true) {
+            $candidate->page_count <= 0 => 0,
+            $candidate->page_count <= 10 => 20,
+            $candidate->page_count <= 20 => 15,
+            $candidate->page_count <= 30 => 10,
+            default => max(0, 10 - (int) ceil(($candidate->page_count - 30) / 5)),
+        };
+        $commercialIntent = $candidate->rankings->contains(fn (SeoProspectRanking $ranking): bool => collect($profile->search_keywords)->contains(fn (string $keyword): bool => str($ranking->keyword)->lower()->startsWith((string) str($keyword)->lower()))) ? 15 : 8;
+        $breakdown = [
+            'ranking_opportunity' => ['score' => $ranking, 'maximum' => 40, 'explanation' => $bestPosition > 0 ? "Best stored organic position: {$bestPosition}." : 'No stored ranking position.'],
+            'customer_value' => ['score' => $customerValue, 'maximum' => 25, 'explanation' => 'Estimated customer value £'.number_format($profile->estimated_customer_value).' ('.str($profile->customer_value_band)->replace('_', ' ').').'],
+            'site_manageability' => ['score' => $siteManageability, 'maximum' => 20, 'explanation' => "{$candidate->page_count} indexable pages."],
+            'commercial_intent' => ['score' => $commercialIntent, 'maximum' => 15, 'explanation' => 'Ranking evidence came from the profile’s curated local commercial searches.'],
+        ];
+
+        return ['commercial_opportunity_score' => collect($breakdown)->sum('score'), 'commercial_score_breakdown' => $breakdown];
+    }
+
+    private function commercialOpportunityRanking(SeoProspectCandidate $candidate): ?SeoProspectRanking
+    {
+        return $candidate->rankings->first(fn (SeoProspectRanking $ranking): bool => $ranking->position >= 8 && $ranking->position <= 30)
+            ?? $candidate->rankings->first(fn (SeoProspectRanking $ranking): bool => $ranking->position >= 31 && $ranking->position <= 50)
+            ?? $candidate->rankings->sortBy('position')->first();
     }
 
     /** @return array{score: int, maximum: int, explanation: string, evidence: array<int, array<string, mixed>>} */

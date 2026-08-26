@@ -38,18 +38,28 @@ class SeoProspectImporter
                 if (! $prospect) {
                     $prospect = Prospect::query()->create([
                         'user_id' => $search->user_id,
+                        'prospecting_industry_profile_id' => $search->prospecting_industry_profile_id,
+                        'prospecting_location_id' => $search->prospecting_location_id,
                         'business_name' => $candidate->business_name ?: $candidate->domain,
                         'email' => data_get($candidate->contact_details, 'emails.0.value'),
                         'website_url' => $candidate->website_url,
                         'status' => 'researched',
                         'analysis_status' => 'pending',
                         'opportunity_score' => $candidate->opportunity_score,
+                        'commercial_opportunity_score' => $candidate->commercial_opportunity_score,
+                        'prospecting_context' => $this->prospectingContext($candidate, $search),
                         'contact_details' => $candidate->contact_details,
                     ]);
                     $createdProspects->push($prospect);
                 }
 
                 $candidate->update(['prospect_id' => $prospect->id]);
+                $prospect->update([
+                    'prospecting_industry_profile_id' => $prospect->prospecting_industry_profile_id ?: $search->prospecting_industry_profile_id,
+                    'prospecting_location_id' => $prospect->prospecting_location_id ?: $search->prospecting_location_id,
+                    'commercial_opportunity_score' => max((int) $prospect->commercial_opportunity_score, (int) $candidate->commercial_opportunity_score) ?: null,
+                    'prospecting_context' => $prospect->prospecting_context ?: $this->prospectingContext($candidate, $search),
+                ]);
                 $this->recordEvidence($prospect, $candidate, $search, $user);
             }
 
@@ -84,10 +94,38 @@ class SeoProspectImporter
                 'seo_prospect_candidate_id' => $candidate->id,
                 'domain' => $candidate->domain,
                 'opportunity_score' => $candidate->opportunity_score,
+                'commercial_opportunity_score' => $candidate->commercial_opportunity_score,
+                'commercial_score_breakdown' => $candidate->commercial_score_breakdown,
+                'industry_profile_id' => $search->prospecting_industry_profile_id,
+                'prospecting_location_id' => $search->prospecting_location_id,
+                'industry' => $search->industry,
+                'location' => $search->location,
                 'score_breakdown' => $candidate->score_breakdown,
                 'observations' => data_get($candidate->observations, 'outreach', []),
                 'rankings' => $candidate->rankings->map->only(['id', 'keyword', 'position', 'ranking_url', 'checked_at'])->values()->all(),
             ],
         ]);
+    }
+
+    /** @return array<string, mixed> */
+    private function prospectingContext(SeoProspectCandidate $candidate, SeoProspectSearch $search): array
+    {
+        $candidate->loadMissing('rankings');
+        $bestRanking = $candidate->rankings->first(fn ($ranking): bool => $ranking->position >= 8 && $ranking->position <= 30)
+            ?? $candidate->rankings->first(fn ($ranking): bool => $ranking->position >= 31 && $ranking->position <= 50)
+            ?? $candidate->rankings->sortBy('position')->first();
+
+        return [
+            'seo_prospect_search_id' => $search->id,
+            'seo_prospect_candidate_id' => $candidate->id,
+            'industry' => $search->industry,
+            'location' => $search->location,
+            'search_query' => $bestRanking?->keyword,
+            'google_position' => $bestRanking?->position,
+            'website_url' => $candidate->website_url,
+            'site_size' => $candidate->page_count,
+            'commercial_opportunity_score' => $candidate->commercial_opportunity_score,
+            'why_good_prospect' => collect($candidate->commercial_score_breakdown)->pluck('explanation')->filter()->values()->all(),
+        ];
     }
 }

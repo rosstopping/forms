@@ -8,43 +8,33 @@
             <h1 class="text-3xl font-semibold tracking-tight">Find prospects</h1>
             <p class="mt-1 text-sm text-slate-600">Find businesses, review the evidence, then choose which prospects enter Outreach.</p>
         </div>
-        <a href="{{ route('admin.prospects.index') }}" class="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50">Back to Outreach</a>
+        <div class="flex flex-wrap gap-2"><a href="{{ route('admin.prospecting-industry-profiles.index') }}" class="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50">Automation strategy</a><a href="{{ route('admin.prospects.index') }}" class="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50">Back to Outreach</a></div>
     </div>
 
     @if (session('status'))
         <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{{ session('status') }}</div>
     @endif
 
-    <nav class="flex w-fit gap-1 rounded-lg border border-slate-200 bg-slate-100 p-1" aria-label="Discovery modes">
-        <a href="#local-businesses" class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm">Local Businesses</a>
-        <a href="#seo-opportunities" class="rounded-md px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-white hover:text-slate-900">SEO Opportunities</a>
-    </nav>
+    <div class="space-y-6" data-tabs data-tabs-key="prospect-discovery" data-tabs-hash data-default-tab="{{ old('industry') ? 'seo-opportunities' : 'automatic-prospecting' }}">
+    <div class="flex w-fit gap-1 rounded-lg border border-slate-200 bg-slate-100 p-1" role="tablist" aria-label="Discovery modes">
+        <button type="button" id="prospect-discovery-tab-automatic" class="rounded-md px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-white hover:text-slate-900 aria-selected:bg-white aria-selected:text-slate-900 aria-selected:shadow-sm" role="tab" aria-selected="true" aria-controls="automatic-prospecting" tabindex="0" data-tab="automatic-prospecting">Automatic</button>
+        <button type="button" id="prospect-discovery-tab-seo" class="rounded-md px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-white hover:text-slate-900 aria-selected:bg-white aria-selected:text-slate-900 aria-selected:shadow-sm" role="tab" aria-selected="false" aria-controls="seo-opportunities" tabindex="-1" data-tab="seo-opportunities">SEO Opportunities</button>
+    </div>
 
-    <section id="local-businesses" class="space-y-4 scroll-mt-6">
-        <div><h2 class="text-xl font-semibold text-slate-950">Local Businesses</h2><p class="mt-1 text-sm text-slate-600">Find nearby businesses using public OpenStreetMap listings.</p></div>
-        <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            <form method="POST" action="{{ route('admin.prospect-discoveries.store') }}" class="grid gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
+    <section id="automatic-prospecting" class="space-y-4 scroll-mt-6" role="tabpanel" aria-labelledby="prospect-discovery-tab-automatic" data-tab-panel="automatic-prospecting">
+        <div><h2 class="text-xl font-semibold text-slate-950">Automatic prospecting</h2><p class="mt-1 text-sm text-slate-600">Work through enabled high-value industries and locations in priority order using the existing SEO discovery pipeline.</p></div>
+        <div class="rounded-lg border border-teal-200 bg-teal-50/60 p-5 shadow-sm">
+            <form method="POST" action="{{ route('admin.prospect-discoveries.automatic') }}" class="grid gap-4 md:grid-cols-[minmax(0,1fr)_12rem_auto] md:items-end">
                 @csrf
-                <label class="grid gap-1.5 text-sm font-medium text-slate-700">UK town, city or borough<input name="area" value="{{ old('area') }}" required placeholder="e.g. Bristol" class="rounded-lg border border-slate-300 px-3 py-2.5 text-sm"></label>
-                <label class="grid gap-1.5 text-sm font-medium text-slate-700">Business type<select name="business_type" required class="rounded-lg border border-slate-300 px-3 py-2.5 text-sm">@foreach ($businessTypes as $value => $label)<option value="{{ $value }}" @selected(old('business_type') === $value)>{{ $label }}</option>@endforeach</select></label>
-                <button class="rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">Search public listings</button>
+                <div><p class="text-sm font-semibold text-slate-950">Find the next commercial opportunities</p><p class="mt-1 text-sm leading-6 text-slate-600">Uses up to three strong local searches per industry/location pair. Combinations already run this month are skipped, recent domain analysis is reused, and qualifying prospects still require outreach approval.</p></div>
+                <label class="grid gap-1.5 text-sm font-medium text-slate-700">Keyword operation limit<input type="number" name="limit" value="{{ old('limit', 50) }}" min="1" max="200" required class="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm"><span class="text-xs font-normal text-slate-500">Maximum paid/cached SERP lookups.</span></label>
+                <button class="rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-800">Run automatic prospecting</button>
             </form>
-            @error('area')<p class="mt-2 text-sm text-rose-700">{{ $message }}</p>@enderror
-            @error('business_type')<p class="mt-2 text-sm text-rose-700">{{ $message }}</p>@enderror
-            <p class="mt-4 text-xs leading-5 text-slate-500">Searches are cached for seven days. Nothing is emailed or added to Outreach until you select and import it.</p>
+            @error('limit')<p class="mt-3 text-sm text-rose-700">{{ $message }}</p>@enderror
         </div>
-        <div class="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm"><div class="divide-y divide-slate-100">
-            @forelse ($discoveries as $discovery)
-                <a href="{{ route('admin.prospect-discoveries.show', $discovery) }}" class="grid gap-2 p-4 hover:bg-slate-50 md:grid-cols-[1fr_auto_auto] md:items-center"><div><p class="font-semibold text-slate-900">{{ $businessTypes[$discovery->business_type] ?? str($discovery->business_type)->headline() }} in {{ $discovery->area }}</p><p class="mt-1 text-sm text-slate-500">Started {{ $discovery->created_at->diffForHumans() }}</p></div><span class="text-sm text-slate-600">{{ $discovery->candidates_count }} candidates</span><span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">{{ str($discovery->status)->title() }}</span></a>
-            @empty
-                <div class="p-10 text-center"><p class="font-medium">No local searches yet</p><p class="mt-1 text-sm text-slate-500">Choose an area and category to find public business listings.</p></div>
-            @endforelse
-        </div></div>
-        {{ $discoveries->links() }}
-        <p class="text-xs text-slate-500">Data © <a href="https://www.openstreetmap.org/copyright" class="underline" target="_blank" rel="noreferrer">OpenStreetMap contributors</a>.</p>
     </section>
 
-    <section id="seo-opportunities" class="space-y-4 border-t border-slate-200 pt-6 scroll-mt-6">
+    <section id="seo-opportunities" class="space-y-4 scroll-mt-6" role="tabpanel" aria-labelledby="prospect-discovery-tab-seo" data-tab-panel="seo-opportunities" hidden>
         <div><h2 class="text-xl font-semibold text-slate-950">SEO Opportunities</h2><p class="mt-1 text-sm text-slate-600">Find websites already appearing in Google with room to improve for useful local searches.</p></div>
         <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <form method="POST" action="{{ route('admin.seo-prospect-searches.store') }}" class="grid gap-4" data-seo-cost-estimate-form data-cost-per-ten="{{ $serpLiveCostPerTen }}">
@@ -78,5 +68,6 @@
         </div></div>
         {{ $seoSearches->links() }}
     </section>
+    </div>
 </div>
 @endsection

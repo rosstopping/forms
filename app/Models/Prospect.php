@@ -19,11 +19,11 @@ class Prospect extends Model
 
     public const LEAD_TEMPERATURES = ['cold', 'warm', 'hot'];
 
-    protected $fillable = ['user_id', 'website_id', 'business_name', 'contact_name', 'email', 'website_url', 'status', 'lead_temperature', 'analysis_status', 'opportunity_score', 'findings', 'analysis_error', 'contact_details', 'analysed_at', 'outreach_subject', 'outreach_body', 'showcase_video_url', 'showcase_video_thumbnail_url', 'approved_at', 'approved_by', 'sent_at', 'scheduled_send_at', 'next_follow_up_at', 'replied_at', 'converted_at', 'suppressed_at', 'notes'];
+    protected $fillable = ['user_id', 'website_id', 'prospecting_industry_profile_id', 'prospecting_location_id', 'business_name', 'contact_name', 'email', 'website_url', 'status', 'lead_temperature', 'analysis_status', 'opportunity_score', 'commercial_opportunity_score', 'prospecting_context', 'findings', 'analysis_error', 'contact_details', 'analysed_at', 'outreach_subject', 'outreach_body', 'showcase_video_url', 'showcase_video_thumbnail_url', 'approved_at', 'approved_by', 'sent_at', 'scheduled_send_at', 'next_follow_up_at', 'replied_at', 'converted_at', 'suppressed_at', 'notes'];
 
     protected $attributes = ['lead_temperature' => 'cold'];
 
-    protected $casts = ['findings' => 'array', 'contact_details' => 'array', 'analysed_at' => 'datetime', 'approved_at' => 'datetime', 'sent_at' => 'datetime', 'scheduled_send_at' => 'datetime', 'next_follow_up_at' => 'datetime', 'replied_at' => 'datetime', 'converted_at' => 'datetime', 'suppressed_at' => 'datetime'];
+    protected $casts = ['prospecting_context' => 'array', 'findings' => 'array', 'contact_details' => 'array', 'analysed_at' => 'datetime', 'approved_at' => 'datetime', 'sent_at' => 'datetime', 'scheduled_send_at' => 'datetime', 'next_follow_up_at' => 'datetime', 'replied_at' => 'datetime', 'converted_at' => 'datetime', 'suppressed_at' => 'datetime'];
 
     protected static function booted(): void
     {
@@ -40,6 +40,16 @@ class Prospect extends Model
     public function website(): BelongsTo
     {
         return $this->belongsTo(Website::class);
+    }
+
+    public function industryProfile(): BelongsTo
+    {
+        return $this->belongsTo(ProspectingIndustryProfile::class, 'prospecting_industry_profile_id');
+    }
+
+    public function prospectingLocation(): BelongsTo
+    {
+        return $this->belongsTo(ProspectingLocation::class);
     }
 
     public function approver(): BelongsTo

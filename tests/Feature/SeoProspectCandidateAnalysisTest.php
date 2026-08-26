@@ -144,3 +144,29 @@ it('persists successful job analysis and completes search progress idempotently'
         ->and($search->refresh()->status)->toBe('analyzed')
         ->and($search->suitable_count)->toBe(1);
 });
+
+it('reuses a recent domain analysis while scoring fresh ranking evidence', function (): void {
+    $previous = SeoProspectCandidate::factory()->create([
+        'domain' => 'reused.example',
+        'page_count' => 7,
+        'audit_score' => 42,
+        'audit_findings' => [['key' => 'title', 'severity' => 'warning']],
+        'contact_details' => ['emails' => [['value' => 'hello@reused.example']]],
+        'migration_difficulty' => 'easy',
+        'migration_difficulty_reason' => 'Small brochure site.',
+        'observations' => ['page_count_band' => 'excellent'],
+        'qualification_status' => 'suitable',
+        'analyzed_at' => now()->subWeek(),
+    ]);
+    $search = SeoProspectSearch::factory()->create(['candidate_count' => 1, 'status' => 'analyzing']);
+    $candidate = SeoProspectCandidate::factory()->for($search, 'search')->create(['domain' => $previous->domain]);
+    $analyzer = Mockery::mock(SeoProspectCandidateAnalyzer::class);
+    $analyzer->shouldNotReceive('analyze');
+
+    (new AnalyzeSeoProspectCandidate($candidate))->handle($analyzer, app(SeoOpportunityScoringService::class));
+
+    expect($candidate->refresh()->page_count)->toBe(7)
+        ->and($candidate->audit_score)->toBe(42)
+        ->and(data_get($candidate->contact_details, 'emails.0.value'))->toBe('hello@reused.example')
+        ->and($candidate->qualification_status)->toBe('suitable');
+});

@@ -34,7 +34,7 @@ document.querySelectorAll('[data-tabs]').forEach((tabs) => {
     const storageKey = `selected-tab:${window.location.pathname}:${tabs.dataset.tabsKey || 'primary'}`;
     const availableTabs = tabButtons.map((button) => button.dataset.tab);
 
-    const selectTab = (tabName, focus = false) => {
+    const selectTab = (tabName, focus = false, updateHash = false) => {
         if (!availableTabs.includes(tabName)) {
             return;
         }
@@ -55,10 +55,14 @@ document.querySelectorAll('[data-tabs]').forEach((tabs) => {
         });
 
         window.sessionStorage.setItem(storageKey, tabName);
+
+        if (updateHash && tabs.hasAttribute('data-tabs-hash')) {
+            window.history.replaceState(null, '', `#${tabName}`);
+        }
     };
 
     tabButtons.forEach((button, index) => {
-        button.addEventListener('click', () => selectTab(button.dataset.tab));
+        button.addEventListener('click', () => selectTab(button.dataset.tab, false, true));
         button.addEventListener('keydown', (event) => {
             if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
                 return;
@@ -72,14 +76,15 @@ document.querySelectorAll('[data-tabs]').forEach((tabs) => {
                     ? tabButtons.length - 1
                     : (index + (event.key === 'ArrowRight' ? 1 : -1) + tabButtons.length) % tabButtons.length;
 
-            selectTab(tabButtons[nextIndex].dataset.tab, true);
+            selectTab(tabButtons[nextIndex].dataset.tab, true, true);
         });
     });
 
     const defaultTab = tabs.dataset.defaultTab;
     const storedTab = window.sessionStorage.getItem(storageKey);
+    const hashTab = tabs.hasAttribute('data-tabs-hash') ? window.location.hash.slice(1) : null;
 
-    selectTab(defaultTab !== availableTabs[0] ? defaultTab : storedTab || defaultTab);
+    selectTab(availableTabs.includes(hashTab) ? hashTab : (defaultTab !== availableTabs[0] ? defaultTab : storedTab || defaultTab));
 });
 
 const mobileNavigation = document.querySelector('[data-mobile-nav]');

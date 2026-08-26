@@ -21,15 +21,16 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 
-it('shows local business and SEO opportunity discovery on the same page', function () {
+it('shows automatic and SEO opportunity discovery while local businesses are hidden', function () {
     $user = User::factory()->create(['role' => User::ROLE_ADMIN]);
 
     $this->actingAs($user)->get(route('admin.prospect-discoveries.index'))
         ->assertSuccessful()
-        ->assertSee('Local Businesses')
-        ->assertSee('Search public listings')
+        ->assertSee('Automatic')
         ->assertSee('SEO Opportunities')
-        ->assertSee('Find ranking opportunities');
+        ->assertSee('Find ranking opportunities')
+        ->assertDontSee('Local Businesses')
+        ->assertDontSee('Search public listings');
 });
 
 it('queues an SEO opportunity search with editable keywords and default limits', function () {
