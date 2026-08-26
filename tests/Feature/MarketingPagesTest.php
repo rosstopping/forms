@@ -81,7 +81,9 @@ it('markets customer-facing SEO features and a free website on every plan', func
 
     $this->get(route('marketing.pricing'))
         ->assertSuccessful()
-        ->assertSee('Free website included with every plan')
+        ->assertSee('From £149/month · £0 upfront · No contract · Cancel anytime')
+        ->assertSee('Every plan includes your website build if you need one')
+        ->assertSee('There is no upfront cost or setup fee, no long-term contract, and no minimum commitment. You can cancel anytime.')
         ->assertSeeInOrder(['Essential', 'Free website included if you need one', 'Growth', 'Free website included if you need one', 'Complete', 'Free website included if you need one']);
 
     $this->get(route('marketing.contact'))
