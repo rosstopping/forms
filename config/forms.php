@@ -62,6 +62,9 @@ return [
             'order yours now',
             'buy now',
             'limited time offer',
+            'ftp access',
+            'full access to',
+            'download speed',
         ],
         'unsolicited_phrases' => [
             '1win',
@@ -73,6 +76,7 @@ return [
         ],
         'unsolicited_phrase_score' => (int) env('FORMS_SPAM_UNSOLICITED_PHRASE_SCORE', 3),
         'suspicious_company_values' => ['google'],
+        'suspicious_name_pattern' => '/^robert[a-z]{4,}$/i',
         'suspicious_phone_pattern' => '/^8\d{10}$/',
         'suspicious_identity_score' => (int) env('FORMS_SPAM_SUSPICIOUS_IDENTITY_SCORE', 3),
     ],

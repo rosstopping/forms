@@ -138,6 +138,20 @@ it('quarantines promotional submissions with a link and invalid email', function
     Http::assertNothingSent();
 });
 
+it('quarantines unsolicited music download promotions', function (): void {
+    $this->withHeader('Origin', 'https://music-promotion-spam.example')
+        ->post('/submit', [
+            '_form_name' => 'Enquiry',
+            'name' => 'Stephen',
+            'message' => "Hello,\nMP3 source for DJ's and music addicts. You get FTP access - https://scenedance.blogspot.com\nFull access to 276 TB music, labels, music videos, FLAC library, files are available every time - https://0daymusic.org\nNo ads - no waiting time - very fast download speed, ~400 daily 0DAY scene releases BEATPORT, traxsource...\nBest regards\nStephen",
+        ])
+        ->assertRedirectContains('/submitted');
+
+    expect(FormSubmission::query()->latest('id')->firstOrFail()->is_spam)->toBeTrue();
+    Mail::assertNothingSent();
+    Http::assertNothingSent();
+});
+
 it('does not flag a legitimate message containing one link', function (): void {
     $this->withHeader('Origin', 'https://legitimate-check.example')
         ->post('/submit', [
@@ -145,6 +159,20 @@ it('does not flag a legitimate message containing one link', function (): void {
             'name' => 'Ada Lovelace',
             'email' => 'ada@example.com',
             'message' => 'Could you quote for the project described at https://example.com/brief?',
+        ])
+        ->assertRedirectContains('/submitted');
+
+    expect(FormSubmission::query()->latest('id')->firstOrFail()->is_spam)->toBeFalse();
+});
+
+it('does not flag a Robert name with an ordinary phone number', function (): void {
+    $this->withHeader('Origin', 'https://legitimate-robert.example')
+        ->post('/submit', [
+            '_form_name' => 'Enquiry',
+            'full_name' => 'Robert Poole',
+            'email' => 'robert@example.com',
+            'phone' => '07700900123',
+            'message' => 'Please could you send me a quote?',
         ])
         ->assertRedirectContains('/submitted');
 
@@ -287,6 +315,12 @@ it('quarantines fingerprints found repeatedly in marked spam', function (array $
         'company' => 'google',
         'phone' => '81673542565',
         'message' => 'A short translated price enquiry.',
+    ]],
+    'generated Robert name and phone combination' => [[
+        'full_name' => 'RobertPooge',
+        'email' => 'henrydixon487@gmail.com',
+        'phone' => '86498646314',
+        'message' => 'Hi, roeddwn i eisiau gwybod eich pris.',
     ]],
     'unsolicited listing lure' => [[
         'name' => 'Directory checker',

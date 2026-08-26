@@ -81,11 +81,14 @@ class SpamDetector
 
     protected function hasSuspiciousIdentity(array $payload): bool
     {
+        $name = trim((string) (Arr::get($payload, 'name') ?? Arr::get($payload, 'full_name', '')));
         $company = Str::lower(trim((string) Arr::get($payload, 'company', '')));
         $phone = preg_replace('/\D+/', '', (string) (Arr::get($payload, 'phone') ?? Arr::get($payload, 'mobile', ''))) ?? '';
+        $hasSuspiciousPhone = preg_match(config('forms.spam.suspicious_phone_pattern', '/^$/'), $phone) === 1;
 
-        return in_array($company, config('forms.spam.suspicious_company_values', []), true)
-            && preg_match(config('forms.spam.suspicious_phone_pattern', '/^$/'), $phone) === 1;
+        return $hasSuspiciousPhone
+            && (in_array($company, config('forms.spam.suspicious_company_values', []), true)
+                || preg_match(config('forms.spam.suspicious_name_pattern', '/a^/'), $name) === 1);
     }
 
     protected function containsInvalidEmail(array $payload): bool
