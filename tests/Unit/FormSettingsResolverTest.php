@@ -1,32 +1,56 @@
 <?php
 
 use App\Models\Form;
+use App\Models\FormSubmission;
 use App\Models\Website;
 use App\Services\FormSettingsResolver;
 
 it('does not send email by default unless form recipients are configured', function (): void {
-	$resolver = new FormSettingsResolver();
-	$form = new Form(['name' => 'Contact']);
-	$form->setRelation('website', new Website(['name' => 'Example', 'email_enabled' => false, 'email_recipients' => []]));
+    $resolver = new FormSettingsResolver;
+    $form = new Form(['name' => 'Contact']);
+    $form->setRelation('website', new Website(['name' => 'Example', 'email_enabled' => false, 'email_recipients' => []]));
 
-	expect($resolver->resolveEmailEnabled($form))->toBeFalse();
-	expect($resolver->resolveEmailRecipients($form))->toBe([]);
+    expect($resolver->resolveEmailEnabled($form))->toBeFalse();
+    expect($resolver->resolveEmailRecipients($form))->toBe([]);
 });
 
 it('uses form-level email and webhook settings when configured', function (): void {
-	$resolver = new FormSettingsResolver();
-	$form = new Form([
-		'email_enabled_override' => true,
-		'email_recipients_override' => ['ops@example.com'],
-		'webhook_enabled_override' => true,
-		'webhook_url_override' => 'https://example.com/hook',
-		'webhook_secret_override' => 'secret',
-	]);
-	$form->setRelation('website', new Website(['name' => 'Example', 'email_enabled' => false, 'email_recipients' => []]));
+    $resolver = new FormSettingsResolver;
+    $form = new Form([
+        'email_enabled_override' => true,
+        'email_recipients_override' => ['ops@example.com'],
+        'webhook_enabled_override' => true,
+        'webhook_url_override' => 'https://example.com/hook',
+        'webhook_secret_override' => 'secret',
+    ]);
+    $form->setRelation('website', new Website(['name' => 'Example', 'email_enabled' => false, 'email_recipients' => []]));
 
-	expect($resolver->resolveEmailEnabled($form))->toBeTrue();
-	expect($resolver->resolveEmailRecipients($form))->toEqual(['ops@example.com']);
-	expect($resolver->resolveWebhookEnabled($form))->toBeTrue();
-	expect($resolver->resolveWebhookUrl($form))->toBe('https://example.com/hook');
-	expect($resolver->resolveWebhookSecret($form))->toBe('secret');
+    expect($resolver->resolveEmailEnabled($form))->toBeTrue();
+    expect($resolver->resolveEmailRecipients($form))->toEqual(['ops@example.com']);
+    expect($resolver->resolveWebhookEnabled($form))->toBeTrue();
+    expect($resolver->resolveWebhookUrl($form))->toBe('https://example.com/hook');
+    expect($resolver->resolveWebhookSecret($form))->toBe('secret');
+});
+
+it('replaces tags for any submitted form field', function (): void {
+    $resolver = new FormSettingsResolver;
+    $website = new Website(['name' => 'Example', 'autoresponder_delay_minutes' => 10]);
+    $form = new Form([
+        'name' => 'Quote request',
+        'autoresponder_subject_override' => 'Quote for {service_type}',
+        'autoresponder_body_override' => 'Hi {first_name}, you selected {Service Type} in {Preferred Areas}.',
+        'autoresponder_delay_minutes_override' => 25,
+    ]);
+    $form->setRelation('website', $website);
+    $submission = new FormSubmission([
+        'data' => [
+            'first_name' => 'Ada',
+            'Service Type' => 'Consulting',
+            'Preferred Areas' => ['London', 'Bristol'],
+        ],
+    ]);
+
+    expect($resolver->resolveAutoresponderSubject($form, $submission))->toBe('Quote for Consulting')
+        ->and($resolver->resolveAutoresponderBody($form, $submission))->toBe('Hi Ada, you selected Consulting in London, Bristol.')
+        ->and($resolver->resolveAutoresponderDelayMinutes($form))->toBe(25);
 });

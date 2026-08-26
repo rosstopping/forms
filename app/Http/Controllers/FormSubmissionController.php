@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreFormSubmissionRequest;
-use App\Mail\FormSubmissionAcknowledgement;
+use App\Jobs\SendFormSubmissionAcknowledgement;
 use App\Mail\FormSubmissionReceived;
 use App\Models\Form;
 use App\Models\FormSubmission;
@@ -204,19 +204,12 @@ class FormSubmissionController extends Controller
         $replyToEmail = $submission->replyToEmail();
 
         if ($replyToEmail && $this->formSettingsResolver->resolveAutoresponderEnabled($form)) {
-            try {
-                Mail::to($replyToEmail)->send(new FormSubmissionAcknowledgement(
-                    $submission,
-                    $this->formSettingsResolver->resolveAutoresponderSubject($form, $submission),
-                    $this->formSettingsResolver->resolveAutoresponderBody($form, $submission),
-                ));
-                $submission->update(['autoresponder_sent_at' => now()]);
-                $submission->recordActivity('autoresponder_sent', 'Automatic acknowledgement sent to the customer.');
-            } catch (\Throwable $e) {
-                $submission->update(['autoresponder_failed_at' => now(), 'autoresponder_error' => $e->getMessage()]);
-                $submission->recordActivity('autoresponder_failed', 'Automatic acknowledgement could not be sent.');
-                logger()->warning('Form autoresponder failed', ['error' => $e->getMessage()]);
-            }
+            SendFormSubmissionAcknowledgement::dispatch(
+                $submission,
+                $replyToEmail,
+                $this->formSettingsResolver->resolveAutoresponderSubject($form, $submission),
+                $this->formSettingsResolver->resolveAutoresponderBody($form, $submission),
+            )->delay(now()->addMinutes($this->formSettingsResolver->resolveAutoresponderDelayMinutes($form)));
         }
 
         if ($webhookEnabled) {

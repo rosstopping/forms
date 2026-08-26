@@ -31,13 +31,35 @@ class FormSettingsResolver
         return $this->replaceAutoresponderTokens($template, $form, $submission);
     }
 
+    public function resolveAutoresponderDelayMinutes(Form $form): int
+    {
+        return $form->autoresponder_delay_minutes_override
+            ?? $form->website->autoresponder_delay_minutes
+            ?? 0;
+    }
+
     private function replaceAutoresponderTokens(string $template, Form $form, FormSubmission $submission): string
     {
+        $websiteDomain = Str::contains($template, '{website_domain}')
+            ? $form->website->primaryDomain()?->domain ?? $form->website->name
+            : '';
+        $submissionTokens = collect($submission->data ?? [])->flatMap(function (mixed $value, string $key): array {
+            $replacement = is_array($value)
+                ? collect($value)->map(fn (mixed $item): string => (string) $item)->implode(', ')
+                : (string) $value;
+
+            return [
+                '{'.$key.'}' => $replacement,
+                '{'.Str::snake($key).'}' => $replacement,
+            ];
+        })->all();
+
         return strtr($template, [
+            ...$submissionTokens,
             '{name}' => $submission->contactName() ?? 'there',
             '{form_name}' => $form->name,
             '{website_name}' => $form->website->name,
-            '{website_domain}' => $form->website->primaryDomain()?->domain ?? $form->website->name,
+            '{website_domain}' => $websiteDomain,
             '{submission_id}' => (string) $submission->id,
         ]);
     }

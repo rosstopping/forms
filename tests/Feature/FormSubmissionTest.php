@@ -1,5 +1,6 @@
 <?php
 
+use App\Jobs\SendFormSubmissionAcknowledgement;
 use App\Mail\FormSubmissionAcknowledgement;
 use App\Mail\FormSubmissionReceived;
 use App\Models\Form;
@@ -7,10 +8,12 @@ use App\Models\FormSubmission;
 use App\Models\Website;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Testing\TestResponse;
 
 beforeEach(function (): void {
     Mail::fake();
+    Queue::fake();
     Http::fake();
 });
 
@@ -210,11 +213,13 @@ it('allows callback forms that do not include a message field', function (): voi
 });
 
 it('sends the configured website acknowledgement to a genuine lead', function (): void {
+    $this->freezeTime();
     $website = Website::factory()->create([
         'name' => 'Acme Studio',
         'autoresponder_enabled' => true,
         'autoresponder_subject' => 'Thanks {name}',
         'autoresponder_body' => 'Hello {name}, we received your {form_name} enquiry.',
+        'autoresponder_delay_minutes' => 15,
     ]);
     $website->domains()->create(['domain' => 'autoresponder.example', 'is_primary' => true]);
     Form::factory()->create([
@@ -232,8 +237,29 @@ it('sends the configured website acknowledgement to a genuine lead', function ()
         'message' => 'Please call me about a project.',
     ])->assertRedirectContains('/submitted');
 
-    Mail::assertSent(FormSubmissionAcknowledgement::class, fn (FormSubmissionAcknowledgement $mail): bool => $mail->hasTo('ada@example.com') && $mail->emailSubject === 'Thanks Ada Lovelace');
-    expect(FormSubmission::query()->latest('id')->firstOrFail()->autoresponder_sent_at)->not->toBeNull();
+    Queue::assertPushed(SendFormSubmissionAcknowledgement::class, function (SendFormSubmissionAcknowledgement $job): bool {
+        return $job->recipient === 'ada@example.com'
+            && $job->emailSubject === 'Thanks Ada Lovelace'
+            && $job->delay?->equalTo(now()->addMinutes(15));
+    });
+    expect(FormSubmission::query()->latest('id')->firstOrFail()->autoresponder_sent_at)->toBeNull();
+});
+
+it('sends a queued acknowledgement and records its delivery', function (): void {
+    $submission = FormSubmission::factory()->create();
+
+    $job = new SendFormSubmissionAcknowledgement(
+        $submission,
+        'ada@example.com',
+        'We received your enquiry',
+        'Hello Ada',
+    );
+
+    $job->handle();
+
+    Mail::assertSent(FormSubmissionAcknowledgement::class, fn (FormSubmissionAcknowledgement $mail): bool => $mail->hasTo('ada@example.com'));
+    expect($submission->refresh()->autoresponder_sent_at)->not->toBeNull()
+        ->and($submission->activities()->where('type', 'autoresponder_sent')->exists())->toBeTrue();
 });
 
 it('renders an acknowledgement without Sitewell branding', function (): void {
@@ -246,6 +272,7 @@ it('renders an acknowledgement without Sitewell branding', function (): void {
 
     $message->assertSeeInHtml('Hello Ada,')
         ->assertSeeInHtml('We will be in touch soon.')
+        ->assertSeeInHtml('body marginwidth="0" leftmargin="0"', false)
         ->assertDontSeeInHtml('Sitewell')
         ->assertSeeInText('Hello Ada,')
         ->assertDontSeeInText('Sitewell');
@@ -260,7 +287,7 @@ it('allows a form to disable the website acknowledgement', function (): void {
         '_form_name' => 'Contact form', 'name' => 'Ada', 'email' => 'ada@example.com', 'message' => 'A genuine enquiry.',
     ]);
 
-    Mail::assertNotSent(FormSubmissionAcknowledgement::class);
+    Queue::assertNotPushed(SendFormSubmissionAcknowledgement::class);
 });
 
 it('quarantines HTML link injection and known automation markers', function (): void {

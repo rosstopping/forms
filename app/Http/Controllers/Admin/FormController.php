@@ -47,6 +47,7 @@ class FormController extends Controller
             'autoresponder_mode' => ['required', 'string', 'in:inherit,enabled,disabled'],
             'autoresponder_subject_override' => ['nullable', 'string', 'max:255'],
             'autoresponder_body_override' => ['nullable', 'string', 'max:5000'],
+            'autoresponder_delay_minutes_override' => ['nullable', 'integer', 'min:0', 'max:10080'],
             'webhook_enabled_override' => ['nullable', 'boolean'],
             'webhook_url_override' => ['nullable', 'url', 'max:255'],
             'webhook_secret_override' => ['nullable', 'string', 'max:255'],

@@ -310,10 +310,22 @@ it('lets a website owner configure the site wide automatic reply', function () {
         'autoresponder_enabled' => true,
         'autoresponder_subject' => 'We received your enquiry',
         'autoresponder_body' => 'Thanks {name}. We will be in touch.',
+        'autoresponder_delay_minutes' => 20,
     ])->assertRedirect(route('admin.websites.show', $website));
 
     expect($website->refresh()->autoresponder_enabled)->toBeTrue()
-        ->and($website->autoresponder_subject)->toBe('We received your enquiry');
+        ->and($website->autoresponder_subject)->toBe('We received your enquiry')
+        ->and($website->autoresponder_delay_minutes)->toBe(20);
+
+    $form = Form::factory()->create(['website_id' => $website->id]);
+
+    $this->put(route('admin.forms.update', $form), [
+        'autoresponder_mode' => 'enabled',
+        'autoresponder_delay_minutes_override' => 45,
+    ])->assertRedirect(route('admin.forms.show', $form));
+
+    expect($form->refresh()->autoresponder_enabled_override)->toBeTrue()
+        ->and($form->autoresponder_delay_minutes_override)->toBe(45);
 });
 
 it('links form settings back to the parent website forms tab', function () {

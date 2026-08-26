@@ -21,6 +21,10 @@ class Website extends Model
 
     use HasFactory;
 
+    protected $attributes = [
+        'autoresponder_delay_minutes' => 0,
+    ];
+
     protected $fillable = [
         'user_id',
         'name',
@@ -31,6 +35,7 @@ class Website extends Model
         'autoresponder_enabled',
         'autoresponder_subject',
         'autoresponder_body',
+        'autoresponder_delay_minutes',
         'webhook_enabled',
         'health_reports_enabled',
         'seo_weekly_snapshots_enabled',
@@ -52,6 +57,7 @@ class Website extends Model
     protected $casts = [
         'email_enabled' => 'boolean',
         'autoresponder_enabled' => 'boolean',
+        'autoresponder_delay_minutes' => 'integer',
         'webhook_enabled' => 'boolean',
         'health_reports_enabled' => 'boolean',
         'seo_weekly_snapshots_enabled' => 'boolean',

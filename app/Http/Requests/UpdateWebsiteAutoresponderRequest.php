@@ -28,6 +28,7 @@ class UpdateWebsiteAutoresponderRequest extends FormRequest
             'autoresponder_enabled' => ['required', 'boolean'],
             'autoresponder_subject' => ['nullable', 'string', 'max:255'],
             'autoresponder_body' => ['nullable', 'string', 'max:5000'],
+            'autoresponder_delay_minutes' => ['required', 'integer', 'min:0', 'max:10080'],
         ];
     }
 }

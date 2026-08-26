@@ -47,7 +47,7 @@
 
         <div class="mt-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
             <h3 class="font-semibold text-blue-950">Automatic customer reply</h3>
-            <p class="mt-1 text-sm text-blue-800">Acknowledge genuine enquiries immediately. Spam submissions are never emailed.</p>
+            <p class="mt-1 text-sm text-blue-800">Acknowledge genuine enquiries automatically. Spam submissions are never emailed.</p>
             <div class="mt-4 grid gap-4 md:grid-cols-2">
                 <div>
                     <label class="text-sm font-medium text-slate-700" for="autoresponder_mode">Behaviour for this form</label>
@@ -65,7 +65,11 @@
             <div class="mt-4">
                 <label class="text-sm font-medium text-slate-700" for="autoresponder_body_override">Message override</label>
                 <textarea id="autoresponder_body_override" name="autoresponder_body_override" rows="6" placeholder="Leave blank to use website default" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">{{ old('autoresponder_body_override', $form->autoresponder_body_override) }}</textarea>
-                <p class="mt-1 text-xs text-slate-500">Available placeholders: {name}, {form_name}, {website_name}, {website_domain}, {submission_id}</p>
+                <p class="mt-1 text-xs text-slate-500">Use any submitted field name as a tag, for example {email}, {phone}, or {budget}. Also available: {name}, {form_name}, {website_name}, {website_domain}, {submission_id}.</p>
+            </div>
+            <div class="mt-4">
+                <label class="text-sm font-medium text-slate-700" for="autoresponder_delay_minutes_override">Send delay override (minutes)</label>
+                <input id="autoresponder_delay_minutes_override" type="number" min="0" max="10080" name="autoresponder_delay_minutes_override" value="{{ old('autoresponder_delay_minutes_override', $form->autoresponder_delay_minutes_override) }}" placeholder="Leave blank to use website delay" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
             </div>
         </div>
 

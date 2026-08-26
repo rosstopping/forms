@@ -617,7 +617,12 @@
                     <div class="lg:row-span-2">
                         <label class="text-sm font-medium text-slate-700" for="autoresponder_body">Email message</label>
                         <textarea id="autoresponder_body" name="autoresponder_body" rows="7" placeholder="Hi {name},&#10;&#10;Thanks for contacting {website_name}. We've received your enquiry and someone from our team will get back to you soon." class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">{{ old('autoresponder_body', $website->autoresponder_body) }}</textarea>
-                        <p class="mt-1 text-xs text-slate-500">Available placeholders: {name}, {form_name}, {website_name}, {website_domain}, {submission_id}</p>
+                        <p class="mt-1 text-xs text-slate-500">Use any submitted field name as a tag, for example {email}, {phone}, or {budget}. Also available: {name}, {form_name}, {website_name}, {website_domain}, {submission_id}.</p>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-slate-700" for="autoresponder_delay_minutes">Send delay (minutes)</label>
+                        <input id="autoresponder_delay_minutes" type="number" min="0" max="10080" name="autoresponder_delay_minutes" value="{{ old('autoresponder_delay_minutes', $website->autoresponder_delay_minutes ?? 0) }}" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                        <p class="mt-1 text-xs text-slate-500">Use 0 to queue the reply immediately.</p>
                     </div>
                     <div><button class="rounded-md bg-blue-900 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800">Save automatic reply</button></div>
                 </div>
