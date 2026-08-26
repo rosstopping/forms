@@ -1,3 +1,7 @@
+import 'trix';
+
+document.addEventListener('trix-file-accept', (event) => event.preventDefault());
+
 document.addEventListener('click', async (event) => {
     const button = event.target.closest('.js-copy-text');
 

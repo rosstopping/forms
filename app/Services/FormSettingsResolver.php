@@ -8,6 +8,8 @@ use Illuminate\Support\Str;
 
 class FormSettingsResolver
 {
+    public function __construct(private AutoresponderHtmlSanitizer $autoresponderHtmlSanitizer) {}
+
     public function resolveAutoresponderEnabled(Form $form): bool
     {
         return $form->autoresponder_enabled_override ?? $form->website->autoresponder_enabled;
@@ -28,7 +30,9 @@ class FormSettingsResolver
             ?: $form->website->autoresponder_body
             ?: "Hi {name},\n\nThanks for contacting {website_name}. We've received your enquiry and someone from our team will get back to you soon.\n\nKind regards,\n{website_name}";
 
-        return $this->replaceAutoresponderTokens($template, $form, $submission);
+        $sanitizedTemplate = $this->autoresponderHtmlSanitizer->sanitize($template) ?? '';
+
+        return $this->replaceAutoresponderTokens($sanitizedTemplate, $form, $submission, true);
     }
 
     public function resolveAutoresponderDelayMinutes(Form $form): int
@@ -38,7 +42,7 @@ class FormSettingsResolver
             ?? 0;
     }
 
-    private function replaceAutoresponderTokens(string $template, Form $form, FormSubmission $submission): string
+    private function replaceAutoresponderTokens(string $template, Form $form, FormSubmission $submission, bool $escapeValues = false): string
     {
         $websiteDomain = Str::contains($template, '{website_domain}')
             ? $form->website->primaryDomain()?->domain ?? $form->website->name
@@ -54,14 +58,22 @@ class FormSettingsResolver
             ];
         })->all();
 
-        return strtr($template, [
+        $tokens = [
             ...$submissionTokens,
             '{name}' => $submission->contactName() ?? 'there',
             '{form_name}' => $form->name,
             '{website_name}' => $form->website->name,
             '{website_domain}' => $websiteDomain,
             '{submission_id}' => (string) $submission->id,
-        ]);
+        ];
+
+        if ($escapeValues) {
+            $tokens = collect($tokens)
+                ->map(fn (string $value): string => htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'))
+                ->all();
+        }
+
+        return strtr($template, $tokens);
     }
 
     public function resolveEmailEnabled(Form $form): bool

@@ -6,6 +6,7 @@ use App\Mail\FormSubmissionReceived;
 use App\Models\Form;
 use App\Models\FormSubmission;
 use App\Models\Website;
+use App\Services\AutoresponderHtmlSanitizer;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
@@ -255,7 +256,7 @@ it('sends a queued acknowledgement and records its delivery', function (): void 
         'Hello Ada',
     );
 
-    $job->handle();
+    $job->handle(new AutoresponderHtmlSanitizer);
 
     Mail::assertSent(FormSubmissionAcknowledgement::class, fn (FormSubmissionAcknowledgement $mail): bool => $mail->hasTo('ada@example.com'));
     expect($submission->refresh()->autoresponder_sent_at)->not->toBeNull()
@@ -267,14 +268,18 @@ it('renders an acknowledgement without Sitewell branding', function (): void {
     $message = new FormSubmissionAcknowledgement(
         $submission,
         'We received your enquiry',
+        '<div>Hello <strong>Ada</strong>,</div><div><br></div><div>We will be in touch soon.</div>',
         "Hello Ada,\n\nWe will be in touch soon.",
     );
 
-    $message->assertSeeInHtml('Hello Ada,')
+    $message->assertSeeInHtml('Hello ')
+        ->assertSeeInHtml('Ada')
         ->assertSeeInHtml('We will be in touch soon.')
+        ->assertSeeInHtml('<strong>Ada</strong>', false)
         ->assertSeeInHtml('body marginwidth="0" leftmargin="0"', false)
         ->assertDontSeeInHtml('Sitewell')
         ->assertSeeInText('Hello Ada,')
+        ->assertDontSeeInText('<strong>', false)
         ->assertDontSeeInText('Sitewell');
 });
 

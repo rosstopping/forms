@@ -304,7 +304,10 @@ it('lets a website owner configure the site wide automatic reply', function () {
 
     $this->actingAs($owner)->get(route('admin.websites.show', $website))
         ->assertOk()
-        ->assertSeeInOrder(['website-panel-settings', 'website-panel-forms', 'Automatic customer reply'], false);
+        ->assertSeeInOrder(['website-panel-settings', 'website-panel-forms', 'Automatic customer reply'], false)
+        ->assertSee('trix-editor', false)
+        ->assertSee('data-trix-attribute="bold"', false)
+        ->assertDontSee('trix-button--icon-attach', false);
 
     $this->put(route('admin.websites.autoresponder.update', $website), [
         'autoresponder_enabled' => true,
@@ -315,6 +318,7 @@ it('lets a website owner configure the site wide automatic reply', function () {
 
     expect($website->refresh()->autoresponder_enabled)->toBeTrue()
         ->and($website->autoresponder_subject)->toBe('We received your enquiry')
+        ->and($website->autoresponder_body)->toBe('<div>Thanks {name}. We will be in touch.</div>')
         ->and($website->autoresponder_delay_minutes)->toBe(20);
 
     $form = Form::factory()->create(['website_id' => $website->id]);

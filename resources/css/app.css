@@ -1,3 +1,4 @@
+@import 'trix/dist/trix.css';
 @import 'tailwindcss';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
@@ -95,6 +96,26 @@
 
     .admin-content textarea {
         @apply min-h-28 resize-y;
+    }
+
+    .admin-content .trix-toolbar {
+        @apply mb-0;
+    }
+
+    .admin-content .trix-toolbar .trix-button-row {
+        @apply justify-start gap-2 overflow-x-auto rounded-t-xl border border-b-0 border-slate-950/10 bg-slate-50 p-2;
+    }
+
+    .admin-content .trix-toolbar .trix-button-group {
+        @apply mb-0 border-slate-950/10;
+    }
+
+    .admin-content .autoresponder-editor {
+        @apply min-h-44 rounded-b-xl border-0 bg-white px-3.5 py-3 text-base leading-6 text-slate-950 shadow-sm ring-1 ring-slate-950/10 focus:outline-2 focus:-outline-offset-1 focus:outline-teal-600 sm:text-sm;
+    }
+
+    .admin-content .autoresponder-editor:empty::before {
+        @apply text-slate-400;
     }
 
     .admin-content :is(input, select, textarea)[aria-invalid='true'] {

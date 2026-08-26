@@ -3,10 +3,11 @@
 use App\Models\Form;
 use App\Models\FormSubmission;
 use App\Models\Website;
+use App\Services\AutoresponderHtmlSanitizer;
 use App\Services\FormSettingsResolver;
 
 it('does not send email by default unless form recipients are configured', function (): void {
-    $resolver = new FormSettingsResolver;
+    $resolver = new FormSettingsResolver(new AutoresponderHtmlSanitizer);
     $form = new Form(['name' => 'Contact']);
     $form->setRelation('website', new Website(['name' => 'Example', 'email_enabled' => false, 'email_recipients' => []]));
 
@@ -15,7 +16,7 @@ it('does not send email by default unless form recipients are configured', funct
 });
 
 it('uses form-level email and webhook settings when configured', function (): void {
-    $resolver = new FormSettingsResolver;
+    $resolver = new FormSettingsResolver(new AutoresponderHtmlSanitizer);
     $form = new Form([
         'email_enabled_override' => true,
         'email_recipients_override' => ['ops@example.com'],
@@ -33,7 +34,7 @@ it('uses form-level email and webhook settings when configured', function (): vo
 });
 
 it('replaces tags for any submitted form field', function (): void {
-    $resolver = new FormSettingsResolver;
+    $resolver = new FormSettingsResolver(new AutoresponderHtmlSanitizer);
     $website = new Website(['name' => 'Example', 'autoresponder_delay_minutes' => 10]);
     $form = new Form([
         'name' => 'Quote request',
@@ -45,12 +46,12 @@ it('replaces tags for any submitted form field', function (): void {
     $submission = new FormSubmission([
         'data' => [
             'first_name' => 'Ada',
-            'Service Type' => 'Consulting',
+            'Service Type' => 'Research & <script>',
             'Preferred Areas' => ['London', 'Bristol'],
         ],
     ]);
 
-    expect($resolver->resolveAutoresponderSubject($form, $submission))->toBe('Quote for Consulting')
-        ->and($resolver->resolveAutoresponderBody($form, $submission))->toBe('Hi Ada, you selected Consulting in London, Bristol.')
+    expect($resolver->resolveAutoresponderSubject($form, $submission))->toBe('Quote for Research & <script>')
+        ->and($resolver->resolveAutoresponderBody($form, $submission))->toBe('<div>Hi Ada, you selected Research &amp; &lt;script&gt; in London, Bristol.</div>')
         ->and($resolver->resolveAutoresponderDelayMinutes($form))->toBe(25);
 });

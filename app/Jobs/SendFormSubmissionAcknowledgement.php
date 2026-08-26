@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Mail\FormSubmissionAcknowledgement;
 use App\Models\FormSubmission;
+use App\Services\AutoresponderHtmlSanitizer;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Mail;
@@ -25,12 +26,13 @@ class SendFormSubmissionAcknowledgement implements ShouldQueue
         public string $emailBody,
     ) {}
 
-    public function handle(): void
+    public function handle(AutoresponderHtmlSanitizer $autoresponderHtmlSanitizer): void
     {
         Mail::to($this->recipient)->send(new FormSubmissionAcknowledgement(
             $this->submission,
             $this->emailSubject,
             $this->emailBody,
+            $autoresponderHtmlSanitizer->toPlainText($this->emailBody),
         ));
 
         $this->submission->update([

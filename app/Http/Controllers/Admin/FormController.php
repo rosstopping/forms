@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Form;
+use App\Services\AutoresponderHtmlSanitizer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
@@ -11,6 +12,8 @@ use Illuminate\Validation\ValidationException;
 
 class FormController extends Controller
 {
+    public function __construct(private AutoresponderHtmlSanitizer $autoresponderHtmlSanitizer) {}
+
     public function index(Request $request)
     {
         $query = Form::query();
@@ -69,6 +72,7 @@ class FormController extends Controller
             'disabled' => false,
             default => null,
         };
+        $data['autoresponder_body_override'] = $this->autoresponderHtmlSanitizer->sanitize($data['autoresponder_body_override'] ?? null);
         unset($data['autoresponder_mode']);
         $data['email_recipients_override'] = $emailRecipients;
         $data['webhook_enabled_override'] = (bool) $request->boolean('webhook_enabled_override');

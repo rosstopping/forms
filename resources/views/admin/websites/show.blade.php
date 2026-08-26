@@ -616,7 +616,7 @@
                     </div>
                     <div class="lg:row-span-2">
                         <label class="text-sm font-medium text-slate-700" for="autoresponder_body">Email message</label>
-                        <textarea id="autoresponder_body" name="autoresponder_body" rows="7" placeholder="Hi {name},&#10;&#10;Thanks for contacting {website_name}. We've received your enquiry and someone from our team will get back to you soon." class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">{{ old('autoresponder_body', $website->autoresponder_body) }}</textarea>
+                        <x-trix-editor id="autoresponder_body" name="autoresponder_body" :value="old('autoresponder_body', $website->autoresponder_body)" placeholder="Write the automatic reply…" />
                         <p class="mt-1 text-xs text-slate-500">Use any submitted field name as a tag, for example {email}, {phone}, or {budget}. Also available: {name}, {form_name}, {website_name}, {website_domain}, {submission_id}.</p>
                     </div>
                     <div>

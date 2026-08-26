@@ -17,7 +17,12 @@ class FormSubmissionAcknowledgement extends Mailable
     /**
      * Create a new message instance.
      */
-    public function __construct(public FormSubmission $submission, public string $emailSubject, public string $emailBody) {}
+    public function __construct(
+        public FormSubmission $submission,
+        public string $emailSubject,
+        public string $emailBody,
+        public string $emailText,
+    ) {}
 
     /**
      * Get the message envelope.
@@ -37,7 +42,6 @@ class FormSubmissionAcknowledgement extends Mailable
         return new Content(
             view: 'emails.form-submission-acknowledgement',
             text: 'emails.form-submission-acknowledgement-text',
-            with: ['lines' => preg_split('/\R/', $this->emailBody) ?: []],
         );
     }
 
