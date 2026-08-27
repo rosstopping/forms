@@ -44,6 +44,25 @@ it('allows public submissions without a CSRF token', function (): void {
     $response->assertStatus(302);
 });
 
+it('redirects to the submitted success url even when the request accepts json', function (): void {
+    $website = Website::factory()->create();
+    $website->domains()->create(['domain' => 'redirect.example', 'is_primary' => true]);
+    Form::factory()->create([
+        'website_id' => $website->id,
+        'name' => 'Contact form',
+        'slug' => 'contact-form',
+    ]);
+
+    $this->withHeaders([
+        'Origin' => 'https://redirect.example',
+        'Accept' => 'application/json',
+    ])->post('/submit', [
+        '_form_name' => 'Contact form',
+        '_form_success_url' => 'https://redirect.example/thank-you',
+        'name' => 'Grace Hopper',
+    ])->assertRedirect('https://redirect.example/thank-you');
+});
+
 it('escapes submitted HTML exactly once when rendering the email', function (): void {
     $message = "Hello, I'd like a <strong>website</strong>.";
 

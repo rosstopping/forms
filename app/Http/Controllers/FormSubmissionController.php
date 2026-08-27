@@ -76,6 +76,10 @@ class FormSubmissionController extends Controller
             $this->sendNotifications($submission);
         }
 
+        if ($submittedSuccessUrl = $this->redirectResolver->resolveSubmittedSuccess($request, $website)) {
+            return redirect()->away($submittedSuccessUrl);
+        }
+
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,

@@ -5,112 +5,116 @@ namespace App\Services;
 use App\Models\Form;
 use App\Models\Website;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 class RedirectResolver
 {
-	public function resolveSuccess(Request $request, Website $website, Form $form): ?string
-	{
-		$submitted = $request->input('_form_success_url');
+    public function resolveSubmittedSuccess(Request $request, Website $website): ?string
+    {
+        $submitted = $request->input('_form_success_url');
 
-		if ($this->isValidRedirect($submitted, $website)) {
-			return $submitted;
-		}
+        return $this->isValidRedirect($submitted, $website) ? $submitted : null;
+    }
 
-		if (! blank($form->success_redirect_url_override)) {
-			return $this->isValidRedirect($form->success_redirect_url_override, $website) ? $form->success_redirect_url_override : null;
-		}
+    public function resolveSuccess(Request $request, Website $website, Form $form): ?string
+    {
+        if ($submitted = $this->resolveSubmittedSuccess($request, $website)) {
+            return $submitted;
+        }
 
-		if (! blank($website->success_redirect_url)) {
-			return $this->isValidRedirect($website->success_redirect_url, $website) ? $website->success_redirect_url : null;
-		}
+        if (! blank($form->success_redirect_url_override)) {
+            return $this->isValidRedirect($form->success_redirect_url_override, $website) ? $form->success_redirect_url_override : null;
+        }
 
-		$referrer = $request->header('referer');
+        if (! blank($website->success_redirect_url)) {
+            return $this->isValidRedirect($website->success_redirect_url, $website) ? $website->success_redirect_url : null;
+        }
 
-		if ($referrer && str_contains($referrer, 'form=success')) {
-			return $this->appendQuery($referrer, ['form' => 'success', 'form_name' => $form->slug]);
-		}
+        $referrer = $request->header('referer');
 
-		return route('forms.submitted');
-	}
+        if ($referrer && str_contains($referrer, 'form=success')) {
+            return $this->appendQuery($referrer, ['form' => 'success', 'form_name' => $form->slug]);
+        }
 
-	public function resolveError(Request $request, Website $website, Form $form): ?string
-	{
-		$submitted = $request->input('_form_error_url');
+        return route('forms.submitted');
+    }
 
-		if ($this->isValidRedirect($submitted, $website)) {
-			return $submitted;
-		}
+    public function resolveError(Request $request, Website $website, Form $form): ?string
+    {
+        $submitted = $request->input('_form_error_url');
 
-		if (! blank($form->failure_redirect_url_override)) {
-			return $this->isValidRedirect($form->failure_redirect_url_override, $website) ? $form->failure_redirect_url_override : null;
-		}
+        if ($this->isValidRedirect($submitted, $website)) {
+            return $submitted;
+        }
 
-		if (! blank($website->failure_redirect_url)) {
-			return $this->isValidRedirect($website->failure_redirect_url, $website) ? $website->failure_redirect_url : null;
-		}
+        if (! blank($form->failure_redirect_url_override)) {
+            return $this->isValidRedirect($form->failure_redirect_url_override, $website) ? $form->failure_redirect_url_override : null;
+        }
 
-		$referrer = $request->header('referer');
+        if (! blank($website->failure_redirect_url)) {
+            return $this->isValidRedirect($website->failure_redirect_url, $website) ? $website->failure_redirect_url : null;
+        }
 
-		if ($referrer && str_contains($referrer, 'form=error')) {
-			return $this->appendQuery($referrer, ['form' => 'error', 'form_name' => $form->slug]);
-		}
+        $referrer = $request->header('referer');
 
-		return route('forms.submitted');
-	}
+        if ($referrer && str_contains($referrer, 'form=error')) {
+            return $this->appendQuery($referrer, ['form' => 'error', 'form_name' => $form->slug]);
+        }
 
-	protected function isValidRedirect(?string $url, Website $website): bool
-	{
-		if (blank($url)) {
-			return false;
-		}
+        return route('forms.submitted');
+    }
 
-		$parsed = parse_url($url);
+    protected function isValidRedirect(?string $url, Website $website): bool
+    {
+        if (blank($url)) {
+            return false;
+        }
 
-		if ($parsed === false || ! isset($parsed['scheme'], $parsed['host'])) {
-			return false;
-		}
+        $parsed = parse_url($url);
 
-		if (! in_array(strtolower($parsed['scheme']), ['http', 'https'], true)) {
-			return false;
-		}
+        if ($parsed === false || ! isset($parsed['scheme'], $parsed['host'])) {
+            return false;
+        }
 
-		$host = strtolower($parsed['host']);
-		$host = preg_replace('/^www\./i', '', $host);
+        if (! in_array(strtolower($parsed['scheme']), ['http', 'https'], true)) {
+            return false;
+        }
 
-		foreach ($website->domains as $domain) {
-			if (strtolower($domain->domain) === $host || strtolower($domain->domain) === 'www.' . $host) {
-				return true;
-			}
-		}
+        $host = strtolower($parsed['host']);
+        $host = preg_replace('/^www\./i', '', $host);
 
-		return false;
-	}
+        foreach ($website->domains as $domain) {
+            if (strtolower($domain->domain) === $host || strtolower($domain->domain) === 'www.'.$host) {
+                return true;
+            }
+        }
 
-	protected function appendQuery(string $url, array $params): string
-	{
-		$parts = parse_url($url);
+        return false;
+    }
 
-		$query = [];
-		if (isset($parts['query'])) {
-			parse_str($parts['query'], $query);
-		}
+    protected function appendQuery(string $url, array $params): string
+    {
+        $parts = parse_url($url);
 
-		$query = array_merge($query, $params);
-		$parts['query'] = http_build_query($query);
+        $query = [];
+        if (isset($parts['query'])) {
+            parse_str($parts['query'], $query);
+        }
 
-		return $this->buildUrl($parts);
-	}
+        $query = array_merge($query, $params);
+        $parts['query'] = http_build_query($query);
 
-	protected function buildUrl(array $parts): string
-	{
-		$scheme = $parts['scheme'] ?? 'http';
-		$host = $parts['host'] ?? '';
-		$port = isset($parts['port']) ? ':' . $parts['port'] : '';
-		$path = $parts['path'] ?? '';
-		$query = isset($parts['query']) ? '?' . $parts['query'] : '';
-		$fragment = isset($parts['fragment']) ? '#' . $parts['fragment'] : '';
+        return $this->buildUrl($parts);
+    }
 
-		return $scheme . '://' . $host . $port . $path . $query . $fragment;
-	}
+    protected function buildUrl(array $parts): string
+    {
+        $scheme = $parts['scheme'] ?? 'http';
+        $host = $parts['host'] ?? '';
+        $port = isset($parts['port']) ? ':'.$parts['port'] : '';
+        $path = $parts['path'] ?? '';
+        $query = isset($parts['query']) ? '?'.$parts['query'] : '';
+        $fragment = isset($parts['fragment']) ? '#'.$parts['fragment'] : '';
+
+        return $scheme.'://'.$host.$port.$path.$query.$fragment;
+    }
 }
