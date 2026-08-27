@@ -82,6 +82,9 @@
                     <textarea id="autoresponder_body_override_html" name="autoresponder_body_override" rows="10" class="mt-1 w-full font-mono text-sm" placeholder="Leave blank to use website default">{{ old('autoresponder_body_override', $form->autoresponder_body_override) }}</textarea>
                     <p class="mt-1 text-xs text-slate-500">HTML is sent exactly as entered. Use complete email-safe markup and inline styles where needed.</p>
                 </div>
+                @error('autoresponder_body_override')
+                    <p class="text-sm text-red-600">{{ $message }}</p>
+                @enderror
                 <p class="mt-1 text-xs text-slate-500">Use any submitted field name as a tag, for example {email}, {phone}, or {budget}. Also available: {name}, {form_name}, {website_name}, {website_domain}, {submission_id}.</p>
             </div>
             <div class="mt-4">

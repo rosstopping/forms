@@ -337,7 +337,9 @@ it('lets a website owner configure the site wide automatic reply', function () {
 it('stores raw html autoresponder messages without sanitizing them', function () {
     $owner = User::factory()->create();
     $website = Website::factory()->create(['user_id' => $owner->id]);
-    $rawHtml = '<table style="color: red"><tr><td>Hello {name}</td></tr></table>';
+    $rawHtml = '<html><body><table style="color: red"><tr><td>Hello {name}</td></tr></table>'.str_repeat('<!-- email template styles -->', 2500).'</body></html>';
+
+    expect(mb_strlen($rawHtml))->toBeGreaterThan(70000);
 
     $this->actingAs($owner)->put(route('admin.websites.autoresponder.update', $website), [
         'autoresponder_enabled' => true,

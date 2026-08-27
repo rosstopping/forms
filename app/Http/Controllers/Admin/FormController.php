@@ -49,7 +49,7 @@ class FormController extends Controller
             'email_subject_override' => ['nullable', 'string', 'max:255'],
             'autoresponder_mode' => ['required', 'string', 'in:inherit,enabled,disabled'],
             'autoresponder_subject_override' => ['nullable', 'string', 'max:255'],
-            'autoresponder_body_override' => ['nullable', 'string', 'max:5000'],
+            'autoresponder_body_override' => ['nullable', 'string', 'max:1000000'],
             'autoresponder_content_type_override' => ['nullable', 'string', 'in:text,html'],
             'autoresponder_delay_minutes_override' => ['nullable', 'integer', 'min:0', 'max:10080'],
             'webhook_enabled_override' => ['nullable', 'boolean'],
