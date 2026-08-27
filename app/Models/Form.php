@@ -23,6 +23,7 @@ class Form extends Model
         'autoresponder_enabled_override',
         'autoresponder_subject_override',
         'autoresponder_body_override',
+        'autoresponder_content_type_override',
         'autoresponder_delay_minutes_override',
         'webhook_enabled_override',
         'webhook_url_override',

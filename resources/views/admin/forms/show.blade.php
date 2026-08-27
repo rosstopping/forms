@@ -62,9 +62,26 @@
                     <input id="autoresponder_subject_override" name="autoresponder_subject_override" value="{{ old('autoresponder_subject_override', $form->autoresponder_subject_override) }}" placeholder="Leave blank to use website default" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
                 </div>
             </div>
-            <div class="mt-4">
-                <label class="text-sm font-medium text-slate-700" for="autoresponder_body_override">Message override</label>
-                <x-trix-editor id="autoresponder_body_override" name="autoresponder_body_override" :value="old('autoresponder_body_override', $form->autoresponder_body_override)" placeholder="Leave blank to use website default" />
+            @php($autoresponderContentTypeOverride = old('autoresponder_content_type_override', $form->autoresponder_content_type_override))
+            @php($resolvedAutoresponderContentType = $autoresponderContentTypeOverride ?: ($form->website->autoresponder_content_type ?? 'text'))
+            <div class="mt-4 space-y-4" data-autoresponder-content-editor data-field-name="autoresponder_body_override" data-default-content-type="{{ $form->website->autoresponder_content_type ?? 'text' }}">
+                <div>
+                    <label class="text-sm font-medium text-slate-700" for="autoresponder_content_type_override">Message format</label>
+                    <select id="autoresponder_content_type_override" name="autoresponder_content_type_override" class="mt-1 w-full" data-autoresponder-content-type>
+                        <option value="" @selected($autoresponderContentTypeOverride === null || $autoresponderContentTypeOverride === '')>Use website setting</option>
+                        <option value="text" @selected($autoresponderContentTypeOverride === 'text')>Text</option>
+                        <option value="html" @selected($autoresponderContentTypeOverride === 'html')>HTML</option>
+                    </select>
+                </div>
+                <div data-autoresponder-content-panel="text" @if ($resolvedAutoresponderContentType === 'html') hidden @endif>
+                    <label class="text-sm font-medium text-slate-700" for="autoresponder_body_override">Message override</label>
+                    <x-trix-editor id="autoresponder_body_override" name="autoresponder_body_override" :value="old('autoresponder_body_override', $form->autoresponder_body_override)" placeholder="Leave blank to use website default" />
+                </div>
+                <div data-autoresponder-content-panel="html" @if ($resolvedAutoresponderContentType !== 'html') hidden @endif>
+                    <label class="text-sm font-medium text-slate-700" for="autoresponder_body_override_html">Raw HTML override</label>
+                    <textarea id="autoresponder_body_override_html" name="autoresponder_body_override" rows="10" class="mt-1 w-full font-mono text-sm" placeholder="Leave blank to use website default">{{ old('autoresponder_body_override', $form->autoresponder_body_override) }}</textarea>
+                    <p class="mt-1 text-xs text-slate-500">HTML is sent exactly as entered. Use complete email-safe markup and inline styles where needed.</p>
+                </div>
                 <p class="mt-1 text-xs text-slate-500">Use any submitted field name as a tag, for example {email}, {phone}, or {budget}. Also available: {name}, {form_name}, {website_name}, {website_domain}, {submission_id}.</p>
             </div>
             <div class="mt-4">

@@ -15,7 +15,9 @@ class WebsiteAutoresponderController extends Controller
     public function __invoke(UpdateWebsiteAutoresponderRequest $request, Website $website): RedirectResponse
     {
         $settings = $request->validated();
-        $settings['autoresponder_body'] = $this->autoresponderHtmlSanitizer->sanitize($settings['autoresponder_body'] ?? null);
+        if ($settings['autoresponder_content_type'] === 'text') {
+            $settings['autoresponder_body'] = $this->autoresponderHtmlSanitizer->sanitize($settings['autoresponder_body'] ?? null);
+        }
 
         $website->update($settings);
 

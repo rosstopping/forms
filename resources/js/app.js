@@ -2,6 +2,37 @@ import 'trix';
 
 document.addEventListener('trix-file-accept', (event) => event.preventDefault());
 
+document.querySelectorAll('[data-autoresponder-content-editor]').forEach((editor) => {
+    const contentType = editor.querySelector('[data-autoresponder-content-type]');
+    const panels = [...editor.querySelectorAll('[data-autoresponder-content-panel]')];
+    let activeType = contentType.value || editor.dataset.defaultContentType || 'text';
+
+    const updateContentEditor = () => {
+        const selectedType = contentType.value || editor.dataset.defaultContentType || 'text';
+        const previousField = editor.querySelector(`[data-autoresponder-content-panel="${activeType}"] input[type="hidden"], [data-autoresponder-content-panel="${activeType}"] textarea`);
+        const selectedField = editor.querySelector(`[data-autoresponder-content-panel="${selectedType}"] input[type="hidden"], [data-autoresponder-content-panel="${selectedType}"] textarea`);
+
+        if (selectedType !== activeType && previousField && selectedField) {
+            selectedField.value = previousField.value;
+            selectedField.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+
+        panels.forEach((panel) => {
+            const active = panel.dataset.autoresponderContentPanel === selectedType;
+            const field = panel.querySelector('input[type="hidden"], textarea');
+
+            panel.hidden = !active;
+            field.disabled = !active;
+            field.name = active ? editor.dataset.fieldName : '';
+        });
+
+        activeType = selectedType;
+    };
+
+    contentType.addEventListener('change', updateContentEditor);
+    updateContentEditor();
+});
+
 document.addEventListener('click', async (event) => {
     const button = event.target.closest('.js-copy-text');
 

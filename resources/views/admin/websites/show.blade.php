@@ -614,9 +614,24 @@
                         <label class="text-sm font-medium text-slate-700" for="autoresponder_subject">Email subject</label>
                         <input id="autoresponder_subject" name="autoresponder_subject" value="{{ old('autoresponder_subject', $website->autoresponder_subject) }}" placeholder="We've received your {form_name} enquiry" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
                     </div>
-                    <div class="lg:row-span-2">
-                        <label class="text-sm font-medium text-slate-700" for="autoresponder_body">Email message</label>
-                        <x-trix-editor id="autoresponder_body" name="autoresponder_body" :value="old('autoresponder_body', $website->autoresponder_body)" placeholder="Write the automatic reply…" />
+                    @php($autoresponderContentType = old('autoresponder_content_type', $website->autoresponder_content_type ?? 'text'))
+                    <div class="space-y-4 lg:row-span-2" data-autoresponder-content-editor data-field-name="autoresponder_body">
+                        <div>
+                            <label class="text-sm font-medium text-slate-700" for="autoresponder_content_type">Message format</label>
+                            <select id="autoresponder_content_type" name="autoresponder_content_type" class="mt-1 w-full" data-autoresponder-content-type>
+                                <option value="text" @selected($autoresponderContentType === 'text')>Text</option>
+                                <option value="html" @selected($autoresponderContentType === 'html')>HTML</option>
+                            </select>
+                        </div>
+                        <div data-autoresponder-content-panel="text" @if ($autoresponderContentType !== 'text') hidden @endif>
+                            <label class="text-sm font-medium text-slate-700" for="autoresponder_body">Email message</label>
+                            <x-trix-editor id="autoresponder_body" name="autoresponder_body" :value="old('autoresponder_body', $website->autoresponder_body)" placeholder="Write the automatic reply…" />
+                        </div>
+                        <div data-autoresponder-content-panel="html" @if ($autoresponderContentType !== 'html') hidden @endif>
+                            <label class="text-sm font-medium text-slate-700" for="autoresponder_body_html">Raw HTML</label>
+                            <textarea id="autoresponder_body_html" name="autoresponder_body" rows="10" class="mt-1 w-full font-mono text-sm" placeholder="<!doctype html>…">{{ old('autoresponder_body', $website->autoresponder_body) }}</textarea>
+                            <p class="mt-1 text-xs text-slate-500">HTML is sent exactly as entered. Use complete email-safe markup and inline styles where needed.</p>
+                        </div>
                         <p class="mt-1 text-xs text-slate-500">Use any submitted field name as a tag, for example {email}, {phone}, or {budget}. Also available: {name}, {form_name}, {website_name}, {website_domain}, {submission_id}.</p>
                     </div>
                     <div>

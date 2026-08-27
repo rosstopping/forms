@@ -313,12 +313,14 @@ it('lets a website owner configure the site wide automatic reply', function () {
         'autoresponder_enabled' => true,
         'autoresponder_subject' => 'We received your enquiry',
         'autoresponder_body' => 'Thanks {name}. We will be in touch.',
+        'autoresponder_content_type' => 'text',
         'autoresponder_delay_minutes' => 20,
     ])->assertRedirect(route('admin.websites.show', $website));
 
     expect($website->refresh()->autoresponder_enabled)->toBeTrue()
         ->and($website->autoresponder_subject)->toBe('We received your enquiry')
         ->and($website->autoresponder_body)->toBe('<div>Thanks {name}. We will be in touch.</div>')
+        ->and($website->autoresponder_content_type)->toBe('text')
         ->and($website->autoresponder_delay_minutes)->toBe(20);
 
     $form = Form::factory()->create(['website_id' => $website->id]);
@@ -330,6 +332,34 @@ it('lets a website owner configure the site wide automatic reply', function () {
 
     expect($form->refresh()->autoresponder_enabled_override)->toBeTrue()
         ->and($form->autoresponder_delay_minutes_override)->toBe(45);
+});
+
+it('stores raw html autoresponder messages without sanitizing them', function () {
+    $owner = User::factory()->create();
+    $website = Website::factory()->create(['user_id' => $owner->id]);
+    $rawHtml = '<table style="color: red"><tr><td>Hello {name}</td></tr></table>';
+
+    $this->actingAs($owner)->put(route('admin.websites.autoresponder.update', $website), [
+        'autoresponder_enabled' => true,
+        'autoresponder_subject' => 'Hello',
+        'autoresponder_body' => $rawHtml,
+        'autoresponder_content_type' => 'html',
+        'autoresponder_delay_minutes' => 0,
+    ])->assertRedirect(route('admin.websites.show', $website));
+
+    expect($website->refresh()->autoresponder_content_type)->toBe('html')
+        ->and($website->autoresponder_body)->toBe($rawHtml);
+
+    $form = Form::factory()->create(['website_id' => $website->id]);
+
+    $this->put(route('admin.forms.update', $form), [
+        'autoresponder_mode' => 'inherit',
+        'autoresponder_body_override' => $rawHtml,
+        'autoresponder_content_type_override' => 'html',
+    ])->assertRedirect(route('admin.forms.show', $form));
+
+    expect($form->refresh()->autoresponder_content_type_override)->toBe('html')
+        ->and($form->autoresponder_body_override)->toBe($rawHtml);
 });
 
 it('links form settings back to the parent website forms tab', function () {

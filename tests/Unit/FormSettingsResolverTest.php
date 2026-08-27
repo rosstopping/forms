@@ -55,3 +55,22 @@ it('replaces tags for any submitted form field', function (): void {
         ->and($resolver->resolveAutoresponderBody($form, $submission))->toBe('<div>Hi Ada, you selected Research &amp; &lt;script&gt; in London, Bristol.</div>')
         ->and($resolver->resolveAutoresponderDelayMinutes($form))->toBe(25);
 });
+
+it('preserves raw html while escaping submission tag values', function (): void {
+    $resolver = new FormSettingsResolver(new AutoresponderHtmlSanitizer);
+    $website = new Website([
+        'name' => 'Example',
+        'autoresponder_content_type' => 'text',
+    ]);
+    $form = new Form([
+        'name' => 'Contact',
+        'autoresponder_content_type_override' => 'html',
+        'autoresponder_body_override' => '<table style="color: red"><tr><td>{name}</td></tr></table>',
+    ]);
+    $form->setRelation('website', $website);
+    $submission = new FormSubmission(['data' => ['name' => '<Ada>']]);
+
+    expect($resolver->resolveAutoresponderContentType($form))->toBe('html')
+        ->and($resolver->resolveAutoresponderBody($form, $submission))
+        ->toBe('<table style="color: red"><tr><td>&lt;Ada&gt;</td></tr></table>');
+});

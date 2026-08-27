@@ -30,9 +30,18 @@ class FormSettingsResolver
             ?: $form->website->autoresponder_body
             ?: "Hi {name},\n\nThanks for contacting {website_name}. We've received your enquiry and someone from our team will get back to you soon.\n\nKind regards,\n{website_name}";
 
-        $sanitizedTemplate = $this->autoresponderHtmlSanitizer->sanitize($template) ?? '';
+        $preparedTemplate = $this->resolveAutoresponderContentType($form) === 'html'
+            ? $template
+            : $this->autoresponderHtmlSanitizer->sanitize($template) ?? '';
 
-        return $this->replaceAutoresponderTokens($sanitizedTemplate, $form, $submission, true);
+        return $this->replaceAutoresponderTokens($preparedTemplate, $form, $submission, true);
+    }
+
+    public function resolveAutoresponderContentType(Form $form): string
+    {
+        return $form->autoresponder_content_type_override
+            ?? $form->website->autoresponder_content_type
+            ?? 'text';
     }
 
     public function resolveAutoresponderDelayMinutes(Form $form): int

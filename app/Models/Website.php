@@ -22,6 +22,7 @@ class Website extends Model
     use HasFactory;
 
     protected $attributes = [
+        'autoresponder_content_type' => 'text',
         'autoresponder_delay_minutes' => 0,
     ];
 
@@ -35,6 +36,7 @@ class Website extends Model
         'autoresponder_enabled',
         'autoresponder_subject',
         'autoresponder_body',
+        'autoresponder_content_type',
         'autoresponder_delay_minutes',
         'webhook_enabled',
         'health_reports_enabled',
