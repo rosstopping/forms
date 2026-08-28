@@ -64,7 +64,8 @@ it('adds structured data for organization and article pages', function (): void 
     $this->get(route('marketing.article', 'forms-that-never-lose-a-lead'))
         ->assertSuccessful()
         ->assertSee('"@type":"BlogPosting"', false)
-        ->assertSee('"headline":"Build forms that never leave a lead wondering"', false);
+        ->assertSee('"headline":"Build forms that never leave a lead wondering"', false)
+        ->assertSee('"datePublished":"2026-07-31"', false);
 });
 
 it('publishes an XML sitemap for the marketing site', function (): void {
