@@ -9,7 +9,6 @@
             '@type' => 'Organization',
             'name' => 'Sitewell',
             'url' => route('marketing.home'),
-            'telephone' => '+44 1302 985 828',
         ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
     </script>
 @endsection

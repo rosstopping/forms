@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#f4f1e8">
     <meta name="description" content="@yield('meta_description', 'Sitewell keeps your website healthy, visible, and ready to turn visitors into customers.')">
-    @php($canonicalUrl = request()->route()?->getName() ? route(request()->route()->getName(), request()->route()->parameters()) : request()->url())
-    <link rel="canonical" href="{{ $canonicalUrl }}">
+    <link rel="canonical" href="{{ url()->current() }}">
     <title>@yield('title', 'Sitewell') · Your website, well looked after</title>
     @yield('structured_data')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
