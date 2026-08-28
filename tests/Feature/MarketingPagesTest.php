@@ -55,13 +55,15 @@ it('uses shorter SEO page titles for flagged marketing pages', function (string 
     'search article' => ['marketing.article', ['search-data-to-content-decisions'], 'Turn search data into action'],
 ]);
 
-it('adds structured data for organization and article pages', function (): void {
+it('adds organization structured data on the home page', function (): void {
     $this->get(route('marketing.home'))
         ->assertSuccessful()
         ->assertSee('application/ld+json')
         ->assertSee('Organization')
         ->assertSee('Sitewell');
+});
 
+it('adds blog posting structured data on article pages', function (): void {
     $this->get(route('marketing.article', 'forms-that-never-lose-a-lead'))
         ->assertSuccessful()
         ->assertSee('application/ld+json')
