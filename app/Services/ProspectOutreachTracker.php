@@ -40,6 +40,10 @@ class ProspectOutreachTracker
                 return $delivery->load('links');
             }
 
+            if ($messageType === ProspectOutreachMessageType::Initial) {
+                return $delivery->load('links');
+            }
+
             if ($messageType !== ProspectOutreachMessageType::PostVideoFollowUp && filled($prospect->showcase_video_url)) {
                 $delivery->links()->create([
                     'kind' => 'showcase_video',

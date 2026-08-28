@@ -3,11 +3,12 @@
 namespace App\Jobs;
 
 use App\Models\Prospect;
+use App\Services\InitialProspectOutreachGenerator;
 use App\Services\ProspectLifecycleManager;
 use App\Services\ProspectWebsiteAnalyzer;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
-use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Throwable;
 
 class AnalyzeProspect implements ShouldQueue
@@ -24,13 +25,13 @@ class AnalyzeProspect implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(ProspectWebsiteAnalyzer $analyzer, ProspectLifecycleManager $lifecycleManager): void
+    public function handle(ProspectWebsiteAnalyzer $analyzer, ProspectLifecycleManager $lifecycleManager, InitialProspectOutreachGenerator $outreachGenerator): void
     {
         $this->prospect->update(['analysis_status' => 'running', 'analysis_error' => null]);
 
         try {
             $analysis = $analyzer->analyze($this->prospect->website_url);
-            $draft = $this->draft();
+            $draft = $outreachGenerator->generate($this->prospect) ?? $this->fallbackDraft();
             $this->prospect->update([
                 'analysis_status' => 'completed', 'opportunity_score' => $analysis['score'], 'findings' => $analysis['findings'],
                 'contact_details' => $analysis['contacts'], 'email' => $this->prospect->email ?: data_get($analysis, 'contacts.emails.0.value'),
@@ -47,39 +48,14 @@ class AnalyzeProspect implements ShouldQueue
     }
 
     /** @return array{subject: string, body: string} */
-    protected function draft(): array
+    protected function fallbackDraft(): array
     {
-        if (blank($this->prospect->showcase_video_url)) {
-            $contactName = $this->prospect->contact_name ?: 'there';
-            $rankingSentence = $this->rankingSentence();
-
-            return [
-                'subject' => 'Quick one for '.$this->prospect->business_name,
-                'body' => "Hi {$contactName},\n\nI came across {$this->prospect->business_name} while looking at local search results.{$rankingSentence} I spotted a few opportunities that could help the website bring in more local enquiries.\n\nI’ve put together a short website audit showing some of the issues I found. I can also record a quick video explaining what I’d prioritise.\n\nWould you like me to send the video over?\n\nCheers,\nRoss",
-            ];
-        }
+        $contactName = $this->prospect->contact_name;
+        $greeting = $contactName ? 'Hi '.$contactName.',' : 'Hi,';
 
         return [
-            'subject' => 'Quick one for '.$this->prospect->business_name,
-            'body' => "Hi there,\n\nI came across {$this->prospect->business_name} on Google and thought Sitewell might be useful for you.\n\nI ran your website through it and recorded a quick video showing what I found.\n\nNo sales pitch — just thought it might be worth a look.\n\nCheers,\nRoss",
+            'subject' => Str::lower((string) data_get($this->prospect->prospecting_context, 'industry', 'website')),
+            'body' => "{$greeting}\n\nI came across {$this->prospect->business_name} earlier and had a look through the website. I noticed a few things that may be worth reviewing.\n\nI’m a web developer, so this is the sort of thing I work on regularly. Happy to send over what I noticed if you’re interested.\n\nCheers,\nRoss",
         ];
-    }
-
-    private function rankingSentence(): string
-    {
-        $activity = $this->prospect->activities()
-            ->where('type', 'seo_opportunity_imported')
-            ->latest()
-            ->first();
-        $bestRanking = collect(data_get($activity?->metadata, 'rankings', []))->sortBy('position')->first();
-
-        if (! is_array($bestRanking) || blank(Arr::get($bestRanking, 'keyword')) || ! is_numeric(Arr::get($bestRanking, 'position'))) {
-            return '';
-        }
-
-        $position = max(1, (int) $bestRanking['position']);
-        $page = (int) ceil($position / 10);
-
-        return ' I found your website for “'.$bestRanking['keyword'].'” on page '.$page.' of Google (position '.$position.').';
     }
 }

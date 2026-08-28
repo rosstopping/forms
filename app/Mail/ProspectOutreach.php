@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Enums\ProspectOutreachMessageType;
 use App\Models\Prospect;
 use App\Models\ProspectOutreachDelivery;
 use Illuminate\Bus\Queueable;
@@ -38,9 +39,10 @@ class ProspectOutreach extends Mailable
      */
     public function content(): Content
     {
-        $showcaseVideoUrl = $this->prospect->showcase_video_url;
-        $auditReportUrl = $this->auditReportUrl();
-        $bookingUrl = 'https://cal.com/ross';
+        $isInitialOutreach = $this->delivery === null || $this->delivery->message_type === ProspectOutreachMessageType::Initial;
+        $showcaseVideoUrl = $isInitialOutreach ? null : $this->prospect->showcase_video_url;
+        $auditReportUrl = $isInitialOutreach ? null : $this->auditReportUrl();
+        $bookingUrl = $isInitialOutreach ? null : 'https://cal.com/ross';
         $trackingOpenUrl = null;
 
         if ($this->delivery) {
@@ -61,6 +63,7 @@ class ProspectOutreach extends Mailable
                 'auditReportUrl' => $auditReportUrl,
                 'bookingUrl' => $bookingUrl,
                 'trackingOpenUrl' => $trackingOpenUrl,
+                'showOutreachDisclosure' => ! $isInitialOutreach,
                 'messageBody' => $this->delivery?->body ?? $this->prospect->outreach_body,
             ],
         );

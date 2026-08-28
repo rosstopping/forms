@@ -23,3 +23,4 @@
 - Connect to CRM tools and payment flows.
 - Add analytics dashboards and review request automation.
 - Expand into quoting, invoicing, and advanced workflow automation.
+- Offer the outreach tooling to Growth-plan customers, potentially as a separately billed add-on. See `docs/customer-outreach-product-plan.md`.

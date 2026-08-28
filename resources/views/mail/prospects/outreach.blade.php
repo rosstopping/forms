@@ -31,7 +31,9 @@
                 <a href="{{ $bookingUrl }}" style="display:inline-block;border-radius:8px;background:#0f766e;padding:12px 18px;color:#ffffff;font-weight:600;text-decoration:none;">Book a call with Ross</a>
                 <p style="margin:14px 0 0;font-size:12px;color:#64748b;">Or use this <a href="{{ $bookingUrl }}" style="color:#0f766e;">booking link</a></p>
             </div>@endif
-            <p style="margin:24px 0 0;font-size:13px;line-height:1.6;color:#64748b;">Full disclosure, because we don’t currently manage your website, the data we can see is fairly limited. If you decided to work with us, we’d connect tools like Google Search Console, giving us a much clearer picture of how your website is actually performing.</p>
+            @if ($showOutreachDisclosure)
+                <p style="margin:24px 0 0;font-size:13px;line-height:1.6;color:#64748b;">Full disclosure, because we don’t currently manage your website, the data we can see is fairly limited. If you decided to work with us, we’d connect tools like Google Search Console, giving us a much clearer picture of how your website is actually performing.</p>
+            @endif
         </section>
         @if ($trackingOpenUrl)
             <img src="{{ $trackingOpenUrl }}" alt="" width="1" height="1" style="display:block;width:1px;height:1px;border:0;" aria-hidden="true">

@@ -2,6 +2,7 @@
 
 use App\Enums\ProspectEngagementEventType;
 use App\Enums\ProspectLifecycleState;
+use App\Enums\ProspectOutreachMessageType;
 use App\Mail\ProspectOutreach;
 use App\Models\Prospect;
 use App\Models\ProspectOutreachDelivery;
@@ -16,7 +17,7 @@ use Illuminate\Support\Facades\URL;
 
 afterEach(fn () => CarbonImmutable::setTestNow());
 
-it('adds signed open and click tracking to a live outreach email', function (): void {
+it('adds signed open tracking without click links to a live initial email', function (): void {
     Mail::fake();
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     $prospect = Prospect::factory()->for($admin, 'owner')->create([
@@ -33,12 +34,12 @@ it('adds signed open and click tracking to a live outreach email', function (): 
     $delivery = $prospect->outreachDeliveries()->with('links')->sole();
     expect($delivery->sent_at)->not->toBeNull()
         ->and($delivery->recipient_email)->toBe($prospect->email)
-        ->and($delivery->links->pluck('kind')->sort()->values()->all())->toBe(['book_call', 'showcase_video', 'website_audit']);
+        ->and($delivery->links)->toBeEmpty();
 
     Mail::assertSent(ProspectOutreach::class, function (ProspectOutreach $mail) use ($delivery): bool {
         $mail->assertSeeInHtml('/outreach/open/'.$delivery->uuid)
-            ->assertSeeInHtml('/outreach/click/')
-            ->assertSeeInHtml('View your website audit')
+            ->assertDontSeeInHtml('/outreach/click/')
+            ->assertDontSeeInHtml('View your website audit')
             ->assertSeeInHtml('signature=');
 
         return $mail->delivery->is($delivery);
@@ -130,7 +131,7 @@ it('scores an attributable audit click and only awards a meaningful revisit late
         'website_url' => 'https://example.com',
         'analysed_at' => now(),
     ]);
-    $delivery = app(ProspectOutreachTracker::class)->createDelivery($prospect);
+    $delivery = app(ProspectOutreachTracker::class)->createDelivery($prospect, ProspectOutreachMessageType::ColdFollowUp);
     $auditLink = $delivery->links->firstWhere('kind', 'website_audit');
     $trackingUrl = URL::signedRoute('prospect-outreach-links.show', $auditLink);
 

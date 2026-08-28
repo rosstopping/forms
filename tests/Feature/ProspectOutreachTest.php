@@ -5,6 +5,7 @@ use App\Jobs\AnalyzeProspect;
 use App\Mail\ProspectOutreach;
 use App\Models\Prospect;
 use App\Models\User;
+use App\Services\InitialProspectOutreachGenerator;
 use App\Services\LoomVideoThumbnail;
 use App\Services\ProspectLifecycleManager;
 use App\Services\ProspectWebsiteAnalyzer;
@@ -14,18 +15,15 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\URL;
 
-it('instructs generated outreach to use the approved video and no-video wording', function () {
+it('instructs generated initial outreach to be permission-led and non-salesy', function () {
     $instructions = (string) app(ProspectOutreachWriter::class)->instructions();
 
     expect($instructions)
-        ->toContain('When a showcase video URL is supplied')
-        ->toContain('I ran your website through it and recorded a quick video showing what I found.')
-        ->toContain('When no showcase video URL is supplied')
-        ->toContain('I spotted a few opportunities that could help the website bring in more local enquiries.')
-        ->toContain('Would you like me to send the video over?')
-        ->not->toContain('£149/month')
-        ->toContain('do not add prices')
-        ->toContain('website audit findings');
+        ->toContain('approximately 60–100 words')
+        ->toContain('very short lower-case subject')
+        ->toContain('low-pressure invitation')
+        ->toContain('Do not include links, audits, videos, Sitewell')
+        ->toContain('Never invent personalisation');
 });
 
 it('adds a prospect and automatically queues website research', function () {
@@ -133,7 +131,7 @@ it('fills an empty prospect email from published website contact details', funct
         ],
     ]);
 
-    (new AnalyzeProspect($prospect))->handle($analyzer, app(ProspectLifecycleManager::class));
+    (new AnalyzeProspect($prospect))->handle($analyzer, app(ProspectLifecycleManager::class), app(InitialProspectOutreachGenerator::class));
 
     expect($prospect->refresh()->email)->toBe('hello@example.com')
         ->and(data_get($prospect->contact_details, 'emails.0.source_url'))->toBe('https://example.com/contact')
@@ -154,9 +152,15 @@ it('prepares the no-video outreach wording with the prospect contact and company
         'contacts' => ['emails' => [], 'phones' => [], 'addresses' => [], 'contact_page_url' => null, 'contact_form_url' => null],
     ]);
 
-    (new AnalyzeProspect($prospect))->handle($analyzer, app(ProspectLifecycleManager::class));
+    (new AnalyzeProspect($prospect))->handle($analyzer, app(ProspectLifecycleManager::class), app(InitialProspectOutreachGenerator::class));
 
-    expect($prospect->refresh()->outreach_body)->toBe("Hi James,\n\nI came across New Bould Roofing while looking at local search results. I spotted a few opportunities that could help the website bring in more local enquiries.\n\nI’ve put together a short website audit showing some of the issues I found. I can also record a quick video explaining what I’d prioritise.\n\nWould you like me to send the video over?\n\nCheers,\nRoss");
+    expect($prospect->refresh()->outreach_body)
+        ->toContain('Hi James,')
+        ->toContain('New Bould Roofing')
+        ->toContain('web developer')
+        ->toContain('send over what I noticed')
+        ->not->toContain('audit')
+        ->not->toContain('video');
 });
 
 it('includes the strongest verified search term and Google results page in the draft', function () {
@@ -165,7 +169,7 @@ it('includes the strongest verified search term and Google results page in the d
         'website_url' => 'https://newbould.example',
     ]);
     $prospect->recordActivity('seo_opportunity_imported', 'Imported from SEO discovery.')->update([
-        'metadata' => ['rankings' => [
+        'metadata' => ['location' => 'Doncaster', 'rankings' => [
             ['keyword' => 'roofers doncaster', 'position' => 34],
             ['keyword' => 'roof repairs doncaster', 'position' => 27],
         ]],
@@ -177,14 +181,17 @@ it('includes the strongest verified search term and Google results page in the d
         'contacts' => ['emails' => [], 'phones' => [], 'addresses' => [], 'contact_page_url' => null, 'contact_form_url' => null],
     ]);
 
-    (new AnalyzeProspect($prospect))->handle($analyzer, app(ProspectLifecycleManager::class));
+    (new AnalyzeProspect($prospect))->handle($analyzer, app(ProspectLifecycleManager::class), app(InitialProspectOutreachGenerator::class));
 
-    expect($prospect->refresh()->outreach_body)
-        ->toContain('“roof repairs doncaster”')
-        ->toContain('page 3 of Google (position 27)');
+    expect($prospect->refresh())
+        ->outreach_subject->toBe('roof repairs')
+        ->outreach_body->toContain('roof repairs')
+        ->toContain('Doncaster')
+        ->toContain('quite a way down the results')
+        ->not->toContain('position 27');
 });
 
-it('keeps the existing outreach wording when a showcase video is available', function () {
+it('keeps videos and Sitewell out of the initial email when a showcase video is available', function () {
     $prospect = Prospect::factory()->create([
         'business_name' => 'New Bould Roofing',
         'website_url' => 'https://newbould.example',
@@ -197,9 +204,13 @@ it('keeps the existing outreach wording when a showcase video is available', fun
         'contacts' => ['emails' => [], 'phones' => [], 'addresses' => [], 'contact_page_url' => null, 'contact_form_url' => null],
     ]);
 
-    (new AnalyzeProspect($prospect))->handle($analyzer, app(ProspectLifecycleManager::class));
+    (new AnalyzeProspect($prospect))->handle($analyzer, app(ProspectLifecycleManager::class), app(InitialProspectOutreachGenerator::class));
 
-    expect($prospect->refresh()->outreach_body)->toBe("Hi there,\n\nI came across New Bould Roofing on Google and thought Sitewell might be useful for you.\n\nI ran your website through it and recorded a quick video showing what I found.\n\nNo sales pitch — just thought it might be worth a look.\n\nCheers,\nRoss");
+    expect($prospect->refresh()->outreach_body)
+        ->toContain('New Bould Roofing')
+        ->toContain('web developer')
+        ->not->toContain('Sitewell')
+        ->not->toContain('video');
 });
 
 it('requires approval before sending outreach and schedules a follow-up', function () {
@@ -284,9 +295,9 @@ it('sends the exact saved draft as a test to the administrator without contactin
     Mail::assertSent(ProspectOutreach::class, function (ProspectOutreach $mail) use ($admin, $prospect): bool {
         $mail->assertHasSubject($prospect->outreach_subject)
             ->assertSeeInHtml($prospect->outreach_body)
-            ->assertSeeInHtml('https://video.example.com/acme-plumbing')
-            ->assertSeeInHtml('Your website video')
-            ->assertSeeInHtml('https://cal.com/ross');
+            ->assertDontSeeInHtml('https://video.example.com/acme-plumbing')
+            ->assertDontSeeInHtml('Your website video')
+            ->assertDontSeeInHtml('https://cal.com/ross');
 
         return $mail->hasTo($admin->email) && ! $mail->hasTo($prospect->email);
     });
@@ -460,7 +471,7 @@ it('shares a time-limited website review with the prospect', function () {
     $this->get(route('prospect-reports.show', $prospect))->assertForbidden();
 });
 
-it('renders a casual outreach email with the showcase video and no audit details', function () {
+it('renders initial outreach without links or sales extras', function () {
     $prospect = Prospect::factory()->create([
         'business_name' => 'Acme Plumbing',
         'outreach_subject' => 'Quick one for Acme Plumbing',
@@ -472,23 +483,14 @@ it('renders a casual outreach email with the showcase video and no audit details
     (new ProspectOutreach($prospect))
         ->assertFrom(config('mail.from.address'), 'Ross')
         ->assertHasSubject('Quick one for Acme Plumbing')
-        ->assertSeeInHtml('Your website video')
-        ->assertSeeInHtml('Watch your video')
-        ->assertSeeInHtml('https://video.example.com/acme-plumbing')
-        ->assertSeeInHtml('https://cdn.loom.com/acme-plumbing.jpg')
-        ->assertSeeInHtml('Watch the website video recorded for Acme Plumbing')
-        ->assertSeeInHtml('Book a call with Ross')
-        ->assertSeeInHtml('https://cal.com/ross')
-        ->assertSeeInHtml('Full disclosure, because we don’t currently manage your website, the data we can see is fairly limited.')
-        ->assertSeeInHtml('Google Search Console')
         ->assertSeeInHtml('quick video below')
-        ->assertDontSeeInHtml('View your website review')
-        ->assertDontSeeInHtml('What is Sitewell?')
-        ->assertDontSeeInHtml('Website health checks')
+        ->assertDontSeeInHtml('Your website video')
+        ->assertDontSeeInHtml('Book a call with Ross')
+        ->assertDontSeeInHtml('Full disclosure')
         ->assertDontSeeInHtml('signature=');
 });
 
-it('includes a private website audit link for an analysed prospect', function () {
+it('does not include a private website audit link in initial outreach', function () {
     $prospect = Prospect::factory()->create([
         'business_name' => 'Acme Plumbing',
         'website_url' => 'https://example.com',
@@ -498,14 +500,12 @@ it('includes a private website audit link for an analysed prospect', function ()
     ]);
 
     (new ProspectOutreach($prospect))
-        ->assertSeeInHtml('Your website audit')
-        ->assertSeeInHtml('View your website audit')
-        ->assertSeeInHtml('/prospect-reports/'.$prospect->id)
-        ->assertSeeInHtml('available for 30 days')
-        ->assertSeeInHtml('signature=');
+        ->assertDontSeeInHtml('Your website audit')
+        ->assertDontSeeInHtml('/prospect-reports/'.$prospect->id)
+        ->assertDontSeeInHtml('signature=');
 });
 
-it('includes the showcase video when offering a prospect a new website', function () {
+it('does not include the showcase video when offering a prospect a new website', function () {
     $prospect = Prospect::factory()->create([
         'website_url' => null,
         'outreach_subject' => 'Quick one for Acme Plumbing',
@@ -515,11 +515,8 @@ it('includes the showcase video when offering a prospect a new website', functio
 
     (new ProspectOutreach($prospect))
         ->assertHasSubject('Quick one for Acme Plumbing')
-        ->assertSeeInHtml('Your website video')
-        ->assertSeeInHtml('Watch your video')
-        ->assertSeeInHtml('https://video.example.com/new-website')
-        ->assertSeeInHtml('Book a call with Ross')
-        ->assertSeeInHtml('https://cal.com/ross')
-        ->assertDontSeeInHtml('View your website review')
+        ->assertDontSeeInHtml('Your website video')
+        ->assertDontSeeInHtml('https://video.example.com/new-website')
+        ->assertDontSeeInHtml('Book a call with Ross')
         ->assertDontSeeInHtml('signature=');
 });
