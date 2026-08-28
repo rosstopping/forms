@@ -9,10 +9,15 @@ use App\Models\ProspectOutreachDelivery;
 use App\Models\User;
 
 it('shows daily priorities and actionable warm and reply queues', function (): void {
-    $this->freezeTime();
+    $this->travelTo('2026-08-28 10:35:00 Europe/London');
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     $warm = Prospect::factory()->for($admin, 'owner')->create(['business_name' => 'Warm Roofing', 'lead_temperature' => 'warm']);
-    $warm->outreachState()->update(['lifecycle_state' => ProspectLifecycleState::Warm, 'engagement_score' => 6, 'last_engagement_at' => now()]);
+    $warm->outreachState()->update([
+        'lifecycle_state' => ProspectLifecycleState::Warm,
+        'engagement_score' => 6,
+        'initial_email_sent_at' => now()->subMinutes(5),
+        'last_engagement_at' => now(),
+    ]);
     ProspectEngagementEvent::factory()->for($warm)->create(['event_type' => ProspectEngagementEventType::AuditClicked, 'score_delta' => 5, 'occurred_at' => now()]);
 
     $replied = Prospect::factory()->for($admin, 'owner')->create(['business_name' => 'Reply Plumbing', 'status' => 'replied', 'replied_at' => now()]);
@@ -26,6 +31,9 @@ it('shows daily priorities and actionable warm and reply queues', function (): v
         ->assertSee('Today’s priorities')
         ->assertSee('Warm Leads')
         ->assertSee('Warm Roofing')
+        ->assertSee('Email sent')
+        ->assertSee('28 Aug 2026, 10:30')
+        ->assertSee('28 Aug 2026, 10:35')
         ->assertSee('Recent Replies')
         ->assertSee('Reply Plumbing')
         ->assertSee('automatically followed up today')
