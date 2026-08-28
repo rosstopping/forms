@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#f4f1e8">
     <meta name="description" content="@yield('meta_description', 'Sitewell keeps your website healthy, visible, and ready to turn visitors into customers.')">
+    <link rel="canonical" href="{{ url()->current() }}">
     <title>@yield('title', 'Sitewell') · Your website, well looked after</title>
+    @yield('structured_data')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-dvh bg-paper font-sans text-ink">

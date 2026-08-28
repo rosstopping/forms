@@ -1,7 +1,19 @@
 @extends('layouts.marketing')
 
-@section('title', $article['title'])
+@section('title', $article['seo_title'] ?? $article['title'])
 @section('meta_description', $article['excerpt'])
+@section('structured_data')
+    <script type="application/ld+json">
+        @json([
+            '@context' => 'https://schema.org',
+            '@type' => 'BlogPosting',
+            'headline' => $article['title'],
+            'description' => $article['excerpt'],
+            'datePublished' => $article['date'],
+            'mainEntityOfPage' => route('marketing.article', $article['slug']),
+        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+    </script>
+@endsection
 
 @section('content')
     <article class="py-16 sm:py-24">
