@@ -26,6 +26,52 @@ it('shows journal articles and returns not found for unknown slugs', function ()
     $this->get(route('marketing.article', 'missing-article'))->assertNotFound();
 });
 
+it('outputs canonical URLs for key marketing pages', function (string $routeName, array $parameters = []): void {
+    $this->get(route($routeName, $parameters))
+        ->assertSuccessful()
+        ->assertSee('<link rel="canonical" href="'.route($routeName, $parameters).'">', false);
+})->with([
+    'home' => ['marketing.home'],
+    'features' => ['marketing.features'],
+    'pricing' => ['marketing.pricing'],
+    'free audit' => ['marketing.free-site-audit'],
+    'journal' => ['marketing.journal'],
+    'contact' => ['marketing.contact'],
+    'journal article' => ['marketing.article', ['a-clean-website-handover']],
+]);
+
+it('uses shorter SEO page titles for flagged marketing pages', function (string $routeName, array $parameters, string $title): void {
+    $fullTitle = $title.' · Your website, well looked after';
+
+    $this->get(route($routeName, $parameters))
+        ->assertSuccessful()
+        ->assertSee('<title>'.$fullTitle.'</title>', false);
+
+    expect(strlen($fullTitle))->toBeLessThanOrEqual(65);
+})->with([
+    'home' => ['marketing.home', [], 'Website care for growing teams'],
+    'clean handover article' => ['marketing.article', ['a-clean-website-handover'], 'A clean website handover'],
+    'forms article' => ['marketing.article', ['forms-that-never-lose-a-lead'], 'Build forms that capture leads'],
+    'search article' => ['marketing.article', ['search-data-to-content-decisions'], 'Turn search data into action'],
+]);
+
+it('adds organization structured data on the home page', function (): void {
+    $this->get(route('marketing.home'))
+        ->assertSuccessful()
+        ->assertSee('application/ld+json')
+        ->assertSee('Organization')
+        ->assertSee('Sitewell');
+});
+
+it('adds blog posting structured data on article pages', function (): void {
+    $this->get(route('marketing.article', 'forms-that-never-lose-a-lead'))
+        ->assertSuccessful()
+        ->assertSee('application/ld+json')
+        ->assertSee('BlogPosting')
+        ->assertSee('Build forms that never leave a lead wondering')
+        ->assertSee('2026-07-31');
+});
+
 it('publishes an XML sitemap for the marketing site', function (): void {
     $this->get(route('marketing.sitemap'))
         ->assertSuccessful()

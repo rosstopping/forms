@@ -67,8 +67,10 @@ class MarketingController extends Controller
                 'slug' => 'a-clean-website-handover',
                 'category' => 'Operations',
                 'title' => 'A clean website handover is the start of good care',
+                'seo_title' => 'A clean website handover',
                 'excerpt' => 'The five connections and decisions that turn a finished build into a website your team can confidently support.',
                 'date' => '8 August 2026',
+                'date_iso' => '2026-08-08',
                 'read_time' => '6 min read',
                 'sections' => [
                     ['heading' => 'A launch is a beginning, not a finish line', 'body' => 'The fragile period for a website often starts just after launch. Forms need watching, search data needs time to settle, and small technical issues can quietly become expensive. A good handover makes ownership explicit before any of that happens.'],
@@ -80,8 +82,10 @@ class MarketingController extends Controller
                 'slug' => 'forms-that-never-lose-a-lead',
                 'category' => 'Forms',
                 'title' => 'Build forms that never leave a lead wondering',
+                'seo_title' => 'Build forms that capture leads',
                 'excerpt' => 'A practical checklist for reliable delivery, useful notifications, spam handling, and better follow-up.',
                 'date' => '31 July 2026',
+                'date_iso' => '2026-07-31',
                 'read_time' => '5 min read',
                 'sections' => [
                     ['heading' => 'Treat delivery as part of the experience', 'body' => 'A polished form is not complete when the button is pressed. Visitors need a clear success state, the right people need the submission promptly, and the data should be available when an inbox rule inevitably fails.'],
@@ -93,8 +97,10 @@ class MarketingController extends Controller
                 'slug' => 'search-data-to-content-decisions',
                 'category' => 'Search',
                 'title' => 'Turn search data into the next useful improvement',
+                'seo_title' => 'Turn search data into action',
                 'excerpt' => 'Move beyond top-line clicks by connecting queries, ranking pages, health findings, and a reviewable content workflow.',
                 'date' => '22 July 2026',
+                'date_iso' => '2026-07-22',
                 'read_time' => '7 min read',
                 'sections' => [
                     ['heading' => 'Start with the page behind the query', 'body' => 'A ranking number becomes actionable when it is paired with the page Google is showing. That relationship reveals mismatched intent, competing pages, and opportunities to strengthen an existing answer.'],
