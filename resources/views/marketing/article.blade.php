@@ -9,7 +9,7 @@
             '@type' => 'BlogPosting',
             'headline' => $article['title'],
             'description' => $article['excerpt'],
-            'datePublished' => $article['date_iso'] ?? $article['date'],
+            'datePublished' => $article['date_iso'],
             'mainEntityOfPage' => route('marketing.article', $article['slug']),
         ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
     </script>
