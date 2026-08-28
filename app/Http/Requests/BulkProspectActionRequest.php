@@ -32,6 +32,7 @@ class BulkProspectActionRequest extends FormRequest
             'search' => ['nullable', 'string', 'max:255'],
             'status' => ['nullable', 'string', Rule::in(Prospect::STATUSES)],
             'temperature' => ['nullable', 'string', Rule::in(Prospect::LEAD_TEMPERATURES)],
+            'email_status' => ['nullable', 'string', Rule::in(['missing', 'present'])],
         ];
     }
 }

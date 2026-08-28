@@ -274,3 +274,20 @@ it('shows hot leads first and supports filtering by engagement', function (): vo
         ->assertDontSee('Warm Prospect')
         ->assertDontSee('Cold Prospect');
 });
+
+it('filters outreach leads by whether they have an email address', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    Prospect::factory()->for($admin, 'owner')->create(['business_name' => 'Missing Email Ltd', 'email' => null]);
+    Prospect::factory()->for($admin, 'owner')->create(['business_name' => 'Has Email Ltd', 'email' => 'hello@example.com']);
+
+    $this->actingAs($admin)->get(route('admin.prospects.index', ['email_status' => 'missing']))
+        ->assertSuccessful()
+        ->assertSee('Without email address')
+        ->assertSee('Missing Email Ltd')
+        ->assertDontSee('Has Email Ltd');
+
+    $this->get(route('admin.prospects.index', ['email_status' => 'present']))
+        ->assertSuccessful()
+        ->assertSee('Has Email Ltd')
+        ->assertDontSee('Missing Email Ltd');
+});

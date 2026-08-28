@@ -64,6 +64,21 @@ it('researches all matching prospects and clears an existing schedule', function
     Queue::assertPushed(AnalyzeProspect::class, 1);
 });
 
+it('applies bulk actions to all prospects matching the missing email filter', function (): void {
+    Queue::fake();
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $missingEmail = Prospect::factory()->for($admin, 'owner')->create(['email' => null, 'analysis_status' => 'completed']);
+    $hasEmail = Prospect::factory()->for($admin, 'owner')->create(['email' => 'hello@example.com', 'analysis_status' => 'completed']);
+
+    $this->actingAs($admin)->post(route('admin.prospects.bulk'), [
+        'action' => 'research_again', 'selection_scope' => 'all', 'email_status' => 'missing',
+    ])->assertRedirect()->assertSessionHas('status', '1 prospect queued for research.');
+
+    expect($missingEmail->refresh()->analysis_status)->toBe('pending')
+        ->and($hasEmail->refresh()->analysis_status)->toBe('completed');
+    Queue::assertPushed(AnalyzeProspect::class, 1);
+});
+
 it('schedules eligible approved emails in UK time and displays the schedule', function (): void {
     Queue::fake();
     CarbonImmutable::setTestNow('2026-08-19 09:00:00 UTC');

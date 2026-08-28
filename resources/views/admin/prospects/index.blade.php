@@ -7,7 +7,7 @@
         <div class="flex items-center gap-3"><a href="{{ route('admin.prospect-discoveries.index') }}" class="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50">Find prospects</a><a href="{{ route('admin.prospects.create') }}" class="rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">Add prospect</a></div>
     </div>
     @if (session('status'))<div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{{ session('status') }}</div>@endif
-    @unless (request()->hasAny(['status', 'temperature', 'search']))
+    @unless (request()->hasAny(['status', 'temperature', 'email_status', 'search']))
     <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div><p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Daily command centre</p><h2 class="mt-1 text-xl font-semibold text-slate-950">Today’s priorities</h2></div>
         <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -96,6 +96,7 @@
         <input name="search" value="{{ request('search') }}" placeholder="Search business or email" class="min-w-64 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm">
         <select name="status" class="rounded-lg border border-slate-300 px-3 py-2 text-sm"><option value="">All stages</option>@foreach (\App\Models\Prospect::STATUSES as $status)<option value="{{ $status }}" @selected(request('status') === $status)>{{ str($status)->replace('_', ' ')->title() }}</option>@endforeach</select>
         <select name="temperature" class="rounded-lg border border-slate-300 px-3 py-2 text-sm"><option value="">All engagement</option>@foreach (\App\Models\Prospect::LEAD_TEMPERATURES as $temperature)<option value="{{ $temperature }}" @selected(request('temperature') === $temperature)>{{ str($temperature)->title() }}</option>@endforeach</select>
+        <select name="email_status" aria-label="Email address" class="rounded-lg border border-slate-300 px-3 py-2 text-sm"><option value="">All email statuses</option><option value="missing" @selected(request('email_status') === 'missing')>Without email address</option><option value="present" @selected(request('email_status') === 'present')>With email address</option></select>
         <button class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">Filter</button>
     </form>
     <form method="POST" action="{{ route('admin.prospects.bulk') }}" data-bulk-prospects-form data-bulk-prospects-total="{{ $matchingProspectsCount }}" class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -104,6 +105,7 @@
         <input type="hidden" name="search" value="{{ request('search') }}">
         <input type="hidden" name="status" value="{{ request('status') }}">
         <input type="hidden" name="temperature" value="{{ request('temperature') }}">
+        <input type="hidden" name="email_status" value="{{ request('email_status') }}">
         <div class="flex flex-col gap-3 border-b border-slate-200 bg-slate-50 p-3 lg:flex-row lg:items-center">
             <div class="flex items-center gap-3">
                 <input type="checkbox" data-bulk-prospects-select-page aria-label="Select all prospects on this page" class="size-5 rounded border-slate-300">
