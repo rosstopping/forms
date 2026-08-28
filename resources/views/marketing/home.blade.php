@@ -1,7 +1,17 @@
 @extends('layouts.marketing')
 
-@section('title', 'Website care for growing businesses')
+@section('title', 'Website care for growing teams')
 @section('meta_description', 'Sitewell keeps your website healthy, captures every lead, and helps you make the improvements that grow your business.')
+@section('structured_data')
+    <script type="application/ld+json">
+        @json([
+            '@context' => 'https://schema.org',
+            '@type' => 'Organization',
+            'name' => 'Sitewell',
+            'url' => route('marketing.home'),
+        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+    </script>
+@endsection
 
 @section('content')
     <section class="py-16 sm:py-24 lg:py-28">
