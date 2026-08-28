@@ -3,13 +3,16 @@
 @section('title', 'Website care for growing teams')
 @section('meta_description', 'Sitewell keeps your website healthy, captures every lead, and helps you make the improvements that grow your business.')
 @section('structured_data')
-    <script type="application/ld+json">
-        @json([
+    @php
+        $structuredData = [
             '@context' => 'https://schema.org',
             '@type' => 'Organization',
             'name' => 'Sitewell',
             'url' => route('marketing.home'),
-        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+        ];
+    @endphp
+    <script type="application/ld+json">
+        @json($structuredData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
     </script>
 @endsection
 

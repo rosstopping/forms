@@ -3,15 +3,18 @@
 @section('title', $article['seo_title'] ?? $article['title'])
 @section('meta_description', $article['excerpt'])
 @section('structured_data')
-    <script type="application/ld+json">
-        @json([
+    @php
+        $structuredData = [
             '@context' => 'https://schema.org',
             '@type' => 'BlogPosting',
             'headline' => $article['title'],
             'description' => $article['excerpt'],
             'datePublished' => $article['date_iso'],
             'mainEntityOfPage' => route('marketing.article', $article['slug']),
-        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+        ];
+    @endphp
+    <script type="application/ld+json">
+        @json($structuredData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
     </script>
 @endsection
 
