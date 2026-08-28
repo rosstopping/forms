@@ -26,7 +26,7 @@ it('shows journal articles and returns not found for unknown slugs', function ()
     $this->get(route('marketing.article', 'missing-article'))->assertNotFound();
 });
 
-it('outputs canonical URLs for key marketing pages', function (string $routeName, array|string $parameters = []): void {
+it('outputs canonical URLs for key marketing pages', function (string $routeName, array $parameters = []): void {
     $this->get(route($routeName, $parameters))
         ->assertSuccessful()
         ->assertSee('<link rel="canonical" href="'.route($routeName, $parameters).'">', false);
@@ -37,10 +37,10 @@ it('outputs canonical URLs for key marketing pages', function (string $routeName
     'free audit' => ['marketing.free-site-audit'],
     'journal' => ['marketing.journal'],
     'contact' => ['marketing.contact'],
-    'journal article' => ['marketing.article', 'a-clean-website-handover'],
+    'journal article' => ['marketing.article', ['a-clean-website-handover']],
 ]);
 
-it('uses shorter SEO page titles for flagged marketing pages', function (string $routeName, array|string $parameters, string $title): void {
+it('uses shorter SEO page titles for flagged marketing pages', function (string $routeName, array $parameters, string $title): void {
     $fullTitle = $title.' · Your website, well looked after';
 
     $this->get(route($routeName, $parameters))
@@ -50,9 +50,9 @@ it('uses shorter SEO page titles for flagged marketing pages', function (string 
     expect(strlen($fullTitle))->toBeLessThanOrEqual(65);
 })->with([
     'home' => ['marketing.home', [], 'Website care for growing teams'],
-    'clean handover article' => ['marketing.article', 'a-clean-website-handover', 'A clean website handover'],
-    'forms article' => ['marketing.article', 'forms-that-never-lose-a-lead', 'Build forms that capture leads'],
-    'search article' => ['marketing.article', 'search-data-to-content-decisions', 'Turn search data into action'],
+    'clean handover article' => ['marketing.article', ['a-clean-website-handover'], 'A clean website handover'],
+    'forms article' => ['marketing.article', ['forms-that-never-lose-a-lead'], 'Build forms that capture leads'],
+    'search article' => ['marketing.article', ['search-data-to-content-decisions'], 'Turn search data into action'],
 ]);
 
 it('adds structured data for organization and article pages', function (): void {
