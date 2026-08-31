@@ -29,7 +29,7 @@ class BulkProspectActionRequest extends FormRequest
             'prospect_ids' => ['required_if:selection_scope,page', 'array', 'max:100'],
             'prospect_ids.*' => ['integer', 'distinct', 'exists:prospects,id'],
             'scheduled_send_at' => ['nullable', Rule::requiredIf($this->input('action') === 'schedule_approved_email'), 'date', 'after:now'],
-            'search' => ['nullable', 'string', 'max:255'],
+            'search' => ['nullable', 'string', 'max:15000'],
             'status' => ['nullable', 'string', Rule::in(Prospect::STATUSES)],
             'temperature' => ['nullable', 'string', Rule::in(Prospect::LEAD_TEMPERATURES)],
             'email_status' => ['nullable', 'string', Rule::in(['missing', 'present'])],

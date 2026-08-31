@@ -134,6 +134,8 @@
                 <button data-bulk-prospects-apply disabled class="rounded-lg bg-slate-950 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">Apply</button>
             </div>
         </div>
+        @error('search')<p class="border-b border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">The bulk action was not run: {{ $message }}</p>@enderror
+        @error('action')<p class="border-b border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">The bulk action was not run: {{ $message }}</p>@enderror
         @error('prospect_ids')<p class="border-b border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">{{ $message }}</p>@enderror
         @error('scheduled_send_at')<p class="border-b border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">{{ $message }}</p>@enderror
         <div class="divide-y divide-slate-100">

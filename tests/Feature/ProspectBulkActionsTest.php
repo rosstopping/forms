@@ -84,6 +84,46 @@ it('applies bulk actions to all prospects matching comma-separated search terms'
     Queue::assertPushed(AnalyzeProspect::class, 2);
 });
 
+it('applies a bulk action to a long pasted list of escaped email addresses without touching unrelated prospects', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $firstMatch = Prospect::factory()->for($admin, 'owner')->create(['email' => 'info@optimakitchens.co.uk']);
+    $secondMatch = Prospect::factory()->for($admin, 'owner')->create(['email' => 'enquiries@beesureroofing.co.uk']);
+    $thirdMatch = Prospect::factory()->for($admin, 'owner')->create(['email' => 'dd0a55ccb8124b9c9d938e3acf41f8aa@sentry.wixpress.com']);
+    $unrelated = Prospect::factory()->for($admin, 'owner')->create(['email' => 'keep@example.com']);
+    $search = collect([
+        'info\@optimakitchens.co.uk',
+        'not-provided\@modal.form',
+        'enquiries\@beesureroofing.co.uk',
+        'dd0a55ccb8124b9c9d938e3acf41f8aa\@sentry.wixpress.com',
+        ...collect(range(1, 20))->map(fn (int $number): string => "non-matching-address-{$number}\@example.test"),
+    ])->join(', ');
+
+    expect(mb_strlen($search))->toBeGreaterThan(255);
+
+    $this->actingAs($admin)->post(route('admin.prospects.bulk'), [
+        'action' => 'delete', 'selection_scope' => 'all', 'search' => $search,
+    ])->assertRedirect()->assertSessionHas('status', '3 prospects deleted.');
+
+    $this->assertModelMissing($firstMatch);
+    $this->assertModelMissing($secondMatch);
+    $this->assertModelMissing($thirdMatch);
+    $this->assertModelExists($unrelated);
+});
+
+it('rejects an excessively long bulk search and changes nothing', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $prospect = Prospect::factory()->for($admin, 'owner')->create();
+
+    $response = $this->actingAs($admin)
+        ->from(route('admin.prospects.index'))
+        ->post(route('admin.prospects.bulk'), [
+            'action' => 'delete', 'selection_scope' => 'all', 'search' => str_repeat('a', 15001),
+        ]);
+
+    $response->assertRedirect(route('admin.prospects.index'))->assertSessionHasErrors('search');
+    $this->assertModelExists($prospect);
+});
+
 it('applies bulk actions to all prospects matching the missing email filter', function (): void {
     Queue::fake();
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
