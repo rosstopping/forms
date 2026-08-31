@@ -237,6 +237,8 @@ it('sends the configured website acknowledgement to a genuine lead', function ()
     $website = Website::factory()->create([
         'name' => 'Acme Studio',
         'autoresponder_enabled' => true,
+        'autoresponder_from_name' => 'Acme Studio',
+        'autoresponder_from_email' => 'hello@acme.example',
         'autoresponder_subject' => 'Thanks {name}',
         'autoresponder_body' => 'Hello {name}, we received your {form_name} enquiry.',
         'autoresponder_delay_minutes' => 15,
@@ -260,6 +262,8 @@ it('sends the configured website acknowledgement to a genuine lead', function ()
     Queue::assertPushed(SendFormSubmissionAcknowledgement::class, function (SendFormSubmissionAcknowledgement $job): bool {
         return $job->recipient === 'ada@example.com'
             && $job->emailSubject === 'Thanks Ada Lovelace'
+            && $job->fromEmail === 'hello@acme.example'
+            && $job->fromName === 'Acme Studio'
             && $job->delay?->equalTo(now()->addMinutes(15));
     });
     expect(FormSubmission::query()->latest('id')->firstOrFail()->autoresponder_sent_at)->toBeNull();
@@ -273,11 +277,13 @@ it('sends a queued acknowledgement and records its delivery', function (): void 
         'ada@example.com',
         'We received your enquiry',
         'Hello Ada',
+        'hello@example.com',
+        'Example Studio',
     );
 
     $job->handle(new AutoresponderHtmlSanitizer);
 
-    Mail::assertSent(FormSubmissionAcknowledgement::class, fn (FormSubmissionAcknowledgement $mail): bool => $mail->hasTo('ada@example.com'));
+    Mail::assertSent(FormSubmissionAcknowledgement::class, fn (FormSubmissionAcknowledgement $mail): bool => $mail->hasTo('ada@example.com') && $mail->hasFrom('hello@example.com', 'Example Studio'));
     expect($submission->refresh()->autoresponder_sent_at)->not->toBeNull()
         ->and($submission->activities()->where('type', 'autoresponder_sent')->exists())->toBeTrue();
 });

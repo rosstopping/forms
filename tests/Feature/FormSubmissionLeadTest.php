@@ -311,6 +311,8 @@ it('lets a website owner configure the site wide automatic reply', function () {
 
     $this->put(route('admin.websites.autoresponder.update', $website), [
         'autoresponder_enabled' => true,
+        'autoresponder_from_name' => 'Willow & Stone',
+        'autoresponder_from_email' => 'hello@willowandstone.example',
         'autoresponder_subject' => 'We received your enquiry',
         'autoresponder_body' => 'Thanks {name}. We will be in touch.',
         'autoresponder_content_type' => 'text',
@@ -318,6 +320,8 @@ it('lets a website owner configure the site wide automatic reply', function () {
     ])->assertRedirect(route('admin.websites.show', $website));
 
     expect($website->refresh()->autoresponder_enabled)->toBeTrue()
+        ->and($website->autoresponder_from_name)->toBe('Willow & Stone')
+        ->and($website->autoresponder_from_email)->toBe('hello@willowandstone.example')
         ->and($website->autoresponder_subject)->toBe('We received your enquiry')
         ->and($website->autoresponder_body)->toBe('<div>Thanks {name}. We will be in touch.</div>')
         ->and($website->autoresponder_content_type)->toBe('text')

@@ -24,6 +24,8 @@ class SendFormSubmissionAcknowledgement implements ShouldQueue
         public string $recipient,
         public string $emailSubject,
         public string $emailBody,
+        public ?string $fromEmail = null,
+        public ?string $fromName = null,
     ) {}
 
     public function handle(AutoresponderHtmlSanitizer $autoresponderHtmlSanitizer): void
@@ -33,6 +35,8 @@ class SendFormSubmissionAcknowledgement implements ShouldQueue
             $this->emailSubject,
             $this->emailBody,
             $autoresponderHtmlSanitizer->toPlainText($this->emailBody),
+            $this->fromEmail,
+            $this->fromName,
         ));
 
         $this->submission->update([

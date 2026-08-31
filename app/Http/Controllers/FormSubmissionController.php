@@ -213,6 +213,8 @@ class FormSubmissionController extends Controller
                 $replyToEmail,
                 $this->formSettingsResolver->resolveAutoresponderSubject($form, $submission),
                 $this->formSettingsResolver->resolveAutoresponderBody($form, $submission),
+                $website->autoresponder_from_email ?: config('mail.from.address'),
+                $website->autoresponder_from_name ?: config('mail.from.name'),
             )->delay(now()->addMinutes($this->formSettingsResolver->resolveAutoresponderDelayMinutes($form)));
         }
 

@@ -5,6 +5,7 @@ namespace App\Mail;
 use App\Models\FormSubmission;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
@@ -22,6 +23,8 @@ class FormSubmissionAcknowledgement extends Mailable
         public string $emailSubject,
         public string $emailBody,
         public string $emailText,
+        public ?string $fromEmail = null,
+        public ?string $fromName = null,
     ) {}
 
     /**
@@ -30,6 +33,10 @@ class FormSubmissionAcknowledgement extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
+            from: new Address(
+                $this->fromEmail ?: config('mail.from.address'),
+                $this->fromName ?: config('mail.from.name'),
+            ),
             subject: $this->emailSubject,
         );
     }

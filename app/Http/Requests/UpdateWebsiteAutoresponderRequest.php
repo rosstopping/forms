@@ -26,6 +26,8 @@ class UpdateWebsiteAutoresponderRequest extends FormRequest
     {
         return [
             'autoresponder_enabled' => ['required', 'boolean'],
+            'autoresponder_from_name' => ['nullable', 'string', 'max:255'],
+            'autoresponder_from_email' => ['nullable', 'email', 'max:255'],
             'autoresponder_subject' => ['nullable', 'string', 'max:255'],
             'autoresponder_body' => ['nullable', 'string', 'max:1000000'],
             'autoresponder_content_type' => ['required', 'string', 'in:text,html'],

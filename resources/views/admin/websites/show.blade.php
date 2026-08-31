@@ -611,6 +611,17 @@
                 </label>
                 <div class="grid gap-4 lg:grid-cols-2">
                     <div>
+                        <label class="text-sm font-medium text-slate-700" for="autoresponder_from_name">From name</label>
+                        <input id="autoresponder_from_name" name="autoresponder_from_name" value="{{ old('autoresponder_from_name', $website->autoresponder_from_name) }}" placeholder="{{ config('mail.from.name') }}" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                        @error('autoresponder_from_name')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-slate-700" for="autoresponder_from_email">From email address</label>
+                        <input id="autoresponder_from_email" type="email" name="autoresponder_from_email" value="{{ old('autoresponder_from_email', $website->autoresponder_from_email) }}" placeholder="{{ config('mail.from.address') }}" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" autocapitalize="none" autocomplete="email" spellcheck="false">
+                        @error('autoresponder_from_email')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                        <p class="mt-1 text-xs text-slate-500">Leave blank to use the default Sitewell sender. Your mail provider must allow the address you enter.</p>
+                    </div>
+                    <div>
                         <label class="text-sm font-medium text-slate-700" for="autoresponder_subject">Email subject</label>
                         <input id="autoresponder_subject" name="autoresponder_subject" value="{{ old('autoresponder_subject', $website->autoresponder_subject) }}" placeholder="We've received your {form_name} enquiry" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
                     </div>
