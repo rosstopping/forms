@@ -169,6 +169,48 @@ it('marks approved emails as drafts in bulk and cancels any scheduled send', fun
     Mail::assertNothingSent();
 });
 
+it('marks every matching approved prospect as a draft without skipping records as their status changes', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $scheduledFor = CarbonImmutable::now()->addDay();
+    $first = approvedProspect($admin, ['business_name' => 'Matching First', 'scheduled_send_at' => $scheduledFor]);
+    $second = approvedProspect($admin, ['business_name' => 'Matching Second', 'scheduled_send_at' => $scheduledFor]);
+    $unrelated = approvedProspect($admin, ['business_name' => 'Unrelated']);
+
+    $this->actingAs($admin)->post(route('admin.prospects.bulk'), [
+        'action' => 'mark_as_draft',
+        'selection_scope' => 'all',
+        'search' => 'Matching',
+        'status' => 'approved',
+    ])->assertRedirect()->assertSessionHas('status', '2 prospects returned to draft.');
+
+    expect($first->refresh()->status)->toBe('drafted')
+        ->and($first->scheduled_send_at)->toBeNull()
+        ->and($first->approved_at)->toBeNull()
+        ->and($second->refresh()->status)->toBe('drafted')
+        ->and($second->scheduled_send_at)->toBeNull()
+        ->and($second->approved_at)->toBeNull()
+        ->and($unrelated->refresh()->status)->toBe('approved');
+});
+
+it('repairs an unsent prospect with stale approval or scheduling data when returning it to draft', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $prospect = Prospect::factory()->for($admin, 'owner')->create([
+        'status' => 'drafted',
+        'approved_at' => now(),
+        'approved_by' => $admin->id,
+        'scheduled_send_at' => now()->addDay(),
+    ]);
+
+    $this->actingAs($admin)->post(route('admin.prospects.bulk'), [
+        'action' => 'mark_as_draft', 'selection_scope' => 'page', 'prospect_ids' => [$prospect->id],
+    ])->assertRedirect()->assertSessionHas('status', '1 prospect returned to draft.');
+
+    expect($prospect->refresh()->status)->toBe('drafted')
+        ->and($prospect->approved_at)->toBeNull()
+        ->and($prospect->approved_by)->toBeNull()
+        ->and($prospect->scheduled_send_at)->toBeNull();
+});
+
 it('schedules from a prospect page and sends the approved email when the job runs', function (): void {
     Queue::fake();
     Mail::fake();

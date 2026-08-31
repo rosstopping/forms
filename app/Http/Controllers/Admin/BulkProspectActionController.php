@@ -26,7 +26,7 @@ class BulkProspectActionController extends Controller
         $processed = 0;
         $skipped = 0;
 
-        foreach ($prospects->cursor() as $prospect) {
+        foreach ($prospects->lazyById() as $prospect) {
             $wasProcessed = match ($data['action']) {
                 'approve' => $this->approve($prospect, $request, $lifecycleManager),
                 'research_again' => $this->researchAgain($prospect, $request),
@@ -136,7 +136,11 @@ class BulkProspectActionController extends Controller
 
     private function markAsDraft(Prospect $prospect, BulkProspectActionRequest $request, ProspectLifecycleManager $lifecycleManager): bool
     {
-        if ($prospect->status !== 'approved' || $prospect->sent_at !== null) {
+        $isApprovedOrScheduled = $prospect->status === 'approved'
+            || $prospect->approved_at !== null
+            || $prospect->scheduled_send_at !== null;
+
+        if (! $isApprovedOrScheduled || $prospect->sent_at !== null) {
             return false;
         }
 
