@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Str;
 
 class Prospect extends Model
 {
@@ -80,6 +81,29 @@ class Prospect extends Model
     public function scopeAccessibleTo(Builder $query, User $user): Builder
     {
         return $user->isAdmin() ? $query : $query->where('user_id', $user->id);
+    }
+
+    public function scopeMatchingSearchTerms(Builder $query, string $search): Builder
+    {
+        $terms = Str::of($search)
+            ->replace(["\r\n", "\r", "\n"], ',')
+            ->explode(',')
+            ->map(fn (string $term): string => Str::of($term)->trim()->replace('\@', '@')->toString())
+            ->filter()
+            ->unique()
+            ->take(50);
+
+        if ($terms->isEmpty()) {
+            return $query;
+        }
+
+        return $query->where(function (Builder $query) use ($terms): void {
+            foreach ($terms as $term) {
+                $likeTerm = '%'.addcslashes($term, '%_\\').'%';
+                $query->orWhere('business_name', 'like', $likeTerm)
+                    ->orWhere('email', 'like', $likeTerm);
+            }
+        });
     }
 
     public function isAccessibleBy(?User $user): bool

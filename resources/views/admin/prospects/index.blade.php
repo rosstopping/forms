@@ -93,7 +93,7 @@
         @endforeach
     </div>
     <form method="GET" class="flex flex-wrap gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <input name="search" value="{{ request('search') }}" placeholder="Search business or email" class="min-w-64 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm">
+        <input name="search" value="{{ request('search') }}" placeholder="Search businesses or emails, separated by commas" aria-label="Search businesses or emails, separated by commas" class="min-w-64 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm">
         <select name="status" class="rounded-lg border border-slate-300 px-3 py-2 text-sm"><option value="">All stages</option>@foreach (\App\Models\Prospect::STATUSES as $status)<option value="{{ $status }}" @selected(request('status') === $status)>{{ str($status)->replace('_', ' ')->title() }}</option>@endforeach</select>
         <select name="temperature" class="rounded-lg border border-slate-300 px-3 py-2 text-sm"><option value="">All engagement</option>@foreach (\App\Models\Prospect::LEAD_TEMPERATURES as $temperature)<option value="{{ $temperature }}" @selected(request('temperature') === $temperature)>{{ str($temperature)->title() }}</option>@endforeach</select>
         <select name="email_status" aria-label="Email address" class="rounded-lg border border-slate-300 px-3 py-2 text-sm"><option value="">All email statuses</option><option value="missing" @selected(request('email_status') === 'missing')>Without email address</option><option value="present" @selected(request('email_status') === 'present')>With email address</option></select>

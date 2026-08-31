@@ -291,3 +291,27 @@ it('filters outreach leads by whether they have an email address', function (): 
         ->assertSee('Has Email Ltd')
         ->assertDontSee('Missing Email Ltd');
 });
+
+it('finds outreach leads matching any comma-separated search term', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    Prospect::factory()->for($admin, 'owner')->create([
+        'business_name' => 'First Wix Prospect',
+        'email' => 'dd0a55ccb8124b9c9d938e3acf41f8aa@sentry.wixpress.com',
+    ]);
+    Prospect::factory()->for($admin, 'owner')->create([
+        'business_name' => 'Second Wix Prospect',
+        'email' => '18d2f96d279149989b95faf0a4b41882@sentry-next.wixpress.com',
+    ]);
+    Prospect::factory()->for($admin, 'owner')->create([
+        'business_name' => 'Unrelated Prospect',
+        'email' => 'hello@example.com',
+    ]);
+
+    $search = 'dd0a55ccb8124b9c9d938e3acf41f8aa\@sentry.wixpress.com, '."\n".'18d2f96d279149989b95faf0a4b41882@sentry-next.wixpress.com';
+
+    $this->actingAs($admin)->get(route('admin.prospects.index', ['search' => $search]))
+        ->assertSuccessful()
+        ->assertSee('First Wix Prospect')
+        ->assertSee('Second Wix Prospect')
+        ->assertDontSee('Unrelated Prospect');
+});

@@ -65,7 +65,7 @@ class ProspectController extends Controller
             ->when(in_array($temperature, Prospect::LEAD_TEMPERATURES, true), fn ($query) => $query->where('lead_temperature', $temperature))
             ->when($emailStatus === 'missing', fn ($query) => $query->where(fn ($query) => $query->whereNull('email')->orWhere('email', '')))
             ->when($emailStatus === 'present', fn ($query) => $query->whereNotNull('email')->where('email', '!=', ''))
-            ->when($request->filled('search'), fn ($query) => $query->where(fn ($query) => $query->where('business_name', 'like', '%'.$request->string('search').'%')->orWhere('email', 'like', '%'.$request->string('search').'%')));
+            ->when($request->filled('search'), fn ($query) => $query->matchingSearchTerms($request->string('search')->toString()));
         $matchingProspectsCount = (clone $query)->count();
         $prospects = $query
             ->orderByRaw("case lead_temperature when 'hot' then 1 when 'warm' then 2 else 3 end")

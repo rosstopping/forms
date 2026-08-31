@@ -68,9 +68,7 @@ class BulkProspectActionController extends Controller
             ->when(filled($data['temperature'] ?? null), fn (Builder $query) => $query->where('lead_temperature', $data['temperature']))
             ->when(($data['email_status'] ?? null) === 'missing', fn (Builder $query) => $query->where(fn (Builder $query) => $query->whereNull('email')->orWhere('email', '')))
             ->when(($data['email_status'] ?? null) === 'present', fn (Builder $query) => $query->whereNotNull('email')->where('email', '!=', ''))
-            ->when(filled($data['search'] ?? null), fn (Builder $query) => $query->where(fn (Builder $query) => $query
-                ->where('business_name', 'like', '%'.$data['search'].'%')
-                ->orWhere('email', 'like', '%'.$data['search'].'%')));
+            ->when(filled($data['search'] ?? null), fn (Builder $query) => $query->matchingSearchTerms($data['search']));
     }
 
     private function approve(Prospect $prospect, BulkProspectActionRequest $request, ProspectLifecycleManager $lifecycleManager): bool

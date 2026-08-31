@@ -64,6 +64,25 @@ it('researches all matching prospects and clears an existing schedule', function
     Queue::assertPushed(AnalyzeProspect::class, 1);
 });
 
+it('applies bulk actions to all prospects matching comma-separated search terms', function (): void {
+    Queue::fake();
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $firstMatch = Prospect::factory()->for($admin, 'owner')->create(['email' => 'first@example.com', 'analysis_status' => 'completed']);
+    $secondMatch = Prospect::factory()->for($admin, 'owner')->create(['email' => 'second@example.com', 'analysis_status' => 'completed']);
+    $unrelated = Prospect::factory()->for($admin, 'owner')->create(['email' => 'other@example.com', 'analysis_status' => 'completed']);
+
+    $this->actingAs($admin)->post(route('admin.prospects.bulk'), [
+        'action' => 'research_again',
+        'selection_scope' => 'all',
+        'search' => 'first@example.com, second@example.com, first@example.com',
+    ])->assertRedirect()->assertSessionHas('status', '2 prospects queued for research.');
+
+    expect($firstMatch->refresh()->analysis_status)->toBe('pending')
+        ->and($secondMatch->refresh()->analysis_status)->toBe('pending')
+        ->and($unrelated->refresh()->analysis_status)->toBe('completed');
+    Queue::assertPushed(AnalyzeProspect::class, 2);
+});
+
 it('applies bulk actions to all prospects matching the missing email filter', function (): void {
     Queue::fake();
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
