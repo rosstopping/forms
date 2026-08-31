@@ -24,7 +24,7 @@ class BulkProspectActionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'action' => ['required', Rule::in(['approve', 'research_again', 'delete', 'schedule_approved_email', 'send_approved_email'])],
+            'action' => ['required', Rule::in(['approve', 'research_again', 'delete', 'schedule_approved_email', 'cancel_scheduled_email', 'mark_as_draft', 'send_approved_email'])],
             'selection_scope' => ['required', Rule::in(['page', 'all'])],
             'prospect_ids' => ['required_if:selection_scope,page', 'array', 'max:100'],
             'prospect_ids.*' => ['integer', 'distinct', 'exists:prospects,id'],

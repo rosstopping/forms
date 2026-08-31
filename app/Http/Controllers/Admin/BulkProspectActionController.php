@@ -32,6 +32,8 @@ class BulkProspectActionController extends Controller
                 'research_again' => $this->researchAgain($prospect, $request),
                 'delete' => $this->delete($prospect),
                 'schedule_approved_email' => $this->schedule($prospect, $data['scheduled_send_at'], $request, $sender, $lifecycleManager),
+                'cancel_scheduled_email' => $this->cancelSchedule($prospect, $request, $lifecycleManager),
+                'mark_as_draft' => $this->markAsDraft($prospect, $request, $lifecycleManager),
                 'send_approved_email' => $this->send($prospect, $request, $sender),
             };
 
@@ -43,6 +45,8 @@ class BulkProspectActionController extends Controller
             'research_again' => 'queued for research',
             'delete' => 'deleted',
             'schedule_approved_email' => 'scheduled',
+            'cancel_scheduled_email' => 'schedule cancelled',
+            'mark_as_draft' => 'returned to draft',
             'send_approved_email' => 'sent',
         };
         $message = $processed.' '.str('prospect')->plural($processed).' '.$actionLabel.'.';
@@ -113,6 +117,32 @@ class BulkProspectActionController extends Controller
         $lifecycleManager->markScheduled($prospect);
         $prospect->recordActivity('send_scheduled', 'Approved outreach email scheduled for '.$scheduledFor->setTimezone('Europe/London')->format('j M Y, H:i').' UK time.', $request->user());
         SendScheduledProspectOutreach::dispatch($prospect->id, $scheduledFor)->delay($scheduledFor)->afterCommit();
+
+        return true;
+    }
+
+    private function cancelSchedule(Prospect $prospect, BulkProspectActionRequest $request, ProspectLifecycleManager $lifecycleManager): bool
+    {
+        if ($prospect->scheduled_send_at === null || $prospect->sent_at !== null) {
+            return false;
+        }
+
+        $prospect->update(['scheduled_send_at' => null]);
+        $lifecycleManager->markUnscheduled($prospect);
+        $prospect->recordActivity('send_schedule_cancelled', 'Scheduled outreach cancelled in bulk.', $request->user());
+
+        return true;
+    }
+
+    private function markAsDraft(Prospect $prospect, BulkProspectActionRequest $request, ProspectLifecycleManager $lifecycleManager): bool
+    {
+        if ($prospect->status !== 'approved' || $prospect->sent_at !== null) {
+            return false;
+        }
+
+        $prospect->update(['status' => 'drafted', 'approved_at' => null, 'approved_by' => null, 'scheduled_send_at' => null]);
+        $lifecycleManager->markDrafted($prospect);
+        $prospect->recordActivity('returned_to_draft', 'Approved outreach returned to draft in bulk.', $request->user());
 
         return true;
     }

@@ -5,6 +5,7 @@ use App\Jobs\SendScheduledProspectOutreach;
 use App\Mail\ProspectOutreach;
 use App\Models\Prospect;
 use App\Models\User;
+use App\Services\ProspectLifecycleManager;
 use App\Services\ProspectOutreachSender;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Mail;
@@ -22,7 +23,7 @@ function approvedProspect(User $owner, array $attributes = []): Prospect
     ], $attributes));
 }
 
-it('shows the outreach bulk selection and all five actions', function (): void {
+it('shows the outreach bulk selection and all seven actions', function (): void {
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     Prospect::factory()->count(21)->for($admin, 'owner')->create();
 
@@ -30,7 +31,7 @@ it('shows the outreach bulk selection and all five actions', function (): void {
         ->assertSuccessful()
         ->assertSee('data-bulk-prospects-form', false)
         ->assertSee('Select all 21 matching prospects')
-        ->assertSeeInOrder(['Approve Draft', 'Research Again', 'Schedule Approved Email', 'Send Approved Email', 'Delete']);
+        ->assertSeeInOrder(['Approve Draft', 'Research Again', 'Schedule Approved Email', 'Cancel Scheduled Send', 'Mark as Draft Again', 'Send Approved Email', 'Delete']);
 });
 
 it('approves eligible selected drafts and skips ineligible prospects', function (): void {
@@ -112,6 +113,60 @@ it('schedules eligible approved emails in UK time and displays the schedule', fu
     expect($prospect->refresh()->scheduled_send_at->equalTo($expected))->toBeTrue();
     Queue::assertPushed(SendScheduledProspectOutreach::class, fn (SendScheduledProspectOutreach $job): bool => $job->prospectId === $prospect->id && $job->scheduledFor->equalTo($expected));
     $this->get(route('admin.prospects.index'))->assertSuccessful()->assertSee('Scheduled 20 Aug, 10:30');
+});
+
+it('cancels scheduled emails in bulk without removing their approval', function (): void {
+    Mail::fake();
+    CarbonImmutable::setTestNow('2026-08-19 09:00:00 UTC');
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $scheduledFor = CarbonImmutable::parse('2026-08-20 10:30', 'Europe/London')->utc();
+    $scheduled = approvedProspect($admin, ['scheduled_send_at' => $scheduledFor]);
+    $unscheduled = approvedProspect($admin);
+    app(ProspectLifecycleManager::class)->markScheduled($scheduled);
+
+    $this->actingAs($admin)->post(route('admin.prospects.bulk'), [
+        'action' => 'cancel_scheduled_email', 'selection_scope' => 'page', 'prospect_ids' => [$scheduled->id, $unscheduled->id],
+    ])->assertRedirect()->assertSessionHas('status', '1 prospect schedule cancelled. 1 skipped because they were not eligible.');
+
+    $scheduled->refresh();
+    expect($scheduled->status)->toBe('approved')
+        ->and($scheduled->approved_at)->not->toBeNull()
+        ->and($scheduled->approved_by)->toBe($admin->id)
+        ->and($scheduled->scheduled_send_at)->toBeNull()
+        ->and($scheduled->outreachState->lifecycle_state->value)->toBe('approved')
+        ->and($scheduled->outreachState->next_action_at)->toBeNull()
+        ->and($unscheduled->refresh()->status)->toBe('approved');
+
+    (new SendScheduledProspectOutreach($scheduled->id, $scheduledFor))->handle(app(ProspectOutreachSender::class));
+
+    expect($scheduled->refresh()->sent_at)->toBeNull();
+    Mail::assertNothingSent();
+});
+
+it('marks approved emails as drafts in bulk and cancels any scheduled send', function (): void {
+    Mail::fake();
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $scheduledFor = CarbonImmutable::now()->addDay();
+    $scheduled = approvedProspect($admin, ['scheduled_send_at' => $scheduledFor]);
+    $alreadyDraft = Prospect::factory()->for($admin, 'owner')->create(['status' => 'drafted']);
+    app(ProspectLifecycleManager::class)->markScheduled($scheduled);
+
+    $this->actingAs($admin)->post(route('admin.prospects.bulk'), [
+        'action' => 'mark_as_draft', 'selection_scope' => 'page', 'prospect_ids' => [$scheduled->id, $alreadyDraft->id],
+    ])->assertRedirect()->assertSessionHas('status', '1 prospect returned to draft. 1 skipped because they were not eligible.');
+
+    $scheduled->refresh();
+    expect($scheduled->status)->toBe('drafted')
+        ->and($scheduled->approved_at)->toBeNull()
+        ->and($scheduled->approved_by)->toBeNull()
+        ->and($scheduled->scheduled_send_at)->toBeNull()
+        ->and($scheduled->outreachState->lifecycle_state->value)->toBe('qualified')
+        ->and($scheduled->outreachState->next_action_at)->toBeNull();
+
+    (new SendScheduledProspectOutreach($scheduled->id, $scheduledFor))->handle(app(ProspectOutreachSender::class));
+
+    expect($scheduled->refresh()->sent_at)->toBeNull();
+    Mail::assertNothingSent();
 });
 
 it('schedules from a prospect page and sends the approved email when the job runs', function (): void {

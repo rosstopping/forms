@@ -150,6 +150,38 @@ class ProspectLifecycleManager
         return $this->synchroniseLifecycle($prospect, ProspectLifecycleState::Qualified);
     }
 
+    public function markDrafted(Prospect $prospect): ProspectOutreachState
+    {
+        return DB::transaction(function () use ($prospect): ProspectOutreachState {
+            $outreachState = $this->lockedState($prospect);
+
+            if (! $outreachState->lifecycle_state->stopsNormalOutreach()) {
+                $outreachState->update([
+                    'lifecycle_state' => ProspectLifecycleState::Qualified,
+                    'next_action_at' => null,
+                ]);
+            }
+
+            return $outreachState->refresh();
+        });
+    }
+
+    public function markUnscheduled(Prospect $prospect): ProspectOutreachState
+    {
+        return DB::transaction(function () use ($prospect): ProspectOutreachState {
+            $outreachState = $this->lockedState($prospect);
+
+            if (! $outreachState->lifecycle_state->stopsNormalOutreach()) {
+                $outreachState->update([
+                    'lifecycle_state' => ProspectLifecycleState::Approved,
+                    'next_action_at' => null,
+                ]);
+            }
+
+            return $outreachState->refresh();
+        });
+    }
+
     public function markApproved(Prospect $prospect, ?User $actor = null): ProspectOutreachState
     {
         return $this->synchroniseLifecycle($prospect, ProspectLifecycleState::Approved);

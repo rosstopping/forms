@@ -122,6 +122,8 @@
                     <option value="approve">Approve Draft</option>
                     <option value="research_again">Research Again</option>
                     <option value="schedule_approved_email">Schedule Approved Email</option>
+                    <option value="cancel_scheduled_email">Cancel Scheduled Send</option>
+                    <option value="mark_as_draft">Mark as Draft Again</option>
                     <option value="send_approved_email">Send Approved Email</option>
                     <option value="delete">Delete</option>
                 </select>
