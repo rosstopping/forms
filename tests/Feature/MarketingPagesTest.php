@@ -18,6 +18,19 @@ it('shows each public marketing page', function (string $route, string $copy): v
 ]);
 
 it('shows journal articles and returns not found for unknown slugs', function (): void {
+    $this->get(route('marketing.journal'))
+        ->assertSuccessful()
+        ->assertSee('What does website maintenance actually include?');
+
+    $this->get(route('marketing.article', 'what-website-maintenance-actually-includes'))
+        ->assertSuccessful()
+        ->assertSee('Website maintenance is more than hosting and renewals')
+        ->assertSee('Run a free website audit')
+        ->assertSee('href="'.route('marketing.free-site-audit').'"', false)
+        ->assertSee('href="'.route('marketing.pricing').'"', false)
+        ->assertSee('href="'.route('marketing.article', 'forms-that-never-lose-a-lead').'"', false)
+        ->assertSee('href="'.route('marketing.article', 'search-data-to-content-decisions').'"', false);
+
     $this->get(route('marketing.article', 'a-clean-website-handover'))
         ->assertSuccessful()
         ->assertSee('A clean website handover is the start of good care')
@@ -51,6 +64,7 @@ it('uses shorter SEO page titles for flagged marketing pages', function (string 
 })->with([
     'home' => ['marketing.home', [], 'Website care for growing teams'],
     'clean handover article' => ['marketing.article', ['a-clean-website-handover'], 'A clean website handover'],
+    'website maintenance article' => ['marketing.article', ['what-website-maintenance-actually-includes'], 'Website maintenance explained'],
     'forms article' => ['marketing.article', ['forms-that-never-lose-a-lead'], 'Build forms that capture leads'],
     'search article' => ['marketing.article', ['search-data-to-content-decisions'], 'Turn search data into action'],
 ]);
@@ -64,12 +78,12 @@ it('adds organization structured data on the home page', function (): void {
 });
 
 it('adds blog posting structured data on article pages', function (): void {
-    $this->get(route('marketing.article', 'forms-that-never-lose-a-lead'))
+    $this->get(route('marketing.article', 'what-website-maintenance-actually-includes'))
         ->assertSuccessful()
         ->assertSee('application/ld+json')
         ->assertSee('BlogPosting')
-        ->assertSee('Build forms that never leave a lead wondering')
-        ->assertSee('2026-07-31');
+        ->assertSee('What does website maintenance actually include?')
+        ->assertSee('2026-08-31');
 });
 
 it('publishes an XML sitemap for the marketing site', function (): void {
@@ -83,6 +97,7 @@ it('publishes an XML sitemap for the marketing site', function (): void {
         ->assertSee('<loc>'.route('marketing.free-site-audit').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.journal').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.contact').'</loc>', false)
+        ->assertSee('<loc>'.route('marketing.article', 'what-website-maintenance-actually-includes').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.article', 'a-clean-website-handover').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.article', 'forms-that-never-lose-a-lead').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.article', 'search-data-to-content-decisions').'</loc>', false)

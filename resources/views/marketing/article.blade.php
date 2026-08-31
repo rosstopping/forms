@@ -30,7 +30,34 @@
         <div class="prose mx-auto mt-16 max-w-[70ch] border-t border-ink/10 px-5 pt-12 sm:px-8 lg:px-10">
             @foreach ($article['sections'] as $section)
                 <h2>{{ $section['heading'] }}</h2>
-                <p>{{ $section['body'] }}</p>
+                @if (isset($section['paragraphs']))
+                    @foreach ($section['paragraphs'] as $paragraph)
+                        <p>{{ $paragraph }}</p>
+                    @endforeach
+                @else
+                    <p>{{ $section['body'] }}</p>
+                @endif
+
+                @if (! empty($section['points']))
+                    <ul>
+                        @foreach ($section['points'] as $point)
+                            <li>{{ $point }}</li>
+                        @endforeach
+                    </ul>
+                @endif
+
+                @if (! empty($section['links']))
+                    <ul>
+                        @foreach ($section['links'] as $link)
+                            <li>
+                                <a href="{{ route($link['route'], $link['parameters'] ?? []) }}">{{ $link['label'] }}</a>
+                                @if (! empty($link['description']))
+                                    — {{ $link['description'] }}
+                                @endif
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
             @endforeach
             <blockquote>Good website care is less about constant intervention and more about having the right signals, ownership, and next step.</blockquote>
         </div>
