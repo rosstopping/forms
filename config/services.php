@@ -16,6 +16,8 @@ return [
 
     'postmark' => [
         'key' => env('POSTMARK_API_KEY'),
+        'account_token' => env('POSTMARK_ACCOUNT_TOKEN'),
+        'api_url' => env('POSTMARK_API_URL', 'https://api.postmarkapp.com'),
     ],
 
     'resend' => [
@@ -60,6 +62,12 @@ return [
     'sitewell' => [
         'pixel_asset_url' => env('SITEWELL_PIXEL_ASSET_URL', rtrim((string) env('APP_URL', 'http://localhost'), '/').'/pixel.js'),
         'pixel_api_url' => env('SITEWELL_PIXEL_API_URL', rtrim((string) env('APP_URL', 'http://localhost'), '/').'/api/pixel'),
+    ],
+
+    'turnstile' => [
+        'verify_url' => env('TURNSTILE_VERIFY_URL', 'https://challenges.cloudflare.com/turnstile/v0/siteverify'),
+        'connect_timeout' => (int) env('TURNSTILE_CONNECT_TIMEOUT', 3),
+        'timeout' => (int) env('TURNSTILE_TIMEOUT', 5),
     ],
 
     'google' => [

@@ -74,6 +74,11 @@ class FormSubmission extends Model
         return $this->hasMany(FormSubmissionActivity::class)->latest();
     }
 
+    public function emailDeliveries(): HasMany
+    {
+        return $this->hasMany(FormSubmissionEmailDelivery::class);
+    }
+
     /** @param array<string, mixed>|null $metadata */
     public function recordActivity(string $type, string $description, ?User $user = null, ?array $metadata = null): FormSubmissionActivity
     {

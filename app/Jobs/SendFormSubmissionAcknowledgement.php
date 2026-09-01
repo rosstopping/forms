@@ -2,12 +2,10 @@
 
 namespace App\Jobs;
 
-use App\Mail\FormSubmissionAcknowledgement;
 use App\Models\FormSubmission;
-use App\Services\AutoresponderHtmlSanitizer;
+use App\Services\AutoresponderDeliveryService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
-use Illuminate\Support\Facades\Mail;
 use Throwable;
 
 class SendFormSubmissionAcknowledgement implements ShouldQueue
@@ -28,16 +26,20 @@ class SendFormSubmissionAcknowledgement implements ShouldQueue
         public ?string $fromName = null,
     ) {}
 
-    public function handle(AutoresponderHtmlSanitizer $autoresponderHtmlSanitizer): void
+    public function handle(AutoresponderDeliveryService $deliveryService): void
     {
-        Mail::to($this->recipient)->send(new FormSubmissionAcknowledgement(
+        $delivery = $deliveryService->send(
             $this->submission,
+            $this->recipient,
             $this->emailSubject,
             $this->emailBody,
-            $autoresponderHtmlSanitizer->toPlainText($this->emailBody),
             $this->fromEmail,
             $this->fromName,
-        ));
+        );
+
+        if (! in_array($delivery->status, ['sent', 'delivered'], true)) {
+            return;
+        }
 
         $this->submission->update([
             'autoresponder_sent_at' => now(),
@@ -49,6 +51,11 @@ class SendFormSubmissionAcknowledgement implements ShouldQueue
 
     public function failed(?Throwable $exception): void
     {
+        $this->submission->emailDeliveries()->where('type', 'autoresponder')->update([
+            'status' => 'failed',
+            'failed_at' => now(),
+            'failure_reason' => $exception?->getMessage(),
+        ]);
         $this->submission->update([
             'autoresponder_failed_at' => now(),
             'autoresponder_error' => $exception?->getMessage(),

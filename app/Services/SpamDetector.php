@@ -17,14 +17,12 @@ class SpamDetector
         $normalizedContent = preg_replace('/(?<=[\pL\pN])\s*\.\s*(?=[\pL])/u', '.', $content) ?? $content;
         $score = 0;
         $urlCount = preg_match_all(
-            '/(?:https?:\/\/|www\.)[^\s<]+|(?<![@\pL\pN._-])(?:[a-z0-9-]+\.)+(?:com|net|org|io|co|li|me|app|info|biz)(?:\/[^\s<]*)?/iu',
+            '/(?:https?:\/\/|www\.)[^\s<]+|(?<![@\pL\pN._-])(?:[a-z0-9-]+\.)+[a-z]{2,63}(?:\/[^\s<]*)?/iu',
             $normalizedContent,
         );
 
-        if ($urlCount >= config('forms.spam.max_links', 3)) {
-            $score += 3;
-        } elseif ($urlCount > 0) {
-            $score++;
+        if ($urlCount > 0 && config('forms.spam.links_are_spam', true)) {
+            return true;
         }
 
         if ($this->containsInvalidEmail($payload)) {

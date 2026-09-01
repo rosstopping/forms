@@ -445,6 +445,27 @@
                             @error('webhook_secret')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror
                         </div>
                     </div>
+                    <div class="space-y-3 rounded-lg border border-slate-200 p-3">
+                        <label class="flex items-start gap-3">
+                            <input type="hidden" name="turnstile_enabled" value="0">
+                            <input type="checkbox" name="turnstile_enabled" value="1" class="mt-1 rounded border-slate-300" @checked(old('turnstile_enabled', $website->turnstile_enabled))>
+                            <span>
+                                <span class="block text-sm font-medium text-slate-900">Protect submissions with Cloudflare Turnstile</span>
+                                <span class="block text-xs text-slate-500">Submissions that fail verification are silently quarantined as spam.</span>
+                            </span>
+                        </label>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700" for="turnstile_site_key">Turnstile site key</label>
+                            <input id="turnstile_site_key" name="turnstile_site_key" type="text" value="{{ old('turnstile_site_key', $website->turnstile_site_key) }}" autocomplete="off" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 font-mono text-sm">
+                            @error('turnstile_site_key')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700" for="turnstile_secret_key">Turnstile secret key</label>
+                            <input id="turnstile_secret_key" name="turnstile_secret_key" type="password" value="" placeholder="{{ $website->turnstile_secret_key ? 'Configured — leave blank to keep it' : '' }}" autocomplete="new-password" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 font-mono text-sm">
+                            <p class="mt-1 text-xs text-slate-500">Stored server-side and never included in the website form.</p>
+                            @error('turnstile_secret_key')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror
+                        </div>
+                    </div>
                     <button type="submit" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">Save settings</button>
                 </form>
 
@@ -592,8 +613,14 @@
         &lt;textarea name="message" required&gt;&lt;/textarea&gt;
     &lt;/label&gt;
 
+@if($website->turnstile_enabled && $website->turnstile_site_key)
+    &lt;div class="cf-turnstile" data-sitekey="{{ $website->turnstile_site_key }}"&gt;&lt;/div&gt;
+
+@endif
     &lt;button type="submit"&gt;Send enquiry&lt;/button&gt;
-&lt;/form&gt;</textarea>
+&lt;/form&gt;@if($website->turnstile_enabled && $website->turnstile_site_key)
+
+&lt;script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer&gt;&lt;/script&gt;@endif</textarea>
                 </div>
             </div>
         </section>
@@ -601,10 +628,84 @@
         <div class="rounded-lg border border-blue-200 bg-blue-50 p-4 shadow-sm lg:col-span-2">
             <h2 class="font-semibold text-blue-950">Automatic customer reply</h2>
             <p class="mt-1 text-sm text-blue-800">Set the website-wide acknowledgement. Individual forms can inherit or override it.</p>
+            @php($managedDomain = old('sending_domain', $website->mailConnection?->sending_domain ?? $website->domains->firstWhere('is_primary', true)?->domain))
+            @if ($website->mailConnection?->mode === 'managed' && $website->mailConnection?->postmark_domain_id)
+                <div class="mt-4 space-y-3 rounded-lg border border-blue-200 bg-white p-4">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <p class="text-sm font-semibold text-slate-900">Managed Postmark · {{ $website->mailConnection->sending_domain }}</p>
+                            <p class="text-xs text-slate-500">{{ $website->mailConnection->dkim_verified ? 'Verified and ready to send' : 'Waiting for DNS verification' }}</p>
+                        </div>
+                        <span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ $website->mailConnection->dkim_verified ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }}">{{ $website->mailConnection->dkim_verified ? 'Active' : 'Pending' }}</span>
+                    </div>
+                    <div class="overflow-x-auto rounded-md border border-slate-200">
+                        <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
+                            <thead class="bg-slate-50 text-slate-600"><tr><th class="px-3 py-2 font-medium">Type</th><th class="px-3 py-2 font-medium">Host</th><th class="px-3 py-2 font-medium">Value</th><th class="px-3 py-2 font-medium">Status</th></tr></thead>
+                            <tbody class="divide-y divide-slate-100 text-slate-700">
+                                <tr><td class="px-3 py-2">TXT</td><td class="px-3 py-2 font-mono">{{ $website->mailConnection->dkim_host }}</td><td class="max-w-sm break-all px-3 py-2 font-mono">{{ $website->mailConnection->dkim_value }}</td><td class="px-3 py-2">{{ $website->mailConnection->dkim_verified ? 'Verified' : 'Pending' }}</td></tr>
+                                <tr><td class="px-3 py-2">CNAME</td><td class="px-3 py-2 font-mono">{{ $website->mailConnection->return_path_domain }}</td><td class="max-w-sm break-all px-3 py-2 font-mono">{{ $website->mailConnection->return_path_cname_value }}</td><td class="px-3 py-2">{{ $website->mailConnection->return_path_verified ? 'Verified' : 'Pending' }}</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <form method="POST" action="{{ route('admin.websites.mail.managed.verify', $website) }}">@csrf<button class="rounded-md border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-900 hover:bg-blue-50">Check verification</button></form>
+                        @if ($website->mailConnection->status === 'active')
+                            <form method="POST" action="{{ route('admin.websites.mail.test', $website) }}">@csrf<button class="rounded-md border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-900 hover:bg-blue-50">Send test email</button></form>
+                        @endif
+                    </div>
+                </div>
+            @else
+                <form method="POST" action="{{ route('admin.websites.mail.managed.store', $website) }}" class="mt-4 rounded-lg border border-blue-200 bg-white p-4">
+                    @csrf
+                    <label class="text-sm font-medium text-slate-700" for="sending_domain">Managed sending domain</label>
+                    <div class="mt-1 flex flex-col gap-2 sm:flex-row">
+                        <input id="sending_domain" name="sending_domain" value="{{ $managedDomain }}" placeholder="example.com" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" autocapitalize="none" spellcheck="false">
+                        <button class="shrink-0 rounded-md bg-blue-900 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800">Set up managed Postmark</button>
+                    </div>
+                    @error('sending_domain')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                    <p class="mt-1 text-xs text-slate-500">Sitewell creates the Postmark server. You only need to add the DNS records we provide.</p>
+                </form>
+            @endif
+            @if ($website->mailConnection?->mode === 'customer_postmark' && $website->mailConnection?->status === 'active')
+                <form method="POST" action="{{ route('admin.websites.mail.test', $website) }}" class="mt-3">
+                    @csrf
+                    <button class="rounded-md border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-900 hover:bg-blue-50">Send Postmark test email</button>
+                </form>
+            @endif
             <form method="POST" action="{{ route('admin.websites.autoresponder.update', $website) }}" class="mt-4 space-y-4">
                 @csrf
                 @method('PUT')
                 <input type="hidden" name="autoresponder_enabled" value="0">
+                @php($mailDeliveryMode = old('mail_delivery_mode', $website->mailConnection?->mode ?? 'legacy'))
+                <div class="grid gap-3 lg:grid-cols-2">
+                    @if ($website->mailConnection?->postmark_server_id)
+                        <label class="rounded-lg border border-blue-200 bg-white p-3">
+                            <span class="flex items-start gap-3">
+                                <input type="radio" name="mail_delivery_mode" value="managed" class="mt-1 border-slate-300" @checked($mailDeliveryMode === 'managed')>
+                                <span><span class="block text-sm font-medium text-slate-900">Managed by Sitewell</span><span class="block text-xs text-slate-500">Protected by Sitewell sending and reputation limits.</span></span>
+                            </span>
+                        </label>
+                    @endif
+                    <label class="rounded-lg border border-blue-200 bg-white p-3">
+                        <span class="flex items-start gap-3">
+                            <input type="radio" name="mail_delivery_mode" value="legacy" class="mt-1 border-slate-300" @checked($mailDeliveryMode === 'legacy')>
+                            <span><span class="block text-sm font-medium text-slate-900">Sitewell default sender</span><span class="block text-xs text-slate-500">Keep using Sitewell's current mail delivery setup.</span></span>
+                        </span>
+                    </label>
+                    <label class="rounded-lg border border-blue-200 bg-white p-3">
+                        <span class="flex items-start gap-3">
+                            <input type="radio" name="mail_delivery_mode" value="customer_postmark" class="mt-1 border-slate-300" @checked($mailDeliveryMode === 'customer_postmark')>
+                            <span><span class="block text-sm font-medium text-slate-900">Use my Postmark account</span><span class="block text-xs text-slate-500">Uses your Server API token. Sitewell sending limits do not apply.</span></span>
+                        </span>
+                    </label>
+                </div>
+                @error('mail_delivery_mode')<p class="text-sm text-red-600">{{ $message }}</p>@enderror
+                <div>
+                    <label class="text-sm font-medium text-slate-700" for="postmark_server_token">Postmark Server API token</label>
+                    <input id="postmark_server_token" type="password" name="postmark_server_token" value="" placeholder="{{ $website->mailConnection?->postmark_server_token ? 'Token saved — leave blank to keep it' : 'Enter your Server API token' }}" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" autocomplete="new-password" spellcheck="false">
+                    @error('postmark_server_token')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                    <p class="mt-1 text-xs text-slate-500">Use a Server API token, not your Postmark Account token. It is encrypted and will not be displayed again.</p>
+                </div>
                 <label class="flex items-start gap-3 rounded-lg border border-blue-200 bg-white p-3">
                     <input type="checkbox" name="autoresponder_enabled" value="1" class="mt-1 rounded border-slate-300" @checked(old('autoresponder_enabled', $website->autoresponder_enabled))>
                     <span><span class="block text-sm font-medium text-slate-900">Automatically acknowledge new enquiries</span><span class="block text-xs text-slate-500">Only sends when a valid customer email is present and the submission passes spam checks.</span></span>

@@ -110,6 +110,7 @@ class WebsiteController extends Controller
             'healthReports' => fn ($query) => $query->latest('created_at')->limit(8),
             'repository.installation',
             'searchConsoleConnection',
+            'mailConnection',
             'searchOpportunities' => fn ($query) => $query->whereIn('status', ['open', 'queued'])->orderByDesc('priority_score')->limit(20),
             'businessProfileConnection.audits' => fn ($query) => $query->with('recommendations')->latest()->limit(8),
             'businessProfileConnection.posts' => fn ($query) => $query->latest()->limit(8),
@@ -260,7 +261,22 @@ class WebsiteController extends Controller
             'webhook_enabled' => ['sometimes', 'boolean'],
             'webhook_url' => ['nullable', 'url', 'max:255'],
             'webhook_secret' => ['nullable', 'string', 'max:255'],
+            'turnstile_enabled' => ['sometimes', 'boolean'],
+            'turnstile_site_key' => ['nullable', 'string', 'max:255'],
+            'turnstile_secret_key' => ['nullable', 'string', 'max:255'],
         ]);
+
+        if (($data['turnstile_enabled'] ?? false) && blank($data['turnstile_site_key'] ?? $website->turnstile_site_key)) {
+            return back()->withErrors(['turnstile_site_key' => 'A Turnstile site key is required when protection is enabled.'])->withInput();
+        }
+
+        if (($data['turnstile_enabled'] ?? false) && blank($data['turnstile_secret_key'] ?? $website->turnstile_secret_key)) {
+            return back()->withErrors(['turnstile_secret_key' => 'A Turnstile secret key is required when protection is enabled.'])->withInput();
+        }
+
+        if (blank($data['turnstile_secret_key'] ?? null)) {
+            unset($data['turnstile_secret_key']);
+        }
 
         $domain = $data['domain'] ?? null;
         unset($data['domain']);

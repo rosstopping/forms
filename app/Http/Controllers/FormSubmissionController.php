@@ -14,6 +14,7 @@ use App\Services\FormSettingsResolver;
 use App\Services\RedirectResolver;
 use App\Services\SourceWebsiteResolver;
 use App\Services\SpamDetector;
+use App\Services\TurnstileVerifier;
 use App\Services\WebhookSender;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -29,6 +30,7 @@ class FormSubmissionController extends Controller
         protected RedirectResolver $redirectResolver,
         protected WebhookSender $webhookSender,
         protected SpamDetector $spamDetector,
+        protected TurnstileVerifier $turnstileVerifier,
     ) {}
 
     public function store(StoreFormSubmissionRequest $request): mixed
@@ -69,7 +71,11 @@ class FormSubmissionController extends Controller
             $request,
             $website,
             $form,
-            $this->spamDetector->isSpam($this->formDataSanitiser->sanitise($request->all())),
+            ! $this->turnstileVerifier->passes(
+                $website,
+                $request->string('cf-turnstile-response')->toString(),
+                $request->ip(),
+            ) || $this->spamDetector->isSpam($this->formDataSanitiser->sanitise($request->all())),
         );
 
         if (! $submission->is_spam) {

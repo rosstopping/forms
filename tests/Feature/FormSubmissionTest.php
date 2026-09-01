@@ -6,7 +6,7 @@ use App\Mail\FormSubmissionReceived;
 use App\Models\Form;
 use App\Models\FormSubmission;
 use App\Models\Website;
-use App\Services\AutoresponderHtmlSanitizer;
+use App\Services\AutoresponderDeliveryService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
@@ -15,7 +15,8 @@ use Illuminate\Testing\TestResponse;
 beforeEach(function (): void {
     Mail::fake();
     Queue::fake();
-    Http::fake();
+    Http::fake([]);
+    Http::preventStrayRequests();
 });
 
 it('auto-registers a website and form and stores the submission', function (): void {
@@ -129,6 +130,83 @@ it('detects the site honeypot field without storing it', function (): void {
     Http::assertNothingSent();
 });
 
+it('accepts submissions that pass Turnstile verification', function (): void {
+    Http::fake([
+        'https://challenges.cloudflare.com/turnstile/v0/siteverify' => Http::response([
+            'success' => true,
+            'hostname' => 'turnstile.example',
+        ]),
+    ]);
+    $website = Website::factory()->create([
+        'turnstile_enabled' => true,
+        'turnstile_secret_key' => 'secret-key',
+    ]);
+    $website->domains()->create(['domain' => 'turnstile.example', 'is_primary' => true]);
+    Form::factory()->for($website)->create(['name' => 'Contact form', 'slug' => 'contact-form']);
+
+    $this->withHeader('Origin', 'https://turnstile.example')->post('/submit', [
+        '_form_name' => 'Contact form',
+        'name' => 'Ada Lovelace',
+        'email' => 'ada@example.com',
+        'message' => 'Please send me a quote.',
+        'cf-turnstile-response' => 'valid-token',
+    ])->assertRedirectContains('/submitted');
+
+    expect(FormSubmission::query()->latest('id')->firstOrFail()->is_spam)->toBeFalse();
+    Http::assertSent(fn ($request): bool => $request['secret'] === 'secret-key'
+        && $request['response'] === 'valid-token'
+        && $request['remoteip'] === '127.0.0.1');
+});
+
+it('silently quarantines submissions that fail Turnstile verification', function (?string $token): void {
+    Http::fake([
+        'https://challenges.cloudflare.com/turnstile/v0/siteverify' => Http::response(['success' => false]),
+    ]);
+    $website = Website::factory()->create([
+        'turnstile_enabled' => true,
+        'turnstile_secret_key' => 'secret-key',
+    ]);
+    $website->domains()->create(['domain' => 'turnstile-failure.example', 'is_primary' => true]);
+    Form::factory()->for($website)->create(['name' => 'Contact form', 'slug' => 'contact-form']);
+
+    $this->withHeader('Origin', 'https://turnstile-failure.example')->post('/submit', array_filter([
+        '_form_name' => 'Contact form',
+        'name' => 'Automated visitor',
+        'message' => 'A message without links.',
+        'cf-turnstile-response' => $token,
+    ], fn (mixed $value): bool => $value !== null))->assertRedirectContains('/submitted');
+
+    expect(FormSubmission::query()->latest('id')->firstOrFail()->is_spam)->toBeTrue();
+    Mail::assertNothingSent();
+})->with([
+    'invalid token' => 'invalid-token',
+    'missing token' => null,
+]);
+
+it('quarantines a valid Turnstile token issued for another hostname', function (): void {
+    Http::fake([
+        'https://challenges.cloudflare.com/turnstile/v0/siteverify' => Http::response([
+            'success' => true,
+            'hostname' => 'different.example',
+        ]),
+    ]);
+    $website = Website::factory()->create([
+        'turnstile_enabled' => true,
+        'turnstile_secret_key' => 'secret-key',
+    ]);
+    $website->domains()->create(['domain' => 'protected.example', 'is_primary' => true]);
+    Form::factory()->for($website)->create(['name' => 'Contact form', 'slug' => 'contact-form']);
+
+    $this->withHeader('Origin', 'https://protected.example')->post('/submit', [
+        '_form_name' => 'Contact form',
+        'name' => 'Automated visitor',
+        'message' => 'A message without links.',
+        'cf-turnstile-response' => 'token-for-another-site',
+    ])->assertRedirectContains('/submitted');
+
+    expect(FormSubmission::query()->latest('id')->firstOrFail()->is_spam)->toBeTrue();
+});
+
 it('quarantines link-heavy submissions without sending notifications', function (): void {
     $this->withHeader('Origin', 'https://spam-check.example')
         ->post('/submit', [
@@ -175,18 +253,25 @@ it('quarantines unsolicited music download promotions', function (): void {
     Http::assertNothingSent();
 });
 
-it('does not flag a legitimate message containing one link', function (): void {
-    $this->withHeader('Origin', 'https://legitimate-check.example')
+it('quarantines any submission containing a link', function (string $message): void {
+    $this->withHeader('Origin', 'https://single-link-check.example')
         ->post('/submit', [
             '_form_name' => 'Contact form',
             'name' => 'Ada Lovelace',
             'email' => 'ada@example.com',
-            'message' => 'Could you quote for the project described at https://example.com/brief?',
+            'message' => $message,
         ])
         ->assertRedirectContains('/submitted');
 
-    expect(FormSubmission::query()->latest('id')->firstOrFail()->is_spam)->toBeFalse();
-});
+    expect(FormSubmission::query()->latest('id')->firstOrFail()->is_spam)->toBeTrue();
+    Mail::assertNothingSent();
+})->with([
+    'full URL' => 'Could you review https://example.com/brief?',
+    'www URL' => 'Could you review www.example.com/brief?',
+    'bare domain with an uncommon suffix' => 'Start here: gnosis.link/RoRZxz',
+    'short domain' => 'Start here: is.gd/qySLUJ',
+    'obfuscated domain' => 'Remove me at brnd .li/delist',
+]);
 
 it('does not flag a Robert name with an ordinary phone number', function (): void {
     $this->withHeader('Origin', 'https://legitimate-robert.example')
@@ -281,7 +366,7 @@ it('sends a queued acknowledgement and records its delivery', function (): void 
         'Example Studio',
     );
 
-    $job->handle(new AutoresponderHtmlSanitizer);
+    $job->handle(app(AutoresponderDeliveryService::class));
 
     Mail::assertSent(FormSubmissionAcknowledgement::class, fn (FormSubmissionAcknowledgement $mail): bool => $mail->hasTo('ada@example.com') && $mail->hasFrom('hello@example.com', 'Example Studio'));
     expect($submission->refresh()->autoresponder_sent_at)->not->toBeNull()

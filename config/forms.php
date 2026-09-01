@@ -9,6 +9,13 @@ return [
     'pixel_ui_enabled' => filter_var(env('FORMS_PIXEL_UI_ENABLED', true), FILTER_VALIDATE_BOOL),
     'rate_limit_per_minute' => (int) env('FORMS_RATE_LIMIT_PER_MINUTE', 5),
     'rate_limit_per_hour' => (int) env('FORMS_RATE_LIMIT_PER_HOUR', 10),
+    'autoresponder_limits' => [
+        'warmup_daily' => [25, 50, 100],
+        'warmup_stage_days' => 7,
+        'monthly' => (int) env('FORMS_AUTORESPONDER_MONTHLY_LIMIT', 1000),
+        'recipient_hourly' => (int) env('FORMS_AUTORESPONDER_RECIPIENT_HOURLY_LIMIT', 2),
+        'recipient_daily' => (int) env('FORMS_AUTORESPONDER_RECIPIENT_DAILY_LIMIT', 5),
+    ],
     'max_payload_kb' => (int) env('FORMS_MAX_PAYLOAD_KB', 256),
     'max_field_length' => (int) env('FORMS_MAX_FIELD_LENGTH', 10000),
     'webhook_timeout' => (int) env('FORMS_WEBHOOK_TIMEOUT', 10),
@@ -40,7 +47,7 @@ return [
     ],
     'spam' => [
         'threshold' => (int) env('FORMS_SPAM_THRESHOLD', 3),
-        'max_links' => (int) env('FORMS_SPAM_MAX_LINKS', 3),
+        'links_are_spam' => filter_var(env('FORMS_SPAM_LINKS_ARE_SPAM', true), FILTER_VALIDATE_BOOL),
         'long_content_length' => (int) env('FORMS_SPAM_LONG_CONTENT_LENGTH', 4000),
         'empty_content_score' => (int) env('FORMS_SPAM_EMPTY_CONTENT_SCORE', 3),
         'html_link_score' => (int) env('FORMS_SPAM_HTML_LINK_SCORE', 3),

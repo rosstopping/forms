@@ -260,6 +260,42 @@ it('allows an administrator to configure website webhook settings', function ():
         ->webhook_secret->toBe('signing-secret');
 });
 
+it('allows an administrator to configure website Turnstile protection', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $website = Website::factory()->create();
+
+    $this->actingAs($admin)
+        ->put(route('admin.websites.update', $website), [
+            'turnstile_enabled' => true,
+            'turnstile_site_key' => 'site-key',
+            'turnstile_secret_key' => 'secret-key',
+        ])
+        ->assertSessionDoesntHaveErrors();
+
+    expect($website->fresh())
+        ->turnstile_enabled->toBeTrue()
+        ->turnstile_site_key->toBe('site-key')
+        ->turnstile_secret_key->toBe('secret-key');
+
+    $this->actingAs($admin)
+        ->get(route('admin.websites.show', $website))
+        ->assertSuccessful()
+        ->assertSee('Protect submissions with Cloudflare Turnstile')
+        ->assertSee('data-sitekey="site-key"', false)
+        ->assertSee('https://challenges.cloudflare.com/turnstile/v0/api.js')
+        ->assertDontSee('secret-key');
+
+    $this->actingAs($admin)
+        ->put(route('admin.websites.update', $website), [
+            'turnstile_enabled' => true,
+            'turnstile_site_key' => 'site-key',
+            'turnstile_secret_key' => '',
+        ])
+        ->assertSessionDoesntHaveErrors();
+
+    expect($website->fresh()->turnstile_secret_key)->toBe('secret-key');
+});
+
 it('prevents website owners from deleting websites', function (): void {
     $owner = User::factory()->create();
     $website = Website::factory()->for($owner, 'owner')->create();

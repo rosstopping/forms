@@ -26,6 +26,10 @@ class Website extends Model
         'autoresponder_delay_minutes' => 0,
     ];
 
+    protected $hidden = [
+        'turnstile_secret_key',
+    ];
+
     protected $fillable = [
         'user_id',
         'name',
@@ -49,6 +53,7 @@ class Website extends Model
         'success_redirect_url',
         'failure_redirect_url',
         'turnstile_enabled',
+        'turnstile_site_key',
         'turnstile_secret_key',
         'first_seen_at',
         'pixel_enabled',
@@ -151,6 +156,11 @@ class Website extends Model
     public function submissions(): HasMany
     {
         return $this->hasMany(FormSubmission::class);
+    }
+
+    public function mailConnection(): HasOne
+    {
+        return $this->hasOne(WebsiteMailConnection::class);
     }
 
     public function healthReports(): HasMany
