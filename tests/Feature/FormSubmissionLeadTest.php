@@ -1,9 +1,11 @@
 <?php
 
+use App\Mail\FormSubmissionReceived;
 use App\Models\Form;
 use App\Models\FormSubmission;
 use App\Models\User;
 use App\Models\Website;
+use Illuminate\Support\Facades\Mail;
 
 it('allows an admin to update a lead status and assignment', function () {
     $admin = User::factory()->create([
@@ -268,6 +270,39 @@ it('marks a single lead as spam from its detail page', function () {
     expect($submission->refresh()->is_spam)->toBeTrue();
 });
 
+it('allows a website manager to resend the team email notification', function () {
+    Mail::fake();
+    $owner = User::factory()->create();
+    $website = Website::factory()->create(['user_id' => $owner->id]);
+    $form = Form::factory()->create([
+        'website_id' => $website->id,
+        'email_recipients_override' => ['team@example.com'],
+    ]);
+    $submission = FormSubmission::factory()->create([
+        'website_id' => $website->id,
+        'form_id' => $form->id,
+        'email_failed_at' => now(),
+        'email_error' => 'Previous delivery failed.',
+    ]);
+
+    $this->actingAs($owner)->get(route('admin.form-submissions.show', $submission))
+        ->assertOk()
+        ->assertSee('Resend email notification');
+
+    $this->post(route('admin.form-submissions.resend-notification', $submission))
+        ->assertRedirect(route('admin.form-submissions.show', $submission))
+        ->assertSessionHas('status', 'Email notification resent.');
+
+    Mail::assertSent(FormSubmissionReceived::class, fn (FormSubmissionReceived $mail): bool => $mail->hasTo('team@example.com'));
+    expect($submission->refresh())
+        ->email_sent_at->not->toBeNull()
+        ->email_failed_at->toBeNull()
+        ->email_error->toBeNull()
+        ->and($submission->activities()->latest()->first())
+        ->type->toBe('team_email_resent')
+        ->user_id->toBe($owner->id);
+});
+
 it('deletes a single lead from its detail page', function () {
     $owner = User::factory()->create();
     $website = Website::factory()->create(['user_id' => $owner->id]);
@@ -291,8 +326,10 @@ it('prevents viewers from moderating a single lead', function () {
     $this->actingAs($viewer)->get(route('admin.form-submissions.show', $submission))
         ->assertOk()
         ->assertDontSee('Mark as spam')
+        ->assertDontSee('Resend email notification')
         ->assertDontSee('data-confirm-danger', false);
 
+    $this->post(route('admin.form-submissions.resend-notification', $submission))->assertForbidden();
     $this->patch(route('admin.form-submissions.spam', $submission))->assertForbidden();
     $this->delete(route('admin.form-submissions.destroy', $submission))->assertForbidden();
     $this->assertModelExists($submission);

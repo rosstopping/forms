@@ -43,6 +43,7 @@ it('stores a customer Postmark server token encrypted', function (): void {
 });
 
 it('sends through a customer Postmark account once and records the delivery', function (): void {
+    config()->set('services.postmark.delivery_enabled', true);
     Http::fake([
         'https://api.postmarkapp.com/email' => Http::response(['MessageID' => 'postmark-message-123']),
     ]);
@@ -74,6 +75,7 @@ it('sends through a customer Postmark account once and records the delivery', fu
 });
 
 it('suppresses managed delivery at its daily limit without sending', function (): void {
+    config()->set('services.postmark.delivery_enabled', true);
     config()->set('forms.autoresponder_limits.warmup_daily', [1, 1, 1]);
     $website = Website::factory()->create();
     $connection = $website->mailConnection()->create([
@@ -103,6 +105,7 @@ it('suppresses managed delivery at its daily limit without sending', function ()
 });
 
 it('does not apply managed volume limits to customer Postmark connections', function (): void {
+    config()->set('services.postmark.delivery_enabled', true);
     config()->set('forms.autoresponder_limits.warmup_daily', [0, 0, 0]);
     Http::fake(['https://api.postmarkapp.com/email' => Http::response(['MessageID' => 'byo-message'])]);
     $website = Website::factory()->create();
@@ -118,6 +121,29 @@ it('does not apply managed volume limits to customer Postmark connections', func
     (new SendFormSubmissionAcknowledgement($submission, 'person@example.com', 'Thanks', 'Received', 'hello@example.com'))->handle(app(AutoresponderDeliveryService::class));
 
     Http::assertSentCount(1);
+    expect($submission->emailDeliveries()->sole()->status)->toBe('sent');
+});
+
+it('uses the default mailer while Postmark delivery is disabled', function (): void {
+    config()->set('services.postmark.delivery_enabled', false);
+    Http::fake();
+    $website = Website::factory()->create([
+        'autoresponder_from_name' => 'Acme',
+        'autoresponder_from_email' => 'hello@acme.example',
+    ]);
+    $website->mailConnection()->create([
+        'mode' => WebsiteMailConnection::MODE_CUSTOMER_POSTMARK,
+        'status' => 'paused',
+        'postmark_server_token' => 'inactive-customer-token',
+    ]);
+    $form = Form::factory()->for($website)->create();
+    $submission = FormSubmission::factory()->for($website)->for($form)->create();
+
+    (new SendFormSubmissionAcknowledgement($submission, 'person@example.com', 'Thanks', 'Received', 'hello@acme.example', 'Acme'))
+        ->handle(app(AutoresponderDeliveryService::class));
+
+    Http::assertNothingSent();
+    Mail::assertSent(FormSubmissionAcknowledgement::class, fn (FormSubmissionAcknowledgement $mail): bool => $mail->hasTo('person@example.com'));
     expect($submission->emailDeliveries()->sole()->status)->toBe('sent');
 });
 

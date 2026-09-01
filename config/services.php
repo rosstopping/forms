@@ -18,6 +18,7 @@ return [
         'key' => env('POSTMARK_API_KEY'),
         'account_token' => env('POSTMARK_ACCOUNT_TOKEN'),
         'api_url' => env('POSTMARK_API_URL', 'https://api.postmarkapp.com'),
+        'delivery_enabled' => env('POSTMARK_DELIVERY_ENABLED', false),
     ],
 
     'resend' => [

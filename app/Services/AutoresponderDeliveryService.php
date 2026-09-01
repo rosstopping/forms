@@ -44,9 +44,12 @@ class AutoresponderDeliveryService
             return $delivery;
         }
 
-        $reason = $connection && $connection->status !== 'active'
+        $usesPostmark = config('services.postmark.delivery_enabled')
+            && in_array($connection?->mode, [WebsiteMailConnection::MODE_MANAGED, WebsiteMailConnection::MODE_CUSTOMER_POSTMARK], true);
+
+        $reason = $usesPostmark && $connection->status !== 'active'
             ? 'mail_connection_'.$connection->status
-            : ($connection ? $this->limitPolicy->suppressionReason($connection, $recipient) : null);
+            : ($usesPostmark ? $this->limitPolicy->suppressionReason($connection, $recipient) : null);
 
         if ($reason) {
             $delivery->update(['status' => 'suppressed', 'suppression_reason' => $reason]);
@@ -65,7 +68,7 @@ class AutoresponderDeliveryService
         }
 
         try {
-            if (in_array($connection?->mode, [WebsiteMailConnection::MODE_MANAGED, WebsiteMailConnection::MODE_CUSTOMER_POSTMARK], true)) {
+            if ($usesPostmark) {
                 $this->sendWithPostmark($connection, $delivery, $submission, $body);
             } else {
                 Mail::to($recipient)->send(new FormSubmissionAcknowledgement(

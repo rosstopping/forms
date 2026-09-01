@@ -10,6 +10,10 @@
         <div class="flex flex-wrap items-center gap-2">
             @if ($canManage)
                 @unless ($formSubmission->is_spam)
+                    <form method="POST" action="{{ route('admin.form-submissions.resend-notification', $formSubmission) }}" data-confirm-action-form>
+                        @csrf
+                        <button type="button" data-confirm-action data-confirm-title="Resend this email notification?" data-confirm-message="The original lead notification will be sent again to the form's configured recipients." data-confirm-label="Resend notification" class="rounded-md border border-blue-300 bg-white px-3 py-2 text-sm font-medium text-blue-800 hover:bg-blue-50">Resend email notification</button>
+                    </form>
                     <form method="POST" action="{{ route('admin.form-submissions.spam', $formSubmission) }}" data-confirm-action-form>
                         @csrf
                         @method('PATCH')
@@ -84,6 +88,7 @@
                 <div class="flex justify-between"><dt class="text-slate-500">Customer reply</dt><dd>{{ $formSubmission->autoresponder_sent_at ? 'Sent '.$formSubmission->autoresponder_sent_at->diffForHumans() : ($formSubmission->autoresponder_failed_at ? 'Failed' : 'Not sent') }}</dd></div>
                 <div class="flex justify-between"><dt class="text-slate-500">Webhook</dt><dd>{{ $formSubmission->webhook_sent_at ? 'Sent '.$formSubmission->webhook_sent_at->diffForHumans() : ($formSubmission->webhook_failed_at ? 'Failed' : 'Not sent') }}</dd></div>
             </dl>
+            @error('email_notification')<p class="mt-3 text-sm text-red-700">{{ $message }}</p>@enderror
         </div>
     </div>
 

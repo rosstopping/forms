@@ -4,13 +4,17 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateFormSubmissionRequest;
+use App\Mail\FormSubmissionReceived;
 use App\Models\FormSubmission;
 use App\Models\User;
 use App\Models\Website;
+use App\Services\FormSettingsResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Str;
+use Throwable;
 
 class FormSubmissionController extends Controller
 {
@@ -127,6 +131,43 @@ class FormSubmissionController extends Controller
         $formSubmission->recordActivity('marked_spam', 'Lead marked as spam.', $request->user());
 
         return Redirect::route('admin.form-submissions.index')->with('status', 'Lead marked as spam.');
+    }
+
+    public function resendNotification(Request $request, FormSubmission $formSubmission, FormSettingsResolver $formSettingsResolver): RedirectResponse
+    {
+        abort_unless($formSubmission->website?->isManageableBy($request->user()), 403);
+        abort_if($formSubmission->is_spam, 422, 'Spam submissions cannot be emailed.');
+
+        $form = $formSubmission->form;
+        $recipients = $form ? $formSettingsResolver->resolveEmailRecipients($form) : [];
+
+        if ($recipients === []) {
+            return Redirect::route('admin.form-submissions.show', $formSubmission)
+                ->withErrors(['email_notification' => 'This form does not have any notification recipients configured.']);
+        }
+
+        try {
+            Mail::to($recipients)->send(new FormSubmissionReceived($formSubmission));
+            $formSubmission->update([
+                'email_sent_at' => now(),
+                'email_failed_at' => null,
+                'email_error' => null,
+            ]);
+            $formSubmission->recordActivity('team_email_resent', 'New lead notification resent to the team.', $request->user());
+        } catch (Throwable $exception) {
+            report($exception);
+            $formSubmission->update([
+                'email_failed_at' => now(),
+                'email_error' => $exception->getMessage(),
+            ]);
+            $formSubmission->recordActivity('team_email_resend_failed', 'New lead notification could not be resent.', $request->user());
+
+            return Redirect::route('admin.form-submissions.show', $formSubmission)
+                ->withErrors(['email_notification' => 'The notification could not be sent. Please try again.']);
+        }
+
+        return Redirect::route('admin.form-submissions.show', $formSubmission)
+            ->with('status', 'Email notification resent.');
     }
 
     public function destroy(Request $request, FormSubmission $formSubmission): RedirectResponse
