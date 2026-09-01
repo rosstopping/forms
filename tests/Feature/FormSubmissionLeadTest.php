@@ -228,7 +228,7 @@ it('resends team email notifications for selected leads in bulk', function () {
         'selection_scope' => 'page',
         'action' => 'resend_notification',
     ])->assertRedirect()
-        ->assertSessionHas('status', '2 email notifications resent. 1 lead skipped because they were spam, had no recipients, or could not be sent.');
+        ->assertSessionHas('status', '2 email notifications resent. 1 lead skipped (spam, no recipients, or delivery failure).');
 
     Mail::assertSent(FormSubmissionReceived::class, 2);
     expect($submissions->each->refresh()->pluck('email_sent_at')->filter())->toHaveCount(2)

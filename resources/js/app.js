@@ -459,7 +459,7 @@ document.querySelectorAll('[data-bulk-leads-form]').forEach((form) => {
 
     form.querySelectorAll('[data-bulk-leads-open]').forEach((button) => button.addEventListener('click', () => {
         const selectedAction = button.dataset.bulkLeadsOpen;
-        const count = checkboxes.filter((checkbox) => checkbox.checked).length;
+        const count = allMatching ? totalMatching : checkboxes.filter((checkbox) => checkbox.checked).length;
         const content = {
             update_status: ['Update lead status?', `Choose the new status for ${count} selected lead${count === 1 ? '' : 's'}.`, 'Update status'],
             resend_notification: ['Resend email notifications?', `The original lead notification will be sent again for ${count} selected lead${count === 1 ? '' : 's'}. Spam leads and leads without configured recipients will be skipped.`, 'Resend notifications'],

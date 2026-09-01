@@ -7,9 +7,10 @@ use App\Http\Requests\BulkUpdateFormSubmissionsRequest;
 use App\Mail\FormSubmissionReceived;
 use App\Models\FormSubmission;
 use App\Services\FormSettingsResolver;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Throwable;
 
 class BulkFormSubmissionController extends Controller
@@ -48,7 +49,7 @@ class BulkFormSubmissionController extends Controller
             $message = $sentCount.' email '.str('notification')->plural($sentCount).' resent.';
 
             if ($skippedCount > 0) {
-                $message .= ' '.$skippedCount.' '.str('lead')->plural($skippedCount).' skipped because they were spam, had no recipients, or could not be sent.';
+                $message .= ' '.$skippedCount.' '.str('lead')->plural($skippedCount).' skipped (spam, no recipients, or delivery failure).';
             }
 
             return back()->with('status', $message);
@@ -78,7 +79,7 @@ class BulkFormSubmissionController extends Controller
     }
 
     /** @return array{int, int} */
-    private function resendNotifications($authorizedQuery, BulkUpdateFormSubmissionsRequest $request, FormSettingsResolver $formSettingsResolver): array
+    private function resendNotifications(Builder $authorizedQuery, BulkUpdateFormSubmissionsRequest $request, FormSettingsResolver $formSettingsResolver): array
     {
         $sentCount = 0;
         $skippedCount = 0;
