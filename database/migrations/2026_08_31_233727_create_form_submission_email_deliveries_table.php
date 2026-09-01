@@ -34,9 +34,9 @@ return new class extends Migration
             $table->timestamp('failed_at')->nullable();
             $table->timestamps();
 
-            $table->unique(['form_submission_id', 'type']);
-            $table->index(['website_id', 'status', 'sent_at']);
-            $table->index(['website_id', 'recipient', 'sent_at']);
+            $table->unique(['form_submission_id', 'type'], 'form_email_deliveries_submission_type_unique');
+            $table->index(['website_id', 'status', 'sent_at'], 'form_email_deliveries_status_index');
+            $table->index(['website_id', 'recipient', 'sent_at'], 'form_email_deliveries_recipient_index');
         });
     }
 
