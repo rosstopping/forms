@@ -75,6 +75,7 @@
                     <div data-bulk-leads-menu class="absolute right-0 z-20 mt-2 hidden w-64 overflow-hidden rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
                         <p class="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Lead actions</p>
                         <button type="button" data-bulk-leads-open="update_status" class="flex w-full rounded-lg px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-100">Update status</button>
+                        <button type="button" data-bulk-leads-open="resend_notification" class="flex w-full rounded-lg px-3 py-2.5 text-left text-sm text-blue-800 hover:bg-blue-50">Resend email notifications</button>
                         <button type="button" data-bulk-leads-open="mark_spam" class="flex w-full rounded-lg px-3 py-2.5 text-left text-sm text-amber-800 hover:bg-amber-50">Mark as spam</button>
                         <button type="button" data-bulk-leads-open="delete" class="flex w-full rounded-lg px-3 py-2.5 text-left text-sm text-red-700 hover:bg-red-50">Delete</button>
                     </div>

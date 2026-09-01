@@ -176,6 +176,7 @@ it('bulk updates statuses marks spam and deletes selected leads', function () {
         ->assertSee('data-bulk-leads-selection-menu', false)
         ->assertSee('Select this page')
         ->assertSee('Select all')
+        ->assertSee('Resend email notifications')
         ->assertSee('data-bulk-leads-dialog', false)
         ->assertSee('data-bulk-leads-status-field', false)
         ->assertDontSee('>Apply</button>', false);
@@ -202,6 +203,37 @@ it('bulk updates statuses marks spam and deletes selected leads', function () {
     expect($statusLead->refresh()->status)->toBe('won')
         ->and($spamLead->refresh()->is_spam)->toBeTrue();
     $this->assertModelMissing($deletedLead);
+});
+
+it('resends team email notifications for selected leads in bulk', function () {
+    Mail::fake();
+    $owner = User::factory()->create();
+    $website = Website::factory()->create(['user_id' => $owner->id]);
+    $form = Form::factory()->create([
+        'website_id' => $website->id,
+        'email_recipients_override' => ['team@example.com'],
+    ]);
+    $submissions = FormSubmission::factory()->count(2)->create([
+        'website_id' => $website->id,
+        'form_id' => $form->id,
+    ]);
+    $spamSubmission = FormSubmission::factory()->create([
+        'website_id' => $website->id,
+        'form_id' => $form->id,
+        'is_spam' => true,
+    ]);
+
+    $this->actingAs($owner)->patch(route('admin.form-submissions.bulk'), [
+        'submission_ids' => [...$submissions->modelKeys(), $spamSubmission->id],
+        'selection_scope' => 'page',
+        'action' => 'resend_notification',
+    ])->assertRedirect()
+        ->assertSessionHas('status', '2 email notifications resent. 1 lead skipped because they were spam, had no recipients, or could not be sent.');
+
+    Mail::assertSent(FormSubmissionReceived::class, 2);
+    expect($submissions->each->refresh()->pluck('email_sent_at')->filter())->toHaveCount(2)
+        ->and($submissions->flatMap->activities->pluck('type')->filter(fn (string $type): bool => $type === 'team_email_resent'))->toHaveCount(2)
+        ->and($spamSubmission->refresh()->email_sent_at)->toBeNull();
 });
 
 it('rejects a bulk action when any selected lead is not manageable', function () {

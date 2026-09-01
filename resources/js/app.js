@@ -462,6 +462,7 @@ document.querySelectorAll('[data-bulk-leads-form]').forEach((form) => {
         const count = checkboxes.filter((checkbox) => checkbox.checked).length;
         const content = {
             update_status: ['Update lead status?', `Choose the new status for ${count} selected lead${count === 1 ? '' : 's'}.`, 'Update status'],
+            resend_notification: ['Resend email notifications?', `The original lead notification will be sent again for ${count} selected lead${count === 1 ? '' : 's'}. Spam leads and leads without configured recipients will be skipped.`, 'Resend notifications'],
             mark_spam: ['Mark leads as spam?', `${count} selected lead${count === 1 ? '' : 's'} will be hidden from the default inbox.`, 'Mark as spam'],
             delete: ['Delete selected leads?', `${count} selected lead${count === 1 ? '' : 's'} will be permanently deleted. This cannot be undone.`, 'Delete leads'],
         }[selectedAction];

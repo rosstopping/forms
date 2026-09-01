@@ -28,7 +28,7 @@ class BulkUpdateFormSubmissionsRequest extends FormRequest
             'selection_scope' => ['required', 'string', Rule::in(['page', 'all'])],
             'submission_ids' => ['nullable', 'required_if:selection_scope,page', 'array', 'min:1', 'max:100'],
             'submission_ids.*' => ['required', 'integer', 'distinct:strict', Rule::exists((new FormSubmission)->getTable(), 'id')],
-            'action' => ['required', 'string', Rule::in(['update_status', 'mark_spam', 'delete'])],
+            'action' => ['required', 'string', Rule::in(['update_status', 'resend_notification', 'mark_spam', 'delete'])],
             'status' => ['nullable', 'required_if:action,update_status', 'string', Rule::in(FormSubmission::STATUSES)],
             'search' => ['nullable', 'string', 'max:100'],
             'filter_status' => ['nullable', 'string', Rule::in(FormSubmission::STATUSES)],
