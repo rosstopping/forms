@@ -15,7 +15,10 @@ return new class extends Migration
             $table->id();
             $table->foreignId('form_submission_id')->constrained()->cascadeOnDelete();
             $table->foreignId('website_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('website_mail_connection_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('website_mail_connection_id')
+                ->nullable()
+                ->constrained(indexName: 'form_email_deliveries_mail_connection_fk')
+                ->nullOnDelete();
             $table->string('type')->default('autoresponder');
             $table->string('mode')->default('legacy');
             $table->string('status')->default('queued');
