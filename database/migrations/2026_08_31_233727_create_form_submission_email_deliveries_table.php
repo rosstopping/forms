@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -11,6 +12,16 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('form_submission_email_deliveries')) {
+            throw_if(
+                DB::table('form_submission_email_deliveries')->exists(),
+                RuntimeException::class,
+                'The incomplete form submission email deliveries table contains data and cannot be safely rebuilt.',
+            );
+
+            Schema::drop('form_submission_email_deliveries');
+        }
+
         Schema::create('form_submission_email_deliveries', function (Blueprint $table) {
             $table->id();
             $table->foreignId('form_submission_id')->constrained()->cascadeOnDelete();
