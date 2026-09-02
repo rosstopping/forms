@@ -7,18 +7,25 @@
         <div class="flex items-center gap-3"><a href="{{ route('admin.prospect-discoveries.index') }}" class="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50">Find prospects</a><a href="{{ route('admin.prospects.create') }}" class="rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">Add prospect</a></div>
     </div>
     @if (session('status'))<div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{{ session('status') }}</div>@endif
-    @unless (request()->hasAny(['status', 'temperature', 'email_status', 'search']))
+    <nav aria-label="Outreach views" class="flex gap-1 overflow-x-auto border-b border-slate-200">
+        @foreach (['dashboard' => 'Dashboard', 'hot' => 'Hot Leads', 'warm' => 'Warm Leads'] as $tab => $label)
+            <a href="{{ $tab === 'dashboard' ? route('admin.prospects.index') : route('admin.prospects.index', ['tab' => $tab]) }}" @class(['whitespace-nowrap border-b-2 px-4 py-3 text-sm font-semibold', 'border-teal-600 text-teal-700' => $activeTab === $tab, 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-800' => $activeTab !== $tab]) @if ($activeTab === $tab) aria-current="page" @endif>{{ $label }}@if ($tab === 'hot') <span class="ml-1 rounded-full bg-red-100 px-2 py-0.5 text-xs text-red-800">{{ $temperatureSummary['hot'] ?? 0 }}</span>@elseif ($tab === 'warm') <span class="ml-1 rounded-full bg-orange-100 px-2 py-0.5 text-xs text-orange-800">{{ $temperatureSummary['warm'] ?? 0 }}</span>@endif</a>
+        @endforeach
+    </nav>
+    @if ($activeTab === 'dashboard' && ! request()->hasAny(['status', 'email_status', 'search']))
     <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div><p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Daily command centre</p><h2 class="mt-1 text-xl font-semibold text-slate-950">Today’s priorities</h2></div>
         <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            <a href="#needs-personalised-video" class="rounded-xl bg-red-50 p-4 text-sm font-medium text-red-900 hover:bg-red-100">🔥 <strong>{{ $hotVideoProspectsCount }}</strong> hot {{ str('lead')->plural($hotVideoProspectsCount) }} need personalised videos</a>
-            <a href="#warm-leads" class="rounded-xl bg-orange-50 p-4 text-sm font-medium text-orange-900 hover:bg-orange-100">🟠 <strong>{{ $priorityCounts['warm'] }}</strong> warm {{ str('lead')->plural($priorityCounts['warm']) }} are engaging</a>
+            <a href="{{ route('admin.prospects.index', ['tab' => 'hot']) }}" class="rounded-xl bg-red-50 p-4 text-sm font-medium text-red-900 hover:bg-red-100">🔥 <strong>{{ $hotVideoProspectsCount }}</strong> hot {{ str('lead')->plural($hotVideoProspectsCount) }} need personalised videos</a>
+            <a href="{{ route('admin.prospects.index', ['tab' => 'warm']) }}" class="rounded-xl bg-orange-50 p-4 text-sm font-medium text-orange-900 hover:bg-orange-100">🟠 <strong>{{ $priorityCounts['warm'] }}</strong> warm {{ str('lead')->plural($priorityCounts['warm']) }} are engaging</a>
             <a href="#recent-replies" class="rounded-xl bg-emerald-50 p-4 text-sm font-medium text-emerald-900 hover:bg-emerald-100">💬 <strong>{{ $priorityCounts['replied'] }}</strong> {{ str('prospect')->plural($priorityCounts['replied']) }} replied today</a>
             <div class="rounded-xl bg-violet-50 p-4 text-sm font-medium text-violet-900">📅 <strong>{{ $priorityCounts['booking'] }}</strong> {{ str('prospect')->plural($priorityCounts['booking']) }} visited the booking page today</div>
             <div class="rounded-xl bg-sky-50 p-4 text-sm font-medium text-sky-900">🧊 <strong>{{ $priorityCounts['cold_followed_up'] }}</strong> cold {{ str('prospect')->plural($priorityCounts['cold_followed_up']) }} automatically followed up today</div>
             <div class="rounded-xl bg-slate-100 p-4 text-sm font-medium text-slate-800">💤 <strong>{{ $priorityCounts['nurtured'] }}</strong> {{ str('prospect')->plural($priorityCounts['nurtured']) }} moved to nurture today</div>
         </div>
     </section>
+    @endif
+    @if ($activeTab === 'hot' && ! request()->hasAny(['status', 'email_status', 'search']))
     @if ($hotVideoProspects->isNotEmpty())
         <section id="needs-personalised-video" class="scroll-mt-6 rounded-2xl border border-red-200 bg-red-50/70 p-5 shadow-sm">
             <div class="flex flex-wrap items-start justify-between gap-3">
@@ -48,6 +55,8 @@
             </div>
         </section>
     @endif
+    @endif
+    @if ($activeTab === 'warm' && ! request()->hasAny(['status', 'email_status', 'search']))
     @if ($warmProspects->isNotEmpty())
         <section id="warm-leads" class="scroll-mt-6 rounded-2xl border border-orange-200 bg-orange-50/70 p-5 shadow-sm">
             <div class="flex flex-wrap items-start justify-between gap-3"><div><p class="text-xs font-semibold uppercase tracking-wider text-orange-700">Recent intent</p><h2 class="mt-1 text-xl font-semibold text-orange-950">Warm Leads</h2><p class="mt-1 text-sm text-orange-800">Sorted by most recent engagement. Monitor these without crowding them.</p></div><span class="rounded-full bg-orange-600 px-3 py-1 text-sm font-semibold text-white">{{ $priorityCounts['warm'] }}</span></div>
@@ -58,6 +67,8 @@
             </div>
         </section>
     @endif
+    @endif
+    @if ($activeTab === 'dashboard' && ! request()->hasAny(['status', 'email_status', 'search']))
     @if ($recentReplies->isNotEmpty())
         <section id="recent-replies" class="scroll-mt-6 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-5 shadow-sm">
             <div><p class="text-xs font-semibold uppercase tracking-wider text-emerald-700">Conversation required</p><h2 class="mt-1 text-xl font-semibold text-emerald-950">Recent Replies</h2><p class="mt-1 text-sm text-emerald-800">Automation is stopped for these prospects.</p></div>
@@ -85,26 +96,27 @@
             </div>
         </section>
     @endif
-    @endunless
+    @endif
     <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <a href="{{ route('admin.prospects.index', ['temperature' => 'hot']) }}" class="rounded-xl border border-red-200 bg-red-50 p-4 shadow-sm hover:border-red-400"><p class="text-xs font-semibold uppercase tracking-wide text-red-700">Hot leads</p><p class="mt-2 text-2xl font-semibold text-red-950">{{ $temperatureSummary['hot'] ?? 0 }}</p></a>
+        <a href="{{ route('admin.prospects.index', ['tab' => 'hot']) }}" class="rounded-xl border border-red-200 bg-red-50 p-4 shadow-sm hover:border-red-400"><p class="text-xs font-semibold uppercase tracking-wide text-red-700">Hot leads</p><p class="mt-2 text-2xl font-semibold text-red-950">{{ $temperatureSummary['hot'] ?? 0 }}</p></a>
         @foreach (['new' => 'New', 'drafted' => 'Ready to review', 'contacted' => 'Contacted', 'replied' => 'Replied'] as $value => $label)
             <a href="{{ route('admin.prospects.index', ['status' => $value]) }}" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:border-slate-400"><p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ $label }}</p><p class="mt-2 text-2xl font-semibold">{{ $summary[$value] ?? 0 }}</p></a>
         @endforeach
     </div>
     <form method="GET" class="flex flex-wrap gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        @if ($activeTab !== 'dashboard')<input type="hidden" name="tab" value="{{ $activeTab }}">@endif
         <input name="search" value="{{ request('search') }}" placeholder="Search businesses or emails, separated by commas" aria-label="Search businesses or emails, separated by commas" class="min-w-64 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm">
         <select name="status" class="rounded-lg border border-slate-300 px-3 py-2 text-sm"><option value="">All stages</option>@foreach (\App\Models\Prospect::STATUSES as $status)<option value="{{ $status }}" @selected(request('status') === $status)>{{ str($status)->replace('_', ' ')->title() }}</option>@endforeach</select>
-        <select name="temperature" class="rounded-lg border border-slate-300 px-3 py-2 text-sm"><option value="">All engagement</option>@foreach (\App\Models\Prospect::LEAD_TEMPERATURES as $temperature)<option value="{{ $temperature }}" @selected(request('temperature') === $temperature)>{{ str($temperature)->title() }}</option>@endforeach</select>
         <select name="email_status" aria-label="Email address" class="rounded-lg border border-slate-300 px-3 py-2 text-sm"><option value="">All email statuses</option><option value="missing" @selected(request('email_status') === 'missing')>Without email address</option><option value="present" @selected(request('email_status') === 'present')>With email address</option></select>
         <button class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">Filter</button>
     </form>
     <form method="POST" action="{{ route('admin.prospects.bulk') }}" data-bulk-prospects-form data-bulk-prospects-total="{{ $matchingProspectsCount }}" class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
         @csrf
         <input type="hidden" name="selection_scope" value="page" data-bulk-prospects-scope>
+        <input type="hidden" name="tab" value="{{ $activeTab }}">
         <input type="hidden" name="search" value="{{ request('search') }}">
         <input type="hidden" name="status" value="{{ request('status') }}">
-        <input type="hidden" name="temperature" value="{{ request('temperature') }}">
+        <input type="hidden" name="temperature" value="{{ $activeTab === 'dashboard' ? 'cold' : $activeTab }}">
         <input type="hidden" name="email_status" value="{{ request('email_status') }}">
         <div class="flex flex-col gap-3 border-b border-slate-200 bg-slate-50 p-3 lg:flex-row lg:items-center">
             <div class="flex items-center gap-3">

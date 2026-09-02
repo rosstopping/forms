@@ -8,7 +8,7 @@ use App\Models\ProspectEngagementEvent;
 use App\Models\ProspectOutreachDelivery;
 use App\Models\User;
 
-it('shows daily priorities and actionable warm and reply queues', function (): void {
+it('keeps daily priorities on the dashboard and moves lead queues into temperature tabs', function (): void {
     $this->travelTo('2026-08-28 10:35:00 Europe/London');
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     $warm = Prospect::factory()->for($admin, 'owner')->create(['business_name' => 'Warm Roofing', 'lead_temperature' => 'warm']);
@@ -26,18 +26,48 @@ it('shows daily priorities and actionable warm and reply queues', function (): v
     ProspectOutreachDelivery::factory()->for($warm)->create(['message_type' => ProspectOutreachMessageType::ColdFollowUp, 'status' => 'sent', 'sent_at' => now()]);
     $warm->recordActivity('outreach_exhausted', 'Automated cold outreach completed with no meaningful engagement.');
 
-    $this->actingAs($admin)->get(route('admin.prospects.index'))
+    $dashboardResponse = $this->actingAs($admin)->get(route('admin.prospects.index'))
         ->assertSuccessful()
         ->assertSee('Today’s priorities')
+        ->assertSee('Hot Leads')
+        ->assertSee('Warm Leads')
+        ->assertDontSee('Warm Roofing')
+        ->assertSee('Recent Replies')
+        ->assertSee('Reply Plumbing')
+        ->assertSee('automatically followed up today')
+        ->assertSee('moved to nurture today');
+
+    $dashboardResponse->assertSee(route('admin.prospects.index', ['tab' => 'warm']), false);
+
+    $this->actingAs($admin)->get(route('admin.prospects.index', ['tab' => 'warm']))
+        ->assertSuccessful()
+        ->assertDontSee('Today’s priorities')
         ->assertSee('Warm Leads')
         ->assertSee('Warm Roofing')
         ->assertSee('Email sent')
         ->assertSee('28 Aug 2026, 10:30')
         ->assertSee('28 Aug 2026, 10:35')
-        ->assertSee('Recent Replies')
-        ->assertSee('Reply Plumbing')
-        ->assertSee('automatically followed up today')
-        ->assertSee('moved to nurture today');
+        ->assertDontSee('Reply Plumbing');
+});
+
+it('shows hot leads in their own tab', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $hot = Prospect::factory()->for($admin, 'owner')->create(['business_name' => 'Hot Electric', 'lead_temperature' => 'hot']);
+    $hot->outreachState()->update([
+        'lifecycle_state' => ProspectLifecycleState::NeedsPersonalisedVideo,
+        'engagement_score' => 25,
+    ]);
+
+    $this->actingAs($admin)->get(route('admin.prospects.index'))
+        ->assertSuccessful()
+        ->assertDontSee('Needs Personalised Video')
+        ->assertDontSee('Hot Electric');
+
+    $this->actingAs($admin)->get(route('admin.prospects.index', ['tab' => 'hot']))
+        ->assertSuccessful()
+        ->assertDontSee('Today’s priorities')
+        ->assertSee('Needs Personalised Video')
+        ->assertSee('Hot Electric');
 });
 
 it('shows a detailed queryable activity timeline', function (): void {
