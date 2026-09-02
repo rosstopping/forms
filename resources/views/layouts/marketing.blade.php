@@ -64,6 +64,8 @@
                         <p class="font-medium text-paper">Company</p>
                         <a href="{{ route('marketing.journal') }}" class="font-normal hover:text-paper">Journal</a>
                         <a href="{{ route('marketing.contact') }}" class="font-normal hover:text-paper">Contact</a>
+                        <a href="{{ route('marketing.privacy') }}" class="font-normal hover:text-paper">Privacy policy</a>
+                        <a href="{{ route('marketing.terms') }}" class="font-normal hover:text-paper">Terms of service</a>
                         <a href="{{ route('login') }}" class="font-normal hover:text-paper">Log in</a>
                     </nav>
                 </div>

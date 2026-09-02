@@ -40,6 +40,16 @@ class MarketingController extends Controller
         return view('marketing.contact');
     }
 
+    public function privacy(): View
+    {
+        return view('marketing.privacy-policy');
+    }
+
+    public function terms(): View
+    {
+        return view('marketing.terms-of-service');
+    }
+
     public function sitemap(): Response
     {
         $urls = collect([
@@ -49,6 +59,8 @@ class MarketingController extends Controller
             'marketing.free-site-audit',
             'marketing.journal',
             'marketing.contact',
+            'marketing.privacy',
+            'marketing.terms',
         ])->map(fn (string $routeName): string => route($routeName))
             ->merge(collect($this->articles())->map(
                 fn (array $article): string => route('marketing.article', $article['slug'])

@@ -15,6 +15,8 @@ it('shows each public marketing page', function (string $route, string $copy): v
     'free audit' => ['marketing.free-site-audit', 'Find out what your website needs next'],
     'journal' => ['marketing.journal', 'Practical notes on looking after websites'],
     'contact' => ['marketing.contact', 'A better website starts here'],
+    'privacy policy' => ['marketing.privacy', 'How Sitewell uses personal information'],
+    'terms of service' => ['marketing.terms', 'Terms for using Sitewell'],
 ]);
 
 it('shows journal articles and returns not found for unknown slugs', function (): void {
@@ -37,6 +39,8 @@ it('outputs canonical URLs for key marketing pages', function (string $routeName
     'free audit' => ['marketing.free-site-audit'],
     'journal' => ['marketing.journal'],
     'contact' => ['marketing.contact'],
+    'privacy policy' => ['marketing.privacy'],
+    'terms of service' => ['marketing.terms'],
     'journal article' => ['marketing.article', ['a-clean-website-handover']],
 ]);
 
@@ -83,11 +87,30 @@ it('publishes an XML sitemap for the marketing site', function (): void {
         ->assertSee('<loc>'.route('marketing.free-site-audit').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.journal').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.contact').'</loc>', false)
+        ->assertSee('<loc>'.route('marketing.privacy').'</loc>', false)
+        ->assertSee('<loc>'.route('marketing.terms').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.article', 'a-clean-website-handover').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.article', 'forms-that-never-lose-a-lead').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.article', 'search-data-to-content-decisions').'</loc>', false)
         ->assertDontSee(route('login'))
         ->assertDontSee('/admin');
+});
+
+it('publishes legal pages suitable for connected Google services', function (): void {
+    $this->get(route('marketing.privacy'))
+        ->assertSuccessful()
+        ->assertSee('Google Search Console data')
+        ->assertSee('Google Business Profile data')
+        ->assertSee('encrypted access and refresh tokens')
+        ->assertSee('Google API Services User Data Policy')
+        ->assertSee('Limited Use requirements')
+        ->assertSee('href="'.route('marketing.contact').'"', false);
+
+    $this->get(route('marketing.terms'))
+        ->assertSuccessful()
+        ->assertSee('Connected services')
+        ->assertSee('Automated and AI-assisted features')
+        ->assertSee('href="'.route('marketing.privacy').'"', false);
 });
 
 it('features the product video and contact call to action on the home page', function (): void {
