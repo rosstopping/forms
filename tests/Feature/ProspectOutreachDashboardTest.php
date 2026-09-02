@@ -33,11 +33,12 @@ it('keeps daily priorities on the dashboard and moves lead queues into temperatu
         ->assertSee('Warm Leads')
         ->assertDontSee('Warm Roofing')
         ->assertSee('Recent Replies')
-        ->assertSee('Reply Plumbing')
+        ->assertDontSee('Reply Plumbing')
         ->assertSee('automatically followed up today')
         ->assertSee('moved to nurture today');
 
     $dashboardResponse->assertSee(route('admin.prospects.index', ['tab' => 'warm']), false);
+    $dashboardResponse->assertSee(route('admin.prospects.index', ['tab' => 'replies']), false);
 
     $this->actingAs($admin)->get(route('admin.prospects.index', ['tab' => 'warm']))
         ->assertSuccessful()
@@ -48,6 +49,13 @@ it('keeps daily priorities on the dashboard and moves lead queues into temperatu
         ->assertSee('28 Aug 2026, 10:30')
         ->assertSee('28 Aug 2026, 10:35')
         ->assertDontSee('Reply Plumbing');
+
+    $this->actingAs($admin)->get(route('admin.prospects.index', ['tab' => 'replies']))
+        ->assertSuccessful()
+        ->assertDontSee('Today’s priorities')
+        ->assertSee('Recent Replies')
+        ->assertSee('Reply Plumbing')
+        ->assertDontSee('Warm Roofing');
 });
 
 it('shows hot leads in their own tab', function (): void {

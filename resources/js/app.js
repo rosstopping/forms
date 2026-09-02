@@ -632,6 +632,11 @@ document.querySelectorAll('[data-bulk-prospects-form]').forEach((form) => {
         const confirmations = {
             delete: `Permanently delete ${selected} selected prospect${selected === 1 ? '' : 's'}?`,
             send_approved_email: `Send every eligible approved email for ${selected} selected prospect${selected === 1 ? '' : 's'} now?`,
+            stop: `Stop outreach for ${selected} selected prospect${selected === 1 ? '' : 's'}?`,
+            mark_replied: `Mark ${selected} selected prospect${selected === 1 ? '' : 's'} as replied and stop automated outreach?`,
+            mark_not_interested: `Mark ${selected} selected prospect${selected === 1 ? '' : 's'} as not interested and permanently stop automated outreach?`,
+            mark_customer: `Mark ${selected} selected prospect${selected === 1 ? '' : 's'} as ${selected === 1 ? 'a customer' : 'customers'} and stop automated outreach?`,
+            mark_pilot: `Mark ${selected} selected prospect${selected === 1 ? '' : 's'} as ${selected === 1 ? 'an active pilot' : 'active pilots'} and stop automated outreach?`,
         };
 
         if (confirmations[action.value] && !window.confirm(confirmations[action.value])) {

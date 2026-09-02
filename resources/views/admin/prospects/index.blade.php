@@ -8,7 +8,7 @@
     </div>
     @if (session('status'))<div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{{ session('status') }}</div>@endif
     <nav aria-label="Outreach views" class="flex gap-1 overflow-x-auto border-b border-slate-200">
-        @foreach (['dashboard' => 'Dashboard', 'hot' => 'Hot Leads', 'warm' => 'Warm Leads'] as $tab => $label)
+        @foreach (['dashboard' => 'Dashboard', 'hot' => 'Hot Leads', 'warm' => 'Warm Leads', 'replies' => 'Recent Replies'] as $tab => $label)
             <a href="{{ $tab === 'dashboard' ? route('admin.prospects.index') : route('admin.prospects.index', ['tab' => $tab]) }}" @class(['whitespace-nowrap border-b-2 px-4 py-3 text-sm font-semibold', 'border-teal-600 text-teal-700' => $activeTab === $tab, 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-800' => $activeTab !== $tab]) @if ($activeTab === $tab) aria-current="page" @endif>{{ $label }}@if ($tab === 'hot') <span class="ml-1 rounded-full bg-red-100 px-2 py-0.5 text-xs text-red-800">{{ $temperatureSummary['hot'] ?? 0 }}</span>@elseif ($tab === 'warm') <span class="ml-1 rounded-full bg-orange-100 px-2 py-0.5 text-xs text-orange-800">{{ $temperatureSummary['warm'] ?? 0 }}</span>@endif</a>
         @endforeach
     </nav>
@@ -18,7 +18,7 @@
         <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             <a href="{{ route('admin.prospects.index', ['tab' => 'hot']) }}" class="rounded-xl bg-red-50 p-4 text-sm font-medium text-red-900 hover:bg-red-100">🔥 <strong>{{ $hotVideoProspectsCount }}</strong> hot {{ str('lead')->plural($hotVideoProspectsCount) }} need personalised videos</a>
             <a href="{{ route('admin.prospects.index', ['tab' => 'warm']) }}" class="rounded-xl bg-orange-50 p-4 text-sm font-medium text-orange-900 hover:bg-orange-100">🟠 <strong>{{ $priorityCounts['warm'] }}</strong> warm {{ str('lead')->plural($priorityCounts['warm']) }} are engaging</a>
-            <a href="#recent-replies" class="rounded-xl bg-emerald-50 p-4 text-sm font-medium text-emerald-900 hover:bg-emerald-100">💬 <strong>{{ $priorityCounts['replied'] }}</strong> {{ str('prospect')->plural($priorityCounts['replied']) }} replied today</a>
+            <a href="{{ route('admin.prospects.index', ['tab' => 'replies']) }}" class="rounded-xl bg-emerald-50 p-4 text-sm font-medium text-emerald-900 hover:bg-emerald-100">💬 <strong>{{ $priorityCounts['replied'] }}</strong> {{ str('prospect')->plural($priorityCounts['replied']) }} replied today</a>
             <div class="rounded-xl bg-violet-50 p-4 text-sm font-medium text-violet-900">📅 <strong>{{ $priorityCounts['booking'] }}</strong> {{ str('prospect')->plural($priorityCounts['booking']) }} visited the booking page today</div>
             <div class="rounded-xl bg-sky-50 p-4 text-sm font-medium text-sky-900">🧊 <strong>{{ $priorityCounts['cold_followed_up'] }}</strong> cold {{ str('prospect')->plural($priorityCounts['cold_followed_up']) }} automatically followed up today</div>
             <div class="rounded-xl bg-slate-100 p-4 text-sm font-medium text-slate-800">💤 <strong>{{ $priorityCounts['nurtured'] }}</strong> {{ str('prospect')->plural($priorityCounts['nurtured']) }} moved to nurture today</div>
@@ -68,7 +68,7 @@
         </section>
     @endif
     @endif
-    @if ($activeTab === 'dashboard' && ! request()->hasAny(['status', 'email_status', 'search']))
+    @if ($activeTab === 'replies' && ! request()->hasAny(['status', 'email_status', 'search']))
     @if ($recentReplies->isNotEmpty())
         <section id="recent-replies" class="scroll-mt-6 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-5 shadow-sm">
             <div><p class="text-xs font-semibold uppercase tracking-wider text-emerald-700">Conversation required</p><h2 class="mt-1 text-xl font-semibold text-emerald-950">Recent Replies</h2><p class="mt-1 text-sm text-emerald-800">Automation is stopped for these prospects.</p></div>
@@ -100,7 +100,7 @@
     <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <a href="{{ route('admin.prospects.index', ['tab' => 'hot']) }}" class="rounded-xl border border-red-200 bg-red-50 p-4 shadow-sm hover:border-red-400"><p class="text-xs font-semibold uppercase tracking-wide text-red-700">Hot leads</p><p class="mt-2 text-2xl font-semibold text-red-950">{{ $temperatureSummary['hot'] ?? 0 }}</p></a>
         @foreach (['new' => 'New', 'drafted' => 'Ready to review', 'contacted' => 'Contacted', 'replied' => 'Replied'] as $value => $label)
-            <a href="{{ route('admin.prospects.index', ['status' => $value]) }}" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:border-slate-400"><p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ $label }}</p><p class="mt-2 text-2xl font-semibold">{{ $summary[$value] ?? 0 }}</p></a>
+            <a href="{{ $value === 'replied' ? route('admin.prospects.index', ['tab' => 'replies']) : route('admin.prospects.index', ['status' => $value]) }}" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:border-slate-400"><p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ $label }}</p><p class="mt-2 text-2xl font-semibold">{{ $summary[$value] ?? 0 }}</p></a>
         @endforeach
     </div>
     <form method="GET" class="flex flex-wrap gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -116,7 +116,8 @@
         <input type="hidden" name="tab" value="{{ $activeTab }}">
         <input type="hidden" name="search" value="{{ request('search') }}">
         <input type="hidden" name="status" value="{{ request('status') }}">
-        <input type="hidden" name="temperature" value="{{ $activeTab === 'dashboard' ? 'cold' : $activeTab }}">
+        <input type="hidden" name="temperature" value="{{ $activeTab === 'dashboard' ? 'cold' : (in_array($activeTab, ['hot', 'warm'], true) ? $activeTab : '') }}">
+        <input type="hidden" name="lifecycle_state" value="{{ $activeTab === 'replies' ? \App\Enums\ProspectLifecycleState::Replied->value : '' }}">
         <input type="hidden" name="email_status" value="{{ request('email_status') }}">
         <div class="flex flex-col gap-3 border-b border-slate-200 bg-slate-50 p-3 lg:flex-row lg:items-center">
             <div class="flex items-center gap-3">
@@ -137,6 +138,18 @@
                     <option value="cancel_scheduled_email">Cancel Scheduled Send</option>
                     <option value="mark_as_draft">Mark as Draft Again</option>
                     <option value="send_approved_email">Send Approved Email</option>
+                    <optgroup label="Manual control">
+                        <option value="pause">Pause automation</option>
+                        <option value="resume">Resume automation</option>
+                        <option value="force_warm">Force Warm</option>
+                        <option value="force_hot">Force Hot</option>
+                        <option value="clear_temperature_override">Use automatic score</option>
+                        <option value="stop">Stop outreach</option>
+                        <option value="mark_replied">Mark replied</option>
+                        <option value="mark_not_interested">Not interested</option>
+                        <option value="mark_customer">Customer</option>
+                        <option value="mark_pilot">Pilot</option>
+                    </optgroup>
                     <option value="delete">Delete</option>
                 </select>
                 <div data-bulk-prospects-schedule class="hidden">

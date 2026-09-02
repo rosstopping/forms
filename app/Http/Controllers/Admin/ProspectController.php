@@ -27,7 +27,7 @@ class ProspectController extends Controller
     public function index(Request $request, ProspectOutreachDashboard $dashboard): View
     {
         $activeTab = $request->string('tab')->toString();
-        if (! in_array($activeTab, ['hot', 'warm'], true)) {
+        if (! in_array($activeTab, ['hot', 'warm', 'replies'], true)) {
             $activeTab = 'dashboard';
         }
 
@@ -66,8 +66,11 @@ class ProspectController extends Controller
             ->get();
         $emailStatus = $request->string('email_status')->toString();
         $query->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')))
-            ->when($activeTab === 'dashboard', fn ($query) => $query->whereNotIn('lead_temperature', ['hot', 'warm']))
-            ->when($activeTab !== 'dashboard', fn ($query) => $query->where('lead_temperature', $activeTab))
+            ->when($activeTab === 'dashboard', fn ($query) => $query
+                ->whereNotIn('lead_temperature', ['hot', 'warm'])
+                ->whereDoesntHave('outreachState', fn ($query) => $query->where('lifecycle_state', ProspectLifecycleState::Replied)))
+            ->when(in_array($activeTab, ['hot', 'warm'], true), fn ($query) => $query->where('lead_temperature', $activeTab))
+            ->when($activeTab === 'replies', fn ($query) => $query->whereHas('outreachState', fn ($query) => $query->where('lifecycle_state', ProspectLifecycleState::Replied)))
             ->when($emailStatus === 'missing', fn ($query) => $query->where(fn ($query) => $query->whereNull('email')->orWhere('email', '')))
             ->when($emailStatus === 'present', fn ($query) => $query->whereNotNull('email')->where('email', '!=', ''))
             ->when($request->filled('search'), fn ($query) => $query->matchingSearchTerms($request->string('search')->toString()));
