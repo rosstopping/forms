@@ -317,6 +317,21 @@ it('allows callback forms that do not include a message field', function (): voi
     expect(FormSubmission::query()->latest('id')->firstOrFail()->is_spam)->toBeFalse();
 });
 
+it('allows genuine enquiries with a dotted email local part', function (): void {
+    $this->withHeader('Origin', 'https://group-enquiry.example')
+        ->post('/submit', [
+            '_form_name' => 'Enquiry',
+            'name' => 'Elísa Rún Gunnlaugsdóttir',
+            'email' => 'elisa.gunnlaugs@gmail.com',
+            'phone' => '+3548454613',
+            'group_size' => '14',
+            'arrival_month' => 'May 2027',
+        ])
+        ->assertRedirectContains('/submitted');
+
+    expect(FormSubmission::query()->latest('id')->firstOrFail()->is_spam)->toBeFalse();
+});
+
 it('sends the configured website acknowledgement to a genuine lead', function (): void {
     $this->freezeTime();
     $website = Website::factory()->create([

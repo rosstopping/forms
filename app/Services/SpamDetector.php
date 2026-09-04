@@ -17,7 +17,7 @@ class SpamDetector
         $normalizedContent = preg_replace('/(?<=[\pL\pN])\s*\.\s*(?=[\pL])/u', '.', $content) ?? $content;
         $score = 0;
         $urlCount = preg_match_all(
-            '/(?:https?:\/\/|www\.)[^\s<]+|(?<![@\pL\pN._-])(?:[a-z0-9-]+\.)+[a-z]{2,63}(?:\/[^\s<]*)?/iu',
+            '/(?:https?:\/\/|www\.)[^\s<]+|(?<![@\pL\pN._-])(?:[a-z0-9-]+\.)+[a-z]{2,63}(?![@\pL\pN._-])(?:\/[^\s<]*)?/iu',
             $normalizedContent,
         );
 
