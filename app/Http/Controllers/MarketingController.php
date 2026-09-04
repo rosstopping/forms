@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Response;
+use Illuminate\Support\Number;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class MarketingController extends Controller
 {
@@ -40,6 +42,32 @@ class MarketingController extends Controller
         return view('marketing.contact');
     }
 
+    public function wordpress(): View
+    {
+        $pluginPath = $this->wordPressPluginPath();
+
+        abort_unless(is_file($pluginPath), 404);
+
+        return view('marketing.wordpress', [
+            'pluginVersion' => '1.0.0',
+            'pluginSize' => Number::fileSize(filesize($pluginPath)),
+            'pluginChecksum' => hash_file('sha256', $pluginPath),
+        ]);
+    }
+
+    public function downloadWordPressPlugin(): BinaryFileResponse
+    {
+        $pluginPath = $this->wordPressPluginPath();
+
+        abort_unless(is_file($pluginPath), 404);
+
+        return response()->download($pluginPath, 'sitewell-by-digizu.zip', [
+            'Cache-Control' => 'no-store, private',
+            'Content-Type' => 'application/zip',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
+    }
+
     public function privacy(): View
     {
         return view('marketing.privacy-policy');
@@ -59,6 +87,7 @@ class MarketingController extends Controller
             'marketing.free-site-audit',
             'marketing.journal',
             'marketing.contact',
+            'marketing.wordpress',
             'marketing.privacy',
             'marketing.terms',
         ])->map(fn (string $routeName): string => route($routeName))
@@ -69,6 +98,11 @@ class MarketingController extends Controller
         return response()
             ->view('marketing.sitemap', compact('urls'))
             ->header('Content-Type', 'application/xml');
+    }
+
+    private function wordPressPluginPath(): string
+    {
+        return base_path('wordpress-plugin/sitewell-by-digizu.zip');
     }
 
     /** @return array<int, array<string, mixed>> */

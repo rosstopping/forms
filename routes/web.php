@@ -95,6 +95,8 @@ Route::controller(MarketingController::class)->group(function () {
     Route::get('/journal', 'journal')->name('marketing.journal');
     Route::get('/journal/{slug}', 'article')->name('marketing.article');
     Route::get('/contact', 'contact')->name('marketing.contact');
+    Route::get('/wordpress', 'wordpress')->name('marketing.wordpress');
+    Route::get('/wordpress/download', 'downloadWordPressPlugin')->name('marketing.wordpress.download');
     Route::get('/privacy-policy', 'privacy')->name('marketing.privacy');
     Route::get('/terms-of-service', 'terms')->name('marketing.terms');
     Route::get('/sitemap.xml', 'sitemap')->name('marketing.sitemap');

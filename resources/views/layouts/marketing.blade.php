@@ -58,6 +58,7 @@
                         <a href="{{ route('marketing.features') }}" class="font-normal hover:text-paper">Features</a>
                         <a href="{{ route('marketing.pricing') }}" class="font-normal hover:text-paper">Pricing</a>
                         <a href="{{ route('marketing.free-site-audit') }}" class="font-normal hover:text-paper">Free site audit</a>
+                        <a href="{{ route('marketing.wordpress') }}" class="font-normal hover:text-paper">WordPress plugin</a>
                         <a href="{{ route('marketing.contact') }}" class="font-normal hover:text-paper">Get started</a>
                     </nav>
                     <nav class="grid content-start gap-3 text-base text-paper/70 sm:text-sm" aria-label="Company">
