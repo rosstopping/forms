@@ -169,7 +169,7 @@ it('lets an administrator enable reports and queue one immediately', function ()
             'user_id' => $website->user_id,
             'health_reports_enabled' => true,
         ])
-        ->assertRedirect(route('admin.websites.show', $website));
+        ->assertRedirect(route('admin.websites.show', ['website' => $website, 'tab' => 'settings']));
 
     expect($website->fresh()->health_reports_enabled)->toBeTrue();
 

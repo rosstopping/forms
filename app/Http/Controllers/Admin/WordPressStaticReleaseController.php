@@ -34,6 +34,6 @@ class WordPressStaticReleaseController extends Controller
 
     private function redirect(Website $website): RedirectResponse
     {
-        return Redirect::route('admin.websites.show', ['website' => $website, 'tab' => 'content']);
+        return Redirect::route('admin.websites.show', ['website' => $website, 'tab' => 'wordpress']);
     }
 }

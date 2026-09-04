@@ -250,6 +250,12 @@ class WebsiteController extends Controller
             $request->merge(['domain' => $this->normalizeDomain($request->string('domain')->toString())]);
         }
 
+        foreach (['wordpress_enabled', 'pixel_enabled'] as $connectionSetting) {
+            if ($request->has($connectionSetting)) {
+                $request->merge([$connectionSetting => $request->boolean($connectionSetting)]);
+            }
+        }
+
         $primaryDomain = $website->primaryDomain();
 
         $data = $request->validate([
@@ -260,6 +266,8 @@ class WebsiteController extends Controller
             ],
             'user_id' => ['nullable', 'exists:users,id'],
             'health_reports_enabled' => ['sometimes', 'boolean'],
+            'wordpress_enabled' => ['sometimes', 'boolean'],
+            'pixel_enabled' => ['sometimes', 'boolean'],
             'webhook_enabled' => ['sometimes', 'boolean'],
             'webhook_url' => ['nullable', 'url', 'max:255'],
             'webhook_secret' => ['nullable', 'string', 'max:255'],
@@ -283,8 +291,16 @@ class WebsiteController extends Controller
         $domain = $data['domain'] ?? null;
         unset($data['domain']);
 
-        DB::transaction(function () use ($data, $domain, $primaryDomain, $website): void {
-            $website->fill($data)->save();
+        $pixelEnabledChanged = array_key_exists('pixel_enabled', $data) && $website->pixel_enabled !== $data['pixel_enabled'];
+
+        DB::transaction(function () use ($data, $domain, $pixelEnabledChanged, $primaryDomain, $website): void {
+            $website->fill($data);
+
+            if ($pixelEnabledChanged) {
+                $website->pixel_payload_version++;
+            }
+
+            $website->save();
 
             if ($domain !== null && $domain !== $primaryDomain?->domain) {
                 if ($primaryDomain) {
@@ -301,7 +317,7 @@ class WebsiteController extends Controller
             $website->members()->detach($website->user_id);
         }
 
-        return Redirect::route('admin.websites.show', $website)->with('status', 'Website settings updated.');
+        return Redirect::route('admin.websites.show', ['website' => $website, 'tab' => 'settings'])->with('status', 'Website settings updated.');
     }
 
     public function destroy(Request $request, Website $website): RedirectResponse

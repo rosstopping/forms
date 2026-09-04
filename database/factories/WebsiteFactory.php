@@ -26,6 +26,8 @@ class WebsiteFactory extends Factory
             'success_redirect_url' => null,
             'failure_redirect_url' => null,
             'turnstile_enabled' => false,
+            'pixel_enabled' => true,
+            'wordpress_enabled' => false,
         ];
     }
 }

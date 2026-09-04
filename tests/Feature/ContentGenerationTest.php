@@ -330,7 +330,7 @@ test('updating the website owner does not overwrite saved content plan settings'
             'user_id' => $owner->id,
             'health_reports_enabled' => false,
         ])
-        ->assertRedirect(route('admin.websites.show', $website));
+        ->assertRedirect(route('admin.websites.show', ['website' => $website, 'tab' => 'settings']));
 
     $plan = $website->contentPlan()->firstOrFail();
 

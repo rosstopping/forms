@@ -38,7 +38,7 @@ it('shows the pixel workspace to growth members', function (): void {
     $user = User::factory()->create([
         'admin_membership_tier' => MembershipPlan::GROWTH,
     ]);
-    $website = Website::factory()->for($user, 'owner')->create();
+    $website = Website::factory()->for($user, 'owner')->create(['pixel_enabled' => true]);
 
     $this->actingAs($user)->get(route('admin.websites.show', ['website' => $website, 'tab' => 'pixel']))
         ->assertSuccessful()
@@ -46,11 +46,18 @@ it('shows the pixel workspace to growth members', function (): void {
         ->assertSee('data-tab-panel="pixel"', false)
         ->assertSee('Sitewell Pixel');
 
-    $this->actingAs($user)
-        ->put(route('admin.websites.pixel.update', $website), ['pixel_enabled' => false])
-        ->assertRedirect(route('admin.websites.show', ['website' => $website, 'tab' => 'pixel']));
+});
 
-    expect($website->fresh()->pixel_enabled)->toBeFalse();
+it('hides the pixel workspace when it is disabled in website settings', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $website = Website::factory()->for($admin, 'owner')->create(['pixel_enabled' => false]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.websites.show', ['website' => $website, 'tab' => 'pixel']))
+        ->assertSuccessful()
+        ->assertDontSee('data-tab="pixel"', false)
+        ->assertDontSee('data-tab-panel="pixel"', false)
+        ->assertDontSee('Sitewell Pixel');
 });
 
 it('shows configured pixel installation and connection information', function (): void {

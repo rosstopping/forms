@@ -13,7 +13,7 @@ function wordpressConnectionWebsite(bool $withRepository = true): array
 {
     Queue::fake();
     $owner = User::factory()->create();
-    $website = Website::factory()->for($owner, 'owner')->create();
+    $website = Website::factory()->for($owner, 'owner')->create(['wordpress_enabled' => true]);
     $website->domains()->create(['domain' => 'example.com', 'is_primary' => true]);
 
     if ($withRepository) {
@@ -27,7 +27,7 @@ function issueWordpressPairingCode(User $owner, Website $website): string
 {
     $response = test()->actingAs($owner)->post(route('admin.websites.wordpress.pairing-code', $website));
 
-    $response->assertRedirect(route('admin.websites.show', ['website' => $website, 'tab' => 'content']));
+    $response->assertRedirect(route('admin.websites.show', ['website' => $website, 'tab' => 'wordpress']));
     $code = $response->getSession()->get('wordpress_pairing_code');
 
     expect($code)->toBeString()->toMatch('/^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/');
@@ -189,12 +189,14 @@ it('allows the plugin and a website manager to revoke the credential', function 
     expect($website->wordpressConnection()->sole()->isConnected())->toBeFalse();
 });
 
-it('shows the pairing and connected states on the website content tab', function (): void {
+it('shows the pairing and connected states on the website WordPress tab', function (): void {
     [$owner, $website] = wordpressConnectionWebsite();
 
     $this->actingAs($owner)
-        ->get(route('admin.websites.show', ['website' => $website, 'tab' => 'content']))
+        ->get(route('admin.websites.show', ['website' => $website, 'tab' => 'wordpress']))
         ->assertSuccessful()
+        ->assertSee('data-tab="wordpress"', false)
+        ->assertSee('data-tab-panel="wordpress"', false)
         ->assertSee('WordPress frontend plugin')
         ->assertSee('Generate connection code');
 
@@ -203,8 +205,20 @@ it('shows the pairing and connected states on the website content tab', function
     ]);
 
     $this->actingAs($owner)
-        ->get(route('admin.websites.show', ['website' => $website, 'tab' => 'content']))
+        ->get(route('admin.websites.show', ['website' => $website, 'tab' => 'wordpress']))
         ->assertSuccessful()
         ->assertSee('Connected to')
         ->assertSee('https://example.com');
+});
+
+it('hides the WordPress tab when its website connection workspace is disabled', function (): void {
+    [$owner, $website] = wordpressConnectionWebsite();
+    $website->update(['wordpress_enabled' => false]);
+
+    $this->actingAs($owner)
+        ->get(route('admin.websites.show', ['website' => $website, 'tab' => 'wordpress']))
+        ->assertSuccessful()
+        ->assertDontSee('data-tab="wordpress"', false)
+        ->assertDontSee('data-tab-panel="wordpress"', false)
+        ->assertDontSee('WordPress frontend plugin');
 });

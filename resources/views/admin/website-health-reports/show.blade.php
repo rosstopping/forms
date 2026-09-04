@@ -45,6 +45,8 @@
         $reviewablePixelOptimisations = $report->pages->flatMap->optimisations->whereIn('status', [\App\Enums\OptimisationStatus::Draft, \App\Enums\OptimisationStatus::Approved]);
         $pixelRemediationAvailable = $canUsePixel && $report->website->pixel_enabled && $pixelEligiblePages->isNotEmpty();
         $githubRemediationAvailable = $report->website->repository && Auth::user()?->githubAuthorization()->exists() && $hasRemediableFindings;
+        $wordpressConnected = $report->website->wordpress_enabled && $report->website->wordpressConnection?->isConnected();
+        $repositoryDeliveryLabel = $wordpressConnected ? 'WordPress' : 'GitHub';
     @endphp
     @if ($canManageWebsite || $aiPrompt)
         <div class="grid gap-4 lg:grid-cols-2">
@@ -52,13 +54,19 @@
             <section class="rounded-lg border border-teal-200 bg-teal-50 p-4 shadow-sm">
                 <p class="text-xs font-medium uppercase tracking-wide text-teal-700">Automated remediation</p>
                 <h2 class="mt-1 font-semibold text-teal-950">Prepare available fixes</h2>
-                <p class="mt-1 text-sm text-teal-800">Sitewell will use every connected delivery path that fits the findings. Nothing is published without review.</p>
+                @if ($pixelRemediationAvailable && $githubRemediationAvailable)
+                    <p class="mt-1 text-sm text-teal-800">Pixel is enabled for supported page fixes, and {{ $repositoryDeliveryLabel }} is connected for repository fixes. Nothing is published without review.</p>
+                @elseif ($pixelRemediationAvailable)
+                    <p class="mt-1 text-sm text-teal-800">Pixel is enabled for supported page fixes. Nothing is published without review.</p>
+                @else
+                    <p class="mt-1 text-sm text-teal-800">{{ $repositoryDeliveryLabel }} is connected for repository fixes. Nothing is published without review.</p>
+                @endif
                 <div class="mt-3 flex flex-wrap gap-2 text-xs font-medium">
                     @if ($pixelRemediationAvailable)
                         <span class="rounded-full bg-white px-2.5 py-1 text-teal-800 ring-1 ring-teal-700/20">Pixel · {{ $pixelEligiblePages->count() }} {{ Str::plural('page', $pixelEligiblePages->count()) }}</span>
                     @endif
                     @if ($githubRemediationAvailable)
-                        <span class="rounded-full bg-white px-2.5 py-1 text-slate-700 ring-1 ring-slate-700/20">GitHub · repository findings</span>
+                        <span class="rounded-full bg-white px-2.5 py-1 text-slate-700 ring-1 ring-slate-700/20">{{ $repositoryDeliveryLabel }} · repository findings</span>
                     @endif
                 </div>
                 <div class="mt-4 flex flex-wrap gap-2">

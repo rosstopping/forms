@@ -24,6 +24,8 @@ class Website extends Model
     protected $attributes = [
         'autoresponder_content_type' => 'text',
         'autoresponder_delay_minutes' => 0,
+        'pixel_enabled' => false,
+        'wordpress_enabled' => false,
     ];
 
     protected $hidden = [
@@ -57,6 +59,7 @@ class Website extends Model
         'turnstile_secret_key',
         'first_seen_at',
         'pixel_enabled',
+        'wordpress_enabled',
         'copilot_build_task_id',
         'copilot_build_task_url',
         'copilot_build_task_state',
@@ -78,6 +81,7 @@ class Website extends Model
         'first_seen_at' => 'datetime',
         'pixel_last_seen_at' => 'datetime',
         'pixel_enabled' => 'boolean',
+        'wordpress_enabled' => 'boolean',
         'pixel_payload_version' => 'integer',
     ];
 

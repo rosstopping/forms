@@ -132,14 +132,17 @@ it('throttles rejected-request observability without logging raw public input', 
         });
 });
 
-it('shows managers the site and page emergency controls', function (): void {
+it('shows managers the site setting and page emergency controls', function (): void {
     [$owner, $website, $report, $page] = hardenedPixelWorkspace();
     deployHardenedOptimisation($website, $page, 'Live title');
 
     $this->actingAs($owner)
+        ->get(route('admin.websites.show', ['website' => $website, 'tab' => 'settings']))
+        ->assertSuccessful()
+        ->assertSee('Enable the Pixel connection');
+    $this->actingAs($owner)
         ->get(route('admin.websites.show', ['website' => $website, 'tab' => 'pixel']))
         ->assertSuccessful()
-        ->assertSee('Disable all Pixel changes')
         ->assertSee('Rotate public key');
     $this->actingAs($owner)
         ->get(route('admin.website-health-report-pages.show', [$website, $report, $page]))

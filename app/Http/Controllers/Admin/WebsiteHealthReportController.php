@@ -45,6 +45,7 @@ class WebsiteHealthReportController extends Controller
 
         $websiteHealthReport->load([
             'website.repository',
+            'website.wordpressConnection',
             'remediationRuns' => fn ($query) => $query->with('repository')->latest(),
             'pages' => fn ($query) => $query->with('optimisations')->orderBy('depth')->orderBy('url'),
         ]);

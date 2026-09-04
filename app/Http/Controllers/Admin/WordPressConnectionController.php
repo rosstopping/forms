@@ -19,7 +19,7 @@ class WordPressConnectionController extends Controller
             $connections->revoke($website->wordpressConnection);
         }
 
-        return Redirect::route('admin.websites.show', ['website' => $website, 'tab' => 'content'])
+        return Redirect::route('admin.websites.show', ['website' => $website, 'tab' => 'wordpress'])
             ->with('status', 'WordPress connection revoked.');
     }
 }

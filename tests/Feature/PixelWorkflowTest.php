@@ -16,6 +16,7 @@ use App\Models\Website;
 use App\Models\WebsiteHealthReport;
 use App\Models\WebsiteHealthReportPage;
 use App\Models\WebsiteRepository;
+use App\Models\WordpressConnection;
 use App\Services\ContentRequestPixelOptimisationGenerator;
 use App\Services\OptimisationDeploymentManager;
 use App\Services\PixelUrlNormalizer;
@@ -53,11 +54,15 @@ it('details live and reviewable changes on the pixel tab', function (): void {
         ->assertSee('Rollback');
 });
 
-it('uses one report action to queue both pixel and github remediation', function (): void {
+it('uses one report action to queue both pixel and wordpress remediation', function (): void {
     Queue::fake();
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     GithubUserAuthorization::factory()->for($admin)->create();
-    $website = Website::factory()->for($admin, 'owner')->create(['pixel_enabled' => true]);
+    $website = Website::factory()->for($admin, 'owner')->create([
+        'pixel_enabled' => true,
+        'wordpress_enabled' => true,
+    ]);
+    WordpressConnection::factory()->for($website)->create();
     $installation = GithubInstallation::factory()->create(['installed_by' => $admin->id]);
     WebsiteRepository::factory()->for($website)->create(['github_installation_id' => $installation->id]);
     $report = WebsiteHealthReport::factory()->for($website)->create([
@@ -67,6 +72,12 @@ it('uses one report action to queue both pixel and github remediation', function
         'url' => 'https://example.com/services',
         'checks' => [['key' => 'meta_description', 'label' => 'Meta description', 'status' => 'warning', 'message' => 'Missing description.']],
     ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.website-health-reports.show', [$website, $report]))
+        ->assertSuccessful()
+        ->assertSee('Pixel is enabled for supported page fixes, and WordPress is connected for repository fixes.')
+        ->assertDontSee('Sitewell will use every connected delivery path');
 
     $this->actingAs($admin)
         ->post(route('admin.report-remediation.store', [$website, $report]))

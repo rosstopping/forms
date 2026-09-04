@@ -208,7 +208,7 @@ it('allows an administrator to rename and delete a website', function (): void {
             'health_reports_enabled' => false,
         ])
         ->assertSessionDoesntHaveErrors()
-        ->assertRedirect(route('admin.websites.show', $website));
+        ->assertRedirect(route('admin.websites.show', ['website' => $website, 'tab' => 'settings']));
 
     expect($website->fresh()->name)->toBe('Renamed website');
 
@@ -241,7 +241,7 @@ it('allows an administrator to configure website webhook settings', function ():
             'webhook_secret' => 'signing-secret',
         ])
         ->assertSessionDoesntHaveErrors()
-        ->assertRedirect(route('admin.websites.show', $website));
+        ->assertRedirect(route('admin.websites.show', ['website' => $website, 'tab' => 'settings']));
 
     expect($website->fresh())
         ->webhook_enabled->toBeTrue()

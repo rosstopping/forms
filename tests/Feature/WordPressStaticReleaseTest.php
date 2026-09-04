@@ -58,7 +58,7 @@ it('queues a static release for a manageable connected website', function (): vo
 
     $this->actingAs($owner)
         ->post(route('admin.websites.wordpress.releases.store', $website))
-        ->assertRedirect(route('admin.websites.show', ['website' => $website, 'tab' => 'content']))
+        ->assertRedirect(route('admin.websites.show', ['website' => $website, 'tab' => 'wordpress']))
         ->assertSessionHas('status');
 
     $release = $website->wordpressStaticReleases()->sole();

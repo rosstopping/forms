@@ -16,13 +16,13 @@ class WordPressPairingCodeController extends Controller
         abort_unless($website->isManageableBy($request->user()), 403);
 
         if (! $website->repository()->exists()) {
-            return Redirect::route('admin.websites.show', ['website' => $website, 'tab' => 'content'])
+            return Redirect::route('admin.websites.show', ['website' => $website, 'tab' => 'wordpress'])
                 ->with('error', 'Connect the website GitHub repository before connecting WordPress.');
         }
 
         $pairing = $connections->issuePairingCode($website);
 
-        return Redirect::route('admin.websites.show', ['website' => $website, 'tab' => 'content'])
+        return Redirect::route('admin.websites.show', ['website' => $website, 'tab' => 'wordpress'])
             ->with('status', 'WordPress connection code created.')
             ->with('wordpress_pairing_code', $pairing['code'])
             ->with('wordpress_pairing_code_expires_at', $pairing['expires_at']->toIso8601String());

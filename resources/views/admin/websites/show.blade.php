@@ -46,7 +46,10 @@
         <button type="button" id="website-tab-search" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-search" tabindex="-1" data-tab="search">Search</button>
         <button type="button" id="website-tab-seo" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-seo" tabindex="-1" data-tab="seo">SEO Intelligence</button>
         <button type="button" id="website-tab-content" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-content" tabindex="-1" data-tab="content">Content</button>
-        @if (config('forms.pixel_ui_enabled') && $canUseGrowthFeatures)
+        @if ($website->wordpress_enabled)
+            <button type="button" id="website-tab-wordpress" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-wordpress" tabindex="-1" data-tab="wordpress">WordPress</button>
+        @endif
+        @if (config('forms.pixel_ui_enabled') && $canUseGrowthFeatures && $website->pixel_enabled)
             <button type="button" id="website-tab-pixel" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-pixel" tabindex="-1" data-tab="pixel">Pixel</button>
         @endif
         <button type="button" id="website-tab-business-profile" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-business-profile" tabindex="-1" data-tab="business-profile">Business Profile</button>
@@ -218,8 +221,6 @@
             </div>
         </div>
 
-        @include('admin.websites.partials.wordpress-connection')
-
         @if ($website->repository || ($canUseGrowthFeatures && config('forms.pixel_ui_enabled') && $website->pixel_enabled))
         @if ($website->repository && Auth::user()?->isAdmin())
         @php
@@ -362,7 +363,13 @@
         @endif
     </div>
 
-    @if (config('forms.pixel_ui_enabled') && $canUseGrowthFeatures)
+    @if ($website->wordpress_enabled)
+        <div id="website-panel-wordpress" class="space-y-6" role="tabpanel" aria-labelledby="website-tab-wordpress" data-tab-panel="wordpress" hidden>
+            @include('admin.websites.partials.wordpress-connection')
+        </div>
+    @endif
+
+    @if (config('forms.pixel_ui_enabled') && $canUseGrowthFeatures && $website->pixel_enabled)
         @include('admin.websites.partials.pixel', [
             'website' => $website,
             'pixelInstallationSnippet' => $pixelInstallationSnippet,
@@ -382,20 +389,24 @@
         </div>
     @endif
 
-    <div id="website-panel-settings" class="grid gap-6 lg:grid-cols-2" role="tabpanel" aria-labelledby="website-tab-settings" data-tab-panel="settings" hidden>
-        <div class="rounded-lg border bg-white p-4 shadow-sm">
-            <h2 class="font-semibold">Overview</h2>
-            <dl class="mt-3 space-y-2 text-sm">
-                <div class="flex justify-between"><dt class="text-slate-500">Status</dt><dd class="font-medium">{{ $website->is_active ? 'Active' : 'Disabled' }}</dd></div>
-                <div class="flex justify-between"><dt class="text-slate-500">Auto discovered</dt><dd class="font-medium">{{ $website->auto_discovered ? 'Yes' : 'No' }}</dd></div>
-                <div class="flex justify-between"><dt class="text-slate-500">Email notifications</dt><dd class="font-medium">{{ $website->email_enabled ? 'Enabled' : 'Disabled' }}</dd></div>
-                <div class="flex justify-between"><dt class="text-slate-500">Webhook notifications</dt><dd class="font-medium">{{ $website->webhook_enabled ? 'Enabled' : 'Disabled' }}</dd></div>
-                <div class="flex justify-between"><dt class="text-slate-500">Weekly health reports</dt><dd class="font-medium">{{ $website->health_reports_enabled ? 'Enabled' : 'Disabled' }}</dd></div>
-                <div class="flex justify-between"><dt class="text-slate-500">Owner</dt><dd class="font-medium">{{ $website->owner?->name ?: 'Unassigned' }}</dd></div>
+    <div id="website-panel-settings" class="space-y-6" role="tabpanel" aria-labelledby="website-tab-settings" data-tab-panel="settings" hidden>
+        <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm" aria-labelledby="website-settings-title">
+            <div class="border-b border-slate-200 p-5 sm:p-6">
+                <p class="text-xs font-medium uppercase tracking-widest text-slate-500">Website configuration</p>
+                <h2 id="website-settings-title" class="mt-1 text-xl font-semibold text-slate-950">Settings</h2>
+                <p class="mt-1 text-sm text-slate-600">Manage the website details, reporting and the connection workspaces shown above.</p>
+            </div>
+            <dl class="grid gap-px bg-slate-200 sm:grid-cols-2 lg:grid-cols-3">
+                <div class="bg-white p-4"><dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Website status</dt><dd class="mt-1 font-semibold text-slate-950">{{ $website->is_active ? 'Active' : 'Disabled' }}</dd></div>
+                <div class="bg-white p-4"><dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Weekly reports</dt><dd class="mt-1 font-semibold text-slate-950">{{ $website->health_reports_enabled ? 'Enabled' : 'Disabled' }}</dd></div>
+                <div class="bg-white p-4"><dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Owner</dt><dd class="mt-1 font-semibold text-slate-950">{{ $website->owner?->name ?: 'Unassigned' }}</dd></div>
+                <div class="bg-white p-4"><dt class="text-xs font-medium uppercase tracking-wide text-slate-500">WordPress workspace</dt><dd class="mt-1 font-semibold text-slate-950">{{ $website->wordpress_enabled ? 'Enabled' : 'Hidden' }}</dd></div>
+                <div class="bg-white p-4"><dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Pixel workspace</dt><dd class="mt-1 font-semibold text-slate-950">{{ $website->pixel_enabled ? 'Enabled' : 'Hidden' }}</dd></div>
+                <div class="bg-white p-4"><dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Created</dt><dd class="mt-1 font-semibold text-slate-950">{{ $website->auto_discovered ? 'Automatically' : 'Manually' }}</dd></div>
             </dl>
 
             @if (Auth::user()?->isAdmin())
-                <form method="POST" action="{{ route('admin.websites.update', $website) }}" class="mt-4 space-y-3">
+                <form method="POST" action="{{ route('admin.websites.update', $website) }}" class="space-y-6 p-5 sm:p-6">
                     @csrf
                     @method('PUT')
                     <div>
@@ -418,6 +429,28 @@
                             @endforeach
                         </select>
                     </div>
+                    <fieldset class="space-y-3 border-t border-slate-200 pt-6">
+                        <legend class="text-sm font-semibold text-slate-950">Connection workspaces</legend>
+                        <p class="text-sm text-slate-600">Choose which connection tabs are available for this website.</p>
+                        <label class="flex items-start gap-3 rounded-lg border border-slate-200 p-4">
+                            <input type="hidden" name="wordpress_enabled" value="0">
+                            <input type="checkbox" name="wordpress_enabled" value="1" class="mt-1 rounded border-slate-300" @checked(old('wordpress_enabled', $website->wordpress_enabled))>
+                            <span>
+                                <span class="block text-sm font-medium text-slate-900">Enable the WordPress connection</span>
+                                <span class="block text-xs leading-5 text-slate-500">Shows the WordPress tab for pairing the plugin and managing website releases.</span>
+                            </span>
+                        </label>
+                        @if (config('forms.pixel_ui_enabled'))
+                            <label class="flex items-start gap-3 rounded-lg border border-slate-200 p-4">
+                                <input type="hidden" name="pixel_enabled" value="0">
+                                <input type="checkbox" name="pixel_enabled" value="1" class="mt-1 rounded border-slate-300" @checked(old('pixel_enabled', $website->pixel_enabled))>
+                                <span>
+                                    <span class="block text-sm font-medium text-slate-900">Enable the Pixel connection</span>
+                                    <span class="block text-xs leading-5 text-slate-500">Shows the Pixel tab and allows approved Pixel changes to be delivered to the website.</span>
+                                </span>
+                            </label>
+                        @endif
+                    </fieldset>
                     <label class="flex items-start gap-3 rounded-lg border border-slate-200 p-3">
                         <input type="hidden" name="health_reports_enabled" value="0">
                         <input type="checkbox" name="health_reports_enabled" value="1" class="mt-1 rounded border-slate-300" @checked($website->health_reports_enabled)>
@@ -471,7 +504,7 @@
                     <button type="submit" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">Save settings</button>
                 </form>
 
-                <div class="mt-6 border-t border-red-200 pt-5">
+                <div class="border-t border-red-200 px-5 py-5 sm:px-6">
                     <h3 class="text-sm font-semibold text-red-900">Delete website</h3>
                     <p class="mt-1 text-sm text-red-700">This permanently deletes the website, its forms, submissions, reports, and content settings.</p>
                     <form method="POST" action="{{ route('admin.websites.destroy', $website) }}" class="mt-3" onsubmit="return confirm('Delete this website and all of its data? This cannot be undone.')">
@@ -481,9 +514,9 @@
                     </form>
                 </div>
             @endif
-        </div>
+        </section>
 
-        <div class="rounded-lg border bg-white p-4 shadow-sm">
+        <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
             <h2 class="font-semibold">Domains</h2>
             <ul class="mt-3 space-y-2 text-sm">
                 @forelse ($website->domains as $domain)
@@ -495,9 +528,9 @@
                     <li class="text-slate-500">No domains recorded.</li>
                 @endforelse
             </ul>
-        </div>
+        </section>
 
-        <div class="rounded-lg border bg-white p-4 shadow-sm lg:col-span-2">
+        <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
             <div class="flex items-start justify-between gap-4">
                 <div>
                     <h2 class="font-semibold">Website users</h2>
@@ -550,7 +583,7 @@
             @elseif ($canManageMembers)
                 <p class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">A Growth or Complete membership is required to invite additional website users.</p>
             @endif
-        </div>
+        </section>
     </div>
 
     <div id="website-panel-forms" class="grid gap-6 lg:grid-cols-2" role="tabpanel" aria-labelledby="website-tab-forms" data-tab-panel="forms" hidden>
