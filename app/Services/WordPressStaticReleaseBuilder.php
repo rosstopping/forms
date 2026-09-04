@@ -17,6 +17,12 @@ class WordPressStaticReleaseBuilder
 
     private const MAX_FILES = 10000;
 
+    private const ALLOWED_EXTENSIONS = [
+        'avif', 'css', 'gif', 'htm', 'html', 'ico', 'jpeg', 'jpg', 'js', 'json', 'map',
+        'mp3', 'mp4', 'ogg', 'pdf', 'png', 'svg', 'ttf', 'txt', 'webm', 'webmanifest',
+        'webp', 'woff', 'woff2', 'xml',
+    ];
+
     public function __construct(private GithubAppClient $github) {}
 
     public function build(WordpressStaticRelease $release, WebsiteRepository $repository): WordpressStaticRelease
@@ -106,6 +112,11 @@ class WordPressStaticReleaseBuilder
                 }
 
                 $this->assertSafePath($relativeName);
+
+                if (! $this->shouldPackage($relativeName)) {
+                    continue;
+                }
+
                 $contents = $source->getFromIndex($index);
 
                 if (! is_string($contents)) {
@@ -174,5 +185,16 @@ class WordPressStaticReleaseBuilder
             || in_array('', $segments, true)) {
             throw new RuntimeException('The repository archive contains an unsafe file path.');
         }
+    }
+
+    private function shouldPackage(string $path): bool
+    {
+        $segments = explode('/', str_replace('\\', '/', $path));
+
+        if (collect($segments)->contains(fn (string $segment): bool => str_starts_with($segment, '.'))) {
+            return false;
+        }
+
+        return in_array(strtolower(pathinfo($path, PATHINFO_EXTENSION)), self::ALLOWED_EXTENSIONS, true);
     }
 }

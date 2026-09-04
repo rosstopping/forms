@@ -84,6 +84,10 @@ it('packages the configured repository path as a flat verified static release', 
         'README.md' => 'Ignored',
         'dist/index.html' => '<h1>Live website</h1>',
         'dist/assets/site.css' => 'body { color: navy; }',
+        'dist/.htaccess' => 'Deny from all',
+        'dist/assets/.DS_Store' => 'Ignored metadata',
+        'dist/config.yml' => 'secret: ignored',
+        'dist/backdoor.php' => '<?php echo "unsafe";',
     ]);
     mock(GithubAppClient::class)
         ->shouldReceive('repositoryArchive')
@@ -102,7 +106,11 @@ it('packages the configured repository path as a flat verified static release', 
     $packaged->open(Storage::disk('local')->path($built->storage_path));
     expect($packaged->getFromName('index.html'))->toBe('<h1>Live website</h1>')
         ->and($packaged->getFromName('assets/site.css'))->toBe('body { color: navy; }')
-        ->and($packaged->locateName('README.md'))->toBeFalse();
+        ->and($packaged->locateName('README.md'))->toBeFalse()
+        ->and($packaged->locateName('.htaccess'))->toBeFalse()
+        ->and($packaged->locateName('assets/.DS_Store'))->toBeFalse()
+        ->and($packaged->locateName('config.yml'))->toBeFalse()
+        ->and($packaged->locateName('backdoor.php'))->toBeFalse();
     $packaged->close();
 });
 
