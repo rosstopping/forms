@@ -5,9 +5,10 @@ use App\Models\FormSubmission;
 use App\Models\Website;
 use App\Services\AutoresponderHtmlSanitizer;
 use App\Services\FormSettingsResolver;
+use App\Services\WebsiteMailRecipients;
 
 it('does not send email by default unless form recipients are configured', function (): void {
-    $resolver = new FormSettingsResolver(new AutoresponderHtmlSanitizer);
+    $resolver = new FormSettingsResolver(new AutoresponderHtmlSanitizer, new WebsiteMailRecipients);
     $form = new Form(['name' => 'Contact']);
     $form->setRelation('website', new Website(['name' => 'Example', 'email_enabled' => false, 'email_recipients' => []]));
 
@@ -16,7 +17,7 @@ it('does not send email by default unless form recipients are configured', funct
 });
 
 it('uses form-level email and webhook settings when configured', function (): void {
-    $resolver = new FormSettingsResolver(new AutoresponderHtmlSanitizer);
+    $resolver = new FormSettingsResolver(new AutoresponderHtmlSanitizer, new WebsiteMailRecipients);
     $form = new Form([
         'email_enabled_override' => true,
         'email_recipients_override' => ['ops@example.com'],
@@ -34,7 +35,7 @@ it('uses form-level email and webhook settings when configured', function (): vo
 });
 
 it('replaces tags for any submitted form field', function (): void {
-    $resolver = new FormSettingsResolver(new AutoresponderHtmlSanitizer);
+    $resolver = new FormSettingsResolver(new AutoresponderHtmlSanitizer, new WebsiteMailRecipients);
     $website = new Website(['name' => 'Example', 'autoresponder_delay_minutes' => 10]);
     $form = new Form([
         'name' => 'Quote request',
@@ -57,7 +58,7 @@ it('replaces tags for any submitted form field', function (): void {
 });
 
 it('preserves raw html while escaping submission tag values', function (): void {
-    $resolver = new FormSettingsResolver(new AutoresponderHtmlSanitizer);
+    $resolver = new FormSettingsResolver(new AutoresponderHtmlSanitizer, new WebsiteMailRecipients);
     $website = new Website([
         'name' => 'Example',
         'autoresponder_content_type' => 'text',

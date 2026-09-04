@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\User;
 use App\Models\Website;
+
 class WebsitePolicy
 {
     /**
@@ -64,6 +65,6 @@ class WebsitePolicy
 
     public function manageMembers(User $user, Website $website): bool
     {
-        return $user->isAdmin() || $website->user_id === $user->id;
+        return $website->isManageableBy($user);
     }
 }

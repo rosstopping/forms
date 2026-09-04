@@ -6,6 +6,7 @@ use App\Mail\ContentSuggestionReminder;
 use App\Models\ContentPlan;
 use App\Models\SearchOpportunity;
 use App\Models\SeoOpportunity;
+use App\Services\WebsiteMailRecipients;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
@@ -18,10 +19,10 @@ class SendContentSuggestionReminders extends Command
     /**
      * Execute the console command.
      */
-    public function handle(): int
+    public function handle(WebsiteMailRecipients $recipients): int
     {
         $sent = 0;
-        ContentPlan::query()->where('enabled', true)->with(['website.repository', 'creator'])->each(function (ContentPlan $plan) use (&$sent): void {
+        ContentPlan::query()->where('enabled', true)->with(['website.members', 'website.repository', 'creator'])->each(function (ContentPlan $plan) use ($recipients, &$sent): void {
             $now = now($plan->timezone);
             $daysUntil = ($plan->weekday - $now->dayOfWeek + 7) % 7;
             $scheduledFor = $now->copy()->addDays($daysUntil)->setTime($plan->hour, 0);
@@ -31,7 +32,10 @@ class SendContentSuggestionReminders extends Command
             if ($scheduledFor->copy()->subDay()->format('Y-m-d-H') !== $now->format('Y-m-d-H') || $plan->suggestion_reminder_sent_for?->equalTo($scheduledFor)) {
                 return;
             }
-            if (! $plan->website->repository || ! $plan->creator?->email || $plan->website->contentRequests()->whereNull('picked_up_at')->exists()) {
+            if (! $plan->website->repository
+                || ! $plan->creator?->email
+                || $recipients->isViewer($plan->website, $plan->creator->email)
+                || $plan->website->contentRequests()->whereNull('picked_up_at')->exists()) {
                 return;
             }
             $search = $plan->website->searchOpportunities()->where('status', SearchOpportunity::STATUS_OPEN)->latest('priority_score')->limit(3)->get();

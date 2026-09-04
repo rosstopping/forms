@@ -15,7 +15,7 @@ class WebsiteHealthReportReady extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
-    public function __construct(public WebsiteHealthReport $report)
+    public function __construct(public WebsiteHealthReport $report, public bool $showGithubLinks = true)
     {
         $this->afterCommit();
     }

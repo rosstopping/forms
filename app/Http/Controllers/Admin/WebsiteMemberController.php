@@ -45,8 +45,8 @@ class WebsiteMemberController extends Controller
 
     public function update(UpdateWebsiteMemberRequest $request, Website $website, User $member): RedirectResponse
     {
-        abort_unless($website->members()->whereKey($member->id)->exists(), 404);
-        $website->members()->updateExistingPivot($member->id, ['role' => $request->validated('role')]);
+        abort_unless($website->members()->whereKey($member->id)->exists() || $website->owner?->is($member), 404);
+        $website->members()->syncWithoutDetaching([$member->id => ['role' => $request->validated('role')]]);
 
         return back()->with('status', 'Website member updated.');
     }
@@ -54,8 +54,21 @@ class WebsiteMemberController extends Controller
     public function destroy(Website $website, User $member): RedirectResponse
     {
         Gate::authorize('manageMembers', $website);
-        abort_unless($website->members()->whereKey($member->id)->exists(), 404);
-        $website->members()->detach($member->id);
+        $isLegacyOwner = $website->owner?->is($member) === true;
+
+        abort_unless($website->members()->whereKey($member->id)->exists() || $isLegacyOwner, 404);
+
+        DB::transaction(function () use ($isLegacyOwner, $member, $website): void {
+            $website->members()->detach($member->id);
+
+            if ($isLegacyOwner) {
+                $replacementManagerId = $website->members()
+                    ->wherePivot('role', Website::MEMBER_ROLE_MANAGER)
+                    ->value('users.id');
+
+                $website->update(['user_id' => $replacementManagerId]);
+            }
+        });
 
         return back()->with('status', 'Website member removed.');
     }

@@ -31,7 +31,6 @@ class StoreWebsiteMemberRequest extends FormRequest
                 'lowercase',
                 'email:rfc',
                 'max:255',
-                Rule::notIn([$this->route('website')?->owner?->email]),
             ],
             'role' => ['required', 'string', Rule::in(Website::MEMBER_ROLES)],
         ];

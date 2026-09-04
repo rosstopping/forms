@@ -308,10 +308,10 @@ test('content plans accept substantial audience and editorial guidance', functio
         ->and($plan->guidance)->toBe($guidance);
 });
 
-test('updating the website owner does not overwrite saved content plan settings', function () {
+test('updating website settings does not overwrite saved content plan settings', function () {
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
-    $owner = User::factory()->create();
     $website = Website::factory()->create();
+    $billingUserId = $website->user_id;
     WebsiteRepository::factory()->for($website)->create();
 
     $this->actingAs($admin)
@@ -327,14 +327,13 @@ test('updating the website owner does not overwrite saved content plan settings'
 
     $this->actingAs($admin)
         ->put(route('admin.websites.update', $website), [
-            'user_id' => $owner->id,
             'health_reports_enabled' => false,
         ])
         ->assertRedirect(route('admin.websites.show', ['website' => $website, 'tab' => 'settings']));
 
     $plan = $website->contentPlan()->firstOrFail();
 
-    expect($website->fresh()->user_id)->toBe($owner->id)
+    expect($website->fresh()->user_id)->toBe($billingUserId)
         ->and($plan->audience)->toBe('Independent venue owners')
         ->and($plan->guidance)->toBe('Use a practical and direct tone');
 

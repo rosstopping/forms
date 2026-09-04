@@ -86,6 +86,10 @@ class WebsiteController extends Controller
                 'is_primary' => true,
             ]);
 
+            if ($website->user_id) {
+                $website->members()->attach($website->user_id, ['role' => Website::MEMBER_ROLE_MANAGER]);
+            }
+
             return $website;
         });
 
@@ -126,7 +130,6 @@ class WebsiteController extends Controller
                 ->where('status', 'deployed')
                 ->where('deployment_method', 'pixel'),
         ]);
-        $users = $user?->isAdmin() ? User::query()->orderBy('name')->get(['id', 'name', 'email']) : collect();
         $canManageMembers = $user?->can('manageMembers', $website) === true;
         $canUseGrowthFeatures = $user?->isAdmin() === true || $website->owner?->hasMembershipFeature(MembershipPlan::FEATURE_GROWTH) === true;
         $canUseCompleteFeatures = $user?->isAdmin() === true || $website->owner?->hasMembershipFeature(MembershipPlan::FEATURE_COMPLETE) === true;
@@ -232,7 +235,7 @@ class WebsiteController extends Controller
         }
 
         return view('admin.websites.show', compact(
-            'website', 'users', 'canManageMembers', 'canManageWebsite',
+            'website', 'canManageMembers', 'canManageWebsite',
             'searchConsoleReport', 'searchConsoleHistory', 'searchConsoleReportUnavailable', 'seoGeneration', 'seoSnapshot', 'seoHistory',
             'seoKeywords', 'seoReferringDomains', 'seoCompetitors', 'seoOpportunities', 'seoFilter', 'seoSort', 'seoDirection', 'strikingDistanceCount',
             'dataForSeoConfigured', 'outreachProspect', 'pixelInstallationSnippet', 'canUseGrowthFeatures', 'canUseCompleteFeatures',
@@ -264,7 +267,6 @@ class WebsiteController extends Controller
                 'sometimes',
                 ...$this->domainRules($primaryDomain),
             ],
-            'user_id' => ['nullable', 'exists:users,id'],
             'health_reports_enabled' => ['sometimes', 'boolean'],
             'wordpress_enabled' => ['sometimes', 'boolean'],
             'pixel_enabled' => ['sometimes', 'boolean'],
@@ -312,10 +314,6 @@ class WebsiteController extends Controller
                 $website->update(['seo_history_backfilled_at' => null]);
             }
         });
-
-        if ($website->user_id) {
-            $website->members()->detach($website->user_id);
-        }
 
         return Redirect::route('admin.websites.show', ['website' => $website, 'tab' => 'settings'])->with('status', 'Website settings updated.');
     }

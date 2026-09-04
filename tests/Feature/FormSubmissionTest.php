@@ -5,6 +5,7 @@ use App\Mail\FormSubmissionAcknowledgement;
 use App\Mail\FormSubmissionReceived;
 use App\Models\Form;
 use App\Models\FormSubmission;
+use App\Models\User;
 use App\Models\Website;
 use App\Services\AutoresponderDeliveryService;
 use Illuminate\Support\Facades\Http;
@@ -43,6 +44,32 @@ it('allows public submissions without a CSRF token', function (): void {
         ]);
 
     $response->assertStatus(302);
+});
+
+it('does not send operational form alerts to website viewers', function (): void {
+    $viewer = User::factory()->create(['email' => 'viewer@example.com']);
+    $manager = User::factory()->create(['email' => 'manager@example.com']);
+    $website = Website::factory()->create();
+    $website->domains()->create(['domain' => 'recipient-policy.example', 'is_primary' => true]);
+    $website->members()->attach($viewer, ['role' => Website::MEMBER_ROLE_VIEWER]);
+    $website->members()->attach($manager, ['role' => Website::MEMBER_ROLE_MANAGER]);
+    Form::factory()->for($website)->create([
+        'name' => 'Contact form',
+        'slug' => 'contact-form',
+        'email_enabled_override' => true,
+        'email_recipients_override' => [$viewer->email, $manager->email],
+    ]);
+
+    $this->withHeader('Origin', 'https://recipient-policy.example')
+        ->post('/submit', [
+            '_form_name' => 'Contact form',
+            'name' => 'Grace Hopper',
+            'message' => 'Please send me a quote.',
+        ])
+        ->assertRedirectContains('/submitted');
+
+    Mail::assertSent(FormSubmissionReceived::class, fn (FormSubmissionReceived $mail): bool => $mail->hasTo($manager->email));
+    Mail::assertNotSent(FormSubmissionReceived::class, fn (FormSubmissionReceived $mail): bool => $mail->hasTo($viewer->email));
 });
 
 it('redirects to the submitted success url even when the request accepts json', function (): void {

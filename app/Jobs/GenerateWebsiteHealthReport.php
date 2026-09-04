@@ -4,13 +4,13 @@ namespace App\Jobs;
 
 use App\Mail\WebsiteHealthReportReady;
 use App\Models\ContentGeneration;
-use App\Models\User;
 use App\Models\WebsiteHealthReport;
 use App\Services\CopilotAgentClient;
 use App\Services\GithubAppClient;
 use App\Services\PageSpeedInsightsClient;
 use App\Services\SearchConsoleClient;
 use App\Services\WebsiteHealthAuditor;
+use App\Services\WebsiteMailRecipients;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -41,7 +41,7 @@ class GenerateWebsiteHealthReport implements ShouldBeUnique, ShouldQueue
         return (string) $this->report->website_id;
     }
 
-    public function handle(WebsiteHealthAuditor $auditor, SearchConsoleClient $searchConsole, GithubAppClient $github, CopilotAgentClient $copilot, PageSpeedInsightsClient $pageSpeed): void
+    public function handle(WebsiteHealthAuditor $auditor, SearchConsoleClient $searchConsole, GithubAppClient $github, CopilotAgentClient $copilot, PageSpeedInsightsClient $pageSpeed, WebsiteMailRecipients $recipients): void
     {
         $this->report->update([
             'status' => WebsiteHealthReport::STATUS_RUNNING,
@@ -74,7 +74,7 @@ class GenerateWebsiteHealthReport implements ShouldBeUnique, ShouldQueue
                 'completed_at' => now(),
             ]);
 
-            $this->sendReport();
+            $this->sendReport($recipients);
         } catch (Throwable $exception) {
             $this->report->update([
                 'status' => WebsiteHealthReport::STATUS_FAILED,
@@ -237,24 +237,20 @@ class GenerateWebsiteHealthReport implements ShouldBeUnique, ShouldQueue
         }
     }
 
-    protected function sendReport(): void
+    protected function sendReport(WebsiteMailRecipients $recipients): void
     {
-        $website = $this->report->website()->with('owner')->firstOrFail();
-        $recipients = User::query()
-            ->where('role', User::ROLE_ADMIN)
-            ->pluck('email')
-            ->push($website->owner?->email)
-            ->filter()
-            ->unique()
-            ->values()
-            ->all();
+        $website = $this->report->website()->with(['owner', 'members'])->firstOrFail();
+        $reportRecipients = $recipients->forReports($website);
 
-        if ($recipients === []) {
+        if ($reportRecipients === []) {
             return;
         }
 
-        foreach ($recipients as $recipient) {
-            Mail::to($recipient)->send(new WebsiteHealthReportReady($this->report->fresh(['website', 'pages'])));
+        foreach ($reportRecipients as $recipient) {
+            Mail::to($recipient)->send(new WebsiteHealthReportReady(
+                $this->report->fresh(['website', 'pages']),
+                showGithubLinks: ! $recipients->isViewer($website, $recipient),
+            ));
         }
 
         $this->report->update(['emailed_at' => now()]);

@@ -50,6 +50,21 @@ test('a reminder is not sent when the content queue already has a pending todo',
     Mail::assertNothingOutgoing();
 });
 
+test('a content suggestion reminder is not sent to a viewer', function () {
+    Carbon::setTestNow(Carbon::parse('2026-08-13 06:00:00', 'Europe/London'));
+    Mail::fake();
+    $viewer = User::factory()->create();
+    $website = Website::factory()->create();
+    $website->members()->attach($viewer, ['role' => Website::MEMBER_ROLE_VIEWER]);
+    WebsiteRepository::factory()->for($website)->create();
+    ContentPlan::factory()->for($website)->for($viewer, 'creator')->create(['weekday' => 5, 'hour' => 6, 'timezone' => 'Europe/London']);
+    SearchOpportunity::factory()->for($website)->create(['status' => SearchOpportunity::STATUS_OPEN]);
+
+    $this->artisan('content:send-suggestion-reminders')->assertSuccessful();
+
+    Mail::assertNothingOutgoing();
+});
+
 test('a signed email suggestion link adds the opportunity to the content queue', function () {
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     $website = Website::factory()->create();

@@ -122,7 +122,9 @@ class Website extends Model
         }
 
         return $query->where(fn (Builder $query) => $query
-            ->where('user_id', $user->id)
+            ->where(fn (Builder $query) => $query
+                ->where('user_id', $user->id)
+                ->whereDoesntHave('members', fn (Builder $query) => $query->whereKey($user->id)))
             ->orWhereHas('members', fn (Builder $query) => $query
                 ->whereKey($user->id)
                 ->where('user_website.role', self::MEMBER_ROLE_MANAGER)));
@@ -135,16 +137,22 @@ class Website extends Model
 
     public function isManageableBy(?User $user): bool
     {
-        return $user !== null && ($user->isAdmin() || $this->user_id === $user->id || $this->members()->whereKey($user->id)->wherePivot('role', self::MEMBER_ROLE_MANAGER)->exists());
+        return $user !== null && ($user->isAdmin() || $this->membershipRoleFor($user) === self::MEMBER_ROLE_MANAGER);
     }
 
     public function membershipRoleFor(User $user): ?string
     {
-        if ($this->user_id === $user->id) {
-            return 'owner';
+        $member = $this->members()->whereKey($user->id)->first();
+
+        if ($member) {
+            return $member->pivot?->role;
         }
 
-        return $this->members()->whereKey($user->id)->first()?->pivot?->role;
+        if ($this->user_id === $user->id) {
+            return self::MEMBER_ROLE_MANAGER;
+        }
+
+        return null;
     }
 
     public function domains(): HasMany

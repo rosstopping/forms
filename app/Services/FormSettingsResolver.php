@@ -8,7 +8,10 @@ use Illuminate\Support\Str;
 
 class FormSettingsResolver
 {
-    public function __construct(private AutoresponderHtmlSanitizer $autoresponderHtmlSanitizer) {}
+    public function __construct(
+        private AutoresponderHtmlSanitizer $autoresponderHtmlSanitizer,
+        private WebsiteMailRecipients $websiteMailRecipients,
+    ) {}
 
     public function resolveAutoresponderEnabled(Form $form): bool
     {
@@ -97,7 +100,9 @@ class FormSettingsResolver
     public function resolveEmailRecipients(Form $form): array
     {
         if (! blank($form->email_recipients_override)) {
-            return array_values(array_filter(array_map(static fn ($recipient) => trim((string) $recipient), (array) $form->email_recipients_override)));
+            $recipients = array_values(array_filter(array_map(static fn ($recipient) => trim((string) $recipient), (array) $form->email_recipients_override)));
+
+            return $this->websiteMailRecipients->withoutViewers($form->website, $recipients);
         }
 
         return [];

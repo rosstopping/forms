@@ -23,7 +23,13 @@
             <h2 style="margin-top:24px;font-size:18px;">Content updates this week</h2>
             @foreach (data_get($report->metrics, 'content_updates', []) as $update)
                 <div style="margin-top:12px;padding:16px;border:1px solid #e2e8f0;border-radius:8px;">
-                    <h3 style="margin:0;font-size:16px;"><a href="{{ $update['url'] }}" style="color:#0f172a;">{{ $update['title'] }}</a></h3>
+                    <h3 style="margin:0;font-size:16px;">
+                        @if ($showGithubLinks)
+                            <a href="{{ $update['url'] }}" style="color:#0f172a;">{{ $update['title'] }}</a>
+                        @else
+                            {{ $update['title'] }}
+                        @endif
+                    </h3>
                     <p style="margin:6px 0;color:#64748b;font-size:13px;">Merged {{ \Illuminate\Support\Carbon::parse($update['merged_at'])->format('j M Y') }} · {{ number_format($update['changed_files']) }} files · <span style="color:#047857;">+{{ number_format($update['additions']) }}</span> <span style="color:#b91c1c;">−{{ number_format($update['deletions']) }}</span></p>
                     @if ($update['summary'])
                         <p style="margin:10px 0;white-space:pre-line;">{{ $update['summary'] }}</p>

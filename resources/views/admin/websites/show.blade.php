@@ -399,7 +399,7 @@
             <dl class="grid gap-px bg-slate-200 sm:grid-cols-2 lg:grid-cols-3">
                 <div class="bg-white p-4"><dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Website status</dt><dd class="mt-1 font-semibold text-slate-950">{{ $website->is_active ? 'Active' : 'Disabled' }}</dd></div>
                 <div class="bg-white p-4"><dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Weekly reports</dt><dd class="mt-1 font-semibold text-slate-950">{{ $website->health_reports_enabled ? 'Enabled' : 'Disabled' }}</dd></div>
-                <div class="bg-white p-4"><dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Owner</dt><dd class="mt-1 font-semibold text-slate-950">{{ $website->owner?->name ?: 'Unassigned' }}</dd></div>
+                <div class="bg-white p-4"><dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Website users</dt><dd class="mt-1 font-semibold text-slate-950">{{ $website->members->pluck('id')->push($website->user_id)->filter()->unique()->count() }}</dd></div>
                 <div class="bg-white p-4"><dt class="text-xs font-medium uppercase tracking-wide text-slate-500">WordPress workspace</dt><dd class="mt-1 font-semibold text-slate-950">{{ $website->wordpress_enabled ? 'Enabled' : 'Hidden' }}</dd></div>
                 <div class="bg-white p-4"><dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Pixel workspace</dt><dd class="mt-1 font-semibold text-slate-950">{{ $website->pixel_enabled ? 'Enabled' : 'Hidden' }}</dd></div>
                 <div class="bg-white p-4"><dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Created</dt><dd class="mt-1 font-semibold text-slate-950">{{ $website->auto_discovered ? 'Automatically' : 'Manually' }}</dd></div>
@@ -419,15 +419,6 @@
                         <input id="domain" name="domain" type="text" required value="{{ old('domain', $website->primaryDomain()?->domain) }}" placeholder="https://example.com" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" autocapitalize="none" autocomplete="url" spellcheck="false">
                         <p class="mt-1 text-xs text-slate-500">Sitewell uses this domain for crawling and SEO intelligence. Connected Search Console properties and repositories are managed separately.</p>
                         @error('domain')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700" for="user_id">Assign owner</label>
-                        <select id="user_id" name="user_id" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
-                            <option value="">Unassigned</option>
-                            @foreach ($users as $user)
-                                <option value="{{ $user->id }}" @selected($website->user_id === $user->id)>{{ $user->name }} ({{ $user->email }})</option>
-                            @endforeach
-                        </select>
                     </div>
                     <fieldset class="space-y-3 border-t border-slate-200 pt-6">
                         <legend class="text-sm font-semibold text-slate-950">Connection workspaces</legend>
@@ -456,7 +447,7 @@
                         <input type="checkbox" name="health_reports_enabled" value="1" class="mt-1 rounded border-slate-300" @checked($website->health_reports_enabled)>
                         <span>
                             <span class="block text-sm font-medium text-slate-900">Send weekly website health reports</span>
-                            <span class="block text-xs text-slate-500">Reports are emailed to administrators and the assigned owner.</span>
+                            <span class="block text-xs text-slate-500">Reports are emailed to administrators and assigned website users.</span>
                         </span>
                     </label>
                     <div class="space-y-3 rounded-lg border border-slate-200 p-3">
@@ -536,14 +527,26 @@
                     <h2 class="font-semibold">Website users</h2>
                     <p class="mt-1 text-sm text-slate-600">Managers can make changes. Viewers have read-only access.</p>
                 </div>
-                <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">{{ $website->members->count() + ($website->owner ? 1 : 0) }} users</span>
+                <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">{{ $website->members->pluck('id')->push($website->user_id)->filter()->unique()->count() }} users</span>
             </div>
 
             <div class="mt-4 divide-y divide-slate-100 rounded-lg border border-slate-200">
-                @if ($website->owner)
-                    <div class="flex items-center justify-between gap-4 p-3">
+                @if ($website->owner && ! $website->members->contains('id', $website->owner->id))
+                    <div class="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between">
                         <div class="min-w-0"><p class="truncate text-sm font-medium text-slate-900">{{ $website->owner->name }}</p><p class="truncate text-xs text-slate-500">{{ $website->owner->email }}</p></div>
-                        <span class="rounded-full bg-teal-50 px-2.5 py-1 text-xs font-medium text-teal-700">Owner</span>
+                        @if ($canManageMembers)
+                            <div class="flex items-center gap-2">
+                                <form method="POST" action="{{ route('admin.websites.members.update', [$website, $website->owner]) }}" class="flex items-center gap-2">
+                                    @csrf
+                                    @method('PUT')
+                                    <select name="role" class="rounded-md border border-slate-300 px-2 py-1.5 text-sm"><option value="manager">Manager</option><option value="viewer">Viewer</option></select>
+                                    <button class="rounded-md border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">Update</button>
+                                </form>
+                                <form method="POST" action="{{ route('admin.websites.members.destroy', [$website, $website->owner]) }}">@csrf @method('DELETE')<button class="rounded-md border border-red-200 px-2.5 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50">Remove</button></form>
+                            </div>
+                        @else
+                            <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">Manager</span>
+                        @endif
                     </div>
                 @endif
                 @foreach ($website->members as $member)

@@ -19,6 +19,7 @@ use App\Services\PageSpeedInsightsClient;
 use App\Services\SearchConsoleClient;
 use App\Services\WebsiteHealthAuditor;
 use App\Services\WebsiteHealthReportPromptGenerator;
+use App\Services\WebsiteMailRecipients;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
@@ -357,12 +358,16 @@ it('stores page titles longer than the varchar limit', function (): void {
         ->and(mb_strlen($page->title))->toBeGreaterThan(255);
 });
 
-it('audits a website and queues the completed report for admins and the owner', function (): void {
+it('audits a website and queues role-appropriate reports for all website users', function (): void {
     Mail::fake();
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     GithubUserAuthorization::factory()->for($admin)->create();
     $owner = User::factory()->create();
     $website = websiteWithDomain(['user_id' => $owner->id]);
+    $manager = User::factory()->create();
+    $viewer = User::factory()->create();
+    $website->members()->attach($manager, ['role' => Website::MEMBER_ROLE_MANAGER]);
+    $website->members()->attach($viewer, ['role' => Website::MEMBER_ROLE_VIEWER]);
     Form::factory()->for($website)->create();
     SearchConsoleConnection::factory()->for($website)->create(['connected_by' => $admin->id]);
     $installation = GithubInstallation::factory()->create(['installed_by' => $admin->id]);
@@ -437,7 +442,7 @@ it('audits a website and queues the completed report for admins and the owner', 
         'checks' => [],
     ]);
 
-    (new GenerateWebsiteHealthReport($report))->handle(app(WebsiteHealthAuditor::class), $searchConsole, $github, $copilot, $pageSpeed);
+    (new GenerateWebsiteHealthReport($report))->handle(app(WebsiteHealthAuditor::class), $searchConsole, $github, $copilot, $pageSpeed, app(WebsiteMailRecipients::class));
 
     $report->refresh();
     expect($report->status)->toBe(WebsiteHealthReport::STATUS_COMPLETED)
@@ -464,9 +469,11 @@ it('audits a website and queues the completed report for admins and the owner', 
         ->assertSee('Organization schema opportunity')
         ->assertSee('Last seven days of forms');
 
-    Mail::assertQueued(WebsiteHealthReportReady::class, 2);
+    Mail::assertQueued(WebsiteHealthReportReady::class, 4);
     Mail::assertQueued(WebsiteHealthReportReady::class, fn ($mail) => $mail->hasTo($admin->email));
     Mail::assertQueued(WebsiteHealthReportReady::class, fn ($mail) => $mail->hasTo($owner->email));
+    Mail::assertQueued(WebsiteHealthReportReady::class, fn ($mail) => $mail->hasTo($manager->email) && $mail->showGithubLinks);
+    Mail::assertQueued(WebsiteHealthReportReady::class, fn ($mail) => $mail->hasTo($viewer->email) && ! $mail->showGithubLinks);
 
     (new WebsiteHealthReportReady($report->fresh(['website'])))
         ->assertSeeInHtml('Weekly website health report')
@@ -479,6 +486,10 @@ it('audits a website and queues the completed report for admins and the owner', 
         ->assertSeeInHtml('View the full report')
         ->assertSeeInHtml('does not require you to log in')
         ->assertSeeInHtml('signature=');
+
+    (new WebsiteHealthReportReady($report->fresh(['website']), showGithubLinks: false))
+        ->assertSeeInHtml('Publish a guide to choosing event forms')
+        ->assertDontSeeInHtml('https://github.com/acme/example-site/pull/42');
 
     $this->get(URL::temporarySignedRoute('website-health-reports.show', now()->addDays(30), $report))
         ->assertSuccessful()

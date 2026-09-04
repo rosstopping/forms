@@ -35,6 +35,51 @@ it('allows an owner to add update and remove a website member', function (): voi
     expect($website->members()->whereKey($member->id)->exists())->toBeFalse();
 });
 
+it('presents legacy owners as managers who can be changed or removed', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $legacyOwner = User::factory()->create();
+    $website = Website::factory()->create(['user_id' => $legacyOwner->id]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.websites.show', [$website, 'tab' => 'settings']))
+        ->assertSuccessful()
+        ->assertDontSee('Assign owner')
+        ->assertDontSee('>Owner<', false)
+        ->assertSee(route('admin.websites.members.update', [$website, $legacyOwner]))
+        ->assertSee(route('admin.websites.members.destroy', [$website, $legacyOwner]));
+
+    $this->put(route('admin.websites.members.update', [$website, $legacyOwner]), [
+        'role' => Website::MEMBER_ROLE_VIEWER,
+    ])->assertRedirect();
+
+    expect($website->membershipRoleFor($legacyOwner))->toBe(Website::MEMBER_ROLE_VIEWER)
+        ->and($website->isManageableBy($legacyOwner))->toBeFalse();
+
+    $this->delete(route('admin.websites.members.destroy', [$website, $legacyOwner]))->assertRedirect();
+
+    $website->refresh();
+
+    expect($website->user_id)->toBeNull()
+        ->and($website->isAccessibleBy($legacyOwner))->toBeFalse();
+});
+
+it('allows managers to manage website users', function (): void {
+    Notification::fake();
+    $billingUser = User::factory()->create([
+        'admin_membership_tier' => MembershipPlan::GROWTH,
+    ]);
+    $manager = User::factory()->create();
+    $website = Website::factory()->for($billingUser, 'owner')->create();
+    $website->members()->attach($manager, ['role' => Website::MEMBER_ROLE_MANAGER]);
+
+    $this->actingAs($manager)->post(route('admin.websites.members.store', $website), [
+        'email' => 'viewer@example.com',
+        'role' => Website::MEMBER_ROLE_VIEWER,
+    ])->assertRedirect();
+
+    expect($website->members()->where('email', 'viewer@example.com')->wherePivot('role', Website::MEMBER_ROLE_VIEWER)->exists())->toBeTrue();
+});
+
 it('allows managers to work with a shared website and its leads', function (): void {
     $owner = User::factory()->create();
     $manager = User::factory()->create();

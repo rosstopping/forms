@@ -52,16 +52,22 @@ test('weekly ranking report compares stored search and seo performance', functio
         ->assertSeeInHtml('Improve services page');
 });
 
-test('weekly ranking reports are queued to administrators and the website owner', function () {
+test('weekly ranking reports are queued to administrators, the owner, and website members', function () {
     Mail::fake();
     User::factory()->create(['role' => User::ROLE_ADMIN, 'email' => 'admin@example.com']);
     $owner = User::factory()->create(['email' => 'owner@example.com']);
     $website = Website::factory()->for($owner, 'owner')->create();
+    $manager = User::factory()->create(['email' => 'manager@example.com']);
+    $viewer = User::factory()->create(['email' => 'viewer@example.com']);
+    $website->members()->attach($manager, ['role' => Website::MEMBER_ROLE_MANAGER]);
+    $website->members()->attach($viewer, ['role' => Website::MEMBER_ROLE_VIEWER]);
 
     (new SendWeeklyRankingReport($website))->handle(app(RankingReportBuilder::class), app(WebsiteMailRecipients::class));
 
-    Mail::assertQueued(WeeklyRankingReport::class, 2);
+    Mail::assertQueued(WeeklyRankingReport::class, 4);
     Mail::assertQueued(WeeklyRankingReport::class, fn (WeeklyRankingReport $mail): bool => $mail->hasTo('owner@example.com'));
+    Mail::assertQueued(WeeklyRankingReport::class, fn (WeeklyRankingReport $mail): bool => $mail->hasTo('manager@example.com'));
+    Mail::assertQueued(WeeklyRankingReport::class, fn (WeeklyRankingReport $mail): bool => $mail->hasTo('viewer@example.com'));
 });
 
 test('weekly ranking dispatcher includes subscribed active websites with ranking data', function () {
