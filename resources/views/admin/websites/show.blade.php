@@ -206,7 +206,7 @@
                     @endif
                 </div>
                 <div class="flex flex-wrap gap-2">
-                    <a href="{{ route('admin.website-repositories.create', $website) }}" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">{{ $website->repository ? 'Change repository' : 'Connect GitHub' }}</a>
+                    <a href="{{ $website->repository ? route('admin.website-repositories.create', $website) : route('admin.github.connect', $website) }}" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">{{ $website->repository ? 'Change repository' : 'Connect GitHub' }}</a>
                     @if ($website->repository)
                         <form method="POST" action="{{ route('admin.website-repositories.destroy', $website) }}">
                             @csrf

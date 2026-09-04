@@ -71,6 +71,7 @@ it('keeps forms and submissions inside the website workspace', function (): void
         ->assertSee('data-tab="content"', false)
         ->assertSee('data-tab-panel="content"', false)
         ->assertSee('Connect GitHub')
+        ->assertSee('href="'.route('admin.github.connect', $website).'"', false)
         ->assertSee('Manual content requests')
         ->assertSee('>Forms</button>', false)
         ->assertSee('role="tablist"', false)
@@ -97,7 +98,9 @@ it('shows content tools when the website has a GitHub repository', function (): 
         ->assertOk()
         ->assertSee('data-tab="content"', false)
         ->assertSee('data-tab-panel="content"', false)
-        ->assertSee('Manual content requests');
+        ->assertSee('Manual content requests')
+        ->assertSee('Change repository')
+        ->assertSee('href="'.route('admin.website-repositories.create', $website).'"', false);
 });
 
 it('shows the latest audit status on the websites index', function (): void {
