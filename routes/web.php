@@ -90,6 +90,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::controller(MarketingController::class)->group(function () {
     Route::get('/', 'home')->name('marketing.home');
+    Route::get('/how-it-works', 'howItWorks')->name('marketing.how-it-works');
     Route::get('/features', 'features')->name('marketing.features');
     Route::get('/pricing', 'pricing')->name('marketing.pricing');
     Route::get('/journal', 'journal')->name('marketing.journal');

@@ -14,6 +14,11 @@ class MarketingController extends Controller
         return view('marketing.home');
     }
 
+    public function howItWorks(): View
+    {
+        return view('marketing.how-it-works');
+    }
+
     public function features(): View
     {
         return view('marketing.features');
@@ -82,6 +87,7 @@ class MarketingController extends Controller
     {
         $urls = collect([
             'marketing.home',
+            'marketing.how-it-works',
             'marketing.features',
             'marketing.pricing',
             'marketing.free-site-audit',

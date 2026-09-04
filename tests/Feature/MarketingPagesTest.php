@@ -10,6 +10,7 @@ it('shows each public marketing page', function (string $route, string $copy): v
         ->assertSee($copy);
 })->with([
     'home' => ['marketing.home', 'Your website, well looked after'],
+    'how it works' => ['marketing.how-it-works', 'Connect your website without rebuilding it'],
     'features' => ['marketing.features', 'Everything you need after a website goes live'],
     'pricing' => ['marketing.pricing', 'Everything your website needs to work harder'],
     'free audit' => ['marketing.free-site-audit', 'Find out what your website needs next'],
@@ -34,6 +35,7 @@ it('outputs canonical URLs for key marketing pages', function (string $routeName
         ->assertSee('<link rel="canonical" href="'.route($routeName, $parameters).'">', false);
 })->with([
     'home' => ['marketing.home'],
+    'how it works' => ['marketing.how-it-works'],
     'features' => ['marketing.features'],
     'pricing' => ['marketing.pricing'],
     'free audit' => ['marketing.free-site-audit'],
@@ -82,6 +84,7 @@ it('publishes an XML sitemap for the marketing site', function (): void {
         ->assertHeader('Content-Type', 'application/xml')
         ->assertSee('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">', false)
         ->assertSee('<loc>'.route('marketing.home').'</loc>', false)
+        ->assertSee('<loc>'.route('marketing.how-it-works').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.features').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.pricing').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.free-site-audit').'</loc>', false)
@@ -94,6 +97,20 @@ it('publishes an XML sitemap for the marketing site', function (): void {
         ->assertSee('<loc>'.route('marketing.article', 'search-data-to-content-decisions').'</loc>', false)
         ->assertDontSee(route('login'))
         ->assertDontSee('/admin');
+});
+
+it('explains every website connection option and reserves space for the walkthrough video', function (): void {
+    $this->get(route('marketing.how-it-works'))
+        ->assertSuccessful()
+        ->assertSee('The Sitewell Pixel')
+        ->assertSee('The WordPress connector')
+        ->assertSee('Fully managed by Sitewell')
+        ->assertSee('Your Sitewell walkthrough will appear here')
+        ->assertSee('Add one small, asynchronous script')
+        ->assertSee('Deactivate the plugin to return to the original WordPress website')
+        ->assertSee('Connection setup, technical changes, deployments, monitoring, and ongoing website care')
+        ->assertSee('href="'.route('marketing.wordpress').'"', false)
+        ->assertSee('href="'.route('marketing.contact').'"', false);
 });
 
 it('publishes legal pages suitable for connected Google services', function (): void {
