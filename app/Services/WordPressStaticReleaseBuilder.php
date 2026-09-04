@@ -145,6 +145,10 @@ class WordPressStaticReleaseBuilder
 
         $relativeName = substr($sourceName, $separator + 1);
 
+        if ($relativeName === '') {
+            return null;
+        }
+
         if ($projectPath === '') {
             return $relativeName;
         }

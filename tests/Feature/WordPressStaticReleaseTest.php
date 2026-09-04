@@ -23,6 +23,7 @@ function githubArchive(array $files): string
     $path = tempnam(sys_get_temp_dir(), 'sitewell-release-');
     $archive = new ZipArchive;
     $archive->open($path, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+    $archive->addEmptyDir('repository-root');
 
     foreach ($files as $name => $contents) {
         $archive->addFromString('repository-root/'.$name, $contents);
