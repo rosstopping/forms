@@ -80,14 +80,28 @@ test('website owners cannot connect Search Console to another clients website', 
         ->assertForbidden();
 });
 
-test('a due weekly content plan queues one generation only', function () {
+test('disconnecting Search Console leaves content generation enabled', function () {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $website = Website::factory()->create();
+    SearchConsoleConnection::factory()->for($website)->for($admin, 'connector')->create();
+    $plan = ContentPlan::factory()->for($website)->for($admin, 'creator')->create(['enabled' => true]);
+
+    $this->actingAs($admin)
+        ->delete(route('admin.search-console.destroy', $website))
+        ->assertRedirect(route('admin.websites.show', $website))
+        ->assertSessionHas('status', 'Google Search Console disconnected.');
+
+    expect($website->searchConsoleConnection()->exists())->toBeFalse()
+        ->and($plan->fresh()->enabled)->toBeTrue();
+});
+
+test('a due weekly content plan queues one generation without Search Console', function () {
     Queue::fake();
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     GithubUserAuthorization::factory()->create(['user_id' => $admin->id]);
     $website = Website::factory()->create();
     $installation = GithubInstallation::factory()->create();
     $repository = WebsiteRepository::factory()->create(['website_id' => $website->id, 'github_installation_id' => $installation->id]);
-    SearchConsoleConnection::factory()->create(['website_id' => $website->id, 'connected_by' => $admin->id]);
     $plan = ContentPlan::factory()->create([
         'website_id' => $website->id,
         'created_by' => $admin->id,
@@ -100,6 +114,40 @@ test('a due weekly content plan queues one generation only', function () {
 
     expect($plan->generations()->count())->toBe(1)
         ->and($plan->generations()->first()->website_repository_id)->toBe($repository->id);
+    Queue::assertPushed(StartContentGeneration::class, 1);
+});
+
+test('an admin can enable and manually run content generation without Search Console', function () {
+    Queue::fake();
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    GithubUserAuthorization::factory()->for($admin)->create();
+    $website = Website::factory()->create();
+    WebsiteRepository::factory()->for($website)->create();
+
+    $this->actingAs($admin)
+        ->put(route('admin.content-plans.update', $website), [
+            'enabled' => true,
+            'weekday' => 4,
+            'hour' => 15,
+            'timezone' => 'Europe/London',
+            'audience' => null,
+            'guidance' => null,
+        ])
+        ->assertSessionDoesntHaveErrors()
+        ->assertRedirect(route('admin.websites.show', $website));
+
+    expect($website->contentPlan()->firstOrFail()->enabled)->toBeTrue();
+
+    $this->actingAs($admin)
+        ->get(route('admin.websites.show', $website))
+        ->assertSuccessful()
+        ->assertSee('Generate now');
+
+    $this->actingAs($admin)
+        ->post(route('admin.content-generations.store', $website))
+        ->assertRedirect(route('admin.websites.show', $website))
+        ->assertSessionHas('status', 'Content generation queued.');
+
     Queue::assertPushed(StartContentGeneration::class, 1);
 });
 
@@ -417,6 +465,28 @@ test('content generation uses search performance and pending requests to start a
         ->and($secondRequest->fresh()->picked_up_at)->not->toBeNull()
         ->and($thirdRequest->fresh()->content_generation_id)->toBeNull()
         ->and($thirdRequest->fresh()->picked_up_at)->toBeNull();
+    Queue::assertPushed(SyncContentGeneration::class);
+});
+
+test('content generation omits Search Console context when no property is connected', function () {
+    Queue::fake();
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    GithubUserAuthorization::factory()->for($admin)->create();
+    $website = Website::factory()->create(['name' => 'Example Site']);
+    $repository = WebsiteRepository::factory()->for($website)->create();
+    $plan = ContentPlan::factory()->for($website)->for($admin, 'creator')->create();
+    $generation = ContentGeneration::factory()->for($plan, 'plan')->for($repository, 'repository')->for($admin, 'requester')->create();
+
+    $this->mock(SearchConsoleClient::class)->shouldNotReceive('performance');
+    $this->mock(CopilotAgentClient::class)->shouldReceive('startTask')->once()
+        ->withArgs(fn ($authorization, $passedRepository, string $prompt): bool => $passedRepository->is($repository)
+            && ! str_contains($prompt, 'Search Console'))
+        ->andReturn(['id' => '11111111-1111-4111-8111-111111111111', 'state' => 'queued']);
+
+    app()->call([new StartContentGeneration($generation), 'handle']);
+
+    expect($generation->fresh()->status)->toBe(ContentGeneration::STATUS_RUNNING)
+        ->and($generation->fresh()->search_performance)->toBe([]);
     Queue::assertPushed(SyncContentGeneration::class);
 });
 

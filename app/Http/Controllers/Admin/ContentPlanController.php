@@ -97,13 +97,10 @@ class ContentPlanController extends Controller
 
     protected function ensureReady(Request $request, Website $website): void
     {
-        $website->loadMissing(['repository', 'searchConsoleConnection']);
+        $website->loadMissing('repository');
         $errors = [];
         if (! $website->repository) {
             $errors['enabled'] = 'Connect a GitHub repository first.';
-        }
-        if (! $website->searchConsoleConnection?->property_url) {
-            $errors['enabled'] = 'Connect a Search Console property first.';
         }
         if (! $request->user()?->githubAuthorization) {
             $errors['enabled'] = 'Authorize the GitHub automation first.';

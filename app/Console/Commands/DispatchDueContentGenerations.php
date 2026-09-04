@@ -17,13 +17,13 @@ class DispatchDueContentGenerations extends Command
     {
         $dispatched = 0;
         ContentPlan::query()->where('enabled', true)
-            ->with(['website.repository', 'website.searchConsoleConnection', 'creator.githubAuthorization'])
+            ->with(['website.repository', 'creator.githubAuthorization'])
             ->each(function (ContentPlan $plan) use (&$dispatched): void {
                 $localNow = now($plan->timezone);
                 if ($localNow->dayOfWeek !== $plan->weekday || $localNow->hour !== $plan->hour) {
                     return;
                 }
-                if (! $plan->website->repository || ! $plan->website->searchConsoleConnection?->property_url || ! $plan->creator?->githubAuthorization) {
+                if (! $plan->website->repository || ! $plan->creator?->githubAuthorization) {
                     return;
                 }
                 if ($plan->generations()->whereIn('status', [ContentGeneration::STATUS_PENDING, ContentGeneration::STATUS_RUNNING])->exists()) {

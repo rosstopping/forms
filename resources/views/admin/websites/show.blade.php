@@ -228,7 +228,7 @@
         <div class="rounded-lg border bg-white p-4 shadow-sm">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div><p class="text-xs font-medium uppercase tracking-wide text-slate-500">AI content</p><h2 class="mt-1 font-semibold">Weekly content generation</h2><p class="mt-1 text-sm text-slate-600">Sitewell chooses a blog post, landing page, or page improvement and opens a pull request for review.</p></div>
-                @if ($website->repository && $website->searchConsoleConnection?->property_url)
+                @if ($website->repository)
                     <form method="POST" action="{{ route('admin.content-generations.store', $website) }}">@csrf<button class="rounded-md border px-3 py-2 text-sm font-medium text-slate-700">Generate now</button></form>
                 @endif
             </div>

@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace Sitewell\StaticFrontend\Contracts;
 
-interface StaticRootProvider {
+interface StaticRootProvider
+{
 
-	public function path(): string;
+    public function path(): string;
 }

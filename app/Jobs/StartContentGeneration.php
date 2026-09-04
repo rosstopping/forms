@@ -44,13 +44,13 @@ class StartContentGeneration implements ShouldBeEncrypted, ShouldBeUnique, Shoul
         $connection = $this->generation->plan->website->searchConsoleConnection;
         $authorization = $this->generation->requester?->githubAuthorization;
 
-        if (! $connection?->property_url || ! $authorization) {
-            $this->failGeneration('Search Console and GitHub must remain connected.');
+        if (! $authorization) {
+            $this->failGeneration('GitHub automation must remain authorized.');
 
             return;
         }
 
-        $performance = $searchConsole->performance($connection);
+        $performance = $connection?->property_url ? $searchConsole->performance($connection) : [];
         $this->generation->update(['search_performance' => $performance]);
         $contentRequests = $this->generation->plan->website->contentRequests()
             ->whereNull('picked_up_at')

@@ -153,9 +153,8 @@ class SearchConsoleController extends Controller
     {
         $this->authorizeWebsite($request, $website);
         $website->searchConsoleConnection()->delete();
-        $website->contentPlan()->update(['enabled' => false]);
 
-        return Redirect::route('admin.websites.show', $website)->with('status', 'Google Search Console disconnected and content generation paused.');
+        return Redirect::route('admin.websites.show', $website)->with('status', 'Google Search Console disconnected.');
     }
 
     protected function authorizeWebsite(Request $request, Website $website): void
