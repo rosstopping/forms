@@ -18,6 +18,14 @@
         </div>
     @endif
 
+    @if ($unavailableInstallations->isNotEmpty())
+        <div class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+            <p class="font-medium">A GitHub connection needs reconnecting</p>
+            <p class="mt-1">Sitewell could no longer access {{ $unavailableInstallations->join(', ', ' or ') }}. It has been removed from this list so you can continue using any other connected accounts.</p>
+            <a href="{{ route('admin.github.connect', $website) }}" class="mt-3 inline-flex rounded-md bg-amber-900 px-3 py-2 font-medium text-white hover:bg-amber-800">Reconnect GitHub App</a>
+        </div>
+    @endif
+
     <form method="POST" action="{{ route('admin.website-repositories.store', $website) }}" class="space-y-5 rounded-lg border bg-white p-5 shadow-sm">
         @csrf
         <div>
@@ -77,7 +85,7 @@
         </div>
 
         <div class="flex flex-wrap gap-3">
-            <button type="submit" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">Connect repository</button>
+            <button type="submit" @disabled($repositories->isEmpty()) class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300">Connect repository</button>
             <a href="{{ route('admin.github.connect', $website) }}" class="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Install on another account</a>
             <a href="{{ route('admin.websites.show', $website) }}" class="px-2 py-2 text-sm font-medium text-slate-600 hover:text-slate-900">Cancel</a>
         </div>

@@ -459,6 +459,67 @@ it('allows website owners to connect a repository from their GitHub installation
     expect($website->repository()->sole()->full_name)->toBe('client/website');
 });
 
+it('skips and retires inaccessible GitHub installations while listing repositories', function (): void {
+    $owner = User::factory()->create();
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $unavailableInstallation = GithubInstallation::factory()->for($owner, 'installer')->create([
+        'account_login' => 'old-organisation',
+        'installation_id' => 111,
+    ]);
+    $availableInstallation = GithubInstallation::factory()->for($owner, 'installer')->create([
+        'account_login' => 'new-organisation',
+        'installation_id' => 222,
+    ]);
+
+    $github = mock(GithubAppClient::class);
+    $github->shouldReceive('repositories')
+        ->once()
+        ->with($unavailableInstallation->installation_id)
+        ->andThrow(Http::failedRequest(['message' => 'Not Found'], 404));
+    $github->shouldReceive('repositories')
+        ->once()
+        ->with($availableInstallation->installation_id)
+        ->andReturn([[
+            'id' => 456,
+            'full_name' => 'new-organisation/website',
+            'default_branch' => 'main',
+            'private' => true,
+        ]]);
+
+    $this->actingAs($owner)
+        ->get(route('admin.website-repositories.create', $website))
+        ->assertSuccessful()
+        ->assertSee('A GitHub connection needs reconnecting')
+        ->assertSee('old-organisation')
+        ->assertSee('new-organisation/website');
+
+    expect($unavailableInstallation->fresh()->status)->toBe(GithubInstallation::STATUS_DELETED)
+        ->and($availableInstallation->fresh()->status)->toBe(GithubInstallation::STATUS_ACTIVE);
+});
+
+it('turns a stale installation during repository selection into a reconnect message', function (): void {
+    $owner = User::factory()->create();
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $installation = GithubInstallation::factory()->for($owner, 'installer')->create([
+        'account_login' => 'old-organisation',
+    ]);
+
+    mock(GithubAppClient::class)
+        ->shouldReceive('repositories')
+        ->once()
+        ->with($installation->installation_id)
+        ->andThrow(Http::failedRequest(['message' => 'Not Found'], 404));
+
+    $this->actingAs($owner)
+        ->post(route('admin.website-repositories.store', $website), [
+            'repository' => $installation->id.':456',
+        ])
+        ->assertRedirect(route('admin.websites.show', $website))
+        ->assertSessionHas('error', 'The GitHub installation for old-organisation is no longer available. Reconnect the Sitewell GitHub App and try again.');
+
+    expect($installation->fresh()->status)->toBe(GithubInstallation::STATUS_DELETED);
+});
+
 it('prevents website owners from changing another clients GitHub repository connection', function (): void {
     $owner = User::factory()->create();
     $otherWebsite = Website::factory()->create();

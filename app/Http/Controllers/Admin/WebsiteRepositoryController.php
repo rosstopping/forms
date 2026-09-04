@@ -7,8 +7,10 @@ use App\Http\Requests\StoreWebsiteRepositoryRequest;
 use App\Models\GithubInstallation;
 use App\Models\Website;
 use App\Services\GithubAppClient;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -31,16 +33,28 @@ class WebsiteRepositoryController extends Controller
             return Redirect::route('admin.github.connect', $website);
         }
 
-        $repositories = $installations->flatMap(function (GithubInstallation $installation) {
-            return collect($this->github->repositories($installation->installation_id))
-                ->map(fn (array $repository) => [
-                    ...$repository,
-                    'github_installation_id' => $installation->id,
-                    'account_login' => $installation->account_login,
-                ]);
+        $unavailableInstallations = collect();
+        $repositories = $installations->flatMap(function (GithubInstallation $installation) use ($unavailableInstallations): Collection {
+            try {
+                $repositories = $this->github->repositories($installation->installation_id);
+            } catch (RequestException $exception) {
+                if (! $this->markUnavailableWhenNotFound($installation, $exception)) {
+                    throw $exception;
+                }
+
+                $unavailableInstallations->push($installation->account_login);
+
+                return collect();
+            }
+
+            return collect($repositories)->map(fn (array $repository) => [
+                ...$repository,
+                'github_installation_id' => $installation->id,
+                'account_login' => $installation->account_login,
+            ]);
         })->sortBy('full_name')->values();
 
-        return view('admin.website-repositories.create', compact('website', 'repositories'));
+        return view('admin.website-repositories.create', compact('website', 'repositories', 'unavailableInstallations'));
     }
 
     public function store(StoreWebsiteRepositoryRequest $request, Website $website): RedirectResponse
@@ -50,8 +64,17 @@ class WebsiteRepositoryController extends Controller
             ->where('status', GithubInstallation::STATUS_ACTIVE)
             ->when(! $request->user()->isAdmin(), fn ($query) => $query->where('installed_by', $request->user()->id))
             ->findOrFail($data['github_installation_id']);
-        $repository = collect($this->github->repositories($installation->installation_id))
-            ->firstWhere('id', (int) $data['repository_id']);
+        try {
+            $repository = collect($this->github->repositories($installation->installation_id))
+                ->firstWhere('id', (int) $data['repository_id']);
+        } catch (RequestException $exception) {
+            if (! $this->markUnavailableWhenNotFound($installation, $exception)) {
+                throw $exception;
+            }
+
+            return Redirect::route('admin.websites.show', $website)
+                ->with('error', "The GitHub installation for {$installation->account_login} is no longer available. Reconnect the Sitewell GitHub App and try again.");
+        }
 
         if (! is_array($repository)) {
             throw ValidationException::withMessages([
@@ -87,5 +110,16 @@ class WebsiteRepositoryController extends Controller
     protected function authorizeWebsite(Request $request, Website $website): void
     {
         abort_unless($website->isManageableBy($request->user()), 403);
+    }
+
+    protected function markUnavailableWhenNotFound(GithubInstallation $installation, RequestException $exception): bool
+    {
+        if ($exception->response->status() !== 404) {
+            return false;
+        }
+
+        $installation->update(['status' => GithubInstallation::STATUS_DELETED]);
+
+        return true;
     }
 }
