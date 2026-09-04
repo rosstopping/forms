@@ -178,6 +178,11 @@ class Website extends Model
         return $this->hasOne(WebsiteRepository::class);
     }
 
+    public function wordpressConnection(): HasOne
+    {
+        return $this->hasOne(WordpressConnection::class);
+    }
+
     public function searchConsoleConnection(): HasOne
     {
         return $this->hasOne(SearchConsoleConnection::class);

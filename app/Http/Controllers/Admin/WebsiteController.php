@@ -109,6 +109,7 @@ class WebsiteController extends Controller
             'forms' => fn ($query) => $query->withCount('submissions')->latest('created_at'),
             'healthReports' => fn ($query) => $query->latest('created_at')->limit(8),
             'repository.installation',
+            'wordpressConnection',
             'searchConsoleConnection',
             'mailConnection',
             'searchOpportunities' => fn ($query) => $query->whereIn('status', ['open', 'queued'])->orderByDesc('priority_score')->limit(20),

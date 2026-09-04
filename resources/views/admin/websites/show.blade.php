@@ -218,6 +218,8 @@
             </div>
         </div>
 
+        @include('admin.websites.partials.wordpress-connection')
+
         @if ($website->repository || ($canUseGrowthFeatures && config('forms.pixel_ui_enabled') && $website->pixel_enabled))
         @if ($website->repository && Auth::user()?->isAdmin())
         @php
