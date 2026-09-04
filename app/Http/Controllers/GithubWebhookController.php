@@ -7,12 +7,16 @@ use App\Models\GithubInstallation;
 use App\Models\RemediationRun;
 use App\Models\WebsiteRepository;
 use App\Services\GithubWebhookSignature;
+use App\Services\WordPressStaticReleaseQueuer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class GithubWebhookController extends Controller
 {
-    public function __construct(protected GithubWebhookSignature $signature) {}
+    public function __construct(
+        protected GithubWebhookSignature $signature,
+        protected WordPressStaticReleaseQueuer $releases,
+    ) {}
 
     public function __invoke(Request $request): JsonResponse
     {
@@ -21,6 +25,7 @@ class GithubWebhookController extends Controller
         match ($request->header('X-GitHub-Event')) {
             'installation' => $this->handleInstallation($request),
             'pull_request' => $this->handlePullRequest($request),
+            'push' => $this->handlePush($request),
             default => null,
         };
 
@@ -81,6 +86,28 @@ class GithubWebhookController extends Controller
                 'completed_at' => $merged ? now() : $generation->completed_at,
                 'merged_at' => $merged ? now() : $generation->merged_at,
             ]);
+        }
+    }
+
+    protected function handlePush(Request $request): void
+    {
+        $repositories = WebsiteRepository::query()
+            ->with('website.wordpressConnection')
+            ->where('repository_id', $request->integer('repository.id'))
+            ->get();
+
+        foreach ($repositories as $repository) {
+            if ($request->string('ref')->toString() !== 'refs/heads/'.$repository->default_branch
+                || ! $repository->website->wordpressConnection?->isConnected()) {
+                continue;
+            }
+
+            $commitSha = $request->string('after')->toString();
+
+            if (! preg_match('/^[a-f0-9]{40}$/i', $commitSha) || $commitSha === str_repeat('0', 40)) {
+                continue;
+            }
+            $this->releases->queue($repository->website, commitSha: $commitSha);
         }
     }
 }

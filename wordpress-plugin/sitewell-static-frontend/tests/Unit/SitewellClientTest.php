@@ -76,6 +76,47 @@ final class SitewellClientTest extends TestCase {
 		self::assertSame( 'DELETE', $GLOBALS['sitewell_test_request']['arguments']['method'] );
 	}
 
+	public function test_it_retrieves_the_latest_static_release(): void {
+		$GLOBALS['sitewell_test_response'] = [
+			'status' => 200,
+			'body'   => json_encode(
+				[
+					'data' => [
+						'release_id'   => 'wsr_abcdefghijklmnopqrstuvwxyz12',
+						'commit_sha'   => str_repeat( 'a', 40 ),
+						'checksum'     => str_repeat( 'b', 64 ),
+						'size'         => 1234,
+						'download_url' => 'https://sitewell.example/api/wordpress/connections/wpc/releases/wsr/download',
+					],
+				],
+				JSON_THROW_ON_ERROR,
+			),
+		];
+		$connection                        = [
+			'connection_id' => 'wpc_abcdefghijklmnopqrstuvwxyz12',
+			'credential'    => 'swp_' . str_repeat( 'b', 64 ),
+		];
+
+		$release = ( new SitewellClient( 'https://sitewell.example/api' ) )->currentRelease( $connection, 'wsr_previous' );
+
+		self::assertSame( 'wsr_abcdefghijklmnopqrstuvwxyz12', $release['release_id'] );
+		self::assertStringContainsString( 'active_release=wsr_previous', $GLOBALS['sitewell_test_request']['url'] );
+		self::assertSame( 'Bearer ' . $connection['credential'], $GLOBALS['sitewell_test_request']['arguments']['headers']['Authorization'] );
+	}
+
+	public function test_it_returns_no_release_for_a_no_content_response(): void {
+		$GLOBALS['sitewell_test_response'] = [
+			'status' => 204,
+			'body'   => '',
+		];
+		$connection                        = [
+			'connection_id' => 'wpc_abcdefghijklmnopqrstuvwxyz12',
+			'credential'    => 'swp_' . str_repeat( 'b', 64 ),
+		];
+
+		self::assertNull( ( new SitewellClient( 'https://sitewell.example/api' ) )->currentRelease( $connection, null ) );
+	}
+
 	public function test_it_rejects_invalid_successful_responses(): void {
 		$GLOBALS['sitewell_test_response'] = [
 			'status' => 201,

@@ -11,7 +11,7 @@ final class SitewellClient {
 
 	public function __construct( private readonly string $apiUrl ) {}
 
-	/** @return array{connection_id: string, credential: string, website: array{name: string, domain: string|null}} */
+	/** @return array{connection_id: string, credential: string, webhook_secret: string|null, website: array{name: string, domain: string|null}} */
 	public function connect( string $code ): array {
 		$data = $this->request(
 			'POST',
@@ -23,9 +23,10 @@ final class SitewellClient {
 			]
 		);
 
-		$connection_id = $data['connection_id'] ?? null;
-		$credential    = $data['credential'] ?? null;
-		$website       = $data['website'] ?? null;
+		$connection_id  = $data['connection_id'] ?? null;
+		$credential     = $data['credential'] ?? null;
+		$website        = $data['website'] ?? null;
+		$webhook_secret = $data['webhook_secret'] ?? null;
 
 		if ( ! is_string( $connection_id )
 			|| ! preg_match( '/^wpc_[a-z0-9]{28}$/', $connection_id )
@@ -37,13 +38,89 @@ final class SitewellClient {
 		}
 
 		return [
-			'connection_id' => $connection_id,
-			'credential'    => $credential,
-			'website'       => [
+			'connection_id'  => $connection_id,
+			'credential'     => $credential,
+			'webhook_secret' => is_string( $webhook_secret ) && str_starts_with( $webhook_secret, 'swh_' ) ? $webhook_secret : null,
+			'website'        => [
 				'name'   => sanitize_text_field( $website['name'] ),
 				'domain' => is_string( $website['domain'] ?? null ) ? sanitize_text_field( $website['domain'] ) : null,
 			],
 		];
+	}
+
+	/**
+	 * @param  array{connection_id: string, credential: string}  $connection
+	 * @return array{release_id: string, commit_sha: string, checksum: string, size: int, download_url: string}|null
+	 */
+	public function currentRelease( array $connection, ?string $activeReleaseId ): ?array {
+		$path = '/wordpress/connections/' . rawurlencode( $connection['connection_id'] ) . '/releases/current';
+
+		if ( is_string( $activeReleaseId ) && $activeReleaseId !== '' ) {
+			$path .= '?active_release=' . rawurlencode( $activeReleaseId );
+		}
+
+		$data = $this->request( 'GET', $path, [], $connection['credential'] );
+
+		if ( $data === [] ) {
+			return null;
+		}
+
+		if ( ! is_string( $data['release_id'] ?? null )
+			|| ! is_string( $data['commit_sha'] ?? null )
+			|| ! is_string( $data['checksum'] ?? null )
+			|| ! is_int( $data['size'] ?? null )
+			|| ! is_string( $data['download_url'] ?? null )
+			|| ! str_starts_with( $data['download_url'], rtrim( $this->apiUrl, '/' ) . '/' ) ) {
+			throw new RuntimeException( esc_html__( 'Sitewell returned an invalid static release.', 'sitewell-static-frontend' ) );
+		}
+
+		return [
+			'release_id'   => sanitize_text_field( $data['release_id'] ),
+			'commit_sha'   => sanitize_text_field( $data['commit_sha'] ),
+			'checksum'     => sanitize_text_field( $data['checksum'] ),
+			'size'         => $data['size'],
+			'download_url' => esc_url_raw( $data['download_url'] ),
+		];
+	}
+
+	/**
+	 * @param  array{connection_id: string, credential: string}  $connection
+	 * @param  array{download_url: string}  $release
+	 */
+	public function downloadRelease( array $connection, array $release, string $filename ): void {
+		$response = wp_remote_request(
+			$release['download_url'],
+			[
+				'method'      => 'GET',
+				'timeout'     => 60,
+				'redirection' => 0,
+				'sslverify'   => true,
+				'stream'      => true,
+				'filename'    => $filename,
+				'headers'     => [
+					'Accept'        => 'application/zip',
+					'Authorization' => 'Bearer ' . $connection['credential'],
+				],
+			]
+		);
+
+		if ( $response instanceof WP_Error ) {
+			throw new RuntimeException( esc_html( $response->get_error_message() ) );
+		}
+
+		if ( wp_remote_retrieve_response_code( $response ) !== 200 ) {
+			throw new RuntimeException( esc_html__( 'Sitewell could not download the static release.', 'sitewell-static-frontend' ) );
+		}
+	}
+
+	/** @param array{connection_id: string, credential: string} $connection */
+	public function releaseActivated( array $connection, string $releaseId ): void {
+		$this->request(
+			'POST',
+			'/wordpress/connections/' . rawurlencode( $connection['connection_id'] ) . '/releases/' . rawurlencode( $releaseId ) . '/activated',
+			[],
+			$connection['credential'],
+		);
 	}
 
 	/** @param array{connection_id: string, credential: string} $connection */

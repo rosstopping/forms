@@ -2,6 +2,7 @@
     $wordpressConnection = $website->wordpressConnection;
     $wordpressConnected = $wordpressConnection?->isConnected() === true;
     $pairingCode = session('wordpress_pairing_code');
+    $latestRelease = $website->wordpressStaticReleases->first();
 @endphp
 
 <section class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm" aria-labelledby="wordpress-connection-title">
@@ -26,9 +27,7 @@
                         using plugin v{{ $wordpressConnection->plugin_version }}
                     @endif
                 </p>
-                <p class="mt-1 text-xs text-slate-500">
-                    Last checked in {{ $wordpressConnection->last_seen_at?->diffForHumans() ?: 'never' }}.
-                </p>
+                <p class="mt-1 text-xs text-slate-500">Last checked in {{ $wordpressConnection->last_seen_at?->diffForHumans() ?: 'never' }}.@if ($wordpressConnection->last_deployed_at) Latest release went live {{ $wordpressConnection->last_deployed_at->diffForHumans() }}.@endif</p>
             @else
                 <p class="mt-1 max-w-2xl text-sm text-slate-600">Generate a one-time code here, then enter it under Settings → Sitewell Static Frontend in WordPress. The code expires after ten minutes.</p>
             @endif
@@ -49,6 +48,12 @@
                         <button type="submit" class="rounded-md border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50">Revoke</button>
                     </form>
                 @endif
+                @if ($wordpressConnected && $website->repository)
+                    <form method="POST" action="{{ route('admin.websites.wordpress.releases.store', $website) }}">
+                        @csrf
+                        <button type="submit" @disabled($latestRelease && in_array($latestRelease->status, ['queued', 'building'], true)) class="rounded-md bg-teal-700 px-3 py-2 text-sm font-medium text-white hover:bg-teal-600 disabled:cursor-not-allowed disabled:bg-slate-300">Deploy latest GitHub version</button>
+                    </form>
+                @endif
             </div>
         @endif
     </div>
@@ -62,6 +67,32 @@
             <p class="text-sm font-medium text-violet-950">Enter this code in the WordPress plugin</p>
             <p class="mt-2 font-mono text-2xl font-semibold tracking-widest text-violet-950" aria-label="WordPress connection code">{{ $pairingCode }}</p>
             <p class="mt-2 text-xs text-violet-700">This code is shown once and expires in ten minutes. Generating another code invalidates it.</p>
+        </div>
+    @endif
+
+    @if ($website->wordpressStaticReleases->isNotEmpty())
+        <div class="mt-4 border-t border-slate-200 pt-4">
+            <p class="text-sm font-medium text-slate-900">Recent static releases</p>
+            <div class="mt-2 divide-y divide-slate-100">
+                @foreach ($website->wordpressStaticReleases as $release)
+                    <div class="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
+                        <div>
+                            <span class="font-mono text-xs text-slate-700">{{ $release->commit_sha ? Str::limit($release->commit_sha, 10, '') : $release->source_ref }}</span>
+                            <span class="ml-2 text-slate-500">{{ $release->created_at->diffForHumans() }}</span>
+                            @if ($release->error)
+                                <p class="mt-1 max-w-2xl text-xs text-red-700">{{ $release->error }}</p>
+                            @endif
+                        </div>
+                        <span @class([
+                            'rounded-full px-2 py-0.5 text-xs font-medium',
+                            'bg-emerald-100 text-emerald-800' => $release->status === 'ready' && $release->activated_at,
+                            'bg-teal-100 text-teal-800' => $release->status === 'ready' && ! $release->activated_at,
+                            'bg-amber-100 text-amber-800' => in_array($release->status, ['queued', 'building'], true),
+                            'bg-red-100 text-red-800' => $release->status === 'failed',
+                        ])>{{ $release->activated_at ? 'Live' : Str::headline($release->status) }}</span>
+                    </div>
+                @endforeach
+            </div>
         </div>
     @endif
 </section>

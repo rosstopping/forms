@@ -45,6 +45,31 @@ class GithubAppClient
         return $repositories;
     }
 
+    /** @return array{commit_sha: string, archive: string} */
+    public function repositoryArchive(WebsiteRepository $repository, ?string $sourceRef = null): array
+    {
+        $token = $this->installationToken($repository->installation->installation_id);
+        $request = $this->request($token);
+        $reference = rawurlencode($sourceRef ?: $repository->default_branch);
+        $commitSha = $request->get("repos/{$repository->full_name}/commits/{$reference}")
+            ->throw()
+            ->json('sha');
+
+        if (! is_string($commitSha) || ! preg_match('/^[a-f0-9]{40}$/i', $commitSha)) {
+            throw new RuntimeException('GitHub did not return a valid commit for the repository branch.');
+        }
+
+        $archive = $request->get("repos/{$repository->full_name}/zipball/{$commitSha}")
+            ->throw()
+            ->body();
+
+        if ($archive === '') {
+            throw new RuntimeException('GitHub returned an empty repository archive.');
+        }
+
+        return ['commit_sha' => $commitSha, 'archive' => $archive];
+    }
+
     /** @return array{pull_request: array<string, mixed>, files: array<int, array<string, mixed>>} */
     public function pullRequestDetails(WebsiteRepository $repository, int $pullRequestNumber): array
     {

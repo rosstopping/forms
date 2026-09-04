@@ -34,7 +34,7 @@ class WordPressConnectionManager
         ];
     }
 
-    /** @return array{connection: WordpressConnection, credential: string} */
+    /** @return array{connection: WordpressConnection, credential: string, webhook_secret: string} */
     public function connect(string $pairingCode, string $wordpressUrl, string $pluginVersion): array
     {
         return DB::transaction(function () use ($pairingCode, $wordpressUrl, $pluginVersion): array {
@@ -53,19 +53,22 @@ class WordPressConnectionManager
             $this->ensureUrlMatchesWebsite($connection->website, $wordpressUrl);
 
             $credential = 'swp_'.Str::random(64);
+            $webhookSecret = 'swh_'.Str::random(64);
 
             $connection->update([
                 'pairing_code_hash' => null,
                 'pairing_code_expires_at' => null,
                 'credential_hash' => hash('sha256', $credential),
+                'webhook_secret' => $webhookSecret,
                 'wordpress_url' => Str::of($wordpressUrl)->trim()->rtrim('/')->toString(),
                 'plugin_version' => $pluginVersion,
+                'active_release_public_id' => null,
                 'connected_at' => now(),
                 'last_seen_at' => now(),
                 'revoked_at' => null,
             ]);
 
-            return ['connection' => $connection, 'credential' => $credential];
+            return ['connection' => $connection, 'credential' => $credential, 'webhook_secret' => $webhookSecret];
         });
     }
 
@@ -107,6 +110,7 @@ class WordPressConnectionManager
             'pairing_code_hash' => null,
             'pairing_code_expires_at' => null,
             'credential_hash' => null,
+            'webhook_secret' => null,
             'revoked_at' => now(),
         ]);
     }

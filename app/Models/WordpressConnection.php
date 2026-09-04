@@ -19,23 +19,29 @@ class WordpressConnection extends Model
         'pairing_code_hash',
         'pairing_code_expires_at',
         'credential_hash',
+        'webhook_secret',
         'wordpress_url',
         'plugin_version',
+        'active_release_public_id',
         'connected_at',
         'last_seen_at',
+        'last_deployed_at',
         'revoked_at',
     ];
 
     protected $hidden = [
         'pairing_code_hash',
         'credential_hash',
+        'webhook_secret',
     ];
 
     protected $casts = [
         'pairing_code_expires_at' => 'datetime',
         'connected_at' => 'datetime',
         'last_seen_at' => 'datetime',
+        'last_deployed_at' => 'datetime',
         'revoked_at' => 'datetime',
+        'webhook_secret' => 'encrypted',
     ];
 
     protected static function booted(): void

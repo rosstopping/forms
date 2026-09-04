@@ -12,6 +12,10 @@ final class SettingsPage {
 
 	public const OPTION_CONNECTION = 'sitewell_static_frontend_connection';
 
+	public const OPTION_ACTIVE_RELEASE = 'sitewell_static_frontend_active_release';
+
+	public const OPTION_PREVIOUS_RELEASE = 'sitewell_static_frontend_previous_release';
+
 	public function __construct( private readonly StaticRootProvider $staticRoot ) {}
 
 	public function register(): void {
@@ -41,20 +45,25 @@ final class SettingsPage {
 			wp_die( esc_html__( 'You are not allowed to manage this setting.', 'sitewell-static-frontend' ) );
 		}
 
-		$enabled    = self::isEnabled();
-		$root       = realpath( $this->staticRoot->path() );
-		$available  = $root !== false && is_dir( $root ) && is_readable( $root ) && is_readable( $root . '/index.html' );
-		$connection = self::connection();
-		$notice_key = 'sitewell_static_frontend_notice_' . get_current_user_id();
-		$notice     = get_transient( $notice_key );
+		$enabled         = self::isEnabled();
+		$root            = realpath( $this->staticRoot->path() );
+		$available       = $root !== false && is_dir( $root ) && is_readable( $root ) && is_readable( $root . '/index.html' );
+		$connection      = self::connection();
+		$notice_key      = 'sitewell_static_frontend_notice_' . get_current_user_id();
+		$notice          = get_transient( $notice_key );
+		$deploymentError = get_option( 'sitewell_static_frontend_last_deployment_error' );
 		delete_transient( $notice_key );
 		?>
 		<div class="wrap">
 			<h1><?php echo esc_html__( 'Sitewell Static Frontend', 'sitewell-static-frontend' ); ?></h1>
-			<p><?php echo esc_html__( 'This proof of concept can replace the public theme with the bundled static site. WordPress administration remains available.', 'sitewell-static-frontend' ); ?></p>
+			<p><?php echo esc_html__( 'Serve the Sitewell-managed static website while keeping WordPress administration available.', 'sitewell-static-frontend' ); ?></p>
 
 			<?php if ( is_array( $notice ) && is_string( $notice['message'] ?? null ) ) { ?>
 				<div class="notice <?php echo 'success' === ( $notice['type'] ?? null ) ? 'notice-success' : 'notice-error'; ?> is-dismissible"><p><?php echo esc_html( $notice['message'] ); ?></p></div>
+			<?php } ?>
+			<?php if ( is_string( $deploymentError ) && $deploymentError !== '' ) { ?>
+				<?php /* translators: %s: Error returned by the latest automatic Sitewell deployment attempt. */ ?>
+				<div class="notice notice-warning"><p><?php echo esc_html( sprintf( __( 'The last automatic update failed: %s', 'sitewell-static-frontend' ), $deploymentError ) ); ?></p></div>
 			<?php } ?>
 
 			<hr>
@@ -73,6 +82,11 @@ final class SettingsPage {
 					<p><?php echo esc_html( sprintf( __( 'Last checked: %s UTC', 'sitewell-static-frontend' ), gmdate( 'j M Y, H:i', strtotime( $connection['last_checked_at'] ) ) ) ); ?></p>
 				<?php } ?>
 				<div style="display:flex;gap:8px;align-items:center">
+					<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+						<input type="hidden" name="action" value="sitewell_static_frontend_deploy">
+						<?php wp_nonce_field( 'sitewell_static_frontend_deploy' ); ?>
+						<?php submit_button( __( 'Check for static updates', 'sitewell-static-frontend' ), 'primary', 'submit', false ); ?>
+					</form>
 					<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 						<input type="hidden" name="action" value="sitewell_static_frontend_heartbeat">
 						<?php wp_nonce_field( 'sitewell_static_frontend_heartbeat' ); ?>
@@ -111,7 +125,12 @@ final class SettingsPage {
 				?>
 			</p>
 
-			<p><strong><?php echo esc_html__( 'Static fixture:', 'sitewell-static-frontend' ); ?></strong> <code><?php echo esc_html( $root !== false ? $root : $this->staticRoot->path() ); ?></code></p>
+			<p><strong><?php echo esc_html__( 'Static files:', 'sitewell-static-frontend' ); ?></strong> <code><?php echo esc_html( $root !== false ? $root : $this->staticRoot->path() ); ?></code></p>
+
+			<?php $activeRelease = self::activeRelease(); ?>
+			<?php if ( $activeRelease !== null ) { ?>
+				<p><strong><?php echo esc_html__( 'Live Sitewell release:', 'sitewell-static-frontend' ); ?></strong> <code><?php echo esc_html( $activeRelease['release_id'] ); ?></code></p>
+			<?php } ?>
 
 			<form method="post" action="options.php">
 				<?php settings_fields( 'sitewell_static_frontend' ); ?>
@@ -139,7 +158,7 @@ final class SettingsPage {
 		return (bool) get_option( self::OPTION_ENABLED, false );
 	}
 
-	/** @return array{connection_id: string, credential: string, website: array{name: string, domain: string|null}, connected_at?: string, last_checked_at?: string}|null */
+	/** @return array{connection_id: string, credential: string, webhook_secret?: string|null, website: array{name: string, domain: string|null}, connected_at?: string, last_checked_at?: string}|null */
 	public static function connection(): ?array {
 		$connection = get_option( self::OPTION_CONNECTION );
 
@@ -152,5 +171,20 @@ final class SettingsPage {
 		}
 
 		return $connection;
+	}
+
+	/** @return array{release_id: string, path: string, checksum: string, activated_at: string}|null */
+	public static function activeRelease(): ?array {
+		$release = get_option( self::OPTION_ACTIVE_RELEASE );
+
+		if ( ! is_array( $release )
+			|| ! is_string( $release['release_id'] ?? null )
+			|| ! is_string( $release['path'] ?? null )
+			|| ! is_string( $release['checksum'] ?? null )
+			|| ! is_string( $release['activated_at'] ?? null ) ) {
+			return null;
+		}
+
+		return $release;
 	}
 }

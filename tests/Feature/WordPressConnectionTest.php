@@ -1,14 +1,17 @@
 <?php
 
+use App\Jobs\BuildWordPressStaticRelease;
 use App\Models\User;
 use App\Models\Website;
 use App\Models\WebsiteRepository;
 use App\Models\WordpressConnection;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 
 /** @return array{User, Website} */
 function wordpressConnectionWebsite(bool $withRepository = true): array
 {
+    Queue::fake();
     $owner = User::factory()->create();
     $website = Website::factory()->for($owner, 'owner')->create();
     $website->domains()->create(['domain' => 'example.com', 'is_primary' => true]);
@@ -73,14 +76,20 @@ it('exchanges a valid code for a credential bound to the website hostname', func
         ->assertJsonPath('data.website.domain', 'example.com');
 
     $credential = $response->json('data.credential');
+    $webhookSecret = $response->json('data.webhook_secret');
     $connection = $website->wordpressConnection()->sole();
 
     expect($credential)->toStartWith('swp_')
+        ->and($webhookSecret)->toStartWith('swh_')
         ->and($connection->credential_hash)->toBe(hash('sha256', $credential))
         ->and($connection->credential_hash)->not->toBe($credential)
+        ->and($connection->webhook_secret)->toBe($webhookSecret)
+        ->and($connection->getRawOriginal('webhook_secret'))->not->toContain($webhookSecret)
         ->and($connection->pairing_code_hash)->toBeNull()
         ->and($connection->wordpress_url)->toBe('https://www.example.com')
         ->and($connection->isConnected())->toBeTrue();
+
+    Queue::assertPushed(BuildWordPressStaticRelease::class);
 });
 
 it('does not allow a code to be reused', function (): void {

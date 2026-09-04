@@ -68,6 +68,7 @@ use App\Http\Controllers\Admin\WebsiteProspectController;
 use App\Http\Controllers\Admin\WebsiteRepositoryController;
 use App\Http\Controllers\Admin\WordPressConnectionController;
 use App\Http\Controllers\Admin\WordPressPairingCodeController;
+use App\Http\Controllers\Admin\WordPressStaticReleaseController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\WebsiteInvitationController;
 use App\Http\Controllers\FormSubmissionController;
@@ -165,6 +166,7 @@ Route::middleware(['web', 'auth'])->prefix('admin')->name('admin.')->group(funct
     Route::resource('websites', WebsiteController::class);
     Route::post('websites/{website}/wordpress/pairing-code', WordPressPairingCodeController::class)->middleware('throttle:6,1')->name('websites.wordpress.pairing-code');
     Route::delete('websites/{website}/wordpress/connection', WordPressConnectionController::class)->middleware('throttle:6,1')->name('websites.wordpress.connection.destroy');
+    Route::post('websites/{website}/wordpress/releases', WordPressStaticReleaseController::class)->middleware('throttle:6,1')->name('websites.wordpress.releases.store');
     Route::get('website-builder', [WebsiteBuilderController::class, 'create'])->name('website-builder.create');
     Route::post('website-builder', [WebsiteBuilderController::class, 'store'])->name('website-builder.store');
     Route::get('website-builder/github/connect', [GithubConnectionController::class, 'authorizeBuilder'])->name('website-builder.github.connect');

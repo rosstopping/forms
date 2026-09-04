@@ -5,11 +5,15 @@ declare(strict_types=1);
 namespace Sitewell\StaticFrontend\Admin;
 
 use RuntimeException;
+use Sitewell\StaticFrontend\DeploymentManager;
 use Sitewell\StaticFrontend\SitewellClient;
 
 final class ConnectionActions {
 
-	public function __construct( private readonly SitewellClient $client ) {}
+	public function __construct(
+		private readonly SitewellClient $client,
+		private readonly DeploymentManager $deployments,
+	) {}
 
 	public function connect(): void {
 		$this->authorize( 'sitewell_static_frontend_connect' );
@@ -62,6 +66,22 @@ final class ConnectionActions {
 			$this->client->disconnect( $connection );
 			delete_option( SettingsPage::OPTION_CONNECTION );
 			$this->redirectWithNotice( 'success', __( 'The Sitewell connection has been revoked.', 'sitewell-static-frontend' ) );
+		} catch ( RuntimeException $exception ) {
+			$this->redirectWithNotice( 'error', $exception->getMessage() );
+		}
+	}
+
+	public function deploy(): void {
+		$this->authorize( 'sitewell_static_frontend_deploy' );
+
+		try {
+			$installed = $this->deployments->checkForUpdate();
+			$this->redirectWithNotice(
+				'success',
+				$installed
+					? __( 'The latest Sitewell static release is now live.', 'sitewell-static-frontend' )
+					: __( 'This website is already running the latest static release.', 'sitewell-static-frontend' ),
+			);
 		} catch ( RuntimeException $exception ) {
 			$this->redirectWithNotice( 'error', $exception->getMessage() );
 		}

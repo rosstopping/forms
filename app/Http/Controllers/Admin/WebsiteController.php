@@ -110,6 +110,7 @@ class WebsiteController extends Controller
             'healthReports' => fn ($query) => $query->latest('created_at')->limit(8),
             'repository.installation',
             'wordpressConnection',
+            'wordpressStaticReleases' => fn ($query) => $query->latest('created_at')->limit(5),
             'searchConsoleConnection',
             'mailConnection',
             'searchOpportunities' => fn ($query) => $query->whereIn('status', ['open', 'queued'])->orderByDesc('priority_score')->limit(20),

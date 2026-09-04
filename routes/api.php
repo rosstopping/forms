@@ -3,8 +3,11 @@
 use App\Http\Controllers\PixelHeartbeatController;
 use App\Http\Controllers\PixelPayloadController;
 use App\Http\Controllers\WordPressConnectionController;
+use App\Http\Controllers\WordPressCurrentReleaseController;
 use App\Http\Controllers\WordPressDisconnectController;
 use App\Http\Controllers\WordPressHeartbeatController;
+use App\Http\Controllers\WordPressReleaseActivatedController;
+use App\Http\Controllers\WordPressReleaseDownloadController;
 use App\Http\Middleware\AllowPixelCors;
 use Illuminate\Support\Facades\Route;
 
@@ -30,3 +33,15 @@ Route::post('wordpress/connections/{connectionId}/heartbeat', WordPressHeartbeat
 Route::delete('wordpress/connections/{connectionId}', WordPressDisconnectController::class)
     ->middleware('throttle:6,1')
     ->name('wordpress-connections.disconnect');
+
+Route::get('wordpress/connections/{connectionId}/releases/current', WordPressCurrentReleaseController::class)
+    ->middleware('throttle:30,1')
+    ->name('wordpress-connections.releases.current');
+
+Route::get('wordpress/connections/{connectionId}/releases/{releaseId}/download', WordPressReleaseDownloadController::class)
+    ->middleware('throttle:30,1')
+    ->name('wordpress-connections.releases.download');
+
+Route::post('wordpress/connections/{connectionId}/releases/{releaseId}/activated', WordPressReleaseActivatedController::class)
+    ->middleware('throttle:30,1')
+    ->name('wordpress-connections.releases.activated');

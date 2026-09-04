@@ -183,6 +183,11 @@ class Website extends Model
         return $this->hasOne(WordpressConnection::class);
     }
 
+    public function wordpressStaticReleases(): HasMany
+    {
+        return $this->hasMany(WordpressStaticRelease::class);
+    }
+
     public function searchConsoleConnection(): HasOne
     {
         return $this->hasOne(SearchConsoleConnection::class);
