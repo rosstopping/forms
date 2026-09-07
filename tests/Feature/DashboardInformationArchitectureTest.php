@@ -70,8 +70,8 @@ it('keeps forms and submissions inside the website workspace', function (): void
         ->assertSee('Health reports')
         ->assertSee('data-tab="content"', false)
         ->assertSee('data-tab-panel="content"', false)
-        ->assertSee('Connect GitHub')
-        ->assertSee('href="'.route('admin.github.connect', $website).'"', false)
+        ->assertDontSee('Connect GitHub')
+        ->assertDontSee('href="'.route('admin.github.connect', $website).'"', false)
         ->assertSee('Manual content requests')
         ->assertSee('>Forms</button>', false)
         ->assertSee('role="tablist"', false)
@@ -88,12 +88,12 @@ it('keeps forms and submissions inside the website workspace', function (): void
         ->assertDontSee('Recent submissions');
 });
 
-it('shows content tools when the website has a GitHub repository', function (): void {
-    $user = User::factory()->create();
-    $website = Website::factory()->for($user, 'owner')->create();
+it('shows GitHub content tools only to administrators', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $website = Website::factory()->for($admin, 'owner')->create();
     WebsiteRepository::factory()->for($website)->create();
 
-    $this->actingAs($user)
+    $this->actingAs($admin)
         ->get(route('admin.websites.show', $website))
         ->assertOk()
         ->assertSee('data-tab="content"', false)
@@ -101,6 +101,19 @@ it('shows content tools when the website has a GitHub repository', function (): 
         ->assertSee('Manual content requests')
         ->assertSee('Change repository')
         ->assertSee('href="'.route('admin.website-repositories.create', $website).'"', false);
+});
+
+it('hides GitHub content tools from non-administrators with connected repositories', function (): void {
+    $user = User::factory()->create();
+    $website = Website::factory()->for($user, 'owner')->create();
+    WebsiteRepository::factory()->for($website)->create();
+
+    $this->actingAs($user)
+        ->get(route('admin.websites.show', $website))
+        ->assertOk()
+        ->assertDontSee('GitHub repository')
+        ->assertDontSee('Change repository')
+        ->assertDontSee('href="'.route('admin.website-repositories.create', $website).'"', false);
 });
 
 it('shows the latest audit status on the websites index', function (): void {

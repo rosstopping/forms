@@ -104,7 +104,7 @@
                 <section class="grid gap-4 border-t border-ink/10 pt-7" aria-labelledby="audit-next-step-title">
                     <p class="font-mono text-sm font-medium uppercase tracking-wide text-moss">Your next step</p>
                     <h2 id="audit-next-step-title" class="max-w-[35ch] font-display text-3xl font-semibold tracking-tight text-balance">Turn these findings into a fix plan</h2>
-                    <p class="max-w-[56ch] text-pretty text-base text-ink/65 sm:text-sm">Confirm your email to start a 14-day Sitewell trial and let us begin preparing your fix plan. No changes will be made without your approval.</p>
+                    <p class="max-w-[56ch] text-pretty text-base text-ink/65 sm:text-sm">Enter your email address below to get started fixing your website.</p>
                     @if (session('claim_status'))
                         <p class="max-w-[56ch] rounded-lg bg-lichen p-4 text-pretty text-base text-ink sm:text-sm">{{ session('claim_status') }}</p>
                     @else

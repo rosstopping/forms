@@ -190,6 +190,7 @@
         @unless ($canUseGrowthFeatures)
             <x-feature-upgrade-banner tier="Growth" title="Plan and request new content" description="Upgrade to Growth to submit content requests, plan improvements, and prepare reviewable website changes." />
         @endunless
+        @if (Auth::user()?->isAdmin())
         <div class="rounded-lg border bg-white p-4 shadow-sm">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
@@ -220,6 +221,7 @@
                 </div>
             </div>
         </div>
+        @endif
 
         @if ($website->repository || ($canUseGrowthFeatures && config('forms.pixel_ui_enabled') && $website->pixel_enabled))
         @if ($website->repository && Auth::user()?->isAdmin())
