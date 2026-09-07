@@ -116,7 +116,7 @@ class WebsiteController extends Controller
 
         $website->load([
             'domains',
-            'owner:id,name,email,role,membership_tier,admin_membership_tier,membership_status',
+            'owner:id,name,email,role,membership_tier,admin_membership_tier,membership_status,membership_current_period_end',
             'members' => fn ($query) => $query->select('users.id', 'users.name', 'users.email')->orderBy('name'),
             'forms' => fn ($query) => $query->withCount('submissions')->latest('created_at'),
             'healthReports' => fn ($query) => $query
@@ -142,6 +142,8 @@ class WebsiteController extends Controller
                 ->where('deployment_method', 'pixel'),
         ]);
         $canManageMembers = $user?->can('manageMembers', $website) === true;
+        $canRunHealthReports = $user?->isAdmin() === true || $website->owner?->hasMembershipFeature(MembershipPlan::FEATURE_HEALTH_REPORTS) === true;
+        $canUseSearchConsole = $user?->isAdmin() === true || $website->owner?->hasMembershipFeature(MembershipPlan::FEATURE_SEARCH_CONSOLE) === true;
         $canUseGrowthFeatures = $user?->isAdmin() === true || $website->owner?->hasMembershipFeature(MembershipPlan::FEATURE_GROWTH) === true;
         $canUseAutoresponders = $website->canUseAutoresponders($user);
         $canUseCompleteFeatures = $user?->isAdmin() === true || $website->owner?->hasMembershipFeature(MembershipPlan::FEATURE_COMPLETE) === true;
@@ -205,7 +207,7 @@ class WebsiteController extends Controller
                 ->withQueryString();
         }
 
-        if ($website->is_active && $canUseGrowthFeatures && $website->searchConsoleConnection?->property_url) {
+        if ($website->is_active && $canUseSearchConsole && $website->searchConsoleConnection?->property_url) {
             try {
                 $connection = $website->searchConsoleConnection;
                 $cacheKey = 'search-console-report:'.$connection->id.':'.hash('sha256', $connection->property_url).':'.$connection->updated_at->timestamp;
@@ -266,7 +268,7 @@ class WebsiteController extends Controller
         }
 
         return view('admin.websites.show', compact(
-            'website', 'canManageMembers', 'canManageWebsite',
+            'website', 'canManageMembers', 'canManageWebsite', 'canRunHealthReports', 'canUseSearchConsole',
             'searchConsoleReport', 'searchConsoleHistory', 'searchConsoleReportUnavailable', 'seoGeneration', 'seoSnapshot', 'seoHistory',
             'seoKeywords', 'seoReferringDomains', 'seoCompetitors', 'seoOpportunities', 'seoFilter', 'seoSort', 'seoDirection', 'strikingDistanceCount',
             'dataForSeoConfigured', 'outreachProspect', 'pixelInstallationSnippet', 'canUseGrowthFeatures', 'canUseCompleteFeatures', 'canUseAutoresponders',

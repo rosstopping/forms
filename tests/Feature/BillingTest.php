@@ -131,18 +131,29 @@ it('only enables explicitly tiered features at the required package level', func
     $complete = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE]);
 
     expect($essential->hasMembershipFeature(MembershipPlan::FEATURE_GROWTH))->toBeFalse()
+        ->and($essential->hasMembershipFeature(MembershipPlan::FEATURE_HEALTH_REPORTS))->toBeTrue()
+        ->and($essential->hasMembershipFeature(MembershipPlan::FEATURE_SEARCH_CONSOLE))->toBeTrue()
         ->and($growth->hasMembershipFeature(MembershipPlan::FEATURE_GROWTH))->toBeTrue()
         ->and($growth->hasMembershipFeature(MembershipPlan::FEATURE_COMPLETE))->toBeFalse()
         ->and($complete->hasMembershipFeature(MembershipPlan::FEATURE_COMPLETE))->toBeTrue();
 });
 
-it('blocks a website owner from Growth routes when they have Essential', function (): void {
-    $owner = User::factory()->create(['membership_tier' => MembershipPlan::ESSENTIAL]);
+it('blocks Search Console when the Essential membership is inactive', function (): void {
+    $owner = User::factory()->create([
+        'membership_tier' => MembershipPlan::ESSENTIAL,
+        'membership_status' => null,
+    ]);
     $website = Website::factory()->for($owner, 'owner')->create();
 
     $this->actingAs($owner)->get(route('admin.search-console.connect', $website))
         ->assertRedirect(route('admin.billing.index'))
         ->assertSessionHas('error');
+
+    $this->actingAs($owner)->post(route('admin.website-health-reports.store', $website))
+        ->assertRedirect(route('admin.billing.index'))
+        ->assertSessionHas('error');
+
+    expect($website->healthReports()->exists())->toBeFalse();
 });
 
 it('shows locked feature previews for website areas outside the owner package', function (): void {
@@ -156,7 +167,8 @@ it('shows locked feature previews for website areas outside the owner package', 
         ->assertSee('data-tab="business-profile"', false)
         ->assertSee('data-tab="content"', false)
         ->assertDontSee('Manual content requests')
-        ->assertSee('Unlock search performance')
+        ->assertSee('Connect Google')
+        ->assertDontSee('Unlock search performance')
         ->assertSee('See where your website can grow')
         ->assertSee('Plan and request new content')
         ->assertSee('Put your local presence to work')

@@ -70,13 +70,18 @@
                 <h2 id="health-title" class="mt-1 text-lg font-semibold text-slate-950">Health reports</h2>
                 <p class="mt-1 text-base text-slate-600 sm:text-sm">Availability, on-page SEO, security headers, discoverability, and form delivery.</p>
             </div>
-            @if ($canManageWebsite)
+            @if ($canManageWebsite && $canRunHealthReports)
                 <form method="POST" action="{{ route('admin.website-health-reports.store', $website) }}">
                     @csrf
                     <button type="submit" @class(['rounded-lg px-3 py-2 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600', 'border border-slate-950/15 text-slate-700 hover:bg-slate-50' => $latestReport, 'bg-teal-600 text-white hover:bg-teal-700' => ! $latestReport])>Run report now</button>
                 </form>
             @endif
         </div>
+        @unless ($canRunHealthReports)
+            <div class="border-b border-slate-950/10 p-5 sm:p-6">
+                <x-feature-upgrade-banner tier="Essential" title="Keep monitoring your website" description="An active Sitewell plan includes manual and scheduled website health reports." />
+            </div>
+        @endunless
         @if ($latestReport)
             <dl class="grid grid-cols-2 gap-px bg-slate-950/10 @2xl:grid-cols-4">
                 <div class="bg-white p-4"><dt class="truncate text-sm text-slate-500">Latest status</dt><dd class="mt-1 text-xl font-semibold capitalize">{{ str_replace('_', ' ', $latestReport->overall_status ?: $latestReport->status) }}</dd></div>
@@ -102,7 +107,7 @@
 
     </div>
 
-    @if ($canUseGrowthFeatures)
+    @if ($canUseSearchConsole)
     <div id="website-panel-search" class="space-y-6" role="tabpanel" aria-labelledby="website-tab-search" data-tab-panel="search" hidden>
         <section class="rounded-lg border bg-white p-4 shadow-sm">
             <div class="flex flex-wrap items-start justify-between gap-4">
@@ -152,9 +157,23 @@
             @endif
         </section>
 
-        @include('admin.websites.partials.search-opportunities')
+        @if ($canUseGrowthFeatures)
+            @include('admin.websites.partials.search-opportunities')
+        @endif
     </div>
 
+    @else
+    <div id="website-panel-search" class="space-y-6" role="tabpanel" aria-labelledby="website-tab-search" data-tab-panel="search" hidden>
+        <x-feature-upgrade-banner tier="Essential" title="Connect Google Search Console" description="An active Sitewell plan lets you connect Google Search Console and see clicks, impressions, rankings, and the searches people use to find your website." />
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-label="Search performance preview">
+            @foreach (['Clicks and impressions', 'Average position', 'Top customer searches', 'Best-performing pages'] as $feature)
+                <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"><div class="h-2 w-16 rounded-full bg-violet-100"></div><h3 class="mt-4 font-semibold text-slate-900">{{ $feature }}</h3><p class="mt-1 text-sm text-slate-500">Available with an active Sitewell plan.</p></div>
+            @endforeach
+        </div>
+    </div>
+    @endif
+
+    @if ($canUseGrowthFeatures)
     @include('admin.websites.partials.seo-intelligence', [
         'website' => $website,
         'seoGeneration' => $seoGeneration,
@@ -172,15 +191,6 @@
     ])
 
     @else
-    <div id="website-panel-search" class="space-y-6" role="tabpanel" aria-labelledby="website-tab-search" data-tab-panel="search" hidden>
-        <x-feature-upgrade-banner tier="Growth" title="Unlock search performance" description="Upgrade to connect Google Search Console and turn clicks, impressions, rankings, and real customer searches into clear opportunities." />
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-label="Search performance preview">
-            @foreach (['Clicks and impressions', 'Average position', 'Top customer searches', 'Best-performing pages'] as $feature)
-                <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"><div class="h-2 w-16 rounded-full bg-violet-100"></div><h3 class="mt-4 font-semibold text-slate-900">{{ $feature }}</h3><p class="mt-1 text-sm text-slate-500">Available with Growth and Complete.</p></div>
-            @endforeach
-        </div>
-    </div>
-
     <div id="website-panel-seo" class="space-y-6" role="tabpanel" aria-labelledby="website-tab-seo" data-tab-panel="seo" hidden>
         <x-feature-upgrade-banner tier="Growth" title="See where your website can grow" description="SEO Intelligence tracks keyword visibility, competitors, backlinks, and prioritised recommendations so you know what to improve next." />
         <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

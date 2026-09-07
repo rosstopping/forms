@@ -16,6 +16,10 @@ class MembershipPlan
 
     public const FEATURE_COMPLETE = 'complete';
 
+    public const FEATURE_HEALTH_REPORTS = 'health_reports';
+
+    public const FEATURE_SEARCH_CONSOLE = 'search_console';
+
     public const FEATURE_AUTORESPONDERS = 'autoresponders';
 
     /** @return array<string, array<string, mixed>> */
@@ -77,6 +81,7 @@ class MembershipPlan
         $requiredRank = match ($feature) {
             self::FEATURE_GROWTH, self::FEATURE_AUTORESPONDERS => 2,
             self::FEATURE_COMPLETE => 3,
+            self::FEATURE_HEALTH_REPORTS, self::FEATURE_SEARCH_CONSOLE => 1,
             default => 1,
         };
 

@@ -216,7 +216,7 @@ Route::middleware(['web', 'auth', ResolveCurrentWebsite::class])->prefix('admin'
     Route::post('websites/{website}/assistant/questions/{websiteAiQuestion}/report', [WebsiteAiQuestionReportController::class, 'store'])->middleware('throttle:10,1')->name('websites.assistant.questions.report');
     Route::put('websites/{website}/members/{member}', [WebsiteMemberController::class, 'update'])->name('websites.members.update');
     Route::delete('websites/{website}/members/{member}', [WebsiteMemberController::class, 'destroy'])->name('websites.members.destroy');
-    Route::post('websites/{website}/health-reports', [WebsiteHealthReportController::class, 'store'])->name('website-health-reports.store');
+    Route::post('websites/{website}/health-reports', [WebsiteHealthReportController::class, 'store'])->middleware('membership:health_reports')->name('website-health-reports.store');
     Route::get('websites/{website}/health-reports/{websiteHealthReport}', [WebsiteHealthReportController::class, 'show'])->name('website-health-reports.show');
     Route::post('websites/{website}/health-reports/{websiteHealthReport}/optimisations/generate', GenerateReportOptimisationsController::class)->middleware('membership:growth')->name('report-optimisations.generate');
     Route::post('websites/{website}/health-reports/{websiteHealthReport}/remediate', ReportRemediationController::class)->middleware('membership:growth')->name('report-remediation.store');
@@ -236,13 +236,13 @@ Route::middleware(['web', 'auth', ResolveCurrentWebsite::class])->prefix('admin'
     Route::get('websites/{website}/repository/create', [WebsiteRepositoryController::class, 'create'])->name('website-repositories.create');
     Route::post('websites/{website}/repository', [WebsiteRepositoryController::class, 'store'])->name('website-repositories.store');
     Route::delete('websites/{website}/repository', [WebsiteRepositoryController::class, 'destroy'])->name('website-repositories.destroy');
-    Route::get('websites/{website}/search-console/connect', [SearchConsoleController::class, 'connect'])->middleware('membership:growth')->name('search-console.connect');
+    Route::get('websites/{website}/search-console/connect', [SearchConsoleController::class, 'connect'])->middleware('membership:search_console')->name('search-console.connect');
     Route::get('search-console/callback', [SearchConsoleController::class, 'callback'])->name('search-console.callback');
-    Route::get('websites/{website}/search-console/property', [SearchConsoleController::class, 'property'])->middleware('membership:growth')->name('search-console.property');
-    Route::post('websites/{website}/search-console/property', [SearchConsoleController::class, 'storeProperty'])->middleware('membership:growth')->name('search-console.property.store');
-    Route::get('websites/{website}/search-console/performance', [SearchConsoleController::class, 'performance'])->middleware('membership:growth')->name('search-console.performance');
-    Route::get('websites/{website}/search-console/performance/query', [SearchConsoleController::class, 'query'])->middleware('membership:growth')->name('search-console.queries.show');
-    Route::delete('websites/{website}/search-console', [SearchConsoleController::class, 'destroy'])->middleware('membership:growth')->name('search-console.destroy');
+    Route::get('websites/{website}/search-console/property', [SearchConsoleController::class, 'property'])->middleware('membership:search_console')->name('search-console.property');
+    Route::post('websites/{website}/search-console/property', [SearchConsoleController::class, 'storeProperty'])->middleware('membership:search_console')->name('search-console.property.store');
+    Route::get('websites/{website}/search-console/performance', [SearchConsoleController::class, 'performance'])->middleware('membership:search_console')->name('search-console.performance');
+    Route::get('websites/{website}/search-console/performance/query', [SearchConsoleController::class, 'query'])->middleware('membership:search_console')->name('search-console.queries.show');
+    Route::delete('websites/{website}/search-console', [SearchConsoleController::class, 'destroy'])->middleware('membership:search_console')->name('search-console.destroy');
     Route::post('websites/{website}/search-opportunities/refresh', [SearchOpportunityController::class, 'refresh'])->middleware('membership:growth')->name('search-opportunities.refresh');
     Route::post('websites/{website}/seo-intelligence', SeoIntelligenceController::class)->middleware('membership:growth')->name('seo-intelligence.store');
     Route::get('websites/{website}/seo-keywords/{seoKeyword}', [SeoKeywordController::class, 'show'])->middleware('membership:growth')->name('seo-keywords.show');

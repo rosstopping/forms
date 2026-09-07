@@ -14,6 +14,7 @@ use App\Services\CopilotAgentClient;
 use App\Services\GithubAppClient;
 use App\Services\GithubOAuthClient;
 use App\Services\RemediationPromptGenerator;
+use App\Support\MembershipPlan;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
@@ -330,6 +331,24 @@ it('snapshots selected audit findings into one remediation request', function ()
         ->and($run->findings)->toHaveCount(2)
         ->and($run->findings[0]['message'])->toBe('Missing title.');
     Queue::assertPushed(StartCopilotRemediation::class, fn ($job) => $job->run->is($run));
+});
+
+it('keeps GitHub remediation unavailable to Essential trial users', function (): void {
+    $owner = User::factory()->create([
+        'membership_tier' => MembershipPlan::ESSENTIAL,
+        'membership_status' => 'trialing',
+        'membership_current_period_end' => now()->addDays(14),
+    ]);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $report = WebsiteHealthReport::factory()->for($website)->create();
+
+    $this->actingAs($owner)
+        ->post(route('admin.remediation-runs.store', [$website, $report]), [
+            'findings' => ['site:seo:page_title'],
+        ])
+        ->assertForbidden();
+
+    expect(RemediationRun::query()->exists())->toBeFalse();
 });
 
 it('starts an automated task with an audit prompt and schedules synchronization', function (): void {

@@ -8,6 +8,7 @@ use App\Models\Website;
 use App\Services\GoogleOAuthClient;
 use App\Services\SearchConsoleClient;
 use App\Services\SearchConsoleHistoryStore;
+use App\Support\MembershipPlan;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -160,5 +161,9 @@ class SearchConsoleController extends Controller
     protected function authorizeWebsite(Request $request, Website $website): void
     {
         abort_unless($website->isManageableBy($request->user()), 403);
+        abort_unless(
+            $request->user()?->isAdmin() || $website->owner?->hasMembershipFeature(MembershipPlan::FEATURE_SEARCH_CONSOLE),
+            403,
+        );
     }
 }

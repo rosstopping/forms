@@ -20,6 +20,7 @@ use App\Services\SearchConsoleClient;
 use App\Services\WebsiteHealthAuditor;
 use App\Services\WebsiteHealthReportPromptGenerator;
 use App\Services\WebsiteMailRecipients;
+use App\Support\MembershipPlan;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
@@ -185,7 +186,11 @@ it('lets an administrator enable reports and queue one immediately', function ()
 
 it('lets a website owner manually queue a health report', function (): void {
     Queue::fake();
-    $owner = User::factory()->create();
+    $owner = User::factory()->create([
+        'membership_tier' => MembershipPlan::ESSENTIAL,
+        'membership_status' => 'trialing',
+        'membership_current_period_end' => now()->addDays(14),
+    ]);
     $otherUser = User::factory()->create();
     $website = websiteWithDomain(['user_id' => $owner->id]);
 

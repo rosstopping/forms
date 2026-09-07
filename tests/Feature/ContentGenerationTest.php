@@ -18,6 +18,7 @@ use App\Services\CopilotAgentClient;
 use App\Services\GithubAppClient;
 use App\Services\GoogleOAuthClient;
 use App\Services\SearchConsoleClient;
+use App\Support\MembershipPlan;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
@@ -43,7 +44,11 @@ test('google authorization requests offline read only search console access', fu
 });
 
 test('website owners can connect Search Console to their website', function () {
-    $owner = User::factory()->create();
+    $owner = User::factory()->create([
+        'membership_tier' => MembershipPlan::ESSENTIAL,
+        'membership_status' => 'trialing',
+        'membership_current_period_end' => now()->addDays(14),
+    ]);
     $website = Website::factory()->for($owner, 'owner')->create();
     $oauth = $this->mock(GoogleOAuthClient::class);
     $oauth->shouldReceive('authorizationUrl')->once()->andReturn('https://accounts.google.test/authorize');
