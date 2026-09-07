@@ -9,7 +9,7 @@
         <div class="grid content-start gap-5">
             <p class="font-mono text-sm font-medium uppercase tracking-wide text-moss">One last step</p>
             <h1 class="max-w-[24ch] font-display text-5xl font-semibold tracking-tight text-balance">Complete your profile</h1>
-            <p class="max-w-[48ch] text-pretty text-lg text-ink/65">Your email is confirmed. Set up your profile to begin the 14-day Essential trial for {{ $audit->domain }}.</p>
+            <p class="max-w-[48ch] text-pretty text-lg text-ink/65">Your email is confirmed. Set up your profile to begin the 14-day Growth trial for {{ $audit->domain }}, including SEO performance features.</p>
         </div>
         <section class="rounded-2xl bg-[#fffefa] p-6 shadow-xl ring-1 ring-ink/10 sm:p-8" aria-labelledby="profile-details-title">
             <div class="grid gap-7">
@@ -30,7 +30,7 @@
                         <label for="password_confirmation" class="text-base font-medium sm:text-sm">Confirm password</label>
                         <input id="password_confirmation" name="password_confirmation" type="password" required autocomplete="new-password" class="w-full rounded-md border-0 bg-white px-3 py-3 text-base text-ink shadow-sm ring-1 ring-ink/15 focus:-outline-offset-1 focus:outline-garden sm:py-2.5 sm:text-sm">
                     </div>
-                    <button type="submit" class="rounded-md bg-garden px-4 py-3 text-base font-medium text-white ring-1 ring-garden hover:bg-moss focus-visible:outline-garden sm:text-sm">Start my 14-day trial</button>
+                    <button type="submit" class="rounded-md bg-garden px-4 py-3 text-base font-medium text-white ring-1 ring-garden hover:bg-moss focus-visible:outline-garden sm:text-sm">Start my 14-day Growth trial</button>
                 </form>
             </div>
         </section>

@@ -37,7 +37,7 @@
                         <p class="font-mono text-xs font-medium uppercase tracking-widest text-teal-300">Your next step</p>
                         @if (Auth::user()->onboarding_call_completed_at)
                             <h2 id="onboarding-heading" class="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">Your onboarding call is complete</h2>
-                            <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-300">Keep exploring your website health and connected search data during the rest of your Essential trial.</p>
+                            <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-300">Keep exploring your website health, SEO opportunities, and connected search data during the rest of your Growth trial.</p>
                         @elseif (Auth::user()->onboarding_call_booked_at)
                             <h2 id="onboarding-heading" class="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">Your onboarding call is booked</h2>
                             <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-300">We’ll use the call to explain your findings, answer your questions, and agree which improvements are worth prioritising.</p>
@@ -69,7 +69,7 @@
                     </div>
                 </div>
                 <div class="flex flex-col gap-2 border-t border-white/10 bg-white/5 px-6 py-3 text-xs text-slate-300 sm:flex-row sm:items-center sm:justify-between sm:px-8">
-                    <p><span class="font-semibold text-white">Your Essential trial is active.</span> You have {{ max(1, (int) now()->diffInDays(Auth::user()->onboarding_trial_ends_at, false)) }} days remaining. Weekly health reports are included during your trial.</p>
+                    <p><span class="font-semibold text-white">Your Growth trial is active.</span> You have {{ max(1, (int) now()->diffInDays(Auth::user()->onboarding_trial_ends_at, false)) }} days remaining. Weekly health reports and SEO performance features are included during your trial.</p>
                     <a href="{{ route('admin.billing.index') }}" class="shrink-0 font-semibold text-teal-300 hover:text-teal-200">View trial details</a>
                 </div>
             </section>

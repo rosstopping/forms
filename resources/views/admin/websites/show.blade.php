@@ -231,6 +231,41 @@
         @unless ($canUseGrowthFeatures)
             <x-feature-upgrade-banner tier="Growth" title="Plan and request new content" description="Upgrade to Growth to submit content requests, plan improvements, and prepare reviewable website changes." />
         @endunless
+
+        @if ($canUseGrowthFeatures && ! Auth::user()?->isAdmin() && ! $hasContentDeliveryConnection)
+            <section class="overflow-hidden rounded-xl border border-violet-200 bg-white shadow-sm" aria-labelledby="content-connection-title">
+                <div class="bg-violet-50 px-5 py-6 sm:px-6">
+                    <p class="text-xs font-semibold uppercase tracking-widest text-violet-700">Connect your website</p>
+                    <h2 id="content-connection-title" class="mt-2 text-xl font-semibold tracking-tight text-slate-950">Choose how Sitewell prepares website changes</h2>
+                    <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Your Sitewell package includes three ways to connect your website. A Sitewell specialist will help you choose the safest option for your setup and get it connected.</p>
+                </div>
+                <div class="grid gap-4 p-5 sm:grid-cols-3 sm:p-6">
+                    <article class="rounded-lg border border-slate-200 p-4">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-teal-700">Option 1</p>
+                        <h3 class="mt-2 font-semibold text-slate-950">Sitewell Pixel</h3>
+                        <p class="mt-2 text-sm leading-6 text-slate-600">A lightweight connection for supported page updates without replacing your website platform.</p>
+                    </article>
+                    <article class="rounded-lg border border-slate-200 p-4">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-teal-700">Option 2</p>
+                        <h3 class="mt-2 font-semibold text-slate-950">WordPress</h3>
+                        <p class="mt-2 text-sm leading-6 text-slate-600">Connect your WordPress website so our specialists can prepare and manage compatible changes.</p>
+                    </article>
+                    <article class="rounded-lg border border-slate-200 p-4">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-teal-700">Option 3</p>
+                        <h3 class="mt-2 font-semibold text-slate-950">GitHub</h3>
+                        <p class="mt-2 text-sm leading-6 text-slate-600">Link the website repository for larger content and code changes delivered through a reviewable workflow.</p>
+                    </article>
+                </div>
+                <div class="flex flex-col gap-4 border-t border-slate-200 bg-slate-50 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                    <div>
+                        <h3 class="text-sm font-semibold text-slate-950">Not sure which connection suits your website?</h3>
+                        <p class="mt-1 text-sm text-slate-600">Book a free call with support to discuss the options and arrange the setup.</p>
+                    </div>
+                    <a href="{{ $contentSupportCallUrl }}" target="_blank" rel="noreferrer" class="inline-flex shrink-0 items-center justify-center rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900">Book a call with support <span class="ml-2" aria-hidden="true">→</span></a>
+                </div>
+            </section>
+        @endif
+
         @if (Auth::user()?->isAdmin())
         <div class="rounded-lg border bg-white p-4 shadow-sm">
             <div class="flex flex-wrap items-start justify-between gap-4">

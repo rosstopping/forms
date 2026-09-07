@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\Website;
 use App\Models\WebsiteHealthReport;
 use App\Models\WebsiteRepository;
+use App\Support\MembershipPlan;
 
 it('prioritises the selected websites latest health and content work on the dashboard', function (): void {
     $user = User::factory()->create();
@@ -112,8 +113,8 @@ it('shows active onboarding trial context on the website overview', function ():
     $this->actingAs($user)
         ->get(route('admin.dashboard'))
         ->assertOk()
-        ->assertSee('Your Essential trial is active')
-        ->assertSee('Weekly health reports are included during your trial.');
+        ->assertSee('Your Growth trial is active')
+        ->assertSee('Weekly health reports and SEO performance features are included during your trial.');
 });
 
 it('keeps forms and submissions inside the website workspace', function (): void {
@@ -169,8 +170,32 @@ it('hides GitHub content tools from non-administrators with connected repositori
         ->get(route('admin.websites.show', $website))
         ->assertOk()
         ->assertDontSee('GitHub repository')
+        ->assertDontSee('Choose how Sitewell prepares website changes')
         ->assertDontSee('Change repository')
         ->assertDontSee('href="'.route('admin.website-repositories.create', $website).'"', false);
+});
+
+it('guides Growth users to connect a content delivery option with specialist support', function (): void {
+    $user = User::factory()->create([
+        'membership_tier' => MembershipPlan::GROWTH,
+        'onboarding_status' => 'trial_active',
+        'onboarding_trial_ends_at' => now()->addDays(10),
+    ]);
+    $website = Website::factory()->for($user, 'owner')->create([
+        'pixel_enabled' => true,
+        'pixel_last_seen_at' => null,
+        'wordpress_enabled' => true,
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('admin.websites.show', ['website' => $website, 'tab' => 'content']))
+        ->assertOk()
+        ->assertSee('Choose how Sitewell prepares website changes')
+        ->assertSee('Sitewell Pixel')
+        ->assertSee('WordPress')
+        ->assertSee('GitHub')
+        ->assertSee('Book a call with support')
+        ->assertSee('href="'.route('admin.onboarding-call').'"', false);
 });
 
 it('shows the latest audit status on the websites index', function (): void {

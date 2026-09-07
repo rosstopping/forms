@@ -145,6 +145,14 @@ class WebsiteController extends Controller
         $canRunHealthReports = $user?->isAdmin() === true || $website->owner?->hasMembershipFeature(MembershipPlan::FEATURE_HEALTH_REPORTS) === true;
         $canUseSearchConsole = $user?->isAdmin() === true || $website->owner?->hasMembershipFeature(MembershipPlan::FEATURE_SEARCH_CONSOLE) === true;
         $canUseGrowthFeatures = $user?->isAdmin() === true || $website->owner?->hasMembershipFeature(MembershipPlan::FEATURE_GROWTH) === true;
+        $hasContentDeliveryConnection = $website->pixel_last_seen_at !== null
+            || $website->wordpressConnection !== null
+            || $website->repository !== null;
+        $contentSupportCallUrl = $user?->onboarding_status === 'trial_active'
+            && $user->onboarding_trial_ends_at?->isFuture() === true
+            && ! $user->onboarding_call_completed_at
+                ? route('admin.onboarding-call')
+                : (string) config('marketing.booking_url');
         $canUseAutoresponders = $website->canUseAutoresponders($user);
         $canUseCompleteFeatures = $user?->isAdmin() === true || $website->owner?->hasMembershipFeature(MembershipPlan::FEATURE_COMPLETE) === true;
         $searchConsoleReport = null;
@@ -273,6 +281,7 @@ class WebsiteController extends Controller
             'seoKeywords', 'seoReferringDomains', 'seoCompetitors', 'seoOpportunities', 'seoFilter', 'seoSort', 'seoDirection', 'strikingDistanceCount',
             'dataForSeoConfigured', 'outreachProspect', 'pixelInstallationSnippet', 'canUseGrowthFeatures', 'canUseCompleteFeatures', 'canUseAutoresponders',
             'websiteAiQuestions', 'websiteAiQuestionsUsed', 'websiteAiWeeklyLimit', 'pixelOptimisations', 'websiteUsers', 'soleManagerId',
+            'hasContentDeliveryConnection', 'contentSupportCallUrl',
         ));
     }
 

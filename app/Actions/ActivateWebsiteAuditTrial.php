@@ -36,7 +36,7 @@ class ActivateWebsiteAuditTrial
             if (! $user->hasActiveMembership()) {
                 $trialEndsAt = now()->addDays(14);
                 $user->forceFill([
-                    'membership_tier' => MembershipPlan::ESSENTIAL,
+                    'membership_tier' => MembershipPlan::GROWTH,
                     'membership_status' => 'trialing',
                     'membership_current_period_end' => $trialEndsAt,
                     'onboarding_status' => 'trial_active',

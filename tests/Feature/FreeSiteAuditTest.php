@@ -10,6 +10,7 @@ use App\Models\WebsiteAudit;
 use App\Models\WebsiteDomain;
 use App\Notifications\WebsiteAuditClaim;
 use App\Services\ProspectWebsiteAnalyzer;
+use App\Support\MembershipPlan;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
@@ -165,7 +166,7 @@ it('confirms email and creates the trial profile and website', function (): void
     $this->get($url)
         ->assertSuccessful()
         ->assertSee('Complete your profile')
-        ->assertSee('Start my 14-day trial');
+        ->assertSee('Start my 14-day Growth trial');
 
     $this->post($url, [
         'name' => 'Alex Morgan',
@@ -179,11 +180,13 @@ it('confirms email and creates the trial profile and website', function (): void
     $this->assertAuthenticatedAs($user);
     expect($user->name)->toBe('Alex Morgan')
         ->and($user->email_verified_at)->not->toBeNull()
-        ->and($user->membership_tier)->toBe('essential')
+        ->and($user->membership_tier)->toBe(MembershipPlan::GROWTH)
+        ->and($user->hasMembershipFeature(MembershipPlan::FEATURE_GROWTH))->toBeTrue()
         ->and($user->membership_status)->toBe('trialing')
         ->and($user->membership_current_period_end->isAfter(now()->addDays(13)))->toBeTrue()
         ->and($user->onboarding_status)->toBe('trial_active')
         ->and($audit->website->health_reports_enabled)->toBeTrue()
+        ->and($audit->website->seo_weekly_snapshots_enabled)->toBeFalse()
         ->and($audit->website->domains()->where('domain', 'example.test')->exists())->toBeTrue()
         ->and($audit->website->primaryDomain()?->ownership_status)->toBe(WebsiteDomain::OWNERSHIP_PENDING)
         ->and($audit->claimed_at)->not->toBeNull();
