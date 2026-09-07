@@ -27,6 +27,7 @@ class ResolveCurrentWebsite
         $accessibleWebsites = Website::query()
             ->accessibleTo($user)
             ->with('owner:id,role,membership_tier,admin_membership_tier,membership_status,membership_current_period_end')
+            ->withExists('forms')
             ->orderBy('name')
             ->get();
 

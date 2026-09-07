@@ -163,6 +163,53 @@ it('scopes the new lead navigation count to accessible websites', function () {
         ->assertDontSee('aria-label="3 new leads"', false);
 });
 
+it('scopes leads and navigation counts to the website switcher selection', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $selectedWebsite = Website::factory()->for($admin, 'owner')->create(['name' => 'Selected website']);
+    $otherWebsite = Website::factory()->for($admin, 'owner')->create(['name' => 'Other website']);
+    $selectedForm = Form::factory()->for($selectedWebsite)->create();
+    $otherForm = Form::factory()->for($otherWebsite)->create();
+    FormSubmission::factory()->for($selectedWebsite)->for($selectedForm)->count(2)->create([
+        'status' => 'new',
+        'data' => ['name' => 'Selected Lead'],
+    ]);
+    FormSubmission::factory()->for($otherWebsite)->for($otherForm)->count(3)->create([
+        'status' => 'new',
+        'data' => ['name' => 'Other Lead'],
+    ]);
+    $admin->update(['current_website_id' => $selectedWebsite->id]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.form-submissions.index'))
+        ->assertOk()
+        ->assertSee('Selected Lead')
+        ->assertDontSee('Other Lead')
+        ->assertSee('aria-label="2 new leads"', false)
+        ->assertDontSee('name="website_id" class="rounded-md', false)
+        ->assertDontSee('All websites');
+
+    $this->post(route('admin.current-website.update'), [
+        'website_id' => $otherWebsite->id,
+        'section' => 'leads',
+    ])->assertRedirect(route('admin.form-submissions.index'));
+
+    $this->get(route('admin.form-submissions.index'))
+        ->assertOk()
+        ->assertSee('Other Lead')
+        ->assertDontSee('Selected Lead')
+        ->assertSee('aria-label="3 new leads"', false);
+});
+
+it('hides leads navigation when the selected website has no detected forms', function (): void {
+    $user = User::factory()->create();
+    Website::factory()->for($user, 'owner')->create();
+
+    $this->actingAs($user)
+        ->get(route('admin.dashboard'))
+        ->assertOk()
+        ->assertDontSee('href="'.route('admin.form-submissions.index').'"', false);
+});
+
 it('bulk updates statuses marks spam and deletes selected leads', function () {
     $owner = User::factory()->create();
     $website = Website::factory()->create(['user_id' => $owner->id]);

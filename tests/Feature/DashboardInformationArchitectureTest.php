@@ -54,7 +54,7 @@ it('prioritises the selected websites latest health and content work on the dash
         ->assertDontSee('Workspace totals')
         ->assertDontSee('Form activity')
         ->assertDontSee('href="'.route('admin.forms.index').'"', false)
-        ->assertSee('href="'.route('admin.form-submissions.index').'"', false);
+        ->assertDontSee('href="'.route('admin.form-submissions.index').'"', false);
 });
 
 it('shows the next site audit and content queue jobs', function (): void {
@@ -98,7 +98,8 @@ it('shows connected search performance and optional form activity for the select
         ->assertSee('9,876')
         ->assertSee('12.5%')
         ->assertSee('Form activity')
-        ->assertSee('Connected forms');
+        ->assertSee('Connected forms')
+        ->assertSee('href="'.route('admin.form-submissions.index').'"', false);
 });
 
 it('shows active onboarding trial context on the website overview', function (): void {

@@ -20,7 +20,7 @@ class FormSubmissionController extends Controller
 {
     public function index(Request $request)
     {
-        $filterKeys = ['search', 'status', 'website_id', 'assigned_to', 'follow_up', 'spam'];
+        $filterKeys = ['search', 'status', 'assigned_to', 'follow_up', 'spam'];
         $sessionKey = 'admin.lead_filters.'.$request->user()->id;
 
         if ($request->boolean('reset_filters')) {
@@ -34,11 +34,10 @@ class FormSubmissionController extends Controller
             $request->merge($request->session()->get($sessionKey, []));
         }
 
-        $query = FormSubmission::query();
+        $currentWebsite = $request->attributes->get('currentWebsite');
+        abort_unless($currentWebsite instanceof Website && $currentWebsite->isAccessibleBy($request->user()), 404);
 
-        if (! $request->user()?->isAdmin()) {
-            $query->whereHas('website', fn ($query) => $query->accessibleTo($request->user()));
-        }
+        $query = FormSubmission::query()->whereBelongsTo($currentWebsite);
 
         $summary = (clone $query)->where('is_spam', false)
             ->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
@@ -58,12 +57,11 @@ class FormSubmissionController extends Controller
             ->latest('created_at')
             ->paginate(20)->withQueryString();
 
-        $websites = Website::query()->when(! $request->user()?->isAdmin(), fn ($query) => $query->accessibleTo($request->user()))->orderBy('name')->get(['id', 'name']);
-        $manageableWebsiteIds = Website::query()->manageableBy($request->user())->pluck('id');
+        $manageableWebsiteIds = $currentWebsite->isManageableBy($request->user()) ? collect([$currentWebsite->id]) : collect();
         $bulkPageSelectableCount = $submissions->getCollection()->whereIn('website_id', $manageableWebsiteIds)->count();
         $users = $request->user()?->isAdmin() ? User::query()->orderBy('name')->get(['id', 'name']) : collect([$request->user()]);
 
-        return view('admin.form-submissions.index', compact('submissions', 'summary', 'followUpSummary', 'websites', 'manageableWebsiteIds', 'bulkSelectableCount', 'bulkPageSelectableCount', 'users'));
+        return view('admin.form-submissions.index', compact('submissions', 'summary', 'followUpSummary', 'manageableWebsiteIds', 'bulkSelectableCount', 'bulkPageSelectableCount', 'users'));
     }
 
     public function show(Request $request, FormSubmission $formSubmission)

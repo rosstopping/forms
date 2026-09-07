@@ -26,10 +26,9 @@
         <a href="{{ route('admin.form-submissions.index', ['assigned_to' => auth()->id()]) }}" class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700">My leads</a>
     </div>
 
-    <form method="GET" class="grid gap-3 rounded-lg border bg-white p-4 shadow-sm md:grid-cols-2 lg:grid-cols-6">
+    <form method="GET" class="grid gap-3 rounded-lg border bg-white p-4 shadow-sm md:grid-cols-2 lg:grid-cols-5">
         <input name="search" value="{{ request('search') }}" placeholder="Search name, email or message" class="rounded-md border border-slate-300 px-3 py-2 text-sm lg:col-span-2">
         <select name="status" class="rounded-md border border-slate-300 px-3 py-2 text-sm"><option value="">All statuses</option>@foreach (['new' => 'New', 'contacted' => 'Contacted', 'qualified' => 'Qualified', 'won' => 'Won', 'lost' => 'Lost'] as $value => $label)<option value="{{ $value }}" @selected(request('status') === $value)>{{ $label }}</option>@endforeach</select>
-        <select name="website_id" class="rounded-md border border-slate-300 px-3 py-2 text-sm"><option value="">All websites</option>@foreach ($websites as $website)<option value="{{ $website->id }}" @selected((string) request('website_id') === (string) $website->id)>{{ $website->name }}</option>@endforeach</select>
         <select name="follow_up" class="rounded-md border border-slate-300 px-3 py-2 text-sm"><option value="">Any follow-up</option><option value="overdue" @selected(request('follow_up') === 'overdue')>Overdue</option><option value="today" @selected(request('follow_up') === 'today')>Due today</option><option value="upcoming" @selected(request('follow_up') === 'upcoming')>Upcoming</option><option value="none" @selected(request('follow_up') === 'none')>Not scheduled</option></select>
         {{-- <select name="assigned_to" class="rounded-md border border-slate-300 px-3 py-2 text-sm"><option value="">Any owner</option><option value="unassigned" @selected(request('assigned_to') === 'unassigned')>Unassigned</option>@foreach ($users as $user)<option value="{{ $user->id }}" @selected((string) request('assigned_to') === (string) $user->id)>{{ $user->name }}</option>@endforeach</select> --}}
         <select name="spam" class="rounded-md border border-slate-300 px-3 py-2 text-sm"><option value="exclude" @selected(request('spam', 'exclude') === 'exclude')>Hide spam</option><option value="all" @selected(request('spam') === 'all')>Include spam</option><option value="only" @selected(request('spam') === 'only')>Spam only</option></select>
@@ -43,7 +42,6 @@
         <input type="hidden" name="selection_scope" value="page" data-bulk-leads-scope>
         <input type="hidden" name="search" value="{{ request('search') }}">
         <input type="hidden" name="filter_status" value="{{ request('status') }}">
-        <input type="hidden" name="website_id" value="{{ request('website_id') }}">
         <input type="hidden" name="assigned_to" value="{{ request('assigned_to') }}">
         <input type="hidden" name="follow_up" value="{{ request('follow_up') }}">
         <input type="hidden" name="spam" value="{{ request('spam', 'exclude') }}">

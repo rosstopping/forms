@@ -18,6 +18,7 @@ class WebsiteNavigation
         'pixel',
         'business-profile',
         'forms',
+        'leads',
         'settings',
     ];
 
@@ -40,12 +41,17 @@ class WebsiteNavigation
             $request->routeIs('admin.search-console.*', 'admin.search-opportunities.*') => 'search',
             $request->routeIs('admin.seo-*') => 'seo',
             $request->routeIs('admin.forms.*') => 'forms',
+            $request->routeIs('admin.form-submissions.*') => 'leads',
             default => self::DEFAULT_SECTION,
         };
     }
 
     public static function routeFor(Website $website, string $section): string
     {
+        if ($section === 'leads') {
+            return route('admin.form-submissions.index');
+        }
+
         return route('admin.websites.section', [
             'website' => $website,
             'section' => in_array($section, self::SECTIONS, true) ? $section : self::DEFAULT_SECTION,

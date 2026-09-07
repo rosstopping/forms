@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\BulkUpdateFormSubmissionsRequest;
 use App\Mail\FormSubmissionReceived;
 use App\Models\FormSubmission;
+use App\Models\Website;
 use App\Services\FormSettingsResolver;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -19,7 +20,10 @@ class BulkFormSubmissionController extends Controller
     {
         $data = $request->validated();
         $submissionIds = collect($data['submission_ids'] ?? [])->map(static fn (mixed $id): int => (int) $id)->unique()->values();
-        $authorizedQuery = FormSubmission::query();
+        $currentWebsite = $request->attributes->get('currentWebsite');
+        abort_unless($currentWebsite instanceof Website && $currentWebsite->isManageableBy($request->user()), 403);
+
+        $authorizedQuery = FormSubmission::query()->whereBelongsTo($currentWebsite);
 
         if ($data['selection_scope'] === 'page') {
             $authorizedQuery->whereKey($submissionIds);
@@ -27,15 +31,10 @@ class BulkFormSubmissionController extends Controller
             $authorizedQuery->filtered([
                 'search' => $data['search'] ?? null,
                 'status' => $data['filter_status'] ?? null,
-                'website_id' => $data['website_id'] ?? null,
                 'assigned_to' => $data['assigned_to'] ?? null,
                 'follow_up' => $data['follow_up'] ?? null,
                 'spam' => $data['spam'] ?? 'exclude',
             ]);
-        }
-
-        if (! $request->user()->isAdmin()) {
-            $authorizedQuery->whereHas('website', fn ($query) => $query->manageableBy($request->user()));
         }
 
         if ($data['selection_scope'] === 'page') {

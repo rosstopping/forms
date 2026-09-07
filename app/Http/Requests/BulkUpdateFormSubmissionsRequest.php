@@ -32,7 +32,6 @@ class BulkUpdateFormSubmissionsRequest extends FormRequest
             'status' => ['nullable', 'required_if:action,update_status', 'string', Rule::in(FormSubmission::STATUSES)],
             'search' => ['nullable', 'string', 'max:100'],
             'filter_status' => ['nullable', 'string', Rule::in(FormSubmission::STATUSES)],
-            'website_id' => ['nullable', 'integer'],
             'assigned_to' => ['nullable', 'string', 'max:20'],
             'follow_up' => ['nullable', 'string', Rule::in(['overdue', 'today', 'upcoming', 'none'])],
             'spam' => ['nullable', 'string', Rule::in(['exclude', 'all', 'only'])],
