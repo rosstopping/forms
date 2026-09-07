@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\MarketingTurnstileVerifier;
 use Illuminate\Http\Response;
 use Illuminate\Support\Number;
 use Illuminate\View\View;
@@ -81,12 +80,9 @@ class MarketingController extends Controller
         return view('marketing.article', compact('article'));
     }
 
-    public function contact(MarketingTurnstileVerifier $turnstile): View
+    public function contact(): View
     {
-        return view('marketing.free-site-audit', [
-            'turnstileEnabled' => $turnstile->enabled(),
-            'turnstileSiteKey' => config('services.turnstile.marketing.site_key'),
-        ]);
+        return view('marketing.contact');
     }
 
     public function wordpress(): View

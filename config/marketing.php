@@ -2,6 +2,7 @@
 
 return [
     'booking_url' => env('MARKETING_BOOKING_URL', 'https://cal.com/ross'),
+    'contact_website_id' => env('MARKETING_CONTACT_WEBSITE_ID'),
 
     'feature_pages' => [
         'website-design-and-management' => [

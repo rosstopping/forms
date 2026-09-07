@@ -32,6 +32,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Http/Controllers/Admin/{WebsiteController.php,WebsiteHealthReportController.php},resources/views/admin/{websites/show.blade.php,website-health-reports/show.blade.php},resources/js/app.js | .ai/rules/js.md |
 | app/{Http/Middleware/ResolveCurrentWebsite.php,Support/WebsiteNavigation.php,Models/User.php},resources/views/layouts/app.blade.php,routes/web.php | .ai/rules/layouts.md |
 | app/{Mail/FormSubmissionReceived.php,Http/Controllers/FormSubmissionSpamController.php} | .ai/rules/mail-controllers.md |
+| {app/Actions/StoreSitewellContactLead.php,app/Http/Controllers/OnboardingEnquiryController.php,resources/views/marketing/contact.blade.php,config/marketing.php,tests/Feature/MarketingPagesTest.php} | .ai/rules/marketing-feature.md |
 | app/{Http/Controllers/FreeSiteAuditController.php,Http/Requests/StoreFreeSiteAuditRequest.php,Jobs/GenerateFreeSiteAudit.php,Mail/FreeSiteAuditResults.php},resources/views/{marketing/free-site-audit.blade.php,prospects/report.blade.php,mail/free-site-audit-results.blade.php} | .ai/rules/marketing.md |
 | app/{Actions/ActivateWebsiteAuditTrial.php,Models/{WebsiteAudit.php,WebsiteDomain.php},Http/Controllers/WebsiteAuditOnboardingController.php},database/migrations/**/*website*claim*.php,tests/Feature/**/*WebsiteAudit*.php | .ai/rules/migrations-feature.md |
 | app/{Enums,Models,Services,Jobs,Http/Controllers}/**/*Prospect*.php,config/outreach.php,database/migrations/**/*prospect*.php | .ai/rules/migrations.md |
@@ -53,6 +54,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Services,Jobs,Http/Controllers/Admin}/**/*SeoProspect*.php | .ai/rules/services-jobs-http-controllers-admin.md |
 | app/{Services,Jobs,Http/Controllers}/**/*Content*.php | .ai/rules/services-jobs-http-controllers.md |
 | app/Services/WebsiteCrawler.php, app/Services/Pixel*.php | .ai/rules/services.md |
+| {app/Models/User.php,app/Http/Controllers/Admin/UserImpersonationController.php,resources/views/{admin/users/index.blade.php,layouts/app.blade.php},routes/web.php,tests/Feature/UserImpersonationTest.php} | .ai/rules/users-feature.md |
 | app/{Services,Models}/**/*Prospect*.php,config/outreach.php,resources/views/admin/prospects/** | .ai/rules/views-admin-prospects.md |
 | app/{Ai/Agents/WebsiteDataAssistant.php,Services/WebsiteAiContext.php,Http/Controllers/Admin/WebsiteAiChatController.php,Models/WebsiteAiQuestion.php},resources/views/admin/websites/show.blade.php,routes/web.php | .ai/rules/views-admin-websites.md |
 | app/Http/Controllers/Admin/DashboardController.php,resources/views/admin/dashboard.blade.php | .ai/rules/views-admin.md |

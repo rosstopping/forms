@@ -82,7 +82,8 @@ it('stores an anonymous audit result for the live report', function (): void {
     $this->get(route('marketing.website-audits.show', $audit))
         ->assertSuccessful()
         ->assertSee('We reviewed publicly visible signals')
-        ->assertSee('Turn these findings into a fix plan')
+        ->assertSee('data-audit-next-step', false)
+        ->assertSeeInOrder(['Turn these findings into a fix plan', 'Checks completed', 'HTTPS should be reviewed.'])
         ->assertSee('Start preparing my fixes')
         ->assertSee('HTTPS should be reviewed.');
 });
@@ -127,6 +128,23 @@ it('emails a secure continuation link after the website review', function (): vo
         WebsiteAuditClaim::class,
         fn (WebsiteAuditClaim $notification, array $channels, object $notifiable): bool => $notifiable->routes['mail'] === 'alex@example.com',
     );
+});
+
+it('allows repeated email continuation attempts without an early rate limit', function (): void {
+    Notification::fake();
+    $audit = WebsiteAudit::factory()->create([
+        'status' => WebsiteAudit::STATUS_COMPLETED,
+        'completed_at' => now(),
+        'created_at' => now()->subSeconds(11),
+    ]);
+
+    foreach (range(1, 20) as $attempt) {
+        $this->post(route('marketing.website-audits.claim', $audit), [
+            'email' => 'alex@example.com',
+        ])->assertRedirect()->assertSessionHas('claim_status');
+    }
+
+    Notification::assertSentOnDemandTimes(WebsiteAuditClaim::class, 20);
 });
 
 it('confirms email and creates the trial profile and website', function (): void {

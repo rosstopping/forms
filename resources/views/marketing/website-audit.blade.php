@@ -71,25 +71,27 @@
                 <p><a href="{{ route('marketing.free-site-audit') }}" class="font-medium text-garden underline decoration-garden/30 underline-offset-4 hover:decoration-garden">Try another website address</a></p>
             </section>
         @else
-            <section class="grid gap-4 border-t border-ink/10 pt-7" aria-labelledby="audit-next-step-title">
-                <p class="font-mono text-sm font-medium uppercase tracking-wide text-moss">Your next step</p>
-                <h2 id="audit-next-step-title" class="max-w-[35ch] font-display text-3xl font-semibold tracking-tight text-balance">Turn these findings into a fix plan</h2>
-                <p class="max-w-[56ch] text-pretty text-base text-ink/65 sm:text-sm">Enter your email address below to get started fixing your website.</p>
-                @if (session('claim_status'))
-                    <p class="max-w-[56ch] rounded-lg bg-lichen p-4 text-pretty text-base text-ink sm:text-sm">{{ session('claim_status') }}</p>
-                @else
-                    <form method="POST" action="{{ route('marketing.website-audits.claim', $audit) }}" class="grid max-w-xs gap-4">
-                        @csrf
-                        <div class="grid gap-2">
-                            <label for="email" class="text-base font-medium sm:text-sm">Email address</label>
-                            <input id="email" name="email" type="email" required autocomplete="email" value="{{ old('email') }}" aria-invalid="{{ $errors->has('email') ? 'true' : 'false' }}" class="w-full rounded-md border-0 bg-white px-3 py-3 text-base text-ink shadow-sm ring-1 ring-ink/15 placeholder:text-ink/35 focus:-outline-offset-1 focus:outline-garden sm:py-2.5 sm:text-sm">
-                            @error('email')<p class="text-base text-red-700 sm:text-sm">{{ $message }}</p>@enderror
-                        </div>
-                        <button type="submit" class="rounded-md bg-garden px-4 py-3 text-base font-medium text-white ring-1 ring-garden hover:bg-moss focus-visible:outline-garden sm:text-sm">Start preparing my fixes</button>
-                    </form>
-                @endif
-            </section>
             <section class="grid gap-7">
+                <section data-audit-next-step class="grid gap-5 rounded-2xl bg-[#fffefa] p-6 shadow-xl ring-1 ring-ink/10 sm:p-8" aria-labelledby="audit-next-step-title">
+                    <div class="grid gap-3">
+                        <p class="font-mono text-sm font-medium uppercase tracking-wide text-moss">Your next step</p>
+                        <h2 id="audit-next-step-title" class="max-w-[35ch] font-display text-3xl font-semibold tracking-tight text-balance">Turn these findings into a fix plan</h2>
+                        <p class="max-w-[56ch] text-pretty text-base text-ink/65 sm:text-sm">Enter your email address below to get started fixing your website.</p>
+                    </div>
+                    @if (session('claim_status'))
+                        <p class="max-w-[56ch] rounded-lg bg-lichen p-4 text-pretty text-base text-ink sm:text-sm">{{ session('claim_status') }}</p>
+                    @else
+                        <form method="POST" action="{{ route('marketing.website-audits.claim', $audit) }}" class="grid max-w-xs gap-4">
+                            @csrf
+                            <div class="grid gap-2">
+                                <label for="email" class="text-base font-medium sm:text-sm">Email address</label>
+                                <input id="email" name="email" type="email" required autocomplete="email" value="{{ old('email') }}" aria-invalid="{{ $errors->has('email') ? 'true' : 'false' }}" class="w-full rounded-md border-0 bg-white px-3 py-3 text-base text-ink shadow-sm ring-1 ring-ink/15 placeholder:text-ink/35 focus:-outline-offset-1 focus:outline-garden sm:py-2.5 sm:text-sm">
+                                @error('email')<p class="text-base text-red-700 sm:text-sm">{{ $message }}</p>@enderror
+                            </div>
+                            <button type="submit" class="rounded-md bg-garden px-4 py-3 text-base font-medium text-white ring-1 ring-garden hover:bg-moss focus-visible:outline-garden sm:text-sm">Start preparing my fixes</button>
+                        </form>
+                    @endif
+                </section>
                 <div class="grid gap-5 border-b border-ink/10 pb-7 sm:grid-cols-3">
                     @foreach ([['Checks completed', $checks->count(), 'text-ink'], ['Looking good', $passedChecks, 'text-garden'], ['Worth reviewing', $reviewChecks, 'text-amber-700']] as [$label, $value, $colour])
                         <div class="grid gap-1 sm:border-r sm:border-ink/10 sm:pr-5 sm:last:border-r-0">

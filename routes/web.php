@@ -55,6 +55,7 @@ use App\Http\Controllers\Admin\SeoOpportunityController;
 use App\Http\Controllers\Admin\SeoProspectSearchController;
 use App\Http\Controllers\Admin\SeoSnapshotSettingsController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\UserImpersonationController;
 use App\Http\Controllers\Admin\WebsiteAiChatController;
 use App\Http\Controllers\Admin\WebsiteAiQuestionCreditController;
 use App\Http\Controllers\Admin\WebsiteAiQuestionReportController;
@@ -136,7 +137,7 @@ Route::get('/website-audits/{websiteAudit}/status', [FreeSiteAuditController::cl
     ->middleware('throttle:120,1')
     ->name('marketing.website-audits.status');
 Route::post('/website-audits/{websiteAudit}/continue', [WebsiteAuditOnboardingController::class, 'store'])
-    ->middleware('throttle:6,1')
+    ->middleware('throttle:60,1')
     ->name('marketing.website-audits.claim');
 
 Route::middleware(['signed', 'throttle:20,1'])->group(function () {
@@ -191,9 +192,9 @@ Route::middleware(['web', 'auth', ResolveCurrentWebsite::class])->prefix('admin'
     Route::post('current-website', CurrentWebsiteController::class)->name('current-website.update');
     Route::get('account/billing', [BillingController::class, 'index'])->name('billing.index');
     Route::get('account/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::put('account/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::post('account/billing/checkout', [BillingController::class, 'checkout'])->middleware('throttle:10,1')->name('billing.checkout');
-    Route::post('account/billing/portal', [BillingController::class, 'portal'])->middleware('throttle:10,1')->name('billing.portal');
+    Route::put('account/profile', [ProfileController::class, 'update'])->middleware('impersonate.protect')->name('profile.update');
+    Route::post('account/billing/checkout', [BillingController::class, 'checkout'])->middleware(['impersonate.protect', 'throttle:10,1'])->name('billing.checkout');
+    Route::post('account/billing/portal', [BillingController::class, 'portal'])->middleware(['impersonate.protect', 'throttle:10,1'])->name('billing.portal');
     Route::resource('websites', WebsiteController::class);
     Route::get('websites/{website}/section/{section}', [WebsiteController::class, 'show'])
         ->whereIn('section', WebsiteNavigation::SECTIONS)
@@ -300,6 +301,12 @@ Route::middleware(['web', 'auth', ResolveCurrentWebsite::class])->prefix('admin'
         Route::post('prospects/bulk', BulkProspectActionController::class)->name('prospects.bulk');
         Route::resource('prospects', ProspectController::class);
     });
+    Route::post('users/{user}/impersonate', [UserImpersonationController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('users.impersonate.store');
+    Route::delete('impersonation', [UserImpersonationController::class, 'destroy'])
+        ->middleware('throttle:10,1')
+        ->name('impersonation.destroy');
     Route::resource('users', UserController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
 });
 

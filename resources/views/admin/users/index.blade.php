@@ -42,6 +42,12 @@
                             <div class="flex items-center justify-end gap-3">
                                 <a href="{{ route('admin.users.edit', $user) }}" class="text-sm font-medium text-slate-700 hover:text-slate-950">Edit</a>
                                 @unless (Auth::user()->is($user))
+                                    @if ($user->canBeImpersonated())
+                                        <form method="POST" action="{{ route('admin.users.impersonate.store', $user) }}">
+                                            @csrf
+                                            <button type="submit" class="text-sm font-medium text-teal-700 hover:text-teal-900">View as user</button>
+                                        </form>
+                                    @endif
                                     <form method="POST" action="{{ route('admin.users.destroy', $user) }}" onsubmit="return confirm('Delete this user? This cannot be undone.')">
                                         @csrf
                                         @method('DELETE')

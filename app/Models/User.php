@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Lab404\Impersonate\Models\Impersonate;
 
 #[Fillable(['name', 'email', 'password', 'role', 'current_website_id', 'stripe_customer_id', 'stripe_subscription_id', 'membership_tier', 'admin_membership_tier', 'membership_status', 'membership_current_period_end', 'membership_cancel_at', 'onboarding_status', 'onboarding_trial_ends_at'])]
 #[Hidden(['password', 'remember_token'])]
@@ -24,7 +25,7 @@ class User extends Authenticatable
     public const ROLE_USER = 'user';
 
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Impersonate, Notifiable;
 
     /**
      * Get the attributes that should be cast.
@@ -46,6 +47,16 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return $this->role === self::ROLE_ADMIN;
+    }
+
+    public function canImpersonate(): bool
+    {
+        return $this->isAdmin();
+    }
+
+    public function canBeImpersonated(): bool
+    {
+        return ! $this->isAdmin();
     }
 
     public function hasMembershipFeature(string $feature): bool

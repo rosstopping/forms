@@ -14,6 +14,16 @@
             $currentWebsiteSection = $currentWebsiteSection ?? \App\Support\WebsiteNavigation::DEFAULT_SECTION;
             $navigationWebsites = $navigationWebsites ?? collect();
         @endphp
+        @impersonating
+            <div class="sticky top-0 z-50 flex flex-wrap items-center justify-between gap-3 bg-amber-300 px-4 py-2 text-sm font-medium text-amber-950 sm:px-6">
+                <p>You are viewing Sitewell as {{ Auth::user()->name }}.</p>
+                <form method="POST" action="{{ route('admin.impersonation.destroy') }}">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="rounded-md bg-amber-950 px-3 py-1.5 text-sm font-semibold text-white hover:bg-slate-950">Return to admin</button>
+                </form>
+            </div>
+        @endImpersonating
         <div class="isolate min-h-dvh lg:grid lg:grid-cols-[17rem_minmax(0,1fr)]">
             <aside class="hidden min-h-dvh flex-col bg-slate-950 px-4 py-5 text-white lg:flex">
                 <a href="{{ route('admin.dashboard') }}" aria-label="Homepage" class="flex items-center gap-3 px-2">

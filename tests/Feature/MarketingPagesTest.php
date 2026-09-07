@@ -1,6 +1,7 @@
 <?php
 
 use App\Mail\OnboardingEnquiryReceived;
+use App\Models\FormSubmission;
 use Illuminate\Support\Facades\Mail;
 
 it('shows each public marketing page', function (string $route, string $copy): void {
@@ -19,7 +20,7 @@ it('shows each public marketing page', function (string $route, string $copy): v
     'faqs' => ['marketing.faqs', 'What businesses ask before handing us their website'],
     'get started' => ['marketing.free-site-audit', 'Enter your website below to get started'],
     'journal' => ['marketing.journal', 'Practical notes on looking after websites'],
-    'contact' => ['marketing.contact', 'See what your website needs next'],
+    'contact' => ['marketing.contact', 'Talk to our website team'],
     'privacy policy' => ['marketing.privacy', 'How Sitewell uses personal information'],
     'terms of service' => ['marketing.terms', 'Terms for using Sitewell'],
 ]);
@@ -196,12 +197,13 @@ it('features the local UK phone call to action on the home page', function (): v
         ->assertSee('href="tel:+441302985828"', false);
 });
 
-it('uses the same website-only onboarding on both entry routes', function (): void {
+it('keeps contact separate from website-only onboarding', function (): void {
     $this->get(route('marketing.contact'))
         ->assertSuccessful()
-        ->assertSee('Website address')
-        ->assertSee('No account, email address, or website access is needed.')
-        ->assertDontSee('Work email');
+        ->assertSee('Contact Sitewell')
+        ->assertSee('Work email')
+        ->assertSee('Send enquiry')
+        ->assertDontSee('No account, email address, or website access is needed.');
 });
 
 it('markets customer-facing SEO features and a free website on every plan', function (): void {
@@ -224,7 +226,7 @@ it('markets customer-facing SEO features and a free website on every plan', func
 
     $this->get(route('marketing.contact'))
         ->assertSuccessful()
-        ->assertSee('Website address')
+        ->assertSee('Work email')
         ->assertDontSee('How many websites')
         ->assertDontSee('Start onboarding');
 });
@@ -373,6 +375,12 @@ it('validates and queues get started enquiries with an optional current website'
             && $mail->enquiry['agency'] === 'Northfield Studio'
             && $mail->enquiry['website'] === 'https://northfield.example';
     });
+
+    $lead = FormSubmission::query()->sole();
+    expect($lead->status)->toBe('new')
+        ->and($lead->form?->name)->toBe('Sitewell contact form')
+        ->and($lead->data['email'])->toBe('alex@example.com')
+        ->and($lead->data['goals'])->toContain('health reports');
 });
 
 it('rejects incomplete and automated get started enquiries', function (): void {
