@@ -15,9 +15,9 @@
         <header class="grid gap-4 border-b border-ink/10 pb-8">
             <p class="font-mono text-sm font-medium uppercase tracking-wide text-moss">Getting started</p>
             <h1 class="max-w-[24ch] break-words font-display text-4xl font-semibold tracking-tight text-balance sm:text-5xl">{{ $audit->domain }}</h1>
-            <p class="max-w-[48ch] text-pretty text-base text-ink/65 sm:text-sm">We are reviewing publicly visible signals across website health, search essentials, accessibility, security, and discoverability.</p>
+            <p class="max-w-[48ch] text-pretty text-base text-ink/65 sm:text-sm">{{ $audit->isReadyToDisplay() ? 'We reviewed publicly visible signals across website health, search essentials, accessibility, security, and discoverability.' : 'We are reviewing publicly visible signals across website health, search essentials, accessibility, security, and discoverability.' }}</p>
         </header>
-        @if (in_array($audit->status, [\App\Models\WebsiteAudit::STATUS_PENDING, \App\Models\WebsiteAudit::STATUS_RUNNING], true))
+        @if ($audit->status !== \App\Models\WebsiteAudit::STATUS_FAILED && ! $audit->isReadyToDisplay())
             <section id="audit-progress" data-status-url="{{ route('marketing.website-audits.status', $audit) }}" class="grid gap-8 rounded-2xl bg-[#fffefa] p-6 shadow-xl ring-1 ring-ink/10 sm:p-8" aria-labelledby="audit-progress-title" aria-live="polite">
                 <div class="grid gap-2">
                     <h2 id="audit-progress-title" class="max-w-[35ch] font-display text-3xl font-semibold tracking-tight text-balance">Reviewing your website</h2>
@@ -36,6 +36,7 @@
                 (() => {
                     const progress = document.getElementById('audit-progress');
                     const stages = Array.from(progress.querySelectorAll('[data-audit-stage]'));
+                    const minimumVisibleUntil = Date.now() + 10000;
                     let activeStage = 0;
                     const showStage = (stage) => stages.forEach((item, index) => {
                         const current = index === stage;
@@ -53,7 +54,9 @@
                             const response = await fetch(progress.dataset.statusUrl, { headers: { Accept: 'application/json' } });
                             if (! response.ok) return;
                             const result = await response.json();
-                            if (result.completed || result.failed) window.location.reload();
+                            if (result.completed || result.failed) {
+                                window.setTimeout(() => window.location.reload(), Math.max(0, minimumVisibleUntil - Date.now()));
+                            }
                         } catch (_) {
                             // A temporary polling failure should not interrupt the visible progress state.
                         }
@@ -101,7 +104,20 @@
                 <section class="grid gap-4 border-t border-ink/10 pt-7" aria-labelledby="audit-next-step-title">
                     <p class="font-mono text-sm font-medium uppercase tracking-wide text-moss">Your next step</p>
                     <h2 id="audit-next-step-title" class="max-w-[35ch] font-display text-3xl font-semibold tracking-tight text-balance">Turn these findings into a fix plan</h2>
-                    <p class="max-w-[56ch] text-pretty text-base text-ink/65 sm:text-sm">Next, you will be able to confirm your email and start a 14-day Sitewell trial. No changes will be made without your approval.</p>
+                    <p class="max-w-[56ch] text-pretty text-base text-ink/65 sm:text-sm">Confirm your email to start a 14-day Sitewell trial and let us begin preparing your fix plan. No changes will be made without your approval.</p>
+                    @if (session('claim_status'))
+                        <p class="max-w-[56ch] rounded-lg bg-lichen p-4 text-pretty text-base text-ink sm:text-sm">{{ session('claim_status') }}</p>
+                    @else
+                        <form method="POST" action="{{ route('marketing.website-audits.claim', $audit) }}" class="grid max-w-xs gap-4">
+                            @csrf
+                            <div class="grid gap-2">
+                                <label for="email" class="text-base font-medium sm:text-sm">Email address</label>
+                                <input id="email" name="email" type="email" required autocomplete="email" value="{{ old('email') }}" aria-invalid="{{ $errors->has('email') ? 'true' : 'false' }}" class="w-full rounded-md border-0 bg-white px-3 py-3 text-base text-ink shadow-sm ring-1 ring-ink/15 placeholder:text-ink/35 focus:-outline-offset-1 focus:outline-garden sm:py-2.5 sm:text-sm">
+                                @error('email')<p class="text-base text-red-700 sm:text-sm">{{ $message }}</p>@enderror
+                            </div>
+                            <button type="submit" class="rounded-md bg-garden px-4 py-3 text-base font-medium text-white ring-1 ring-garden hover:bg-moss focus-visible:outline-garden sm:text-sm">Start preparing my fixes</button>
+                        </form>
+                    @endif
                 </section>
             </section>
         @endif

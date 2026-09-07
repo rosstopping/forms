@@ -19,6 +19,7 @@ class DispatchDueWebsiteHealthReports extends Command
         $frequencyDays = config('forms.health_reports.frequency_days');
 
         Website::query()
+            ->with('owner')
             ->where('is_active', true)
             ->where('health_reports_enabled', true)
             ->whereDoesntHave('healthReports', fn ($query) => $query
@@ -28,6 +29,10 @@ class DispatchDueWebsiteHealthReports extends Command
                     ->where('completed_at', '>=', now()->subDays($frequencyDays))))
             ->chunkById(100, function ($websites) use (&$dispatched): void {
                 foreach ($websites as $website) {
+                    if ($website->owner && ! $website->owner->hasActiveMembership()) {
+                        continue;
+                    }
+
                     $report = $website->healthReports()->create(['status' => WebsiteHealthReport::STATUS_PENDING]);
                     GenerateWebsiteHealthReport::dispatch($report);
                     $dispatched++;

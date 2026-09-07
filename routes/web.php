@@ -81,6 +81,7 @@ use App\Http\Controllers\ProspectOutreachClickController;
 use App\Http\Controllers\ProspectOutreachOpenController;
 use App\Http\Controllers\ProspectReportController;
 use App\Http\Controllers\StripeWebhookController;
+use App\Http\Controllers\WebsiteAuditOnboardingController;
 use App\Http\Controllers\WebsiteHealthReportController as PublicWebsiteHealthReportController;
 use App\Http\Middleware\AllowFormSubmissionCors;
 use App\Http\Middleware\EnsureAdmin;
@@ -131,6 +132,16 @@ Route::get('/website-audits/{websiteAudit}', [FreeSiteAuditController::class, 's
 Route::get('/website-audits/{websiteAudit}/status', [FreeSiteAuditController::class, 'status'])
     ->middleware('throttle:120,1')
     ->name('marketing.website-audits.status');
+Route::post('/website-audits/{websiteAudit}/continue', [WebsiteAuditOnboardingController::class, 'store'])
+    ->middleware('throttle:6,1')
+    ->name('marketing.website-audits.claim');
+
+Route::middleware(['signed', 'throttle:20,1'])->group(function () {
+    Route::get('/website-audits/{websiteAudit}/onboarding', [WebsiteAuditOnboardingController::class, 'edit'])
+        ->name('marketing.website-audits.onboarding');
+    Route::post('/website-audits/{websiteAudit}/onboarding', [WebsiteAuditOnboardingController::class, 'update'])
+        ->name('marketing.website-audits.onboarding.complete');
+});
 
 Route::get('/submitted', function (Request $request) {
     $returnUrl = $request->header('referer') ?: url('/');

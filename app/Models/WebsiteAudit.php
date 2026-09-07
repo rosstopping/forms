@@ -6,9 +6,10 @@ use Database\Factories\WebsiteAuditFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 
-#[Fillable(['website_url', 'domain', 'status', 'opportunity_score', 'findings', 'contact_details', 'analysis_error', 'started_at', 'completed_at', 'expires_at'])]
+#[Fillable(['user_id', 'website_id', 'website_url', 'domain', 'email', 'status', 'opportunity_score', 'findings', 'contact_details', 'analysis_error', 'started_at', 'completed_at', 'claim_email_sent_at', 'claimed_at', 'expires_at'])]
 class WebsiteAudit extends Model
 {
     /** @use HasFactory<WebsiteAuditFactory> */
@@ -38,6 +39,8 @@ class WebsiteAudit extends Model
             'contact_details' => 'array',
             'started_at' => 'datetime',
             'completed_at' => 'datetime',
+            'claim_email_sent_at' => 'datetime',
+            'claimed_at' => 'datetime',
             'expires_at' => 'datetime',
         ];
     }
@@ -50,5 +53,21 @@ class WebsiteAudit extends Model
     public function hasExpired(): bool
     {
         return $this->expires_at->isPast();
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function website(): BelongsTo
+    {
+        return $this->belongsTo(Website::class);
+    }
+
+    public function isReadyToDisplay(): bool
+    {
+        return $this->status === self::STATUS_COMPLETED
+            && $this->created_at->addSeconds(10)->isPast();
     }
 }

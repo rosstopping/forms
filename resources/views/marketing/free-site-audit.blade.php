@@ -49,6 +49,36 @@
         </div>
     </div>
 </section>
+<section class="py-16 sm:py-24">
+    <div class="mx-auto grid max-w-7xl gap-12 px-5 sm:px-8 lg:grid-cols-[21fr_19fr] lg:px-10">
+        <div class="grid content-start gap-5">
+            <p class="font-mono text-sm font-medium uppercase tracking-wide text-moss">Useful from the start</p>
+            <h2 class="max-w-[35ch] font-display text-4xl font-semibold tracking-tight text-balance">What a useful website review should actually tell you</h2>
+            <p class="max-w-[48ch] text-pretty text-lg text-ink/65">You should leave with a clearer view of what is working, what deserves attention, and which improvements are worth preparing first.</p>
+        </div>
+        <div class="grid content-start gap-7">
+            <dl class="grid gap-6">
+                <div class="grid gap-2 border-b border-ink/10 pb-6">
+                    <dt class="font-medium text-ink">Clear priorities</dt>
+                    <dd class="text-pretty text-base text-ink/60 sm:text-sm">Findings are grouped into practical areas so you can distinguish urgent issues from useful opportunities.</dd>
+                </div>
+                <div class="grid gap-2 border-b border-ink/10 pb-6">
+                    <dt class="font-medium text-ink">Evidence you can understand</dt>
+                    <dd class="text-pretty text-base text-ink/60 sm:text-sm">Every finding includes a plain-English explanation based on information visible on your website.</dd>
+                </div>
+                <div class="grid gap-2">
+                    <dt class="font-medium text-ink">A sensible next step</dt>
+                    <dd class="text-pretty text-base text-ink/60 sm:text-sm">Continue only when the results are useful and you want Sitewell to begin preparing a fix plan.</dd>
+                </div>
+            </dl>
+            <div class="flex flex-wrap gap-5">
+                <p><a href="{{ route('marketing.features') }}" class="font-medium text-garden underline decoration-garden/30 underline-offset-4 hover:decoration-garden">See how Sitewell helps</a></p>
+                <p><a href="{{ route('marketing.journal') }}" class="font-medium text-ink underline decoration-ink/20 underline-offset-4 hover:decoration-ink">Read our practical guides</a></p>
+                <p><a href="{{ route('marketing.contact') }}" class="font-medium text-ink underline decoration-ink/20 underline-offset-4 hover:decoration-ink">Talk to a specialist</a></p>
+            </div>
+        </div>
+    </div>
+</section>
 @if ($turnstileEnabled)
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 @endif

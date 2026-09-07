@@ -6,9 +6,11 @@ use App\Mail\FreeSiteAuditResults;
 use App\Models\Prospect;
 use App\Models\User;
 use App\Models\WebsiteAudit;
+use App\Notifications\WebsiteAuditClaim;
 use App\Services\ProspectWebsiteAnalyzer;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\URL;
 
@@ -58,7 +60,10 @@ it('shows audit progress and exposes only its processing state', function (): vo
 });
 
 it('stores an anonymous audit result for the live report', function (): void {
-    $audit = WebsiteAudit::factory()->create(['website_url' => 'https://northfield.example']);
+    $audit = WebsiteAudit::factory()->create([
+        'website_url' => 'https://northfield.example',
+        'created_at' => now()->subSeconds(11),
+    ]);
     $analyzer = Mockery::mock(ProspectWebsiteAnalyzer::class);
     $analyzer->shouldReceive('analyze')->once()->with($audit->website_url)->andReturn([
         'score' => 35,
@@ -74,8 +79,93 @@ it('stores an anonymous audit result for the live report', function (): void {
 
     $this->get(route('marketing.website-audits.show', $audit))
         ->assertSuccessful()
+        ->assertSee('We reviewed publicly visible signals')
         ->assertSee('Turn these findings into a fix plan')
+        ->assertSee('Start preparing my fixes')
         ->assertSee('HTTPS should be reviewed.');
+});
+
+it('keeps the progress experience visible for at least ten seconds', function (): void {
+    $audit = WebsiteAudit::factory()->create([
+        'status' => WebsiteAudit::STATUS_COMPLETED,
+        'findings' => [],
+        'completed_at' => now(),
+    ]);
+
+    $this->get(route('marketing.website-audits.show', $audit))
+        ->assertSuccessful()
+        ->assertSee('Reviewing your website')
+        ->assertSee('We are reviewing publicly visible signals');
+
+    $this->getJson(route('marketing.website-audits.status', $audit))
+        ->assertExactJson(['status' => 'completed', 'completed' => false, 'failed' => false]);
+
+    $this->travel(11)->seconds();
+
+    $this->getJson(route('marketing.website-audits.status', $audit))
+        ->assertExactJson(['status' => 'completed', 'completed' => true, 'failed' => false]);
+});
+
+it('emails a secure continuation link after the website review', function (): void {
+    Notification::fake();
+    $audit = WebsiteAudit::factory()->create([
+        'status' => WebsiteAudit::STATUS_COMPLETED,
+        'completed_at' => now(),
+        'created_at' => now()->subSeconds(11),
+    ]);
+
+    $this->post(route('marketing.website-audits.claim', $audit), [
+        'email' => ' ALEX@EXAMPLE.COM ',
+    ])->assertRedirect()->assertSessionHas('claim_status');
+
+    expect($audit->refresh()->email)->toBe('alex@example.com')
+        ->and($audit->claim_email_sent_at)->not->toBeNull();
+
+    Notification::assertSentOnDemand(
+        WebsiteAuditClaim::class,
+        fn (WebsiteAuditClaim $notification, array $channels, object $notifiable): bool => $notifiable->routes['mail'] === 'alex@example.com',
+    );
+});
+
+it('confirms email and creates the trial profile and website', function (): void {
+    $audit = WebsiteAudit::factory()->create([
+        'status' => WebsiteAudit::STATUS_COMPLETED,
+        'email' => 'alex@example.com',
+        'website_url' => 'https://example.test',
+        'domain' => 'example.test',
+        'completed_at' => now(),
+        'created_at' => now()->subSeconds(11),
+    ]);
+    $url = URL::temporarySignedRoute(
+        'marketing.website-audits.onboarding',
+        now()->addHour(),
+        ['websiteAudit' => $audit],
+    );
+
+    $this->get($url)
+        ->assertSuccessful()
+        ->assertSee('Complete your profile')
+        ->assertSee('Start my 14-day trial');
+
+    $this->post($url, [
+        'name' => 'Alex Morgan',
+        'password' => 'secure-password',
+        'password_confirmation' => 'secure-password',
+    ])->assertRedirect();
+
+    $audit->refresh();
+    $user = $audit->user;
+
+    $this->assertAuthenticatedAs($user);
+    expect($user->name)->toBe('Alex Morgan')
+        ->and($user->email_verified_at)->not->toBeNull()
+        ->and($user->membership_tier)->toBe('essential')
+        ->and($user->membership_status)->toBe('trialing')
+        ->and($user->membership_current_period_end->isAfter(now()->addDays(13)))->toBeTrue()
+        ->and($user->onboarding_status)->toBe('trial_active')
+        ->and($audit->website->health_reports_enabled)->toBeTrue()
+        ->and($audit->website->domains()->where('domain', 'example.test')->exists())->toBeTrue()
+        ->and($audit->claimed_at)->not->toBeNull();
 });
 
 it('rejects an invalid marketing Turnstile response', function (): void {

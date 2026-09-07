@@ -58,7 +58,7 @@ class FreeSiteAuditController extends Controller
 
         return response()->json([
             'status' => $websiteAudit->status,
-            'completed' => $websiteAudit->status === WebsiteAudit::STATUS_COMPLETED,
+            'completed' => $websiteAudit->isReadyToDisplay(),
             'failed' => $websiteAudit->status === WebsiteAudit::STATUS_FAILED,
         ]);
     }

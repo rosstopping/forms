@@ -528,10 +528,20 @@ it('dispatches only due enabled websites from the scheduler command', function (
     Queue::fake();
     $due = websiteWithDomain(['health_reports_enabled' => true]);
     $disabled = websiteWithDomain(['health_reports_enabled' => false], 'disabled.example.com');
+    $expiredTrialOwner = User::factory()->create([
+        'membership_tier' => 'essential',
+        'membership_status' => 'trialing',
+        'membership_current_period_end' => now()->subMinute(),
+    ]);
+    $expiredTrial = websiteWithDomain([
+        'user_id' => $expiredTrialOwner->id,
+        'health_reports_enabled' => true,
+    ], 'expired-trial.example.com');
 
     $this->artisan('health-reports:dispatch')->assertSuccessful();
 
     expect($due->healthReports()->count())->toBe(1)
-        ->and($disabled->healthReports()->count())->toBe(0);
+        ->and($disabled->healthReports()->count())->toBe(0)
+        ->and($expiredTrial->healthReports()->count())->toBe(0);
     Queue::assertPushed(GenerateWebsiteHealthReport::class, 1);
 });
