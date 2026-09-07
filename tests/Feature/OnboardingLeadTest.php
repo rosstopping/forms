@@ -1,5 +1,7 @@
 <?php
 
+use App\Enums\OnboardingLifecycleStep;
+use App\Models\OnboardingLifecycleMessage;
 use App\Models\SearchConsoleConnection;
 use App\Models\User;
 use App\Models\Website;
@@ -26,8 +28,25 @@ it('gives admins a lead view of users who signed up through Get started', functi
         'domain' => 'alex-business.test',
         'claimed_at' => now()->subDays(4),
     ]);
+    OnboardingLifecycleMessage::factory()->for($customer)->create([
+        'step' => OnboardingLifecycleStep::Welcome,
+        'scheduled_for' => now()->subDays(4),
+        'queued_at' => now()->subDays(4),
+        'sent_at' => now()->subDays(4),
+        'clicked_at' => now()->subDays(4),
+    ]);
+    OnboardingLifecycleMessage::factory()->for($customer)->create([
+        'step' => OnboardingLifecycleStep::SearchConsole,
+        'scheduled_for' => now()->addDay(),
+    ]);
     $manualCustomer = User::factory()->create(['name' => 'Manual Customer', 'onboarding_status' => 'trial_active']);
     Website::factory()->for($manualCustomer, 'owner')->create();
+    WebsiteAudit::factory()->create([
+        'domain' => 'unclaimed-business.test',
+        'email' => 'waiting@example.test',
+        'claimed_at' => null,
+        'status' => WebsiteAudit::STATUS_COMPLETED,
+    ]);
 
     $this->actingAs($admin)
         ->get(route('admin.onboarding.index'))
@@ -41,6 +60,13 @@ it('gives admins a lead view of users who signed up through Get started', functi
         ->assertSee('Pending')
         ->assertSee('Search Console not connected')
         ->assertSee('Not booked')
+        ->assertSee('Unclaimed domains')
+        ->assertSee('unclaimed-business.test')
+        ->assertSee('waiting@example.test')
+        ->assertSee('Confirmation pending')
+        ->assertSee('Trial welcome sent')
+        ->assertSee('Next: Search Console reminder')
+        ->assertSee('1 tracked click')
         ->assertSee('View as user')
         ->assertDontSee('Manual Customer');
 });

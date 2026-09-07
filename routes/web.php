@@ -76,12 +76,14 @@ use App\Http\Controllers\Admin\WordPressPairingCodeController;
 use App\Http\Controllers\Admin\WordPressStaticReleaseController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\WebsiteInvitationController;
+use App\Http\Controllers\CalWebhookController;
 use App\Http\Controllers\FormSubmissionController;
 use App\Http\Controllers\FormSubmissionSpamController;
 use App\Http\Controllers\FreeSiteAuditController;
 use App\Http\Controllers\GithubWebhookController;
 use App\Http\Controllers\MarketingController;
 use App\Http\Controllers\OnboardingEnquiryController;
+use App\Http\Controllers\OnboardingLifecycleClickController;
 use App\Http\Controllers\ProspectOutreachClickController;
 use App\Http\Controllers\ProspectOutreachOpenController;
 use App\Http\Controllers\ProspectReportController;
@@ -130,6 +132,14 @@ Route::get('/outreach/click/{link}', ProspectOutreachClickController::class)
 Route::post('/contact', OnboardingEnquiryController::class)
     ->middleware('throttle:6,1')
     ->name('marketing.contact.store');
+
+Route::post('/cal/webhook', CalWebhookController::class)
+    ->middleware('throttle:120,1')
+    ->name('cal.webhook');
+
+Route::get('/onboarding/messages/{onboardingLifecycleMessage}/continue', OnboardingLifecycleClickController::class)
+    ->middleware(['signed', 'throttle:60,1'])
+    ->name('onboarding-lifecycle.click');
 
 Route::redirect('/free-site-audit', '/get-started', 301);
 Route::get('/get-started', [FreeSiteAuditController::class, 'create'])->name('marketing.free-site-audit');

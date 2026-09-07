@@ -146,7 +146,7 @@ class WebsiteController extends Controller
         $canUseSearchConsole = $user?->isAdmin() === true || $website->owner?->hasMembershipFeature(MembershipPlan::FEATURE_SEARCH_CONSOLE) === true;
         $canUseGrowthFeatures = $user?->isAdmin() === true || $website->owner?->hasMembershipFeature(MembershipPlan::FEATURE_GROWTH) === true;
         $hasContentDeliveryConnection = $website->pixel_last_seen_at !== null
-            || $website->wordpressConnection !== null
+            || $website->wordpressConnection?->isConnected() === true
             || $website->repository !== null;
         $contentSupportCallUrl = $user?->onboarding_status === 'trial_active'
             && $user->onboarding_trial_ends_at?->isFuture() === true

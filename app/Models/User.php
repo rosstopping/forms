@@ -106,6 +106,11 @@ class User extends Authenticatable
             ->latestOfMany();
     }
 
+    public function onboardingLifecycleMessages(): HasMany
+    {
+        return $this->hasMany(OnboardingLifecycleMessage::class);
+    }
+
     public function currentWebsite(): BelongsTo
     {
         return $this->belongsTo(Website::class, 'current_website_id');

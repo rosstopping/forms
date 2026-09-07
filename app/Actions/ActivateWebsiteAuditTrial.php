@@ -6,11 +6,14 @@ use App\Models\User;
 use App\Models\Website;
 use App\Models\WebsiteAudit;
 use App\Models\WebsiteDomain;
+use App\Services\OnboardingLifecycleManager;
 use App\Support\MembershipPlan;
 use Illuminate\Support\Facades\DB;
 
 class ActivateWebsiteAuditTrial
 {
+    public function __construct(private OnboardingLifecycleManager $lifecycle) {}
+
     /** @param array{name?: string, password?: string} $profile */
     public function handle(WebsiteAudit $audit, array $profile = []): User
     {
@@ -68,6 +71,8 @@ class ActivateWebsiteAuditTrial
                 'website_id' => $website->id,
                 'claimed_at' => now(),
             ]);
+
+            $this->lifecycle->dispatchDue($user->fresh(['onboardingAudit.website.searchConsoleConnection']));
 
             return $user;
         });

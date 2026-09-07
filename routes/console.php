@@ -12,6 +12,11 @@ Schedule::command('health-reports:dispatch')
     ->dailyAt('06:00')
     ->withoutOverlapping();
 
+Schedule::command('onboarding:dispatch-lifecycle')
+    ->dailyAt('09:00')
+    ->onOneServer()
+    ->withoutOverlapping();
+
 Schedule::command('content:dispatch')
     ->hourly()
     ->withoutOverlapping();

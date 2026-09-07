@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias(['membership' => EnsureMembershipFeature::class]);
         $middleware->validateCsrfTokens(except: [
+            'cal/webhook',
             'github/webhook',
             'stripe/webhook',
         ]);

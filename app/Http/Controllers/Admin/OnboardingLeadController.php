@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\WebsiteAudit;
 use App\Models\WebsiteDomain;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -24,6 +25,7 @@ class OnboardingLeadController extends Controller
         $baseQuery = User::query()->whereHas('websiteAudits', fn (Builder $query) => $query->whereNotNull('claimed_at'));
         $summary = [
             'total' => (clone $baseQuery)->count(),
+            'unclaimed' => WebsiteAudit::query()->whereNull('claimed_at')->count(),
             'active' => (clone $baseQuery)->where('onboarding_trial_ends_at', '>', now())->count(),
             'needs_verification' => (clone $baseQuery)->whereHas('websiteAudits.website.domains', fn (Builder $query) => $query->where('is_primary', true)->where('ownership_status', '!=', WebsiteDomain::OWNERSHIP_VERIFIED))->count(),
             'call_not_booked' => (clone $baseQuery)->whereNull('onboarding_call_booked_at')->count(),
@@ -33,6 +35,7 @@ class OnboardingLeadController extends Controller
             ->with([
                 'onboardingAudit.website.domains',
                 'onboardingAudit.website.searchConsoleConnection',
+                'onboardingLifecycleMessages',
             ])
             ->when(filled($filters['search'] ?? null), function (Builder $query) use ($filters): void {
                 $search = '%'.$filters['search'].'%';
@@ -55,6 +58,18 @@ class OnboardingLeadController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        return view('admin.onboarding-leads.index', compact('filters', 'summary', 'users'));
+        $unclaimedAudits = WebsiteAudit::query()
+            ->whereNull('claimed_at')
+            ->when(filled($filters['search'] ?? null), function (Builder $query) use ($filters): void {
+                $search = '%'.$filters['search'].'%';
+                $query->where(fn (Builder $query) => $query
+                    ->where('domain', 'like', $search)
+                    ->orWhere('email', 'like', $search));
+            })
+            ->latest('created_at')
+            ->paginate(20, ['*'], 'unclaimed_page')
+            ->withQueryString();
+
+        return view('admin.onboarding-leads.index', compact('filters', 'summary', 'unclaimedAudits', 'users'));
     }
 }

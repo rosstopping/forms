@@ -9,11 +9,12 @@
     <header>
         <p class="font-mono text-xs font-medium uppercase tracking-widest text-teal-700">Lead management</p>
         <h1 class="mt-1 text-2xl font-semibold text-slate-950 sm:text-3xl">Onboarding</h1>
-        <p class="mt-2 max-w-3xl text-sm text-slate-600">Track everyone who has joined Sitewell through Get started, from their submitted domain through verification, trial progress, and onboarding call.</p>
+        <p class="mt-2 max-w-3xl text-sm text-slate-600">Track the full Get started journey, from a submitted domain through signup, verification, trial progress, and onboarding call.</p>
     </header>
 
-    <dl class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <dl class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <div class="rounded-xl border border-slate-200 bg-white p-4"><dt class="text-sm text-slate-500">Onboarding leads</dt><dd class="mt-1 text-3xl font-semibold tabular-nums text-slate-950">{{ $summary['total'] }}</dd></div>
+        <div class="rounded-xl border border-sky-200 bg-sky-50 p-4"><dt class="text-sm text-sky-800">Unclaimed domains</dt><dd class="mt-1 text-3xl font-semibold tabular-nums text-sky-950">{{ $summary['unclaimed'] }}</dd></div>
         <div class="rounded-xl border border-teal-200 bg-teal-50 p-4"><dt class="text-sm text-teal-800">Active trials</dt><dd class="mt-1 text-3xl font-semibold tabular-nums text-teal-950">{{ $summary['active'] }}</dd></div>
         <div class="rounded-xl border border-amber-200 bg-amber-50 p-4"><dt class="text-sm text-amber-800">Need verification</dt><dd class="mt-1 text-3xl font-semibold tabular-nums text-amber-950">{{ $summary['needs_verification'] }}</dd></div>
         <div class="rounded-xl border border-violet-200 bg-violet-50 p-4"><dt class="text-sm text-violet-800">Call not booked</dt><dd class="mt-1 text-3xl font-semibold tabular-nums text-violet-950">{{ $summary['call_not_booked'] }}</dd></div>
@@ -50,7 +51,45 @@
         </div>
     </form>
 
-    <div class="space-y-4">
+    <section class="space-y-4">
+        <header>
+            <h2 class="text-lg font-semibold text-slate-950">Unclaimed domains</h2>
+            <p class="mt-1 text-sm text-slate-600">Website reviews started by visitors who have not completed signup.</p>
+        </header>
+
+        <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div class="divide-y divide-slate-100">
+                @forelse ($unclaimedAudits as $unclaimedAudit)
+                    <article class="grid gap-3 p-4 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center">
+                        <div class="min-w-0">
+                            <p class="truncate font-mono text-sm font-semibold text-slate-950">{{ $unclaimedAudit->domain }}</p>
+                            <p class="mt-1 text-xs text-slate-500">Started {{ $unclaimedAudit->created_at?->diffForHumans() }}</p>
+                        </div>
+                        <span @class(['w-fit rounded-full px-2.5 py-1 text-xs font-semibold', 'bg-emerald-100 text-emerald-800' => $unclaimedAudit->status === \App\Models\WebsiteAudit::STATUS_COMPLETED, 'bg-red-100 text-red-800' => $unclaimedAudit->status === \App\Models\WebsiteAudit::STATUS_FAILED, 'bg-amber-100 text-amber-800' => in_array($unclaimedAudit->status, [\App\Models\WebsiteAudit::STATUS_PENDING, \App\Models\WebsiteAudit::STATUS_RUNNING], true)])>{{ Str::headline($unclaimedAudit->status) }}</span>
+                        <div class="sm:text-right">
+                            @if ($unclaimedAudit->email)
+                                <a href="mailto:{{ $unclaimedAudit->email }}" class="text-sm font-medium text-teal-700 hover:text-teal-900">{{ $unclaimedAudit->email }}</a>
+                                <p class="mt-1 text-xs text-slate-500">Confirmation pending</p>
+                            @else
+                                <p class="text-sm text-slate-500">No email submitted</p>
+                            @endif
+                        </div>
+                    </article>
+                @empty
+                    <div class="p-8 text-center text-sm text-slate-500">No unclaimed domains match these filters.</div>
+                @endforelse
+            </div>
+        </div>
+
+        {{ $unclaimedAudits->links() }}
+    </section>
+
+    <section class="space-y-4">
+        <header>
+            <h2 class="text-lg font-semibold text-slate-950">Signed-up trials</h2>
+            <p class="mt-1 text-sm text-slate-600">People who confirmed their email and created or connected their Sitewell account.</p>
+        </header>
+
         @forelse ($users as $onboardingUser)
             @php
                 $audit = $onboardingUser->onboardingAudit;
@@ -62,6 +101,9 @@
                 $trialDay = $trialEndsAt ? max(1, min(14, (int) floor($trialEndsAt->copy()->subDays(14)->diffInDays(now())) + 1)) : null;
                 $daysRemaining = $trialEndsAt?->isFuture() ? max(1, (int) ceil(now()->diffInDays($trialEndsAt))) : 0;
                 $callStatus = $onboardingUser->onboarding_call_completed_at ? 'Completed' : ($onboardingUser->onboarding_call_booked_at ? 'Booked' : ($onboardingUser->onboarding_call_booking_started_at ? 'Booking started' : 'Not booked'));
+                $lastLifecycleMessage = $onboardingUser->onboardingLifecycleMessages->whereNotNull('queued_at')->sortByDesc('queued_at')->first();
+                $nextLifecycleMessage = $onboardingUser->onboardingLifecycleMessages->whereNull('queued_at')->whereNull('suppressed_at')->sortBy('scheduled_for')->first();
+                $lifecycleClicks = $onboardingUser->onboardingLifecycleMessages->whereNotNull('clicked_at')->count();
             @endphp
             <article class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
                 <div class="flex flex-col gap-5 p-5 xl:flex-row xl:items-start xl:justify-between">
@@ -80,7 +122,7 @@
                         </div>
                     </div>
 
-                    <dl class="grid min-w-0 gap-4 sm:grid-cols-3 xl:w-[46rem]">
+                    <dl class="grid min-w-0 gap-4 sm:grid-cols-2 xl:w-[60rem] xl:grid-cols-4">
                         <div>
                             <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Trial progress</dt>
                             <dd class="mt-1 text-sm font-semibold text-slate-900">{{ $isConverted ? 'Paid membership' : ($trialDay ? 'Day '.$trialDay.' of 14' : 'Dates unavailable') }}</dd>
@@ -105,6 +147,16 @@
                                 </select>
                             </form>
                         </div>
+                        <div>
+                            <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Lifecycle messages</dt>
+                            <dd class="mt-1 text-sm font-semibold text-slate-900">{{ $lastLifecycleMessage ? $lastLifecycleMessage->step->label().' '.($lastLifecycleMessage->sent_at ? 'sent' : 'queued') : 'Nothing sent yet' }}</dd>
+                            @if ($nextLifecycleMessage)
+                                <p class="mt-1 text-xs text-slate-500">Next: {{ $nextLifecycleMessage->step->label() }} {{ $nextLifecycleMessage->scheduled_for->diffForHumans() }}</p>
+                            @else
+                                <p class="mt-1 text-xs text-slate-500">No further messages scheduled</p>
+                            @endif
+                            @if ($lifecycleClicks > 0)<p class="mt-1 text-xs font-medium text-emerald-700">{{ $lifecycleClicks }} tracked {{ Str::plural('click', $lifecycleClicks) }}</p>@endif
+                        </div>
                     </dl>
                 </div>
                 <footer class="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-slate-100 bg-slate-50 px-5 py-3 text-sm">
@@ -122,7 +174,7 @@
                 <p class="mt-1 text-sm text-slate-600">Try clearing the filters, or wait for the next Get started signup.</p>
             </div>
         @endforelse
-    </div>
+    </section>
 
     {{ $users->links() }}
 </div>
