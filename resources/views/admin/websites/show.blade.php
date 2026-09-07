@@ -1,6 +1,9 @@
 @extends('layouts.app')
 
 @section('content')
+@php
+    $primaryDomain = $website->domains->firstWhere('is_primary', true) ?? $website->domains->first();
+@endphp
 <div class="space-y-6" data-tabs data-default-tab="{{ $currentWebsiteSection }}">
     @if (session('status'))
         <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{{ session('status') }}</div>
@@ -29,6 +32,29 @@
             @endif
         </div>
     </div>
+
+    @if ($primaryDomain && ! $primaryDomain->isVerified())
+        <section class="flex flex-col gap-4 rounded-xl border border-amber-200 bg-amber-50 p-5 sm:flex-row sm:items-center sm:justify-between" aria-labelledby="ownership-title">
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-widest text-amber-700">Website ownership</p>
+                <h2 id="ownership-title" class="mt-1 font-semibold text-slate-950">
+                    {{ $primaryDomain->ownership_status === \App\Models\WebsiteDomain::OWNERSHIP_CONFLICT ? 'We need to review this website' : 'Verify that this is your website' }}
+                </h2>
+                <p class="mt-1 text-sm text-slate-700">
+                    @if ($primaryDomain->ownership_status === \App\Models\WebsiteDomain::OWNERSHIP_CONFLICT)
+                        Search Console access was confirmed, but we could not safely complete verification automatically. No existing website data has been shared or moved.
+                    @else
+                        Your public website review is ready. Connect a matching owner property in Google Search Console to unlock ownership-dependent features.
+                    @endif
+                </p>
+            </div>
+            @if ($primaryDomain->ownership_status === \App\Models\WebsiteDomain::OWNERSHIP_PENDING && $canUseSearchConsole)
+                <a href="{{ route('admin.search-console.connect', $website) }}" class="shrink-0 rounded-lg bg-amber-700 px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-amber-800">Verify with Google</a>
+            @else
+                <a href="{{ route('marketing.contact') }}" class="shrink-0 rounded-lg border border-amber-300 bg-white px-4 py-2.5 text-center text-sm font-semibold text-amber-900 hover:bg-amber-100">Contact a specialist</a>
+            @endif
+        </section>
+    @endif
 
     @if ($website->copilot_build_task_id)
         <section class="flex flex-col gap-4 rounded-xl border border-violet-200 bg-violet-50 p-5 sm:flex-row sm:items-center sm:justify-between" aria-labelledby="website-build-title">

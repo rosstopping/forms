@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Actions\VerifyWebsiteDomainFromSearchConsole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreSearchConsolePropertyRequest;
 use App\Models\Website;
@@ -135,8 +136,11 @@ class SearchConsoleController extends Controller
             ->all();
     }
 
-    public function storeProperty(StoreSearchConsolePropertyRequest $request, Website $website): RedirectResponse
-    {
+    public function storeProperty(
+        StoreSearchConsolePropertyRequest $request,
+        Website $website,
+        VerifyWebsiteDomainFromSearchConsole $verifyDomain,
+    ): RedirectResponse {
         $connection = $website->searchConsoleConnection()->firstOrFail();
         $property = collect($this->searchConsole->sites($connection))->firstWhere('siteUrl', $request->validated('property_url'));
         abort_unless($property, 422, 'That Search Console property is not available to this Google account.');
@@ -147,7 +151,17 @@ class SearchConsoleController extends Controller
             'opportunities_error' => null,
         ]);
 
-        return Redirect::route('admin.websites.show', $website)->with('status', 'Google Search Console connected.');
+        $domainVerified = $verifyDomain->handle(
+            $website,
+            $property['siteUrl'],
+            $property['permissionLevel'] ?? null,
+        );
+
+        $status = $domainVerified
+            ? 'Google Search Console connected and website ownership verified.'
+            : 'Google Search Console connected.';
+
+        return Redirect::route('admin.websites.show', $website)->with('status', $status);
     }
 
     public function destroy(Request $request, Website $website): RedirectResponse

@@ -11,6 +11,7 @@ use App\Models\GithubUserAuthorization;
 use App\Models\SearchConsoleConnection;
 use App\Models\User;
 use App\Models\Website;
+use App\Models\WebsiteDomain;
 use App\Models\WebsiteRepository;
 use App\Services\ContentGenerationNotifier;
 use App\Services\ContentGenerationPromptGenerator;
@@ -50,6 +51,11 @@ test('website owners can connect Search Console to their website', function () {
         'membership_current_period_end' => now()->addDays(14),
     ]);
     $website = Website::factory()->for($owner, 'owner')->create();
+    $domain = $website->domains()->create([
+        'domain' => 'client.test',
+        'is_primary' => true,
+        'ownership_status' => WebsiteDomain::OWNERSHIP_PENDING,
+    ]);
     $oauth = $this->mock(GoogleOAuthClient::class);
     $oauth->shouldReceive('authorizationUrl')->once()->andReturn('https://accounts.google.test/authorize');
 
@@ -73,7 +79,47 @@ test('website owners can connect Search Console to their website', function () {
         ])
         ->assertRedirect(route('admin.websites.show', $website));
 
-    expect($connection->fresh()->property_url)->toBe('sc-domain:client.test');
+    $domain->refresh();
+
+    expect($connection->fresh()->property_url)->toBe('sc-domain:client.test')
+        ->and($domain->ownership_status)->toBe(WebsiteDomain::OWNERSHIP_VERIFIED)
+        ->and($domain->verified_domain)->toBe('client.test')
+        ->and($domain->verification_method)->toBe('search_console');
+});
+
+test('Search Console verification never takes a domain from another workspace', function () {
+    $owner = User::factory()->create([
+        'membership_tier' => MembershipPlan::ESSENTIAL,
+        'membership_status' => 'active',
+    ]);
+    $existingWebsite = Website::factory()->create();
+    $existingDomain = $existingWebsite->domains()->create(['domain' => 'client.test', 'is_primary' => true]);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $pendingDomain = $website->domains()->create([
+        'domain' => 'client.test',
+        'is_primary' => true,
+        'ownership_status' => WebsiteDomain::OWNERSHIP_PENDING,
+    ]);
+    $connection = SearchConsoleConnection::factory()->for($website)->for($owner, 'connector')->create([
+        'property_url' => null,
+        'permission_level' => null,
+    ]);
+    $this->mock(SearchConsoleClient::class)
+        ->shouldReceive('sites')
+        ->once()
+        ->andReturn([['siteUrl' => 'sc-domain:client.test', 'permissionLevel' => 'siteOwner']]);
+
+    $this->actingAs($owner)
+        ->post(route('admin.search-console.property.store', $website), [
+            'property_url' => 'sc-domain:client.test',
+        ])
+        ->assertRedirect(route('admin.websites.show', $website));
+
+    expect($pendingDomain->fresh()->ownership_status)->toBe(WebsiteDomain::OWNERSHIP_CONFLICT)
+        ->and($pendingDomain->verified_domain)->toBeNull()
+        ->and($existingDomain->fresh()->ownership_status)->toBe(WebsiteDomain::OWNERSHIP_VERIFIED)
+        ->and($existingDomain->verified_domain)->toBe('client.test')
+        ->and($connection->fresh()->property_url)->toBe('sc-domain:client.test');
 });
 
 test('website owners cannot connect Search Console to another clients website', function () {

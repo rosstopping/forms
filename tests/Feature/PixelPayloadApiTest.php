@@ -4,6 +4,7 @@ use App\Enums\OptimisationStatus;
 use App\Enums\OptimisationType;
 use App\Models\Optimisation;
 use App\Models\Website;
+use App\Models\WebsiteDomain;
 use App\Services\OptimisationDeploymentManager;
 
 function pixelWebsite(string $domain = 'example.com'): Website
@@ -70,6 +71,20 @@ it('does not reveal whether a site key or hostname was invalid', function (): vo
     $this->getJson(route('pixel.payload', [
         'siteKey' => $website->pixel_public_key,
         'url' => 'https://evil-example.com/',
+    ]))->assertNotFound();
+});
+
+it('does not serve a Pixel payload for an unverified onboarding domain', function (): void {
+    $website = Website::factory()->create(['pixel_enabled' => true]);
+    $website->domains()->create([
+        'domain' => 'pending.example',
+        'is_primary' => true,
+        'ownership_status' => WebsiteDomain::OWNERSHIP_PENDING,
+    ]);
+
+    $this->getJson(route('pixel.payload', [
+        'siteKey' => $website->pixel_public_key,
+        'url' => 'https://pending.example/',
     ]))->assertNotFound();
 });
 

@@ -5,7 +5,9 @@ use App\Jobs\GenerateWebsiteAudit;
 use App\Mail\FreeSiteAuditResults;
 use App\Models\Prospect;
 use App\Models\User;
+use App\Models\Website;
 use App\Models\WebsiteAudit;
+use App\Models\WebsiteDomain;
 use App\Notifications\WebsiteAuditClaim;
 use App\Services\ProspectWebsiteAnalyzer;
 use Illuminate\Support\Facades\Http;
@@ -165,7 +167,43 @@ it('confirms email and creates the trial profile and website', function (): void
         ->and($user->onboarding_status)->toBe('trial_active')
         ->and($audit->website->health_reports_enabled)->toBeTrue()
         ->and($audit->website->domains()->where('domain', 'example.test')->exists())->toBeTrue()
+        ->and($audit->website->primaryDomain()?->ownership_status)->toBe(WebsiteDomain::OWNERSHIP_PENDING)
         ->and($audit->claimed_at)->not->toBeNull();
+});
+
+it('allows onboarding to continue when another workspace already uses the domain', function (): void {
+    $existingWebsite = Website::factory()->create();
+    $existingDomain = $existingWebsite->domains()->create([
+        'domain' => 'example.test',
+        'is_primary' => true,
+    ]);
+    $audit = WebsiteAudit::factory()->create([
+        'status' => WebsiteAudit::STATUS_COMPLETED,
+        'email' => 'new-owner@example.com',
+        'website_url' => 'https://example.test',
+        'domain' => 'example.test',
+        'completed_at' => now(),
+        'created_at' => now()->subSeconds(11),
+    ]);
+    $url = URL::temporarySignedRoute(
+        'marketing.website-audits.onboarding',
+        now()->addHour(),
+        ['websiteAudit' => $audit],
+    );
+
+    $this->post($url, [
+        'name' => 'New Owner',
+        'password' => 'secure-password',
+        'password_confirmation' => 'secure-password',
+    ])->assertRedirect();
+
+    $claimedDomain = $audit->refresh()->website->primaryDomain();
+
+    expect($claimedDomain?->domain)->toBe('example.test')
+        ->and($claimedDomain?->ownership_status)->toBe(WebsiteDomain::OWNERSHIP_PENDING)
+        ->and($claimedDomain?->verified_domain)->toBeNull()
+        ->and($existingDomain->fresh()->ownership_status)->toBe(WebsiteDomain::OWNERSHIP_VERIFIED)
+        ->and(WebsiteDomain::query()->where('domain', 'example.test')->count())->toBe(2);
 });
 
 it('rejects an invalid marketing Turnstile response', function (): void {

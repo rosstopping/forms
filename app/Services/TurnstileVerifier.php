@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Website;
+use App\Models\WebsiteDomain;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -40,6 +41,9 @@ class TurnstileVerifier
 
         $hostname = Str::lower((string) $response->json('hostname'));
 
-        return $hostname !== '' && $website->domains()->where('domain', $hostname)->exists();
+        return $hostname !== '' && $website->domains()
+            ->where('domain', $hostname)
+            ->where('ownership_status', WebsiteDomain::OWNERSHIP_VERIFIED)
+            ->exists();
     }
 }

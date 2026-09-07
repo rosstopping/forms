@@ -398,6 +398,7 @@ class WebsiteController extends Controller
                 $equivalentDomains = [$apexDomain, 'www.'.$apexDomain];
                 $domainExists = WebsiteDomain::query()
                     ->whereIn('domain', $equivalentDomains)
+                    ->where('ownership_status', WebsiteDomain::OWNERSHIP_VERIFIED)
                     ->when($ignoredDomain, fn ($query) => $query->whereKeyNot($ignoredDomain->id))
                     ->exists();
 

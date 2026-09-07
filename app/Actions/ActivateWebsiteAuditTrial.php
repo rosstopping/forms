@@ -5,6 +5,7 @@ namespace App\Actions;
 use App\Models\User;
 use App\Models\Website;
 use App\Models\WebsiteAudit;
+use App\Models\WebsiteDomain;
 use App\Support\MembershipPlan;
 use Illuminate\Support\Facades\DB;
 
@@ -56,7 +57,11 @@ class ActivateWebsiteAuditTrial
                 'wordpress_enabled' => false,
             ]);
             $website->members()->attach($user->id, ['role' => Website::MEMBER_ROLE_MANAGER]);
-            $website->domains()->create(['domain' => $audit->domain, 'is_primary' => true]);
+            $website->domains()->create([
+                'domain' => $audit->domain,
+                'is_primary' => true,
+                'ownership_status' => WebsiteDomain::OWNERSHIP_PENDING,
+            ]);
 
             $audit->update([
                 'user_id' => $user->id,
