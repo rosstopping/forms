@@ -26,6 +26,7 @@ use App\Http\Controllers\Admin\ImportSeoProspectCandidatesController;
 use App\Http\Controllers\Admin\ManagedPostmarkConnectionController;
 use App\Http\Controllers\Admin\ManagedPostmarkVerificationController;
 use App\Http\Controllers\Admin\OnboardingCallController;
+use App\Http\Controllers\Admin\OnboardingLeadController;
 use App\Http\Controllers\Admin\OptimisationController;
 use App\Http\Controllers\Admin\OptimisationDeploymentController;
 use App\Http\Controllers\Admin\OptimisationVersionController;
@@ -280,6 +281,7 @@ Route::middleware(['web', 'auth', ResolveCurrentWebsite::class])->prefix('admin'
     Route::resource('form-submissions', AdminFormSubmissionController::class);
     Route::get('onboarding/call', OnboardingCallController::class)->middleware('throttle:30,1')->name('onboarding-call');
     Route::middleware(EnsureAdmin::class)->group(function (): void {
+        Route::get('onboarding', OnboardingLeadController::class)->name('onboarding.index');
         Route::patch('users/{user}/onboarding-call', UserOnboardingCallController::class)->name('users.onboarding-call.update');
         Route::get('assistant/reports/{websiteAiQuestion}', [WebsiteAiQuestionReportController::class, 'show'])->name('website-ai-question-reports.show');
         Route::post('assistant/reports/{websiteAiQuestion}/credit', WebsiteAiQuestionCreditController::class)->name('website-ai-question-reports.credit');

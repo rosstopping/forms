@@ -94,6 +94,18 @@ class User extends Authenticatable
         return $this->hasMany(Website::class, 'user_id');
     }
 
+    public function websiteAudits(): HasMany
+    {
+        return $this->hasMany(WebsiteAudit::class);
+    }
+
+    public function onboardingAudit(): HasOne
+    {
+        return $this->hasOne(WebsiteAudit::class)
+            ->whereNotNull('claimed_at')
+            ->latestOfMany();
+    }
+
     public function currentWebsite(): BelongsTo
     {
         return $this->belongsTo(Website::class, 'current_website_id');

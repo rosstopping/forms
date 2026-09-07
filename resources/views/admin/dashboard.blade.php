@@ -51,7 +51,7 @@
                     </div>
                     <div class="rounded-xl border border-white/10 bg-white/5 p-5">
                         <div class="flex items-center justify-between gap-3">
-                            <h3 class="font-semibold">Getting started</h3>
+                            <h3 class="font-semibold text-white">Getting started</h3>
                             <span class="rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-slate-200">{{ $onboardingChecklist->where('complete', true)->count() }} of {{ $onboardingChecklist->count() }}</span>
                         </div>
                         <ol class="mt-4 space-y-3">
