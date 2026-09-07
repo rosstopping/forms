@@ -57,6 +57,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Services,Jobs,Http/Controllers}/**/*Content*.php | .ai/rules/services-jobs-http-controllers.md |
 | app/Services/WebsiteCrawler.php, app/Services/Pixel*.php | .ai/rules/services.md |
 | {app/Models/User.php,app/Http/Controllers/Admin/UserImpersonationController.php,resources/views/{admin/users/index.blade.php,layouts/app.blade.php},routes/web.php,tests/Feature/UserImpersonationTest.php} | .ai/rules/users-feature.md |
+| app/{Models/User.php,Http/Controllers/Admin/{DashboardController.php,OnboardingCallController.php,UserOnboardingCallController.php,WebsiteHealthReportController.php},Http/Requests/UpdateUserOnboardingCallRequest.php},resources/views/{admin/dashboard.blade.php,admin/users/index.blade.php,layouts/app.blade.php},routes/web.php,database/migrations/**/*onboarding*progress*.php | .ai/rules/users-migrations.md |
 | app/{Services,Models}/**/*Prospect*.php,config/outreach.php,resources/views/admin/prospects/** | .ai/rules/views-admin-prospects.md |
 | app/{Ai/Agents/WebsiteDataAssistant.php,Services/WebsiteAiContext.php,Http/Controllers/Admin/WebsiteAiChatController.php,Models/WebsiteAiQuestion.php},resources/views/admin/websites/show.blade.php,routes/web.php | .ai/rules/views-admin-websites.md |
 | app/Http/Controllers/Admin/DashboardController.php,resources/views/admin/dashboard.blade.php | .ai/rules/views-admin.md |

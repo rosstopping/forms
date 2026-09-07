@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\SearchConsoleMetric;
 use App\Models\Website;
+use App\Models\WebsiteDomain;
 use App\Services\DashboardSchedule;
+use App\Support\WebsiteNavigation;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -47,6 +49,7 @@ class DashboardController extends Controller
             : null;
 
         $automationSchedule = $schedule->forWebsites(collect([$website]));
+        $isTrialActive = $user?->onboarding_status === 'trial_active' && $user->onboarding_trial_ends_at?->isFuture();
 
         return view('admin.dashboard', [
             'website' => $website,
@@ -56,7 +59,13 @@ class DashboardController extends Controller
             'nextHealthRun' => $automationSchedule->firstWhere('type', 'Health report'),
             'nextContentRun' => $automationSchedule->firstWhere('type', 'Content queue'),
             'canManageWebsite' => $website->isManageableBy($user),
-            'isTrialActive' => $user?->onboarding_status === 'trial_active' && $user->onboarding_trial_ends_at?->isFuture(),
+            'isTrialActive' => $isTrialActive,
+            'onboardingChecklist' => $isTrialActive ? collect([
+                ['label' => 'Verify website ownership', 'complete' => $website->domains->contains(fn ($domain): bool => $domain->is_primary && $domain->ownership_status === WebsiteDomain::OWNERSHIP_VERIFIED), 'url' => WebsiteNavigation::routeFor($website, 'search')],
+                ['label' => 'Book your onboarding call', 'complete' => $user->onboarding_call_booked_at !== null, 'url' => route('admin.onboarding-call')],
+                ['label' => 'Connect Google Search Console', 'complete' => filled($website->searchConsoleConnection?->property_url), 'url' => WebsiteNavigation::routeFor($website, 'search')],
+                ['label' => 'Review your first health report', 'complete' => $user->onboarding_health_report_viewed_at !== null, 'url' => $website->latestHealthReport ? route('admin.website-health-reports.show', [$website, $website->latestHealthReport]) : WebsiteNavigation::routeFor($website, 'health')],
+            ]) : collect(),
         ]);
     }
 

@@ -31,12 +31,47 @@
         </header>
 
         @if ($isTrialActive)
-            <section class="flex flex-col gap-3 rounded-xl border border-teal-200 bg-teal-50 p-4 sm:flex-row sm:items-center sm:justify-between" aria-label="Trial status">
-                <div>
-                    <p class="font-semibold text-teal-950">Your Essential trial is active</p>
-                    <p class="mt-1 text-sm text-teal-800">You have {{ max(1, (int) now()->diffInDays(Auth::user()->onboarding_trial_ends_at, false)) }} days remaining. Weekly health reports are included during your trial.</p>
+            <section class="overflow-hidden rounded-2xl bg-slate-950 text-white shadow-lg shadow-slate-950/10" aria-labelledby="onboarding-heading">
+                <div class="grid gap-8 p-6 sm:p-8 lg:grid-cols-[minmax(0,1.25fr)_minmax(20rem,0.75fr)] lg:items-center">
+                    <div>
+                        <p class="font-mono text-xs font-medium uppercase tracking-widest text-teal-300">Your next step</p>
+                        @if (Auth::user()->onboarding_call_completed_at)
+                            <h2 id="onboarding-heading" class="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">Your onboarding call is complete</h2>
+                            <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-300">Keep exploring your website health and connected search data during the rest of your Essential trial.</p>
+                        @elseif (Auth::user()->onboarding_call_booked_at)
+                            <h2 id="onboarding-heading" class="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">Your onboarding call is booked</h2>
+                            <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-300">We’ll use the call to explain your findings, answer your questions, and agree which improvements are worth prioritising.</p>
+                            <a href="{{ route('admin.onboarding-call') }}" target="_blank" rel="noreferrer" class="mt-6 inline-flex items-center justify-center rounded-xl border border-white/20 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">Reschedule your call</a>
+                        @else
+                            <h2 id="onboarding-heading" class="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">Let’s turn your findings into a practical plan</h2>
+                            <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-300">Your free onboarding call is where a Sitewell specialist explains what we found, answers your questions, and agrees which improvements are worth doing first.</p>
+                            <a href="{{ route('admin.onboarding-call') }}" target="_blank" rel="noreferrer" class="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-teal-400 px-5 py-3.5 text-base font-semibold text-slate-950 hover:bg-teal-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-300 sm:w-auto">{{ Auth::user()->onboarding_call_booking_started_at ? 'Finish booking your free onboarding call' : 'Book your free onboarding call' }} <span class="ml-2" aria-hidden="true">→</span></a>
+                            <p class="mt-3 text-xs text-slate-400">No obligation. Choose a time that works for you.</p>
+                        @endif
+                    </div>
+                    <div class="rounded-xl border border-white/10 bg-white/5 p-5">
+                        <div class="flex items-center justify-between gap-3">
+                            <h3 class="font-semibold">Getting started</h3>
+                            <span class="rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-slate-200">{{ $onboardingChecklist->where('complete', true)->count() }} of {{ $onboardingChecklist->count() }}</span>
+                        </div>
+                        <ol class="mt-4 space-y-3">
+                            @foreach ($onboardingChecklist as $item)
+                                <li class="flex items-center gap-3 text-sm">
+                                    <span @class(['grid size-6 shrink-0 place-items-center rounded-full text-xs font-bold', 'bg-teal-400 text-slate-950' => $item['complete'], 'border border-slate-600 text-slate-500' => ! $item['complete']])>{{ $item['complete'] ? '✓' : $loop->iteration }}</span>
+                                    @if ($item['complete'])
+                                        <span class="text-slate-400 line-through">{{ $item['label'] }}</span>
+                                    @else
+                                        <a href="{{ $item['url'] }}" class="text-slate-100 underline decoration-slate-600 underline-offset-4 hover:decoration-teal-300">{{ $item['label'] }}</a>
+                                    @endif
+                                </li>
+                            @endforeach
+                        </ol>
+                    </div>
                 </div>
-                <a href="{{ route('admin.billing.index') }}" class="shrink-0 text-sm font-semibold text-teal-800 hover:text-teal-950">View trial details</a>
+                <div class="flex flex-col gap-2 border-t border-white/10 bg-white/5 px-6 py-3 text-xs text-slate-300 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+                    <p><span class="font-semibold text-white">Your Essential trial is active.</span> You have {{ max(1, (int) now()->diffInDays(Auth::user()->onboarding_trial_ends_at, false)) }} days remaining. Weekly health reports are included during your trial.</p>
+                    <a href="{{ route('admin.billing.index') }}" class="shrink-0 font-semibold text-teal-300 hover:text-teal-200">View trial details</a>
+                </div>
             </section>
         @endif
 

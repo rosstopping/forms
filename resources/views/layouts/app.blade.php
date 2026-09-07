@@ -13,6 +13,9 @@
             $currentWebsite = $currentWebsite ?? null;
             $currentWebsiteSection = $currentWebsiteSection ?? \App\Support\WebsiteNavigation::DEFAULT_SECTION;
             $navigationWebsites = $navigationWebsites ?? collect();
+            $showOnboardingCallCta = Auth::user()?->onboarding_status === 'trial_active'
+                && Auth::user()?->onboarding_trial_ends_at?->isFuture()
+                && ! Auth::user()?->onboarding_call_completed_at;
         @endphp
         @impersonating
             <div class="sticky top-0 z-50 flex flex-wrap items-center justify-between gap-3 bg-amber-300 px-4 py-2 text-sm font-medium text-amber-950 sm:px-6">
@@ -199,6 +202,15 @@
                         </form>
                     </div>
                 </div>
+
+                @if ($showOnboardingCallCta)
+                    <aside class="border-b border-violet-200 bg-violet-50 px-4 py-3 sm:px-6 lg:px-8" aria-label="Onboarding call">
+                        <div class="mx-auto flex max-w-[92rem] flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                            <p class="text-sm text-violet-950"><span class="font-semibold">{{ Auth::user()?->onboarding_call_booked_at ? 'Your onboarding call is booked.' : 'Get more from your trial.' }}</span> {{ Auth::user()?->onboarding_call_booked_at ? 'We’ll use the call to turn your findings into a practical plan.' : 'Book a free call and we’ll talk you through your findings and the improvements worth prioritising.' }}</p>
+                            <a href="{{ route('admin.onboarding-call') }}" target="_blank" rel="noreferrer" class="inline-flex shrink-0 items-center justify-center rounded-lg bg-violet-700 px-3.5 py-2 text-sm font-semibold text-white hover:bg-violet-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700">{{ Auth::user()?->onboarding_call_booked_at ? 'Reschedule your call' : (Auth::user()?->onboarding_call_booking_started_at ? 'Finish booking your call' : 'Book your free call') }}</a>
+                        </div>
+                    </aside>
+                @endif
 
                 <main class="admin-content mx-auto max-w-[96rem] p-4 sm:p-6 lg:p-8 xl:p-10">
                     @yield('content')

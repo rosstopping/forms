@@ -43,6 +43,10 @@ class WebsiteHealthReportController extends Controller
         abort_unless($website->isAccessibleBy($request->user()), 403);
         abort_unless($websiteHealthReport->website_id === $website->id, 404);
 
+        if ($request->user()?->onboarding_status === 'trial_active' && ! $request->user()->onboarding_health_report_viewed_at) {
+            $request->user()->forceFill(['onboarding_health_report_viewed_at' => now()])->save();
+        }
+
         $websiteHealthReport->load([
             'website.repository',
             'website.wordpressConnection',

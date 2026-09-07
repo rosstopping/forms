@@ -25,6 +25,7 @@ use App\Http\Controllers\Admin\ImportProspectDiscoveryCandidatesController;
 use App\Http\Controllers\Admin\ImportSeoProspectCandidatesController;
 use App\Http\Controllers\Admin\ManagedPostmarkConnectionController;
 use App\Http\Controllers\Admin\ManagedPostmarkVerificationController;
+use App\Http\Controllers\Admin\OnboardingCallController;
 use App\Http\Controllers\Admin\OptimisationController;
 use App\Http\Controllers\Admin\OptimisationDeploymentController;
 use App\Http\Controllers\Admin\OptimisationVersionController;
@@ -56,6 +57,7 @@ use App\Http\Controllers\Admin\SeoProspectSearchController;
 use App\Http\Controllers\Admin\SeoSnapshotSettingsController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\UserImpersonationController;
+use App\Http\Controllers\Admin\UserOnboardingCallController;
 use App\Http\Controllers\Admin\WebsiteAiChatController;
 use App\Http\Controllers\Admin\WebsiteAiQuestionCreditController;
 use App\Http\Controllers\Admin\WebsiteAiQuestionReportController;
@@ -276,7 +278,9 @@ Route::middleware(['web', 'auth', ResolveCurrentWebsite::class])->prefix('admin'
     Route::post('form-submissions/{formSubmission}/resend-notification', [AdminFormSubmissionController::class, 'resendNotification'])->middleware('throttle:5,1')->name('form-submissions.resend-notification');
     Route::patch('form-submissions/{form_submission}/spam', [AdminFormSubmissionController::class, 'markSpam'])->name('form-submissions.spam');
     Route::resource('form-submissions', AdminFormSubmissionController::class);
+    Route::get('onboarding/call', OnboardingCallController::class)->middleware('throttle:30,1')->name('onboarding-call');
     Route::middleware(EnsureAdmin::class)->group(function (): void {
+        Route::patch('users/{user}/onboarding-call', UserOnboardingCallController::class)->name('users.onboarding-call.update');
         Route::get('assistant/reports/{websiteAiQuestion}', [WebsiteAiQuestionReportController::class, 'show'])->name('website-ai-question-reports.show');
         Route::post('assistant/reports/{websiteAiQuestion}/credit', WebsiteAiQuestionCreditController::class)->name('website-ai-question-reports.credit');
         Route::post('websites/{website}/prospect', WebsiteProspectController::class)->name('websites.prospect.store');

@@ -16,7 +16,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Lab404\Impersonate\Models\Impersonate;
 
-#[Fillable(['name', 'email', 'password', 'role', 'current_website_id', 'stripe_customer_id', 'stripe_subscription_id', 'membership_tier', 'admin_membership_tier', 'membership_status', 'membership_current_period_end', 'membership_cancel_at', 'onboarding_status', 'onboarding_trial_ends_at'])]
+#[Fillable(['name', 'email', 'password', 'role', 'current_website_id', 'stripe_customer_id', 'stripe_subscription_id', 'membership_tier', 'admin_membership_tier', 'membership_status', 'membership_current_period_end', 'membership_cancel_at', 'onboarding_status', 'onboarding_trial_ends_at', 'onboarding_call_booking_started_at', 'onboarding_call_booked_at', 'onboarding_call_completed_at', 'onboarding_health_report_viewed_at'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -41,6 +41,10 @@ class User extends Authenticatable
             'membership_current_period_end' => 'datetime',
             'membership_cancel_at' => 'datetime',
             'onboarding_trial_ends_at' => 'datetime',
+            'onboarding_call_booking_started_at' => 'datetime',
+            'onboarding_call_booked_at' => 'datetime',
+            'onboarding_call_completed_at' => 'datetime',
+            'onboarding_health_report_viewed_at' => 'datetime',
         ];
     }
 
