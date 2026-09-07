@@ -69,6 +69,12 @@ return [
         'verify_url' => env('TURNSTILE_VERIFY_URL', 'https://challenges.cloudflare.com/turnstile/v0/siteverify'),
         'connect_timeout' => (int) env('TURNSTILE_CONNECT_TIMEOUT', 3),
         'timeout' => (int) env('TURNSTILE_TIMEOUT', 5),
+        'marketing' => [
+            'enabled' => filter_var(env('MARKETING_TURNSTILE_ENABLED', false), FILTER_VALIDATE_BOOL),
+            'site_key' => env('MARKETING_TURNSTILE_SITE_KEY'),
+            'secret_key' => env('MARKETING_TURNSTILE_SECRET_KEY'),
+            'hostname' => env('MARKETING_TURNSTILE_HOSTNAME'),
+        ],
     ],
 
     'google' => [

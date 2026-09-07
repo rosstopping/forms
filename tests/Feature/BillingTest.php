@@ -9,6 +9,7 @@ beforeEach(function (): void {
     config([
         'memberships.plans.essential.stripe_price_id' => 'price_essential',
         'memberships.plans.growth.stripe_price_id' => 'price_growth',
+        'memberships.growth_offer.stripe_price_id' => 'price_growth_2026_offer',
         'memberships.plans.complete.stripe_price_id' => 'price_complete',
         'services.stripe.secret' => 'sk_test_sitewell',
         'services.stripe.webhook_secret' => 'whsec_sitewell',
@@ -27,10 +28,11 @@ it('shows the marketing packages on the account billing page', function (): void
         ->assertSee('Billing and membership')
         ->assertSee('Essential')
         ->assertSee('£149')
-        ->assertSee('Google Search Console performance')
-        ->assertSee('£249')
-        ->assertSee('Google Business Profile management')
-        ->assertSee('£399')
+        ->assertSee('Search performance interpreted by our SEO specialists')
+        ->assertSee('£316')
+        ->assertSee('£395')
+        ->assertSee('Specialist Google Business Profile management')
+        ->assertSee('£695')
         ->assertSee('Current package');
 });
 
@@ -53,9 +55,15 @@ it('starts a Stripe hosted subscription checkout for a selected package', functi
 
     Http::assertSent(fn ($request): bool => $request->url() === 'https://api.stripe.test/v1/checkout/sessions'
         && $request['mode'] === 'subscription'
-        && $request['line_items[0][price]'] === 'price_growth'
+        && $request['line_items[0][price]'] === 'price_growth_2026_offer'
         && $request['client_reference_id'] === (string) $user->id
         && $request['customer_email'] === $user->email);
+});
+
+it('returns Growth checkout to its standard Stripe price after the offer ends', function (): void {
+    $this->travelTo('2027-01-01 00:00:00 Europe/London');
+
+    expect(MembershipPlan::checkoutPriceId(MembershipPlan::GROWTH))->toBe('price_growth');
 });
 
 it('opens the Stripe hosted portal for package changes and cancellation', function (): void {

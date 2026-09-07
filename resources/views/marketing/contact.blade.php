@@ -1,7 +1,7 @@
 @extends('layouts.marketing')
 
 @section('title', 'Get started')
-@section('meta_description', 'Tell Sitewell about your business and get started with calm, guided website care.')
+@section('meta_description', 'Talk to a Sitewell specialist about managing your website, SEO, enquiries, content, and local visibility.')
 
 @section('content')
     <section class="py-16 sm:py-24">
@@ -9,7 +9,7 @@
             <div>
                 <p class="font-mono text-sm uppercase tracking-wide text-garden">Get started</p>
                 <h1 class="mt-5 max-w-[20ch] font-display text-5xl font-semibold tracking-tight text-balance sm:text-6xl">A better website starts here</h1>
-                <p class="mt-6 max-w-[48ch] text-pretty text-lg text-ink/65 sm:text-base">Tell us about your business and your website. We’ll come back with a practical plan to get it healthier, more dependable, and better at handling leads.</p>
+                <p class="mt-6 max-w-[48ch] text-pretty text-lg text-ink/65 sm:text-base">Tell us about your business and your website. One of our specialists will assess what needs attention and explain how we can manage its website health, SEO, and enquiries for you.</p>
                 <div class="mt-8 border-y border-ink/15 py-5">
                     <p class="font-mono text-sm uppercase tracking-wide text-garden">Prefer to talk?</p>
                     <a href="tel:+441302985828" class="group mt-3 inline-flex items-center gap-3 focus-visible:outline-offset-4">
@@ -19,7 +19,7 @@
                     <p class="mt-3 text-pretty text-base text-ink/55 sm:text-sm">Call our UK team for a straightforward conversation about your website.</p>
                 </div>
                 <dl class="mt-12 grid gap-8">
-                    @foreach ([['01', 'We understand your website', 'Your goals, current website, forms, and the things that need attention.'], ['02', 'We set up the essentials', 'Health checks, lead handling, reports, and the right connections for your plan.'], ['03', 'You stay in control', 'A clear workspace, practical updates, and support when you need it.']] as [$number, $title, $copy])
+                    @foreach ([['01', 'We understand your business', 'Your goals, services, customers, current website, and the work that needs attention.'], ['02', 'Our specialists take responsibility', 'We set up or take over the website, lead handling, reporting, and SEO included in your plan.'], ['03', 'We manage the ongoing work', 'You receive clear updates while our team keeps the website healthy and moving forward.']] as [$number, $title, $copy])
                         <div class="grid grid-cols-[3rem_1fr] gap-4 border-t border-ink/15 pt-5"><dt class="font-mono text-base text-garden sm:text-sm">{{ $number }}</dt><dd><p class="text-base font-medium sm:text-sm">{{ $title }}</p><p class="mt-2 text-pretty text-base text-ink/55 sm:text-sm">{{ $copy }}</p></dd></div>
                     @endforeach
                 </dl>

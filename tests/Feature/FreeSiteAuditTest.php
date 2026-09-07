@@ -1,55 +1,109 @@
 <?php
 
 use App\Jobs\GenerateFreeSiteAudit;
+use App\Jobs\GenerateWebsiteAudit;
 use App\Mail\FreeSiteAuditResults;
 use App\Models\Prospect;
 use App\Models\User;
+use App\Models\WebsiteAudit;
 use App\Services\ProspectWebsiteAnalyzer;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\URL;
 
-it('captures a free audit request as a lead and queues the audit', function (): void {
+it('starts an anonymous website audit with only a website address', function (): void {
     Queue::fake();
-    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
 
-    $this->from(route('marketing.free-site-audit'))
+    $response = $this->from(route('marketing.free-site-audit'))
         ->post(route('marketing.free-site-audit.store'), [
-            'name' => 'Alex Morgan',
-            'email' => 'ALEX@EXAMPLE.COM',
-            'business_name' => 'Northfield Studio',
             'website_url' => 'northfield.example',
-            'consent' => '1',
             '_sitewell_check' => '',
-        ])
-        ->assertRedirect(route('marketing.free-site-audit'))
-        ->assertSessionHas('status');
+        ]);
 
-    $lead = Prospect::query()->sole();
-    expect($lead->user_id)->toBe($admin->id)
-        ->and($lead->contact_name)->toBe('Alex Morgan')
-        ->and($lead->email)->toBe('alex@example.com')
-        ->and($lead->website_url)->toBe('https://northfield.example')
-        ->and($lead->notes)->toContain('free site audit')
-        ->and($lead->activities()->where('type', 'free_audit_requested')->exists())->toBeTrue();
+    $audit = WebsiteAudit::query()->sole();
+    $response->assertRedirect(route('marketing.website-audits.show', $audit));
 
-    Queue::assertPushed(GenerateFreeSiteAudit::class, fn (GenerateFreeSiteAudit $job): bool => $job->prospect->is($lead));
+    expect($audit->website_url)->toBe('https://northfield.example')
+        ->and($audit->domain)->toBe('northfield.example')
+        ->and($audit->status)->toBe(WebsiteAudit::STATUS_PENDING)
+        ->and($audit->expires_at->isFuture())->toBeTrue()
+        ->and(Prospect::query()->exists())->toBeFalse();
+
+    Queue::assertPushed(GenerateWebsiteAudit::class, fn (GenerateWebsiteAudit $job): bool => $job->audit->is($audit));
 });
 
 it('rejects invalid or automated free audit requests', function (): void {
     Queue::fake();
-    User::factory()->create(['role' => User::ROLE_ADMIN]);
-
     $this->post(route('marketing.free-site-audit.store'), [
-        'name' => '',
-        'email' => 'invalid',
-        'business_name' => '',
         'website_url' => 'not a website',
         '_sitewell_check' => 'bot content',
-    ])->assertSessionHasErrors(['name', 'email', 'business_name', 'website_url', 'consent', '_sitewell_check']);
+    ])->assertSessionHasErrors(['website_url', '_sitewell_check']);
 
-    expect(Prospect::query()->exists())->toBeFalse();
+    expect(WebsiteAudit::query()->exists())->toBeFalse();
     Queue::assertNothingPushed();
+});
+
+it('shows audit progress and exposes only its processing state', function (): void {
+    $audit = WebsiteAudit::factory()->create();
+
+    $this->get(route('marketing.website-audits.show', $audit))
+        ->assertSuccessful()
+        ->assertSee('Reviewing your website')
+        ->assertSee(route('marketing.website-audits.status', $audit));
+
+    $this->getJson(route('marketing.website-audits.status', $audit))
+        ->assertSuccessful()
+        ->assertExactJson(['status' => 'pending', 'completed' => false, 'failed' => false]);
+});
+
+it('stores an anonymous audit result for the live report', function (): void {
+    $audit = WebsiteAudit::factory()->create(['website_url' => 'https://northfield.example']);
+    $analyzer = Mockery::mock(ProspectWebsiteAnalyzer::class);
+    $analyzer->shouldReceive('analyze')->once()->with($audit->website_url)->andReturn([
+        'score' => 35,
+        'findings' => [['category' => 'Security', 'key' => 'https', 'title' => 'HTTPS enabled', 'severity' => 'warning', 'message' => 'HTTPS should be reviewed.']],
+        'contacts' => ['emails' => [], 'phones' => [], 'contact_page_url' => null, 'contact_form_url' => null],
+    ]);
+
+    (new GenerateWebsiteAudit($audit))->handle($analyzer);
+
+    expect($audit->refresh()->status)->toBe(WebsiteAudit::STATUS_COMPLETED)
+        ->and($audit->opportunity_score)->toBe(35)
+        ->and($audit->completed_at)->not->toBeNull();
+
+    $this->get(route('marketing.website-audits.show', $audit))
+        ->assertSuccessful()
+        ->assertSee('Turn these findings into a fix plan')
+        ->assertSee('HTTPS should be reviewed.');
+});
+
+it('rejects an invalid marketing Turnstile response', function (): void {
+    Queue::fake();
+    config([
+        'services.turnstile.marketing.enabled' => true,
+        'services.turnstile.marketing.site_key' => 'site-key',
+        'services.turnstile.marketing.secret_key' => 'secret-key',
+        'services.turnstile.marketing.hostname' => 'localhost',
+    ]);
+    Http::fake([
+        'https://challenges.cloudflare.com/turnstile/v0/siteverify' => Http::response(['success' => false]),
+    ]);
+
+    $this->post(route('marketing.free-site-audit.store'), [
+        'website_url' => 'northfield.example',
+        'cf-turnstile-response' => 'invalid-token',
+    ])->assertSessionHasErrors('cf-turnstile-response');
+
+    expect(WebsiteAudit::query()->exists())->toBeFalse();
+    Queue::assertNothingPushed();
+});
+
+it('expires private website audit links', function (): void {
+    $audit = WebsiteAudit::factory()->create(['expires_at' => now()->subMinute()]);
+
+    $this->get(route('marketing.website-audits.show', $audit))->assertNotFound();
+    $this->getJson(route('marketing.website-audits.status', $audit))->assertNotFound();
 });
 
 it('stores audit results and sends the customer results email', function (): void {

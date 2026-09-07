@@ -1,44 +1,55 @@
 @extends('layouts.marketing')
 
-@section('title', 'Free website audit')
-@section('meta_description', 'Get a free Sitewell audit covering website health, search essentials, accessibility, security, and discoverability.')
+@section('title', 'Get started')
+@section('meta_description', 'Enter your website address to get started with Sitewell and see what your website needs next.')
 
 @section('content')
-<section class="border-b border-ink/10">
-    <div class="mx-auto grid max-w-7xl gap-12 px-5 py-16 sm:px-8 sm:py-24 lg:grid-cols-[1.05fr_.95fr] lg:items-start lg:px-10">
-        <div class="lg:pt-8">
-            <p class="font-mono text-sm font-medium uppercase tracking-widest text-moss">Free website audit</p>
-            <h1 class="mt-5 max-w-[12ch] font-display text-5xl font-semibold leading-[.98] tracking-tight text-balance sm:text-6xl">Find out what your website needs next.</h1>
-            <p class="mt-7 max-w-2xl text-lg leading-8 text-ink/70">We’ll check the public signals that affect trust, visibility, accessibility, and lead generation, then email you a clear report with practical priorities.</p>
-
-            <div class="mt-10 grid gap-4 sm:grid-cols-2">
-                @foreach ([['Website health', 'Availability, response time, HTTPS, and discoverability.'], ['Search essentials', 'Titles, descriptions, headings, crawl signals, and structured data.'], ['Accessibility', 'Mobile setup, language signals, and useful image text.'], ['Security basics', 'Public browser protections and important response headers.']] as [$title, $description])
-                    <article class="rounded-xl border border-ink/10 bg-white/40 p-5"><h2 class="font-medium text-ink">{{ $title }}</h2><p class="mt-2 text-sm leading-6 text-ink/65">{{ $description }}</p></article>
-                @endforeach
+<section class="border-b border-ink/10 py-16 sm:py-24">
+    <div class="mx-auto grid max-w-7xl gap-12 px-5 sm:px-8 lg:grid-cols-[21fr_19fr] lg:items-center lg:px-10">
+        <div class="grid gap-7">
+            <div class="grid gap-5">
+                <p class="font-mono text-sm font-medium uppercase tracking-wide text-moss">Get started</p>
+                <h1 class="max-w-[12ch] font-display text-5xl font-semibold tracking-tight text-balance sm:text-6xl">See what your website needs next.</h1>
+                <p class="max-w-[48ch] text-pretty text-lg text-ink/70">Enter your website address. Sitewell will immediately review the public signals affecting its health, visibility, accessibility, and trust.</p>
             </div>
-            <p class="mt-8 text-sm leading-6 text-ink/55">No obligation and no access to your website is required. The audit uses publicly available information and is designed as a useful starting point.</p>
+            <dl class="grid gap-6 border-t border-ink/10 pt-7 sm:grid-cols-2">
+                @foreach ([['Website health', 'Availability, response time, HTTPS, and crawl signals.'], ['Search essentials', 'Titles, descriptions, headings, and structured data.'], ['Accessibility', 'Mobile setup, language signals, and useful image text.'], ['Security basics', 'Important public browser protections and response headers.']] as [$title, $description])
+                    <div class="grid gap-2">
+                        <dt class="font-medium text-ink">{{ $title }}</dt>
+                        <dd class="text-pretty text-base text-ink/60 sm:text-sm">{{ $description }}</dd>
+                    </div>
+                @endforeach
+            </dl>
         </div>
-
         <div class="rounded-2xl bg-[#fffefa] p-6 shadow-xl ring-1 ring-ink/10 sm:p-8">
-            <h2 class="font-display text-3xl font-semibold tracking-tight">Get your free audit</h2>
-            <p class="mt-2 text-sm leading-6 text-ink/65">Your results will be prepared in the background and sent to your inbox.</p>
-
-            @if (session('status'))
-                <div class="mt-6 rounded-lg border border-moss/20 bg-lichen px-4 py-3 text-sm text-ink">{{ session('status') }}</div>
-            @endif
-
-            <form method="POST" action="{{ route('marketing.free-site-audit.store') }}" class="mt-7 grid gap-5">
-                @csrf
-                <div><label for="name" class="text-sm font-medium">Your name</label><input id="name" name="name" type="text" required autocomplete="name" value="{{ old('name') }}" class="mt-1.5 w-full rounded-md border border-ink/20 bg-white px-3 py-2.5">@error('name')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror</div>
-                <div><label for="email" class="text-sm font-medium">Work email</label><input id="email" name="email" type="email" required autocomplete="email" value="{{ old('email') }}" class="mt-1.5 w-full rounded-md border border-ink/20 bg-white px-3 py-2.5">@error('email')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror</div>
-                <div><label for="business_name" class="text-sm font-medium">Business name</label><input id="business_name" name="business_name" type="text" required autocomplete="organization" value="{{ old('business_name') }}" class="mt-1.5 w-full rounded-md border border-ink/20 bg-white px-3 py-2.5">@error('business_name')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror</div>
-                <div><label for="website_url" class="text-sm font-medium">Website address</label><input id="website_url" name="website_url" type="text" required inputmode="url" autocomplete="url" placeholder="example.com" value="{{ old('website_url') }}" class="mt-1.5 w-full rounded-md border border-ink/20 bg-white px-3 py-2.5">@error('website_url')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror</div>
-                <div class="absolute left-[-9999px] size-px overflow-hidden" aria-hidden="true"><label for="_sitewell_check">Leave this field empty</label><input id="_sitewell_check" name="_sitewell_check" type="text" tabindex="-1" autocomplete="off"></div>
-                <label class="flex items-start gap-3 text-sm leading-6 text-ink/65"><input name="consent" type="checkbox" value="1" required class="mt-1 rounded border-ink/30"><span>I agree to Sitewell using these details to prepare and email my audit and to follow up about the findings.</span></label>
-                @error('consent')<p class="text-sm text-red-700">{{ $message }}</p>@enderror
-                <button type="submit" class="rounded-md bg-ink px-5 py-3 font-medium text-paper hover:bg-ink/90">Run my free audit</button>
-            </form>
+            <div class="grid gap-7">
+                <div class="grid gap-2">
+                    <h2 class="max-w-[35ch] font-display text-3xl font-semibold tracking-tight text-balance">Enter your website below to get started</h2>
+                    <p class="max-w-[56ch] text-pretty text-base text-ink/65 sm:text-sm">No account, email address, or website access is needed.</p>
+                </div>
+                <form method="POST" action="{{ route('marketing.free-site-audit.store') }}" class="grid max-w-xs gap-5">
+                    @csrf
+                    <div class="grid gap-2">
+                        <label for="website_url" class="text-base font-medium sm:text-sm">Website address</label>
+                        <input id="website_url" name="website_url" type="text" required autofocus inputmode="url" autocomplete="url" placeholder="example.com" value="{{ old('website_url') }}" aria-invalid="{{ $errors->has('website_url') ? 'true' : 'false' }}" class="w-full rounded-md border-0 bg-white px-3 py-3 text-base text-ink shadow-sm ring-1 ring-ink/15 placeholder:text-ink/35 focus:-outline-offset-1 focus:outline-garden sm:py-2.5 sm:text-sm">
+                        @error('website_url')<p class="text-base text-red-700 sm:text-sm">{{ $message }}</p>@enderror
+                    </div>
+                    <div class="absolute left-[-9999px] size-px overflow-hidden" aria-hidden="true">
+                        <label for="_sitewell_check">Leave this field empty</label>
+                        <input id="_sitewell_check" name="_sitewell_check" type="text" tabindex="-1" autocomplete="off">
+                    </div>
+                    @if ($turnstileEnabled)
+                        <div class="cf-turnstile" data-sitekey="{{ $turnstileSiteKey }}" data-theme="light"></div>
+                        @error('cf-turnstile-response')<p class="text-base text-red-700 sm:text-sm">{{ $message }}</p>@enderror
+                    @endif
+                    <button type="submit" class="rounded-md bg-garden px-4 py-3 text-base font-medium text-white ring-1 ring-garden hover:bg-moss focus-visible:outline-garden sm:text-sm">Get started</button>
+                </form>
+                <p class="max-w-[56ch] text-pretty text-base text-ink/50 sm:text-sm">We use only publicly available information. You decide whether to continue after seeing the results.</p>
+            </div>
         </div>
     </div>
 </section>
+@if ($turnstileEnabled)
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+@endif
 @endsection

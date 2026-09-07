@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use Carbon\CarbonImmutable;
+
 class MembershipPlan
 {
     public const ESSENTIAL = 'essential';
@@ -33,12 +35,38 @@ class MembershipPlan
         }
 
         foreach (self::all() as $tier => $plan) {
-            if (($plan['stripe_price_id'] ?? null) === $priceId) {
+            if (($plan['stripe_price_id'] ?? null) === $priceId
+                || ($tier === self::GROWTH && config('memberships.growth_offer.stripe_price_id') === $priceId)) {
                 return $tier;
             }
         }
 
         return null;
+    }
+
+    /** @return array<string, mixed>|null */
+    public static function activeGrowthOffer(): ?array
+    {
+        $offer = config('memberships.growth_offer');
+
+        if (! is_array($offer)) {
+            return null;
+        }
+
+        $now = CarbonImmutable::now(config('app.timezone'));
+        $startsAt = CarbonImmutable::parse((string) $offer['starts_at'], config('app.timezone'));
+        $endsAt = CarbonImmutable::parse((string) $offer['ends_at'], config('app.timezone'));
+
+        return $now->betweenIncluded($startsAt, $endsAt) ? $offer : null;
+    }
+
+    public static function checkoutPriceId(string $tier): string
+    {
+        if ($tier === self::GROWTH && self::activeGrowthOffer()) {
+            return (string) config('memberships.growth_offer.stripe_price_id');
+        }
+
+        return (string) (self::find($tier)['stripe_price_id'] ?? '');
     }
 
     public static function includes(?string $tier, string $feature): bool

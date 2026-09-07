@@ -3,46 +3,63 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreFreeSiteAuditRequest;
-use App\Jobs\GenerateFreeSiteAudit;
-use App\Models\Prospect;
-use App\Models\User;
-use App\Services\ProspectLifecycleManager;
+use App\Jobs\GenerateWebsiteAudit;
+use App\Models\WebsiteAudit;
+use App\Services\MarketingTurnstileVerifier;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class FreeSiteAuditController extends Controller
 {
-    public function create(): View
+    public function create(MarketingTurnstileVerifier $turnstile): View
     {
-        return view('marketing.free-site-audit');
+        return view('marketing.free-site-audit', [
+            'turnstileEnabled' => $turnstile->enabled(),
+            'turnstileSiteKey' => config('services.turnstile.marketing.site_key'),
+        ]);
     }
 
-    public function store(StoreFreeSiteAuditRequest $request, ProspectLifecycleManager $lifecycleManager): RedirectResponse
+    public function store(StoreFreeSiteAuditRequest $request, MarketingTurnstileVerifier $turnstile): RedirectResponse
     {
-        $owner = User::query()->where('role', User::ROLE_ADMIN)->oldest('id')->firstOrFail();
-        $data = $request->safe()->only(['name', 'email', 'business_name', 'website_url']);
-
-        $prospect = DB::transaction(function () use ($data, $owner): Prospect {
-            $prospect = Prospect::query()->create([
-                'user_id' => $owner->id,
-                'business_name' => $data['business_name'],
-                'contact_name' => $data['name'],
-                'email' => $data['email'],
-                'website_url' => $data['website_url'],
-                'status' => 'new',
-                'analysis_status' => 'pending',
-                'notes' => 'Inbound lead from the free site audit.',
+        if (! $turnstile->passes(
+            $request->string('cf-turnstile-response')->toString(),
+            $request->ip(),
+            $request->getHost(),
+        )) {
+            throw ValidationException::withMessages([
+                'cf-turnstile-response' => 'Please confirm you are human and try again.',
             ]);
-            $prospect->recordActivity('free_audit_requested', 'Free site audit requested from the marketing website.');
+        }
 
-            return $prospect;
-        });
+        $websiteUrl = $request->string('website_url')->toString();
+        $audit = WebsiteAudit::query()->create([
+            'website_url' => $websiteUrl,
+            'domain' => (string) parse_url($websiteUrl, PHP_URL_HOST),
+            'expires_at' => now()->addDay(),
+        ]);
 
-        $lifecycleManager->pause($prospect, description: 'Inbound free-audit lead excluded from cold outreach automation.');
+        GenerateWebsiteAudit::dispatch($audit);
 
-        GenerateFreeSiteAudit::dispatch($prospect)->afterCommit();
+        return redirect()->route('marketing.website-audits.show', $audit);
+    }
 
-        return back()->with('status', 'Thanks — your audit is being prepared. We’ll email the results to '.$prospect->email.'.');
+    public function show(WebsiteAudit $websiteAudit): View
+    {
+        abort_if($websiteAudit->hasExpired(), 404);
+
+        return view('marketing.website-audit', ['audit' => $websiteAudit]);
+    }
+
+    public function status(WebsiteAudit $websiteAudit): JsonResponse
+    {
+        abort_if($websiteAudit->hasExpired(), 404);
+
+        return response()->json([
+            'status' => $websiteAudit->status,
+            'completed' => $websiteAudit->status === WebsiteAudit::STATUS_COMPLETED,
+            'failed' => $websiteAudit->status === WebsiteAudit::STATUS_FAILED,
+        ]);
     }
 }

@@ -23,11 +23,8 @@ class StoreFreeSiteAuditRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email:rfc', 'max:255'],
-            'business_name' => ['required', 'string', 'max:255'],
             'website_url' => ['required', 'url:http,https', 'max:255'],
-            'consent' => ['accepted'],
+            'cf-turnstile-response' => ['nullable', 'string', 'max:2048'],
             '_sitewell_check' => ['nullable', 'prohibited'],
         ];
     }
@@ -37,8 +34,12 @@ class StoreFreeSiteAuditRequest extends FormRequest
         $websiteUrl = trim((string) $this->input('website_url'));
 
         $this->merge([
-            'email' => strtolower(trim((string) $this->input('email'))),
             'website_url' => preg_match('/^https?:\/\//i', $websiteUrl) ? $websiteUrl : 'https://'.$websiteUrl,
         ]);
+    }
+
+    public function attributes(): array
+    {
+        return ['website_url' => 'website address'];
     }
 }

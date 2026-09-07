@@ -92,7 +92,13 @@ Route::controller(MarketingController::class)->group(function () {
     Route::get('/', 'home')->name('marketing.home');
     Route::get('/how-it-works', 'howItWorks')->name('marketing.how-it-works');
     Route::get('/features', 'features')->name('marketing.features');
+    Route::get('/features/{feature}', 'feature')->name('marketing.feature');
     Route::get('/pricing', 'pricing')->name('marketing.pricing');
+    Route::get('/examples', 'examples')->name('marketing.examples');
+    Route::get('/compare', 'comparison')->name('marketing.comparison');
+    Route::get('/about', 'about')->name('marketing.about');
+    Route::get('/faqs', 'faqs')->name('marketing.faqs');
+    Route::get('/for/{industry}', 'industry')->name('marketing.industry');
     Route::get('/journal', 'journal')->name('marketing.journal');
     Route::get('/journal/{slug}', 'article')->name('marketing.article');
     Route::get('/contact', 'contact')->name('marketing.contact');
@@ -114,10 +120,17 @@ Route::post('/contact', OnboardingEnquiryController::class)
     ->middleware('throttle:6,1')
     ->name('marketing.contact.store');
 
-Route::get('/free-site-audit', [FreeSiteAuditController::class, 'create'])->name('marketing.free-site-audit');
-Route::post('/free-site-audit', [FreeSiteAuditController::class, 'store'])
-    ->middleware('throttle:3,1')
+Route::redirect('/free-site-audit', '/get-started', 301);
+Route::get('/get-started', [FreeSiteAuditController::class, 'create'])->name('marketing.free-site-audit');
+Route::post('/get-started', [FreeSiteAuditController::class, 'store'])
+    ->middleware('throttle:website-audits')
     ->name('marketing.free-site-audit.store');
+Route::get('/website-audits/{websiteAudit}', [FreeSiteAuditController::class, 'show'])
+    ->middleware('throttle:60,1')
+    ->name('marketing.website-audits.show');
+Route::get('/website-audits/{websiteAudit}/status', [FreeSiteAuditController::class, 'status'])
+    ->middleware('throttle:120,1')
+    ->name('marketing.website-audits.status');
 
 Route::get('/submitted', function (Request $request) {
     $returnUrl = $request->header('referer') ?: url('/');
