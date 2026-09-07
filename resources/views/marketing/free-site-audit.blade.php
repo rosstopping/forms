@@ -1,7 +1,7 @@
 @extends('layouts.marketing')
 
-@section('title', 'Free website audit')
-@section('meta_description', 'Get a free Sitewell audit covering website health, search essentials, accessibility, security, and discoverability.')
+@section('title', 'Free website audit for small businesses')
+@section('meta_description', 'Run a free website audit and get a clear, practical report on enquiries, visibility, and website health for your business.')
 
 @section('content')
 <section class="border-b border-ink/10">
@@ -38,6 +38,40 @@
                 @error('consent')<p class="text-sm text-red-700">{{ $message }}</p>@enderror
                 <button type="submit" class="rounded-md bg-ink px-5 py-3 font-medium text-paper hover:bg-ink/90">Run my free audit</button>
             </form>
+        </div>
+    </div>
+</section>
+
+<section class="border-b border-ink/10 bg-white/40 py-16 sm:py-20">
+    <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
+        <div class="max-w-3xl">
+            <h2 class="font-display text-4xl font-semibold tracking-tight text-balance sm:text-5xl">What a useful website audit should actually tell you</h2>
+            <p class="mt-5 text-lg leading-8 text-ink/70">Most business owners don’t need another technical score. They need to know whether their website is helping or hurting enquiries, and what to fix first.</p>
+        </div>
+
+        <div class="mt-10 grid gap-6 lg:grid-cols-3">
+            @foreach ([['Can customers contact you reliably?', 'Your enquiry route should be easy to find, easy to complete, and clearly confirmed once submitted.'], ['Can Google understand your key pages?', 'Important pages should have clear titles, useful headings, and enough context to match what people are searching for.'], ['What should be prioritised next?', 'A practical audit should separate urgent problems from longer-term improvements so you can take action in the right order.']] as [$title, $description])
+                <article class="rounded-xl border border-ink/10 bg-paper p-6">
+                    <h3 class="font-medium text-ink">{{ $title }}</h3>
+                    <p class="mt-2 text-sm leading-6 text-ink/65">{{ $description }}</p>
+                </article>
+            @endforeach
+        </div>
+
+        <div class="mt-10 rounded-xl border border-ink/10 bg-paper p-6 sm:p-7">
+            <h3 class="font-display text-2xl font-semibold tracking-tight">If you want to do a quick self-check first</h3>
+            <ul class="mt-4 grid gap-3 text-sm leading-6 text-ink/70">
+                <li>Check your contact form yourself and confirm the enquiry arrives in the inbox you actually monitor.</li>
+                <li>Search Google for your main service and area to see whether your website appears for relevant searches.</li>
+                <li>Open your key pages on your phone and check that the content is still easy to read and act on.</li>
+            </ul>
+            <p class="mt-5 text-sm leading-6 text-ink/70">If you’d prefer someone to review this properly, run the audit above and we’ll send a clear report with priorities and next steps.</p>
+        </div>
+
+        <div class="mt-8 flex flex-wrap gap-4 text-sm">
+            <a href="{{ route('marketing.journal') }}" class="font-medium text-garden underline decoration-garden/25 underline-offset-4 hover:decoration-garden">Read more practical website guidance</a>
+            <a href="{{ route('marketing.features') }}" class="font-medium text-garden underline decoration-garden/25 underline-offset-4 hover:decoration-garden">See how Sitewell handles ongoing checks</a>
+            <a href="{{ route('marketing.contact') }}" class="font-medium text-garden underline decoration-garden/25 underline-offset-4 hover:decoration-garden">Prefer to talk through your website?</a>
         </div>
     </div>
 </section>

@@ -130,6 +130,16 @@ it('publishes legal pages suitable for connected Google services', function (): 
         ->assertSee('href="'.route('marketing.privacy').'"', false);
 });
 
+it('positions the free site audit page around practical business outcomes', function (): void {
+    $this->get(route('marketing.free-site-audit'))
+        ->assertSuccessful()
+        ->assertSee('What a useful website audit should actually tell you')
+        ->assertSee('If you want to do a quick self-check first')
+        ->assertSee('href="'.route('marketing.journal').'"', false)
+        ->assertSee('href="'.route('marketing.features').'"', false)
+        ->assertSee('href="'.route('marketing.contact').'"', false);
+});
+
 it('features the product video and contact call to action on the home page', function (): void {
     $this->get(route('marketing.home'))
         ->assertSuccessful()
