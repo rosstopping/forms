@@ -12,6 +12,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class WebsiteMemberController extends Controller
 {
@@ -21,6 +22,7 @@ class WebsiteMemberController extends Controller
         $created = false;
 
         $member = DB::transaction(function () use ($data, $website, &$created): User {
+            $website = Website::query()->lockForUpdate()->findOrFail($website->id);
             $member = User::query()->where('email', $data['email'])->first();
 
             if (! $member) {
@@ -33,6 +35,7 @@ class WebsiteMemberController extends Controller
                 $created = true;
             }
 
+            $this->ensureManagerRemains($website, $member, $data['role']);
             $website->members()->syncWithoutDetaching([$member->id => ['role' => $data['role']]]);
 
             return $member;
@@ -45,8 +48,15 @@ class WebsiteMemberController extends Controller
 
     public function update(UpdateWebsiteMemberRequest $request, Website $website, User $member): RedirectResponse
     {
-        abort_unless($website->members()->whereKey($member->id)->exists() || $website->owner?->is($member), 404);
-        $website->members()->syncWithoutDetaching([$member->id => ['role' => $request->validated('role')]]);
+        DB::transaction(function () use ($member, $request, $website): void {
+            $website = Website::query()->lockForUpdate()->findOrFail($website->id);
+
+            abort_unless($website->members()->whereKey($member->id)->exists() || $website->owner?->is($member), 404);
+
+            $role = $request->validated('role');
+            $this->ensureManagerRemains($website, $member, $role);
+            $website->members()->syncWithoutDetaching([$member->id => ['role' => $role]]);
+        });
 
         return back()->with('status', 'Website member updated.');
     }
@@ -54,11 +64,13 @@ class WebsiteMemberController extends Controller
     public function destroy(Website $website, User $member): RedirectResponse
     {
         Gate::authorize('manageMembers', $website);
-        $isLegacyOwner = $website->owner?->is($member) === true;
+        DB::transaction(function () use ($member, $website): void {
+            $website = Website::query()->lockForUpdate()->findOrFail($website->id);
+            $isLegacyOwner = $website->owner?->is($member) === true;
 
-        abort_unless($website->members()->whereKey($member->id)->exists() || $isLegacyOwner, 404);
+            abort_unless($website->members()->whereKey($member->id)->exists() || $isLegacyOwner, 404);
 
-        DB::transaction(function () use ($isLegacyOwner, $member, $website): void {
+            $this->ensureManagerRemains($website, $member, null);
             $website->members()->detach($member->id);
 
             if ($isLegacyOwner) {
@@ -71,5 +83,34 @@ class WebsiteMemberController extends Controller
         });
 
         return back()->with('status', 'Website member removed.');
+    }
+
+    private function ensureManagerRemains(Website $website, User $member, ?string $newRole): void
+    {
+        $members = $website->members()->get(['users.id']);
+        $memberRecord = $members->firstWhere('id', $member->id);
+        $currentRole = $memberRecord?->pivot?->role;
+
+        if ($currentRole === null && $website->owner?->is($member)) {
+            $currentRole = Website::MEMBER_ROLE_MANAGER;
+        }
+
+        if ($currentRole !== Website::MEMBER_ROLE_MANAGER || $newRole === Website::MEMBER_ROLE_MANAGER) {
+            return;
+        }
+
+        $managerIds = $members
+            ->filter(fn (User $websiteMember): bool => $websiteMember->pivot?->role === Website::MEMBER_ROLE_MANAGER)
+            ->pluck('id');
+
+        if ($website->owner && ! $members->contains('id', $website->owner->id)) {
+            $managerIds->push($website->owner->id);
+        }
+
+        if ($managerIds->unique()->count() <= 1) {
+            throw ValidationException::withMessages([
+                'role' => 'Add another manager before changing or removing the website’s only manager.',
+            ]);
+        }
     }
 }

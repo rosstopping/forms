@@ -399,34 +399,30 @@
     <div id="website-panel-settings" class="space-y-6" role="tabpanel" aria-labelledby="website-tab-settings" data-tab-panel="settings" hidden>
         <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm" aria-labelledby="website-settings-title">
             <div class="border-b border-slate-200 p-5 sm:p-6">
-                <p class="text-xs font-medium uppercase tracking-widest text-slate-500">Website configuration</p>
-                <h2 id="website-settings-title" class="mt-1 text-xl font-semibold text-slate-950">Settings</h2>
-                <p class="mt-1 text-sm text-slate-600">Manage the website details, reporting and the connection workspaces shown above.</p>
+                <p class="font-mono text-sm text-teal-700">Website settings</p>
+                <h2 id="website-settings-title" class="mt-1 text-xl font-semibold text-slate-950">Your website details</h2>
+                <p class="mt-1 text-base text-slate-600 sm:text-sm">Choose the name Sitewell uses for this website throughout your account.</p>
             </div>
-            <dl class="grid gap-px bg-slate-200 sm:grid-cols-2 lg:grid-cols-3">
-                <div class="bg-white p-4"><dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Website status</dt><dd class="mt-1 font-semibold text-slate-950">{{ $website->is_active ? 'Active' : 'Disabled' }}</dd></div>
-                <div class="bg-white p-4"><dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Weekly reports</dt><dd class="mt-1 font-semibold text-slate-950">{{ $website->health_reports_enabled ? 'Enabled' : 'Disabled' }}</dd></div>
-                <div class="bg-white p-4"><dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Website users</dt><dd class="mt-1 font-semibold text-slate-950">{{ $website->members->pluck('id')->push($website->user_id)->filter()->unique()->count() }}</dd></div>
-                <div class="bg-white p-4"><dt class="text-xs font-medium uppercase tracking-wide text-slate-500">WordPress workspace</dt><dd class="mt-1 font-semibold text-slate-950">{{ $website->wordpress_enabled ? 'Enabled' : 'Hidden' }}</dd></div>
-                <div class="bg-white p-4"><dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Pixel workspace</dt><dd class="mt-1 font-semibold text-slate-950">{{ $website->pixel_enabled ? 'Enabled' : 'Hidden' }}</dd></div>
-                <div class="bg-white p-4"><dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Created</dt><dd class="mt-1 font-semibold text-slate-950">{{ $website->auto_discovered ? 'Automatically' : 'Manually' }}</dd></div>
-            </dl>
 
-            @if (Auth::user()?->isAdmin())
-                <form method="POST" action="{{ route('admin.websites.update', $website) }}" class="space-y-6 p-5 sm:p-6">
+            @if ($canManageWebsite)
+                <form method="POST" action="{{ route('admin.websites.update', $website) }}" class="flex flex-col gap-4 p-5 sm:p-6">
                     @csrf
                     @method('PUT')
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700" for="name">Website name</label>
-                        <input id="name" name="name" type="text" required value="{{ old('name', $website->name) }}" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                    <div class="max-w-xl">
+                        <label class="text-base font-medium text-slate-700 sm:text-sm" for="name">Website name</label>
+                        <input id="name" name="name" type="text" required value="{{ old('name', $website->name) }}" class="mt-1 w-full rounded-lg border border-slate-950/15 bg-white px-3 py-2 text-base text-slate-950 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/20 sm:text-sm">
                         @error('name')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700" for="domain">Website domain or URL</label>
-                        <input id="domain" name="domain" type="text" required value="{{ old('domain', $website->primaryDomain()?->domain) }}" placeholder="https://example.com" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" autocapitalize="none" autocomplete="url" spellcheck="false">
-                        <p class="mt-1 text-xs text-slate-500">Sitewell uses this domain for crawling and SEO intelligence. Connected Search Console properties and repositories are managed separately.</p>
-                        @error('domain')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror
-                    </div>
+                    <div><button type="submit" class="rounded-lg bg-teal-600 px-3 py-2 text-sm font-medium text-white hover:bg-teal-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600">Save name</button></div>
+                </form>
+            @endif
+
+            @if (Auth::user()?->isAdmin())
+                <details class="border-t border-slate-950/10">
+                    <summary class="cursor-pointer px-5 py-4 text-base font-medium text-slate-800 hover:bg-slate-50 sm:px-6 sm:text-sm">Advanced website settings</summary>
+                    <form method="POST" action="{{ route('admin.websites.update', $website) }}" class="space-y-6 border-t border-slate-950/10 p-5 sm:p-6">
+                        @csrf
+                        @method('PUT')
                     <fieldset class="space-y-3 border-t border-slate-200 pt-6">
                         <legend class="text-sm font-semibold text-slate-950">Connection workspaces</legend>
                         <p class="text-sm text-slate-600">Choose which connection tabs are available for this website.</p>
@@ -499,8 +495,9 @@
                             @error('turnstile_secret_key')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror
                         </div>
                     </div>
-                    <button type="submit" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">Save settings</button>
-                </form>
+                        <button type="submit" class="rounded-lg border border-slate-950/15 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600">Save advanced settings</button>
+                    </form>
+                </details>
 
                 <div class="border-t border-red-200 px-5 py-5 sm:px-6">
                     <h3 class="text-sm font-semibold text-red-900">Delete website</h3>
@@ -515,69 +512,47 @@
         </section>
 
         <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-            <h2 class="font-semibold">Domains</h2>
-            <ul class="mt-3 space-y-2 text-sm">
-                @forelse ($website->domains as $domain)
-                    <li class="flex items-center justify-between">
-                        <span>{{ $domain->domain }}</span>
-                        <span class="text-slate-500">{{ $domain->is_primary ? 'Primary' : 'Alias' }}</span>
-                    </li>
-                @empty
-                    <li class="text-slate-500">No domains recorded.</li>
-                @endforelse
-            </ul>
-        </section>
-
-        <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
             <div class="flex items-start justify-between gap-4">
                 <div>
                     <h2 class="font-semibold">Website users</h2>
                     <p class="mt-1 text-sm text-slate-600">Managers can make changes. Viewers have read-only access.</p>
                 </div>
-                <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">{{ $website->members->pluck('id')->push($website->user_id)->filter()->unique()->count() }} users</span>
+                <span class="rounded-full bg-slate-100 px-2.5 py-1 text-sm font-medium text-slate-700">{{ $websiteUsers->count() }} {{ Str::plural('user', $websiteUsers->count()) }}</span>
             </div>
 
+            @error('role')
+                <p class="mt-4 rounded-lg bg-red-50 p-3 text-base text-red-700 sm:text-sm" role="alert">{{ $message }}</p>
+            @enderror
+
             <div class="mt-4 divide-y divide-slate-100 rounded-lg border border-slate-200">
-                @if ($website->owner && ! $website->members->contains('id', $website->owner->id))
+                @foreach ($websiteUsers as $websiteUser)
+                    @php
+                        $member = $websiteUser['user'];
+                        $memberRole = $websiteUser['role'];
+                        $isOnlyManager = $member->id === $soleManagerId;
+                    @endphp
                     <div class="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div class="min-w-0"><p class="truncate text-sm font-medium text-slate-900">{{ $website->owner->name }}</p><p class="truncate text-xs text-slate-500">{{ $website->owner->email }}</p></div>
-                        @if ($canManageMembers)
-                            <div class="flex items-center gap-2">
-                                <form method="POST" action="{{ route('admin.websites.members.update', [$website, $website->owner]) }}" class="flex items-center gap-2">
-                                    @csrf
-                                    @method('PUT')
-                                    <select name="role" class="rounded-md border border-slate-300 px-2 py-1.5 text-sm"><option value="manager">Manager</option><option value="viewer">Viewer</option></select>
-                                    <button class="rounded-md border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">Update</button>
-                                </form>
-                                <form method="POST" action="{{ route('admin.websites.members.destroy', [$website, $website->owner]) }}">@csrf @method('DELETE')<button class="rounded-md border border-red-200 px-2.5 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50">Remove</button></form>
-                            </div>
-                        @else
-                            <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">Manager</span>
-                        @endif
-                    </div>
-                @endif
-                @foreach ($website->members as $member)
-                    <div class="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div class="min-w-0"><p class="truncate text-sm font-medium text-slate-900">{{ $member->name }}</p><p class="truncate text-xs text-slate-500">{{ $member->email }}</p></div>
-                        @if ($canManageMembers)
-                            <div class="flex items-center gap-2">
+                        <div class="min-w-0"><p class="truncate text-base font-medium text-slate-900 sm:text-sm">{{ $member->name }}</p><p class="truncate text-base text-slate-500 sm:text-sm">{{ $member->email }}</p></div>
+                        @if ($canManageMembers && ! $isOnlyManager)
+                            <div class="flex flex-wrap items-center gap-2">
                                 <form method="POST" action="{{ route('admin.websites.members.update', [$website, $member]) }}" class="flex items-center gap-2">
                                     @csrf
                                     @method('PUT')
-                                    <select name="role" class="rounded-md border border-slate-300 px-2 py-1.5 text-sm">
-                                        <option value="manager" @selected($member->pivot->role === 'manager')>Manager</option>
-                                        <option value="viewer" @selected($member->pivot->role === 'viewer')>Viewer</option>
+                                    <label for="member_role_{{ $member->id }}" class="sr-only">Access for {{ $member->name }}</label>
+                                    <select id="member_role_{{ $member->id }}" name="role" class="rounded-lg border border-slate-950/15 bg-white px-2 py-1.5 text-base sm:text-sm">
+                                        <option value="manager" @selected($memberRole === 'manager')>Manager</option>
+                                        <option value="viewer" @selected($memberRole === 'viewer')>Viewer</option>
                                     </select>
-                                    <button class="rounded-md border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">Update</button>
+                                    <button type="submit" class="rounded-lg border border-slate-950/15 px-2.5 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">Update</button>
                                 </form>
                                 <form method="POST" action="{{ route('admin.websites.members.destroy', [$website, $member]) }}">
                                     @csrf
                                     @method('DELETE')
-                                    <button class="rounded-md border border-red-200 px-2.5 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50">Remove</button>
+                                    <button type="submit" class="rounded-lg border border-red-200 px-2.5 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50">Remove</button>
                                 </form>
                             </div>
                         @else
-                            <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium capitalize text-slate-700">{{ $member->pivot->role }}</span>
+                            <span class="rounded-full bg-slate-100 px-2.5 py-1 text-sm font-medium capitalize text-slate-700">{{ $memberRole }}</span>
                         @endif
                     </div>
                 @endforeach
@@ -588,7 +563,7 @@
                     @csrf
                     <div><label for="member_email" class="text-sm font-medium text-slate-700">Invite by email</label><input id="member_email" name="email" type="email" required autocomplete="email" value="{{ old('email') }}" placeholder="colleague@example.com" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"><p class="mt-1 text-xs text-slate-500">We’ll email them a secure link to set up their account.</p>@error('email')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror</div>
                     <div><label for="member_role" class="text-sm font-medium text-slate-700">Access</label><select id="member_role" name="role" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"><option value="manager">Manager</option><option value="viewer">Viewer</option></select></div>
-                    <button class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">Send invitation</button>
+                    <button type="submit" class="rounded-md border border-slate-950/15 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Send invitation</button>
                 </form>
             @elseif ($canManageMembers)
                 <p class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">A Growth or Complete membership is required to invite additional website users.</p>

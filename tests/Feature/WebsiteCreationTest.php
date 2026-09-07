@@ -78,8 +78,14 @@ it('allows an administrator to correct a website domain from settings', function
     $this->actingAs($admin)
         ->get(route('admin.websites.show', [$website, 'tab' => 'settings']))
         ->assertSuccessful()
-        ->assertSee('Website domain or URL')
-        ->assertSee('wrong.example.com');
+        ->assertDontSee('Website domain or URL')
+        ->assertDontSee('>Domains<', false)
+        ->assertDontSee('Website status')
+        ->assertDontSee('Weekly reports')
+        ->assertDontSee('WordPress workspace')
+        ->assertDontSee('Pixel workspace')
+        ->assertDontSee('Created</dt>', false)
+        ->assertSee('Website name');
 
     $this->actingAs($admin)
         ->put(route('admin.websites.update', $website), [

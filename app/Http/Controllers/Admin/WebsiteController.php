@@ -217,6 +217,25 @@ class WebsiteController extends Controller
         }
 
         $canManageWebsite = $website->isManageableBy($user);
+        $websiteUsers = $website->members
+            ->map(fn (User $member): array => [
+                'user' => $member,
+                'role' => $member->pivot->role,
+            ]);
+
+        if ($website->owner && ! $websiteUsers->contains(fn (array $websiteUser): bool => $websiteUser['user']->is($website->owner))) {
+            $websiteUsers->prepend([
+                'user' => $website->owner,
+                'role' => Website::MEMBER_ROLE_MANAGER,
+            ]);
+        }
+
+        $managerIds = $websiteUsers
+            ->where('role', Website::MEMBER_ROLE_MANAGER)
+            ->pluck('user.id')
+            ->unique()
+            ->values();
+        $soleManagerId = $managerIds->count() === 1 ? $managerIds->first() : null;
         $dataForSeoConfigured = filled(config('services.dataforseo.login')) && filled(config('services.dataforseo.password'));
         $outreachProspect = $user?->isAdmin() ? $websiteProspects->find($website) : null;
         $pixelInstallationSnippet = $pixelInstallation->for($website);
@@ -251,7 +270,7 @@ class WebsiteController extends Controller
             'searchConsoleReport', 'searchConsoleHistory', 'searchConsoleReportUnavailable', 'seoGeneration', 'seoSnapshot', 'seoHistory',
             'seoKeywords', 'seoReferringDomains', 'seoCompetitors', 'seoOpportunities', 'seoFilter', 'seoSort', 'seoDirection', 'strikingDistanceCount',
             'dataForSeoConfigured', 'outreachProspect', 'pixelInstallationSnippet', 'canUseGrowthFeatures', 'canUseCompleteFeatures', 'canUseAutoresponders',
-            'websiteAiQuestions', 'websiteAiQuestionsUsed', 'websiteAiWeeklyLimit', 'pixelOptimisations',
+            'websiteAiQuestions', 'websiteAiQuestionsUsed', 'websiteAiWeeklyLimit', 'pixelOptimisations', 'websiteUsers', 'soleManagerId',
         ));
     }
 
@@ -259,7 +278,17 @@ class WebsiteController extends Controller
     {
         $user = Auth::user();
 
-        abort_unless($user?->isAdmin(), 403);
+        abort_unless($website->isManageableBy($user), 403);
+
+        if (! $user?->isAdmin()) {
+            $data = $request->validate([
+                'name' => ['required', 'string', 'max:255'],
+            ]);
+
+            $website->update(['name' => $data['name']]);
+
+            return Redirect::route('admin.websites.show', ['website' => $website, 'tab' => 'settings'])->with('status', 'Website name updated.');
+        }
 
         if ($request->has('domain')) {
             $request->merge(['domain' => $this->normalizeDomain($request->string('domain')->toString())]);
