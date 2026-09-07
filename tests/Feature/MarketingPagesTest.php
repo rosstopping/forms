@@ -54,6 +54,7 @@ it('outputs canonical URLs for key marketing pages', function (string $routeName
     'privacy policy' => ['marketing.privacy'],
     'terms of service' => ['marketing.terms'],
     'journal article' => ['marketing.article', ['a-clean-website-handover']],
+    'website management landing page' => ['marketing.landing', ['website-management-services']],
 ]);
 
 it('uses shorter SEO page titles for flagged marketing pages', function (string $routeName, array $parameters, string $title): void {
@@ -98,6 +99,11 @@ it('publishes an XML sitemap for the marketing site', function (): void {
         ->assertSee('<loc>'.route('marketing.features').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.feature', 'website-design-and-management').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.feature', 'forms-and-lead-management').'</loc>', false)
+        ->assertSee('<loc>'.route('marketing.landing', 'website-management-services').'</loc>', false)
+        ->assertSee('<loc>'.route('marketing.landing', 'small-business-website-support').'</loc>', false)
+        ->assertSee('<loc>'.route('marketing.landing', 'managed-seo-services').'</loc>', false)
+        ->assertSee('<loc>'.route('marketing.landing', 'website-lead-generation').'</loc>', false)
+        ->assertSee('<loc>'.route('marketing.landing', 'improve-my-website').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.pricing').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.examples').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.comparison').'</loc>', false)
@@ -249,6 +255,45 @@ it('publishes detailed outcome-led feature pages', function (string $slug, strin
 
 it('returns not found for an unknown feature page', function (): void {
     $this->get(route('marketing.feature', 'unknown-feature'))->assertNotFound();
+});
+
+it('publishes search-led service landing pages with unique metadata and FAQ schema', function (string $slug, string $title, string $heading): void {
+    $landing = config("marketing.landing_pages.{$slug}");
+    $response = $this->get(route('marketing.landing', $slug));
+
+    $response
+        ->assertSuccessful()
+        ->assertSee('<title>'.$title.' · Your website, well looked after</title>', false)
+        ->assertSee('<meta name="description" content="'.$landing['meta_description'].'">', false)
+        ->assertSee($heading)
+        ->assertSee('application/ld+json')
+        ->assertSee('FAQPage')
+        ->assertSee('Get started')
+        ->assertSee('Related help');
+
+    expect(strlen($title.' · Your website, well looked after'))->toBeLessThanOrEqual(65)
+        ->and(strlen($landing['meta_description']))->toBeLessThanOrEqual(160);
+})->with([
+    'website management' => ['website-management-services', 'Website management services UK', 'Your business website, managed by specialists'],
+    'small business support' => ['small-business-website-support', 'Small business website support', 'Website support without chasing three different suppliers'],
+    'managed SEO' => ['managed-seo-services', 'Managed SEO services UK', 'SEO analysis that becomes useful website work'],
+    'website leads' => ['website-lead-generation', 'Get more website leads', 'Help more of the right visitors become genuine enquiries'],
+    'website improvement' => ['improve-my-website', 'Improve my business website', 'Make the website you already have work harder'],
+]);
+
+it('links the services hub to each search-led landing page', function (): void {
+    $response = $this->get(route('marketing.features'));
+
+    foreach (array_keys(config('marketing.landing_pages')) as $slug) {
+        $response->assertSee('href="'.route('marketing.landing', $slug).'"', false);
+    }
+});
+
+it('keeps landing page titles and descriptions unique', function (): void {
+    $landingPages = collect(config('marketing.landing_pages'));
+
+    expect($landingPages->pluck('seo_title')->unique())->toHaveCount($landingPages->count())
+        ->and($landingPages->pluck('meta_description')->unique())->toHaveCount($landingPages->count());
 });
 
 it('positions the commercial service as specialist led rather than AI led', function (string $routeName, array $parameters = []): void {

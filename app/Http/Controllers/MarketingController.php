@@ -33,6 +33,31 @@ class MarketingController extends Controller
         return view('marketing.feature', ['feature' => $featurePage]);
     }
 
+    public function landing(string $landing): View
+    {
+        $landingPage = config("marketing.landing_pages.{$landing}");
+
+        abort_unless(is_array($landingPage), 404);
+
+        $faqSchema = json_encode([
+            '@context' => 'https://schema.org',
+            '@type' => 'FAQPage',
+            'mainEntity' => collect($landingPage['faqs'])->map(fn (array $faq): array => [
+                '@type' => 'Question',
+                'name' => $faq[0],
+                'acceptedAnswer' => [
+                    '@type' => 'Answer',
+                    'text' => $faq[1],
+                ],
+            ])->all(),
+        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR);
+
+        return view('marketing.landing', [
+            'landing' => $landingPage,
+            'faqSchema' => $faqSchema,
+        ]);
+    }
+
     public function pricing(): View
     {
         return view('marketing.pricing');
@@ -141,6 +166,9 @@ class MarketingController extends Controller
         ])->map(fn (string $routeName): string => route($routeName))
             ->merge(collect(array_keys(config('marketing.feature_pages')))->map(
                 fn (string $feature): string => route('marketing.feature', $feature)
+            ))
+            ->merge(collect(array_keys(config('marketing.landing_pages')))->map(
+                fn (string $landing): string => route('marketing.landing', $landing)
             ))
             ->merge(collect(array_keys(config('marketing.industries')))->map(
                 fn (string $industry): string => route('marketing.industry', $industry)

@@ -115,6 +115,9 @@ Route::controller(MarketingController::class)->group(function () {
     Route::get('/privacy-policy', 'privacy')->name('marketing.privacy');
     Route::get('/terms-of-service', 'terms')->name('marketing.terms');
     Route::get('/sitemap.xml', 'sitemap')->name('marketing.sitemap');
+    Route::get('/{landing}', 'landing')
+        ->whereIn('landing', array_keys(config('marketing.landing_pages', [])))
+        ->name('marketing.landing');
 });
 
 Route::get('/outreach/open/{delivery}', ProspectOutreachOpenController::class)

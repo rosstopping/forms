@@ -35,6 +35,33 @@
         </section>
     @endforeach
 
+    <section class="border-t border-ink/10 bg-[#fffefa] py-20 sm:py-24">
+        <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
+            <p class="font-mono text-sm uppercase tracking-wide text-garden">Start with what you need</p>
+            <h2 class="mt-4 max-w-[24ch] font-display text-4xl font-semibold tracking-tight text-balance sm:text-5xl">Practical help for the website problem in front of you</h2>
+            <p class="mt-5 max-w-[48ch] text-pretty text-lg text-ink/60 sm:text-base">Explore Sitewell by the outcome you are looking for, from dependable management to stronger search visibility and more useful enquiries.</p>
+            <nav class="mt-12" aria-label="Website and SEO services">
+                <ul class="grid gap-8 md:grid-cols-2 lg:grid-cols-3" role="list">
+                    @foreach ([
+                        ['website-management-services', 'Website management services', 'Put one specialist team in charge of website health, content, search and enquiries.'],
+                        ['small-business-website-support', 'Small business website support', 'Get dependable help with updates, problems and ongoing website decisions.'],
+                        ['managed-seo-services', 'Managed SEO services', 'Turn search performance into stronger pages and useful new content.'],
+                        ['website-lead-generation', 'Get more website leads', 'Improve the path from relevant visitor to visible, followed-up enquiry.'],
+                        ['improve-my-website', 'Improve my website', 'Find and prioritise the changes most likely to make your existing website work harder.'],
+                    ] as [$slug, $title, $description])
+                        <li class="border-t border-ink/15 pt-5">
+                            <a href="{{ route('marketing.landing', $slug) }}" class="group">
+                                <h3 class="font-display text-2xl font-semibold tracking-tight text-balance">{{ $title }}</h3>
+                                <p class="mt-3 text-pretty text-base text-ink/60 sm:text-sm">{{ $description }}</p>
+                                <p class="mt-5 text-base font-medium text-garden underline decoration-garden/25 underline-offset-4 group-hover:decoration-garden sm:text-sm">Explore this service →</p>
+                            </a>
+                        </li>
+                    @endforeach
+                </ul>
+            </nav>
+        </div>
+    </section>
+
     <section class="border-t border-ink/10 bg-lichen/45 py-16 sm:py-20">
         <div class="mx-auto grid max-w-7xl gap-6 px-5 sm:px-8 lg:grid-cols-[2fr_3fr] lg:items-center lg:px-10">
             <div><p class="font-mono text-sm uppercase tracking-wide text-garden">Included with every plan</p><h2 class="mt-4 font-display text-4xl font-semibold tracking-tight text-balance">A free website, if you need one</h2></div>
