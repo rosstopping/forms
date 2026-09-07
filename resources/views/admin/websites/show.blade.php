@@ -232,7 +232,7 @@
             <x-feature-upgrade-banner tier="Growth" title="Plan and request new content" description="Upgrade to Growth to submit content requests, plan improvements, and prepare reviewable website changes." />
         @endunless
 
-        @if ($canUseGrowthFeatures && ! Auth::user()?->isAdmin() && ! $hasContentDeliveryConnection)
+        @if ($canUseGrowthFeatures && ! $hasContentDeliveryConnection)
             <section class="overflow-hidden rounded-xl border border-violet-200 bg-white shadow-sm" aria-labelledby="content-connection-title">
                 <div class="bg-violet-50 px-5 py-6 sm:px-6">
                     <p class="text-xs font-semibold uppercase tracking-widest text-violet-700">Connect your website</p>

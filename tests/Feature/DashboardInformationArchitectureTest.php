@@ -161,6 +161,17 @@ it('shows GitHub content tools only to administrators', function (): void {
         ->assertSee('href="'.route('admin.website-repositories.create', $website).'"', false);
 });
 
+it('shows the content connection guidance while an administrator supports an unconnected website', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $website = Website::factory()->for($admin, 'owner')->create();
+
+    $this->actingAs($admin)
+        ->get(route('admin.websites.show', ['website' => $website, 'tab' => 'content']))
+        ->assertOk()
+        ->assertSee('Choose how Sitewell prepares website changes')
+        ->assertSee('Book a call with support');
+});
+
 it('hides GitHub content tools from non-administrators with connected repositories', function (): void {
     $user = User::factory()->create();
     $website = Website::factory()->for($user, 'owner')->create();
