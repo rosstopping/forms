@@ -20,10 +20,10 @@ class DashboardSchedule
 
             if ($website->health_reports_enabled) {
                 $items[] = [
-                    'type' => 'Site audit',
+                    'type' => 'Health report',
                     'website' => $website,
                     'next_run_at' => $this->nextAuditAt($website),
-                    'detail' => 'Checked by the daily audit dispatcher at 06:00',
+                    'detail' => 'Checked by the daily health dispatcher at 06:00',
                 ];
             }
 

@@ -139,6 +139,18 @@ const setMobileNavigationOpen = (open) => {
 mobileNavigationToggle?.addEventListener('click', () => setMobileNavigationOpen(true));
 mobileNavigationCloseButtons.forEach((button) => button.addEventListener('click', () => setMobileNavigationOpen(false)));
 
+document.querySelectorAll('[data-website-switcher]').forEach((select) => {
+    select.addEventListener('change', () => select.form?.requestSubmit());
+});
+
+document.querySelectorAll('[data-health-report-selector]').forEach((select) => {
+    select.addEventListener('change', () => {
+        if (select.value) {
+            window.location.assign(select.value);
+        }
+    });
+});
+
 document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && mobileNavigation && !mobileNavigation.classList.contains('hidden')) {
         setMobileNavigationOpen(false);

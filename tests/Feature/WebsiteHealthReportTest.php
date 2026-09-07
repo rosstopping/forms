@@ -208,6 +208,49 @@ it('lets a website owner manually queue a health report', function (): void {
         ->assertForbidden();
 });
 
+it('opens the latest health report from the website health section', function (): void {
+    $owner = User::factory()->create();
+    $website = websiteWithDomain(['user_id' => $owner->id]);
+    WebsiteHealthReport::factory()->for($website)->create(['created_at' => now()->subWeek()]);
+    $latestReport = WebsiteHealthReport::factory()->for($website)->create(['created_at' => now()]);
+
+    $this->actingAs($owner)
+        ->get(route('admin.websites.section', [$website, 'health']))
+        ->assertRedirect(route('admin.website-health-reports.show', [$website, $latestReport]));
+});
+
+it('switches between every previous report from the report selector', function (): void {
+    $owner = User::factory()->create();
+    $website = websiteWithDomain(['user_id' => $owner->id]);
+    $oldestReport = WebsiteHealthReport::factory()->for($website)->create([
+        'overall_status' => 'critical',
+        'created_at' => now()->subWeeks(10),
+    ]);
+
+    WebsiteHealthReport::factory()->count(9)->for($website)->sequence(
+        fn ($sequence): array => ['created_at' => now()->subWeeks(9 - $sequence->index)],
+    )->create();
+    $latestReport = $website->healthReports()->latest('created_at')->latest('id')->firstOrFail();
+
+    $this->actingAs($owner)
+        ->get(route('admin.website-health-reports.show', [$website, $oldestReport]))
+        ->assertSuccessful()
+        ->assertSee('data-health-report-selector', false)
+        ->assertSee('Previous reports')
+        ->assertSee(route('admin.website-health-reports.show', [$website, $latestReport]), false)
+        ->assertSee('Critical')
+        ->assertSee('selected', false)
+        ->assertSee('Open latest')
+        ->assertDontSee('Latest report</span>', false);
+
+    $this->actingAs($owner)
+        ->get(route('admin.website-health-reports.show', [$website, $latestReport]))
+        ->assertSuccessful()
+        ->assertSee('Latest report</span>', false)
+        ->assertDontSee('Open latest')
+        ->assertSee(route('admin.website-health-reports.show', [$website, $oldestReport]), false);
+});
+
 it('allows an owner to view only reports for their website', function (): void {
     $owner = User::factory()->create();
     $website = websiteWithDomain(['user_id' => $owner->id]);

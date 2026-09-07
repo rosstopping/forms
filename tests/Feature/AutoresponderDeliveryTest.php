@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\Website;
 use App\Models\WebsiteMailConnection;
 use App\Services\AutoresponderDeliveryService;
+use App\Support\MembershipPlan;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -20,7 +21,10 @@ beforeEach(function (): void {
 });
 
 it('stores a customer Postmark server token encrypted', function (): void {
-    $owner = User::factory()->create();
+    $owner = User::factory()->create([
+        'membership_tier' => MembershipPlan::GROWTH,
+        'membership_status' => 'active',
+    ]);
     $website = Website::factory()->for($owner, 'owner')->create();
 
     $this->actingAs($owner)->put(route('admin.websites.autoresponder.update', $website), [
@@ -224,9 +228,9 @@ it('activates managed Postmark after DKIM verification and sends a test email', 
 
     $this->get(route('admin.websites.show', $website))
         ->assertSuccessful()
-        ->assertSee('Managed Postmark')
-        ->assertSee('key._domainkey.acme.example')
-        ->assertSee('pm-bounces.acme.example');
+        ->assertDontSee('Managed Postmark')
+        ->assertDontSee('key._domainkey.acme.example')
+        ->assertDontSee('postmark_server_token', false);
 
     $this->post(route('admin.websites.mail.test', $website))->assertRedirect();
     Http::assertSent(fn (Request $request): bool => $request->method() === 'POST'

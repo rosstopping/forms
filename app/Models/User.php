@@ -8,13 +8,14 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password', 'role', 'stripe_customer_id', 'stripe_subscription_id', 'membership_tier', 'admin_membership_tier', 'membership_status', 'membership_current_period_end', 'membership_cancel_at', 'onboarding_status', 'onboarding_trial_ends_at'])]
+#[Fillable(['name', 'email', 'password', 'role', 'current_website_id', 'stripe_customer_id', 'stripe_subscription_id', 'membership_tier', 'admin_membership_tier', 'membership_status', 'membership_current_period_end', 'membership_cancel_at', 'onboarding_status', 'onboarding_trial_ends_at'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -76,6 +77,11 @@ class User extends Authenticatable
     public function websites(): HasMany
     {
         return $this->hasMany(Website::class, 'user_id');
+    }
+
+    public function currentWebsite(): BelongsTo
+    {
+        return $this->belongsTo(Website::class, 'current_website_id');
     }
 
     public function sharedWebsites(): BelongsToMany

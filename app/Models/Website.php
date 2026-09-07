@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\MembershipPlan;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -138,6 +139,13 @@ class Website extends Model
     public function isManageableBy(?User $user): bool
     {
         return $user !== null && ($user->isAdmin() || $this->membershipRoleFor($user) === self::MEMBER_ROLE_MANAGER);
+    }
+
+    public function canUseAutoresponders(?User $actingUser = null): bool
+    {
+        return $actingUser?->isAdmin() === true
+            || $this->owner === null
+            || $this->owner->hasMembershipFeature(MembershipPlan::FEATURE_AUTORESPONDERS);
     }
 
     public function membershipRoleFor(User $user): ?string

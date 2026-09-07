@@ -16,6 +16,8 @@ class MembershipPlan
 
     public const FEATURE_COMPLETE = 'complete';
 
+    public const FEATURE_AUTORESPONDERS = 'autoresponders';
+
     /** @return array<string, array<string, mixed>> */
     public static function all(): array
     {
@@ -73,7 +75,7 @@ class MembershipPlan
     {
         $ranks = [self::ESSENTIAL => 1, self::GROWTH => 2, self::COMPLETE => 3];
         $requiredRank = match ($feature) {
-            self::FEATURE_GROWTH => 2,
+            self::FEATURE_GROWTH, self::FEATURE_AUTORESPONDERS => 2,
             self::FEATURE_COMPLETE => 3,
             default => 1,
         };

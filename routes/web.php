@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\ContentPlanController;
 use App\Http\Controllers\Admin\ContentRequestController;
 use App\Http\Controllers\Admin\ContentRequestPixelController;
 use App\Http\Controllers\Admin\ContentSuggestionController;
+use App\Http\Controllers\Admin\CurrentWebsiteController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DeployPageOptimisationsController;
 use App\Http\Controllers\Admin\DeployReportOptimisationsController;
@@ -85,6 +86,8 @@ use App\Http\Controllers\WebsiteAuditOnboardingController;
 use App\Http\Controllers\WebsiteHealthReportController as PublicWebsiteHealthReportController;
 use App\Http\Middleware\AllowFormSubmissionCors;
 use App\Http\Middleware\EnsureAdmin;
+use App\Http\Middleware\ResolveCurrentWebsite;
+use App\Support\WebsiteNavigation;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -183,14 +186,18 @@ Route::middleware(['web', 'signed', 'throttle:20,1'])->group(function () {
         ->name('prospect-reports.show');
 });
 
-Route::middleware(['web', 'auth'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['web', 'auth', ResolveCurrentWebsite::class])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    Route::post('current-website', CurrentWebsiteController::class)->name('current-website.update');
     Route::get('account/billing', [BillingController::class, 'index'])->name('billing.index');
     Route::get('account/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('account/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('account/billing/checkout', [BillingController::class, 'checkout'])->middleware('throttle:10,1')->name('billing.checkout');
     Route::post('account/billing/portal', [BillingController::class, 'portal'])->middleware('throttle:10,1')->name('billing.portal');
     Route::resource('websites', WebsiteController::class);
+    Route::get('websites/{website}/section/{section}', [WebsiteController::class, 'show'])
+        ->whereIn('section', WebsiteNavigation::SECTIONS)
+        ->name('websites.section');
     Route::post('websites/{website}/wordpress/pairing-code', WordPressPairingCodeController::class)->middleware('throttle:6,1')->name('websites.wordpress.pairing-code');
     Route::delete('websites/{website}/wordpress/connection', WordPressConnectionController::class)->middleware('throttle:6,1')->name('websites.wordpress.connection.destroy');
     Route::post('websites/{website}/wordpress/releases', WordPressStaticReleaseController::class)->middleware('throttle:6,1')->name('websites.wordpress.releases.store');

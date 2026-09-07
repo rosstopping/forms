@@ -4,6 +4,7 @@ return [
     'default_recipient' => env('FORMS_DEFAULT_RECIPIENT', 'hello@example.com'),
     'from_address' => env('FORMS_FROM_ADDRESS', 'hello@example.com'),
     'from_name' => env('FORMS_FROM_NAME', 'Central Forms'),
+    'autoresponder_from_address' => env('FORMS_AUTORESPONDER_FROM_ADDRESS', 'mail@digizu.co.uk'),
     'auto_register_websites' => filter_var(env('FORMS_AUTO_REGISTER_WEBSITES', true), FILTER_VALIDATE_BOOL),
     'auto_register_forms' => filter_var(env('FORMS_AUTO_REGISTER_FORMS', true), FILTER_VALIDATE_BOOL),
     'pixel_ui_enabled' => filter_var(env('FORMS_PIXEL_UI_ENABLED', true), FILTER_VALIDATE_BOOL),

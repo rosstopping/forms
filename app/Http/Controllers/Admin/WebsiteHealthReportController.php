@@ -52,6 +52,10 @@ class WebsiteHealthReportController extends Controller
 
         return view('admin.website-health-reports.show', [
             'report' => $websiteHealthReport,
+            'reportHistory' => $website->healthReports()
+                ->latest('created_at')
+                ->latest('id')
+                ->get(['id', 'website_id', 'status', 'overall_status', 'passed_checks', 'warning_checks', 'failed_checks', 'created_at']),
             'canManageWebsite' => $website->isManageableBy($request->user()),
             'canUsePixel' => config('forms.pixel_ui_enabled') && ($request->user()?->isAdmin() || $website->owner?->hasMembershipFeature(MembershipPlan::FEATURE_GROWTH)),
             'aiPrompt' => $request->user()?->isAdmin() && $websiteHealthReport->status === WebsiteHealthReport::STATUS_COMPLETED

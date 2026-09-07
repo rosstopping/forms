@@ -5,6 +5,7 @@ use App\Models\Form;
 use App\Models\FormSubmission;
 use App\Models\User;
 use App\Models\Website;
+use App\Support\MembershipPlan;
 use Illuminate\Support\Facades\Mail;
 
 it('allows an admin to update a lead status and assignment', function () {
@@ -368,7 +369,10 @@ it('prevents viewers from moderating a single lead', function () {
 });
 
 it('lets a website owner configure the site wide automatic reply', function () {
-    $owner = User::factory()->create();
+    $owner = User::factory()->create([
+        'membership_tier' => MembershipPlan::GROWTH,
+        'membership_status' => 'active',
+    ]);
     $website = Website::factory()->create(['user_id' => $owner->id]);
 
     $this->actingAs($owner)->get(route('admin.websites.show', $website))
@@ -408,7 +412,10 @@ it('lets a website owner configure the site wide automatic reply', function () {
 });
 
 it('stores raw html autoresponder messages without sanitizing them', function () {
-    $owner = User::factory()->create();
+    $owner = User::factory()->create([
+        'membership_tier' => MembershipPlan::GROWTH,
+        'membership_status' => 'active',
+    ]);
     $website = Website::factory()->create(['user_id' => $owner->id]);
     $rawHtml = '<html><body><table style="color: red"><tr><td>Hello {name}</td></tr></table>'.str_repeat('<!-- email template styles -->', 2500).'</body></html>';
 
@@ -447,5 +454,39 @@ it('links form settings back to the parent website forms tab', function () {
         ->assertSee('Willow &amp; Stone', false)
         ->assertSee('Design &amp; Build', false)
         ->assertDontSee('&amp;amp;', false)
-        ->assertSee('href="'.route('admin.websites.show', [$website, 'tab' => 'forms']).'"', false);
+        ->assertSee('href="'.route('admin.websites.section', [$website, 'forms']).'"', false);
+});
+
+it('locks automatic replies for essential websites in the UI and on update', function (): void {
+    $owner = User::factory()->create([
+        'membership_tier' => MembershipPlan::ESSENTIAL,
+        'membership_status' => 'active',
+    ]);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $form = Form::factory()->for($website)->create();
+
+    $this->actingAs($owner)
+        ->get(route('admin.websites.section', [$website, 'forms']))
+        ->assertOk()
+        ->assertSee('Automatic customer replies are available on Growth and Complete plans.')
+        ->assertDontSee('postmark_server_token', false)
+        ->assertDontSee('Managed Postmark');
+
+    $this->get(route('admin.forms.show', $form))
+        ->assertOk()
+        ->assertSee('Additional settings')
+        ->assertSee('Available on Growth and Complete plans.')
+        ->assertDontSee('data-autoresponder-content-editor', false);
+
+    $this->from(route('admin.websites.section', [$website, 'forms']))
+        ->put(route('admin.websites.autoresponder.update', $website), [
+            'autoresponder_enabled' => true,
+            'autoresponder_content_type' => 'text',
+            'autoresponder_delay_minutes' => 0,
+        ])
+        ->assertSessionHasErrors('autoresponder_enabled');
+
+    $this->from(route('admin.forms.show', $form))
+        ->put(route('admin.forms.update', $form), ['autoresponder_mode' => 'enabled'])
+        ->assertSessionHasErrors('autoresponder_mode');
 });

@@ -68,8 +68,8 @@ it('does not send operational form alerts to website viewers', function (): void
         ])
         ->assertRedirectContains('/submitted');
 
-    Mail::assertSent(FormSubmissionReceived::class, fn (FormSubmissionReceived $mail): bool => $mail->hasTo($manager->email));
-    Mail::assertNotSent(FormSubmissionReceived::class, fn (FormSubmissionReceived $mail): bool => $mail->hasTo($viewer->email));
+    Mail::assertSent(FormSubmissionReceived::class, fn(FormSubmissionReceived $mail): bool => $mail->hasTo($manager->email));
+    Mail::assertNotSent(FormSubmissionReceived::class, fn(FormSubmissionReceived $mail): bool => $mail->hasTo($viewer->email));
 });
 
 it('redirects to the submitted success url even when the request accepts json', function (): void {
@@ -180,7 +180,7 @@ it('accepts submissions that pass Turnstile verification', function (): void {
     ])->assertRedirectContains('/submitted');
 
     expect(FormSubmission::query()->latest('id')->firstOrFail()->is_spam)->toBeFalse();
-    Http::assertSent(fn ($request): bool => $request['secret'] === 'secret-key'
+    Http::assertSent(fn($request): bool => $request['secret'] === 'secret-key'
         && $request['response'] === 'valid-token'
         && $request['remoteip'] === '127.0.0.1');
 });
@@ -201,7 +201,7 @@ it('silently quarantines submissions that fail Turnstile verification', function
         'name' => 'Automated visitor',
         'message' => 'A message without links.',
         'cf-turnstile-response' => $token,
-    ], fn (mixed $value): bool => $value !== null))->assertRedirectContains('/submitted');
+    ], fn(mixed $value): bool => $value !== null))->assertRedirectContains('/submitted');
 
     expect(FormSubmission::query()->latest('id')->firstOrFail()->is_spam)->toBeTrue();
     Mail::assertNothingSent();
@@ -389,7 +389,7 @@ it('sends the configured website acknowledgement to a genuine lead', function ()
     Queue::assertPushed(SendFormSubmissionAcknowledgement::class, function (SendFormSubmissionAcknowledgement $job): bool {
         return $job->recipient === 'ada@example.com'
             && $job->emailSubject === 'Thanks Ada Lovelace'
-            && $job->fromEmail === 'hello@acme.example'
+            && $job->fromEmail === 'mail@digizu.co.uk'
             && $job->fromName === 'Acme Studio'
             && $job->delay?->equalTo(now()->addMinutes(15));
     });
@@ -410,7 +410,7 @@ it('sends a queued acknowledgement and records its delivery', function (): void 
 
     $job->handle(app(AutoresponderDeliveryService::class));
 
-    Mail::assertSent(FormSubmissionAcknowledgement::class, fn (FormSubmissionAcknowledgement $mail): bool => $mail->hasTo('ada@example.com') && $mail->hasFrom('hello@example.com', 'Example Studio'));
+    Mail::assertSent(FormSubmissionAcknowledgement::class, fn(FormSubmissionAcknowledgement $mail): bool => $mail->hasTo('ada@example.com') && $mail->hasFrom('hello@example.com', 'Example Studio'));
     expect($submission->refresh()->autoresponder_sent_at)->not->toBeNull()
         ->and($submission->activities()->where('type', 'autoresponder_sent')->exists())->toBeTrue();
 });
@@ -441,7 +441,10 @@ it('allows a form to disable the website acknowledgement', function (): void {
     Form::factory()->create(['website_id' => $website->id, 'name' => 'Contact form', 'slug' => 'contact-form', 'email_enabled_override' => false, 'autoresponder_enabled_override' => false]);
 
     $this->withHeader('Origin', 'https://no-reply.example')->post('/submit', [
-        '_form_name' => 'Contact form', 'name' => 'Ada', 'email' => 'ada@example.com', 'message' => 'A genuine enquiry.',
+        '_form_name' => 'Contact form',
+        'name' => 'Ada',
+        'email' => 'ada@example.com',
+        'message' => 'A genuine enquiry.',
     ]);
 
     Queue::assertNotPushed(SendFormSubmissionAcknowledgement::class);
@@ -517,7 +520,7 @@ it('rate limits repeated submissions from the same domain and IP address', funct
     config()->set('forms.rate_limit_per_minute', 2);
     config()->set('forms.rate_limit_per_hour', 10);
 
-    $request = fn (): TestResponse => $this->withHeader('Origin', 'https://rate-limit.example')
+    $request = fn(): TestResponse => $this->withHeader('Origin', 'https://rate-limit.example')
         ->postJson('/submit', [
             '_form_name' => 'Contact form',
             'name' => 'Grace Hopper',
@@ -534,7 +537,7 @@ it('rate limits submissions across the hourly window', function (): void {
     config()->set('forms.rate_limit_per_minute', 10);
     config()->set('forms.rate_limit_per_hour', 2);
 
-    $request = fn (): TestResponse => $this->withHeader('Origin', 'https://hourly-rate-limit.example')
+    $request = fn(): TestResponse => $this->withHeader('Origin', 'https://hourly-rate-limit.example')
         ->postJson('/submit', [
             '_form_name' => 'Contact form',
             'name' => 'Grace Hopper',

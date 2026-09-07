@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="space-y-6" data-tabs data-default-tab="{{ request('tab', $errors->any() && $website->repository ? 'content' : 'health') }}">
+<div class="space-y-6" data-tabs data-default-tab="{{ $currentWebsiteSection }}">
     @if (session('status'))
         <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{{ session('status') }}</div>
     @endif
@@ -24,7 +24,9 @@
                     </form>
                 @endif
             @endif
-            <a href="{{ route('admin.websites.index') }}" class="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Back to websites</a>
+            @if (Auth::user()?->isAdmin())
+                <a href="{{ route('admin.websites.index') }}" class="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">All websites</a>
+            @endif
         </div>
     </div>
 
@@ -41,7 +43,7 @@
         </section>
     @endif
 
-    <div class="website-tabs" role="tablist" aria-label="Website sections">
+    <div class="hidden" role="tablist" aria-label="Website sections">
         <button type="button" id="website-tab-health" class="website-tab" role="tab" aria-selected="true" aria-controls="website-panel-health" tabindex="0" data-tab="health">Health reports</button>
         <button type="button" id="website-tab-search" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-search" tabindex="-1" data-tab="search">Search</button>
         <button type="button" id="website-tab-seo" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-seo" tabindex="-1" data-tab="seo">SEO Intelligence</button>
@@ -61,38 +63,41 @@
         @php
             $latestReport = $website->healthReports->first();
         @endphp
-        <section class="rounded-lg border border-slate-200 bg-white" aria-labelledby="health-title">
-        <div class="flex flex-col gap-4 border-b border-slate-200 p-4 sm:flex-row sm:items-start sm:justify-between">
+        <section class="@container rounded-xl border border-slate-950/10 bg-white" aria-labelledby="health-title">
+        <div class="flex flex-col gap-4 border-b border-slate-950/10 p-5 @2xl:flex-row @2xl:items-start @2xl:justify-between sm:p-6">
             <div>
-                <p class="text-xs font-medium uppercase tracking-widest text-slate-500">Website monitoring</p>
+                <p class="font-mono text-sm text-teal-700">Website monitoring</p>
                 <h2 id="health-title" class="mt-1 text-lg font-semibold text-slate-950">Health reports</h2>
-                <p class="mt-1 text-sm text-slate-600">Availability, on-page SEO, security headers, discoverability, and form delivery.</p>
+                <p class="mt-1 text-base text-slate-600 sm:text-sm">Availability, on-page SEO, security headers, discoverability, and form delivery.</p>
             </div>
-            <form method="POST" action="{{ route('admin.website-health-reports.store', $website) }}">
-                @csrf
-                <button type="submit" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900">Run report now</button>
-            </form>
+            @if ($canManageWebsite)
+                <form method="POST" action="{{ route('admin.website-health-reports.store', $website) }}">
+                    @csrf
+                    <button type="submit" @class(['rounded-lg px-3 py-2 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600', 'border border-slate-950/15 text-slate-700 hover:bg-slate-50' => $latestReport, 'bg-teal-600 text-white hover:bg-teal-700' => ! $latestReport])>Run report now</button>
+                </form>
+            @endif
         </div>
         @if ($latestReport)
-            <dl class="grid grid-cols-2 gap-px bg-slate-200 @container sm:grid-cols-4">
+            <dl class="grid grid-cols-2 gap-px bg-slate-950/10 @2xl:grid-cols-4">
                 <div class="bg-white p-4"><dt class="truncate text-sm text-slate-500">Latest status</dt><dd class="mt-1 text-xl font-semibold capitalize">{{ str_replace('_', ' ', $latestReport->overall_status ?: $latestReport->status) }}</dd></div>
                 <div class="bg-white p-4"><dt class="truncate text-sm text-slate-500">Passed</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-emerald-700">{{ $latestReport->passed_checks }}</dd></div>
                 <div class="bg-white p-4"><dt class="truncate text-sm text-slate-500">Warnings</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-amber-700">{{ $latestReport->warning_checks }}</dd></div>
                 <div class="bg-white p-4"><dt class="truncate text-sm text-slate-500">Failed</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-red-700">{{ $latestReport->failed_checks }}</dd></div>
             </dl>
+            <div class="flex flex-col gap-4 p-5 @lg:flex-row @lg:items-end @lg:justify-between sm:p-6">
+                <label class="block min-w-0 @lg:min-w-80">
+                    <span class="block text-base font-medium text-slate-700 sm:text-sm">Previous reports</span>
+                    <select data-health-report-selector class="mt-1 block w-full rounded-lg border border-slate-950/15 bg-white px-3 py-2 text-base text-slate-900 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/20 sm:text-sm" aria-label="Select a website health report">
+                        @foreach ($website->healthReports as $historicalReport)
+                            <option value="{{ route('admin.website-health-reports.show', [$website, $historicalReport]) }}">{{ $historicalReport->created_at->format('j M Y, H:i') }} · {{ ucfirst(str_replace('_', ' ', $historicalReport->overall_status ?: $historicalReport->status)) }}{{ $loop->first ? ' · Latest' : '' }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <a href="{{ route('admin.website-health-reports.show', [$website, $latestReport]) }}" class="inline-flex shrink-0 items-center justify-center rounded-lg bg-teal-600 px-3 py-2 text-sm font-medium text-white hover:bg-teal-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600">View latest report</a>
+            </div>
+        @else
+            <p class="p-5 text-base text-slate-600 sm:p-6 sm:text-sm">No health reports have been generated yet.</p>
         @endif
-        <div class="overflow-x-auto p-4">
-            <table class="min-w-full divide-y divide-slate-200 text-sm">
-                <thead><tr class="text-left text-xs font-medium uppercase tracking-wide text-slate-500"><th class="px-3 py-2">Created</th><th class="px-3 py-2">Status</th><th class="px-3 py-2">Passed</th><th class="px-3 py-2">Warnings</th><th class="px-3 py-2">Failed</th></tr></thead>
-                <tbody class="divide-y divide-slate-100">
-                    @forelse ($website->healthReports as $report)
-                        <tr><td class="px-3 py-3"><a class="font-medium text-slate-950 hover:text-slate-600" href="{{ route('admin.website-health-reports.show', [$website, $report]) }}">{{ $report->created_at->toDayDateTimeString() }}</a></td><td class="px-3 py-3 capitalize text-slate-600">{{ str_replace('_', ' ', $report->overall_status ?: $report->status) }}</td><td class="px-3 py-3 tabular-nums text-emerald-700">{{ $report->passed_checks }}</td><td class="px-3 py-3 tabular-nums text-amber-700">{{ $report->warning_checks }}</td><td class="px-3 py-3 tabular-nums text-red-700">{{ $report->failed_checks }}</td></tr>
-                    @empty
-                        <tr><td colspan="5" class="px-3 py-6 text-center text-slate-500">No health reports have been generated.</td></tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
         </section>
 
     </div>
@@ -592,11 +597,16 @@
     </div>
 
     <div id="website-panel-forms" class="grid gap-6 lg:grid-cols-2" role="tabpanel" aria-labelledby="website-tab-forms" data-tab-panel="forms" hidden>
-        <section class="@container rounded-lg border border-blue-200 bg-blue-50 p-4 lg:col-span-2" aria-labelledby="form-onboarding-title">
-            <div class="grid gap-5 @4xl:grid-cols-[2fr_3fr] @4xl:gap-6">
+        <section class="@container rounded-xl border border-slate-950/10 bg-white p-5 lg:col-span-2 sm:p-6" aria-labelledby="form-onboarding-title">
+            <h2 id="form-onboarding-title" class="text-xl font-semibold text-slate-950">Connect a website form</h2>
+            <p class="mt-1 text-base text-slate-600 sm:text-sm">Use the installation example when adding a new form to this website.</p>
+            <details class="group mt-4 rounded-lg bg-slate-50 open:ring-1 open:ring-slate-950/10">
+                <summary class="flex cursor-pointer list-none items-center justify-between gap-3 rounded-lg px-4 py-3 text-base font-medium text-slate-800 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600 sm:text-sm [&::-webkit-details-marker]:hidden">
+                    Show installation instructions
+                    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" class="size-5 shrink-0 group-open:rotate-180 sm:size-4" aria-hidden="true"><path d="m5 7.5 5 5 5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </summary>
+            <div class="grid gap-5 border-t border-slate-950/10 p-4 @4xl:grid-cols-[2fr_3fr] @4xl:gap-6">
                 <div class="min-w-0">
-                    <p class="font-mono text-sm font-medium uppercase tracking-wide text-blue-700">Form setup</p>
-                    <h2 id="form-onboarding-title" class="mt-1 text-xl font-semibold text-balance text-blue-950">Connect a website form</h2>
                     <p class="mt-2 text-base text-pretty text-blue-900 sm:text-sm">Paste the example into the website, then replace or add the fields you need. Submissions from {{ $website->domains->firstWhere('is_primary', true)?->domain ?? $website->domains->first()?->domain ?? 'this website' }} will be matched automatically.</p>
 
                     <dl class="mt-5 grid gap-4">
@@ -663,89 +673,22 @@
 &lt;script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer&gt;&lt;/script&gt;@endif</textarea>
                 </div>
             </div>
+            </details>
         </section>
 
-        <div class="rounded-lg border border-blue-200 bg-blue-50 p-4 shadow-sm lg:col-span-2">
+        <div class="rounded-xl border border-slate-950/10 bg-white p-5 lg:col-span-2 sm:p-6">
             <h2 class="font-semibold text-blue-950">Automatic customer reply</h2>
-            <p class="mt-1 text-sm text-blue-800">Set the website-wide acknowledgement. Individual forms can inherit or override it.</p>
-            @php($managedDomain = old('sending_domain', $website->mailConnection?->sending_domain ?? $website->domains->firstWhere('is_primary', true)?->domain))
-            @if ($website->mailConnection?->mode === 'managed' && $website->mailConnection?->postmark_domain_id)
-                <div class="mt-4 space-y-3 rounded-lg border border-blue-200 bg-white p-4">
-                    <div class="flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                            <p class="text-sm font-semibold text-slate-900">Managed Postmark · {{ $website->mailConnection->sending_domain }}</p>
-                            <p class="text-xs text-slate-500">{{ $website->mailConnection->dkim_verified ? 'Verified and ready to send' : 'Waiting for DNS verification' }}</p>
-                        </div>
-                        <span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ $website->mailConnection->dkim_verified ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }}">{{ $website->mailConnection->dkim_verified ? 'Active' : 'Pending' }}</span>
-                    </div>
-                    <div class="overflow-x-auto rounded-md border border-slate-200">
-                        <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
-                            <thead class="bg-slate-50 text-slate-600"><tr><th class="px-3 py-2 font-medium">Type</th><th class="px-3 py-2 font-medium">Host</th><th class="px-3 py-2 font-medium">Value</th><th class="px-3 py-2 font-medium">Status</th></tr></thead>
-                            <tbody class="divide-y divide-slate-100 text-slate-700">
-                                <tr><td class="px-3 py-2">TXT</td><td class="px-3 py-2 font-mono">{{ $website->mailConnection->dkim_host }}</td><td class="max-w-sm break-all px-3 py-2 font-mono">{{ $website->mailConnection->dkim_value }}</td><td class="px-3 py-2">{{ $website->mailConnection->dkim_verified ? 'Verified' : 'Pending' }}</td></tr>
-                                <tr><td class="px-3 py-2">CNAME</td><td class="px-3 py-2 font-mono">{{ $website->mailConnection->return_path_domain }}</td><td class="max-w-sm break-all px-3 py-2 font-mono">{{ $website->mailConnection->return_path_cname_value }}</td><td class="px-3 py-2">{{ $website->mailConnection->return_path_verified ? 'Verified' : 'Pending' }}</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="flex flex-wrap gap-2">
-                        <form method="POST" action="{{ route('admin.websites.mail.managed.verify', $website) }}">@csrf<button class="rounded-md border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-900 hover:bg-blue-50">Check verification</button></form>
-                        @if ($website->mailConnection->status === 'active')
-                            <form method="POST" action="{{ route('admin.websites.mail.test', $website) }}">@csrf<button class="rounded-md border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-900 hover:bg-blue-50">Send test email</button></form>
-                        @endif
-                    </div>
-                </div>
+            @if (! $canUseAutoresponders)
+                <p class="mt-1 text-base text-slate-600 sm:text-sm">Automatic customer replies are available on Growth and Complete plans.</p>
+                <a href="{{ route('admin.billing.index') }}" class="mt-4 inline-flex items-center justify-center rounded-lg border border-slate-950/15 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600">View plans</a>
             @else
-                <form method="POST" action="{{ route('admin.websites.mail.managed.store', $website) }}" class="mt-4 rounded-lg border border-blue-200 bg-white p-4">
-                    @csrf
-                    <label class="text-sm font-medium text-slate-700" for="sending_domain">Managed sending domain</label>
-                    <div class="mt-1 flex flex-col gap-2 sm:flex-row">
-                        <input id="sending_domain" name="sending_domain" value="{{ $managedDomain }}" placeholder="example.com" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" autocapitalize="none" spellcheck="false">
-                        <button class="shrink-0 rounded-md bg-blue-900 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800">Set up managed Postmark</button>
-                    </div>
-                    @error('sending_domain')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
-                    <p class="mt-1 text-xs text-slate-500">Sitewell creates the Postmark server. You only need to add the DNS records we provide.</p>
-                </form>
-            @endif
-            @if ($website->mailConnection?->mode === 'customer_postmark' && $website->mailConnection?->status === 'active')
-                <form method="POST" action="{{ route('admin.websites.mail.test', $website) }}" class="mt-3">
-                    @csrf
-                    <button class="rounded-md border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-900 hover:bg-blue-50">Send Postmark test email</button>
-                </form>
-            @endif
-            <form method="POST" action="{{ route('admin.websites.autoresponder.update', $website) }}" class="mt-4 space-y-4">
+            <p class="mt-1 text-base text-blue-800 sm:text-sm">Set the website-wide acknowledgement. Individual forms can inherit or override it.</p>
+            <details class="group mt-4 rounded-lg border border-slate-950/10">
+                <summary class="flex cursor-pointer list-none items-center justify-between gap-3 rounded-lg px-4 py-3 text-base font-medium text-slate-800 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600 sm:text-sm [&::-webkit-details-marker]:hidden">Edit automatic reply<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" class="size-5 shrink-0 group-open:rotate-180 sm:size-4" aria-hidden="true"><path d="m5 7.5 5 5 5-5" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+            <form method="POST" action="{{ route('admin.websites.autoresponder.update', $website) }}" class="space-y-4 border-t border-slate-950/10 p-4">
                 @csrf
                 @method('PUT')
                 <input type="hidden" name="autoresponder_enabled" value="0">
-                @php($mailDeliveryMode = old('mail_delivery_mode', $website->mailConnection?->mode ?? 'legacy'))
-                <div class="grid gap-3 lg:grid-cols-2">
-                    @if ($website->mailConnection?->postmark_server_id)
-                        <label class="rounded-lg border border-blue-200 bg-white p-3">
-                            <span class="flex items-start gap-3">
-                                <input type="radio" name="mail_delivery_mode" value="managed" class="mt-1 border-slate-300" @checked($mailDeliveryMode === 'managed')>
-                                <span><span class="block text-sm font-medium text-slate-900">Managed by Sitewell</span><span class="block text-xs text-slate-500">Protected by Sitewell sending and reputation limits.</span></span>
-                            </span>
-                        </label>
-                    @endif
-                    <label class="rounded-lg border border-blue-200 bg-white p-3">
-                        <span class="flex items-start gap-3">
-                            <input type="radio" name="mail_delivery_mode" value="legacy" class="mt-1 border-slate-300" @checked($mailDeliveryMode === 'legacy')>
-                            <span><span class="block text-sm font-medium text-slate-900">Sitewell default sender</span><span class="block text-xs text-slate-500">Keep using Sitewell's current mail delivery setup.</span></span>
-                        </span>
-                    </label>
-                    <label class="rounded-lg border border-blue-200 bg-white p-3">
-                        <span class="flex items-start gap-3">
-                            <input type="radio" name="mail_delivery_mode" value="customer_postmark" class="mt-1 border-slate-300" @checked($mailDeliveryMode === 'customer_postmark')>
-                            <span><span class="block text-sm font-medium text-slate-900">Use my Postmark account</span><span class="block text-xs text-slate-500">Uses your Server API token. Sitewell sending limits do not apply.</span></span>
-                        </span>
-                    </label>
-                </div>
-                @error('mail_delivery_mode')<p class="text-sm text-red-600">{{ $message }}</p>@enderror
-                <div>
-                    <label class="text-sm font-medium text-slate-700" for="postmark_server_token">Postmark Server API token</label>
-                    <input id="postmark_server_token" type="password" name="postmark_server_token" value="" placeholder="{{ $website->mailConnection?->postmark_server_token ? 'Token saved — leave blank to keep it' : 'Enter your Server API token' }}" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" autocomplete="new-password" spellcheck="false">
-                    @error('postmark_server_token')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
-                    <p class="mt-1 text-xs text-slate-500">Use a Server API token, not your Postmark Account token. It is encrypted and will not be displayed again.</p>
-                </div>
                 <label class="flex items-start gap-3 rounded-lg border border-blue-200 bg-white p-3">
                     <input type="checkbox" name="autoresponder_enabled" value="1" class="mt-1 rounded border-slate-300" @checked(old('autoresponder_enabled', $website->autoresponder_enabled))>
                     <span><span class="block text-sm font-medium text-slate-900">Automatically acknowledge new enquiries</span><span class="block text-xs text-slate-500">Only sends when a valid customer email is present and the submission passes spam checks.</span></span>
@@ -756,12 +699,7 @@
                         <input id="autoresponder_from_name" name="autoresponder_from_name" value="{{ old('autoresponder_from_name', $website->autoresponder_from_name) }}" placeholder="{{ config('mail.from.name') }}" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
                         @error('autoresponder_from_name')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                     </div>
-                    <div>
-                        <label class="text-sm font-medium text-slate-700" for="autoresponder_from_email">From email address</label>
-                        <input id="autoresponder_from_email" type="email" name="autoresponder_from_email" value="{{ old('autoresponder_from_email', $website->autoresponder_from_email) }}" placeholder="{{ config('mail.from.address') }}" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" autocapitalize="none" autocomplete="email" spellcheck="false">
-                        @error('autoresponder_from_email')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
-                        <p class="mt-1 text-xs text-slate-500">Leave blank to use the default Sitewell sender. Your mail provider must allow the address you enter.</p>
-                    </div>
+                    <div><p class="text-base font-medium text-slate-700 sm:text-sm">From email address</p><p class="mt-1 text-base text-slate-600 sm:text-sm">{{ config('forms.autoresponder_from_address') }}</p></div>
                     <div>
                         <label class="text-sm font-medium text-slate-700" for="autoresponder_subject">Email subject</label>
                         <input id="autoresponder_subject" name="autoresponder_subject" value="{{ old('autoresponder_subject', $website->autoresponder_subject) }}" placeholder="We've received your {form_name} enquiry" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
@@ -797,16 +735,18 @@
                     <div><button class="rounded-md bg-blue-900 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800">Save automatic reply</button></div>
                 </div>
             </form>
+            </details>
+            @endif
         </div>
 
-        <div class="overflow-hidden rounded-lg border bg-white shadow-sm lg:col-span-2">
-            <table class="min-w-full divide-y divide-slate-200">
-                <thead class="bg-slate-50"><tr><th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Name</th><th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Website</th><th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Status</th><th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Submissions</th><th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Seen</th></tr></thead>
-                <tbody class="divide-y divide-slate-100">
+        <div class="overflow-hidden rounded-xl border border-slate-950/10 bg-white lg:col-span-2">
+            <table class="min-w-full divide-y divide-slate-950/10">
+                <thead class="bg-slate-50"><tr><th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Form</th><th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Status</th><th class="px-4 py-3 text-right text-sm font-semibold text-slate-700">Submissions</th></tr></thead>
+                <tbody class="divide-y divide-slate-950/5">
                 @forelse ($website->forms as $form)
-                    <tr class="hover:bg-slate-50"><td class="px-4 py-3"><a href="{{ route('admin.forms.show', $form) }}" class="font-medium text-slate-900 hover:text-slate-700">{{ $form->name }}</a></td><td class="px-4 py-3 text-sm text-slate-600">{{ $website->name }}</td><td class="px-4 py-3 text-sm text-slate-600">{{ $form->is_active ? 'Active' : 'Disabled' }}</td><td class="px-4 py-3 text-sm tabular-nums text-slate-600">{{ $form->submissions_count }}</td><td class="px-4 py-3 text-sm text-slate-500">{{ $form->created_at?->diffForHumans() }}</td></tr>
+                    <tr class="hover:bg-slate-50"><td class="px-4 py-3"><a href="{{ route('admin.forms.show', $form) }}" class="font-medium text-slate-900 hover:text-teal-700">{{ $form->name }}</a></td><td class="px-4 py-3 text-sm text-slate-600">{{ $form->is_active ? 'Active' : 'Disabled' }}</td><td class="px-4 py-3 text-right text-sm tabular-nums text-slate-600">{{ $form->submissions_count }}</td></tr>
                 @empty
-                    <tr><td colspan="5" class="px-4 py-6 text-center text-sm text-slate-500">No forms registered for this website.</td></tr>
+                    <tr><td colspan="3" class="px-4 py-6 text-center text-base text-slate-500 sm:text-sm">No forms registered for this website.</td></tr>
                 @endforelse
                 </tbody>
             </table>

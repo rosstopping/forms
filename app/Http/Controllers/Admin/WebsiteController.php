@@ -101,17 +101,28 @@ class WebsiteController extends Controller
         Website $website,
         WebsiteProspectService $websiteProspects,
         PixelInstallationSnippet $pixelInstallation,
-    ): View {
+    ): View|RedirectResponse {
         $user = Auth::user();
 
         abort_unless($website->isAccessibleBy($user), 403);
+
+        if ($request->routeIs('admin.websites.section') && $request->route('section') === 'health') {
+            $latestReport = $website->healthReports()->latest('created_at')->latest('id')->first();
+
+            if ($latestReport) {
+                return Redirect::route('admin.website-health-reports.show', [$website, $latestReport]);
+            }
+        }
 
         $website->load([
             'domains',
             'owner:id,name,email,role,membership_tier,admin_membership_tier,membership_status',
             'members' => fn ($query) => $query->select('users.id', 'users.name', 'users.email')->orderBy('name'),
             'forms' => fn ($query) => $query->withCount('submissions')->latest('created_at'),
-            'healthReports' => fn ($query) => $query->latest('created_at')->limit(8),
+            'healthReports' => fn ($query) => $query
+                ->latest('created_at')
+                ->latest('id')
+                ->select(['id', 'website_id', 'status', 'overall_status', 'passed_checks', 'warning_checks', 'failed_checks', 'created_at']),
             'repository.installation',
             'wordpressConnection',
             'wordpressStaticReleases' => fn ($query) => $query->latest('created_at')->limit(5),
@@ -132,6 +143,7 @@ class WebsiteController extends Controller
         ]);
         $canManageMembers = $user?->can('manageMembers', $website) === true;
         $canUseGrowthFeatures = $user?->isAdmin() === true || $website->owner?->hasMembershipFeature(MembershipPlan::FEATURE_GROWTH) === true;
+        $canUseAutoresponders = $website->canUseAutoresponders($user);
         $canUseCompleteFeatures = $user?->isAdmin() === true || $website->owner?->hasMembershipFeature(MembershipPlan::FEATURE_COMPLETE) === true;
         $searchConsoleReport = null;
         $searchConsoleHistory = [];
@@ -238,7 +250,7 @@ class WebsiteController extends Controller
             'website', 'canManageMembers', 'canManageWebsite',
             'searchConsoleReport', 'searchConsoleHistory', 'searchConsoleReportUnavailable', 'seoGeneration', 'seoSnapshot', 'seoHistory',
             'seoKeywords', 'seoReferringDomains', 'seoCompetitors', 'seoOpportunities', 'seoFilter', 'seoSort', 'seoDirection', 'strikingDistanceCount',
-            'dataForSeoConfigured', 'outreachProspect', 'pixelInstallationSnippet', 'canUseGrowthFeatures', 'canUseCompleteFeatures',
+            'dataForSeoConfigured', 'outreachProspect', 'pixelInstallationSnippet', 'canUseGrowthFeatures', 'canUseCompleteFeatures', 'canUseAutoresponders',
             'websiteAiQuestions', 'websiteAiQuestionsUsed', 'websiteAiWeeklyLimit', 'pixelOptimisations',
         ));
     }

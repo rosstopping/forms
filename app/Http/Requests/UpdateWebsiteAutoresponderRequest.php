@@ -63,6 +63,10 @@ class UpdateWebsiteAutoresponderRequest extends FormRequest
     {
         return [
             function (Validator $validator): void {
+                if ($this->boolean('autoresponder_enabled') && ! $this->route('website')?->canUseAutoresponders($this->user())) {
+                    $validator->errors()->add('autoresponder_enabled', 'Automatic customer replies are available on Growth and Complete plans.');
+                }
+
                 if ($this->string('mail_delivery_mode')->toString() !== WebsiteMailConnection::MODE_MANAGED) {
                     return;
                 }

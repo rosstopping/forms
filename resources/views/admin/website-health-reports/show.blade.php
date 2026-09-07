@@ -15,13 +15,34 @@
         </div>
     @endif
 
-    <div class="flex flex-wrap items-center justify-between gap-3">
-        <div>
-            <p class="text-sm text-slate-500">Website health report</p>
-            <h1 class="text-2xl font-semibold">{{ $report->website->name }}</h1>
-            <p class="text-sm text-slate-600">Created {{ $report->created_at->toDayDateTimeString() }}</p>
+    <div class="@container rounded-xl border border-slate-950/10 bg-white p-5 sm:p-6">
+        <div class="flex flex-col gap-5 @3xl:flex-row @3xl:items-end @3xl:justify-between">
+            <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                    <p class="font-mono text-sm text-teal-700">Website health report</p>
+                    @if ($reportHistory->first()?->is($report))
+                        <span class="rounded-full bg-teal-50 px-2.5 py-1 text-sm font-medium text-teal-700">Latest report</span>
+                    @endif
+                </div>
+                <h1 class="mt-1 truncate text-2xl font-semibold tracking-tight text-slate-950">{{ $report->website->name }}</h1>
+                <p class="mt-1 text-base text-slate-600 sm:text-sm">Generated {{ $report->created_at->toDayDateTimeString() }}.</p>
+            </div>
+            <div class="flex flex-col gap-3 @md:flex-row @md:items-end">
+                <label class="block min-w-0 @md:min-w-72">
+                    <span class="block text-base font-medium text-slate-700 sm:text-sm">Previous reports</span>
+                    <select data-health-report-selector class="mt-1 block w-full rounded-lg border border-slate-950/15 bg-white px-3 py-2 text-base text-slate-900 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/20 sm:text-sm" aria-label="Select a website health report">
+                        @foreach ($reportHistory as $historicalReport)
+                            <option value="{{ route('admin.website-health-reports.show', [$report->website, $historicalReport]) }}" @selected($historicalReport->is($report))>
+                                {{ $historicalReport->created_at->format('j M Y, H:i') }} · {{ ucfirst(str_replace('_', ' ', $historicalReport->overall_status ?: $historicalReport->status)) }}{{ $loop->first ? ' · Latest' : '' }}
+                            </option>
+                        @endforeach
+                    </select>
+                </label>
+                @if (! $reportHistory->first()?->is($report))
+                    <a href="{{ route('admin.websites.section', [$report->website, 'health']) }}" class="inline-flex shrink-0 items-center justify-center rounded-lg border border-slate-950/15 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600">Open latest</a>
+                @endif
+            </div>
         </div>
-        <a href="{{ route('admin.websites.show', $report->website) }}" class="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Back to website</a>
     </div>
 
     @if ($aiPrompt && ! $report->website->repository)

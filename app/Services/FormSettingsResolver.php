@@ -15,6 +15,10 @@ class FormSettingsResolver
 
     public function resolveAutoresponderEnabled(Form $form): bool
     {
+        if (! $form->website->canUseAutoresponders()) {
+            return false;
+        }
+
         return $form->autoresponder_enabled_override ?? $form->website->autoresponder_enabled;
     }
 

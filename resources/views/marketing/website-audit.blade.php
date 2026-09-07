@@ -83,7 +83,7 @@
                 <div class="grid gap-10">
                     @foreach ($categories as $category => $categoryChecks)
                         <section class="grid gap-5">
-                            <div class="flex min-w-0 flex-wrap items-baseline justify-between gap-3 border-b border-ink/10 pb-3">
+                            <div class="flex min-w-0 x-wrap items-baseline justify-between gap-3 border-b border-ink/10 pb-3">
                                 <h2 class="min-w-0 font-display text-2xl font-semibold tracking-tight text-balance">{{ $category }}</h2>
                                 <p class="text-base text-ink/50 tabular-nums sm:text-sm">{{ $categoryChecks->where('severity', 'passed')->count() }} passed · {{ $categoryChecks->whereIn('severity', ['warning', 'failed'])->count() }} to review</p>
                             </div>

@@ -2,10 +2,12 @@
 
 use App\Models\Form;
 use App\Models\FormSubmission;
+use App\Models\User;
 use App\Models\Website;
 use App\Services\AutoresponderHtmlSanitizer;
 use App\Services\FormSettingsResolver;
 use App\Services\WebsiteMailRecipients;
+use App\Support\MembershipPlan;
 
 it('does not send email by default unless form recipients are configured', function (): void {
     $resolver = new FormSettingsResolver(new AutoresponderHtmlSanitizer, new WebsiteMailRecipients);
@@ -32,6 +34,20 @@ it('uses form-level email and webhook settings when configured', function (): vo
     expect($resolver->resolveWebhookEnabled($form))->toBeTrue();
     expect($resolver->resolveWebhookUrl($form))->toBe('https://example.com/hook');
     expect($resolver->resolveWebhookSecret($form))->toBe('secret');
+});
+
+it('disables automatic replies for essential websites even when previously enabled', function (): void {
+    $resolver = new FormSettingsResolver(new AutoresponderHtmlSanitizer, new WebsiteMailRecipients);
+    $owner = new User([
+        'membership_tier' => MembershipPlan::ESSENTIAL,
+        'membership_status' => 'active',
+    ]);
+    $website = new Website(['name' => 'Example', 'autoresponder_enabled' => true]);
+    $website->setRelation('owner', $owner);
+    $form = new Form(['autoresponder_enabled_override' => true]);
+    $form->setRelation('website', $website);
+
+    expect($resolver->resolveAutoresponderEnabled($form))->toBeFalse();
 });
 
 it('replaces tags for any submitted form field', function (): void {

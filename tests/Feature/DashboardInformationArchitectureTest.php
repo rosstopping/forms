@@ -1,16 +1,20 @@
 <?php
 
 use App\Models\ContentPlan;
+use App\Models\ContentRequest;
 use App\Models\Form;
+use App\Models\SearchConsoleConnection;
+use App\Models\SearchConsoleMetric;
 use App\Models\User;
 use App\Models\Website;
 use App\Models\WebsiteHealthReport;
 use App\Models\WebsiteRepository;
 
-it('prioritises website audit health on the dashboard', function (): void {
+it('prioritises the selected websites latest health and content work on the dashboard', function (): void {
     $user = User::factory()->create();
     $healthyWebsite = Website::factory()->for($user, 'owner')->create(['name' => 'Healthy website']);
     $warningWebsite = Website::factory()->for($user, 'owner')->create(['name' => 'Website needing work']);
+    $user->update(['current_website_id' => $warningWebsite->id]);
 
     WebsiteHealthReport::factory()->for($healthyWebsite)->create([
         'overall_status' => 'healthy',
@@ -21,19 +25,34 @@ it('prioritises website audit health on the dashboard', function (): void {
         'overall_status' => 'needs_attention',
         'warning_checks' => 3,
         'failed_checks' => 0,
+        'checks' => [[
+            'key' => 'meta_description',
+            'label' => 'Meta description',
+            'status' => 'warning',
+            'message' => 'Your homepage needs a clear search description.',
+        ]],
+        'metrics' => ['changes' => ['new_issues' => 1, 'resolved_issues' => 2]],
+    ]);
+    ContentRequest::factory()->for($warningWebsite)->for($user, 'creator')->create([
+        'instructions' => 'Refresh the services page introduction.',
     ]);
 
     $this->actingAs($user)
         ->get(route('admin.dashboard'))
         ->assertOk()
-        ->assertSee('What needs attention next')
-        ->assertSee('Audit workspace')
+        ->assertSee('Website overview')
+        ->assertSee('Website workspace')
         ->assertSee('data-mobile-nav-toggle', false)
         ->assertSee('data-mobile-nav', false)
-        ->assertSee('Healthy website')
         ->assertSee('Website needing work')
-        ->assertSee('Needs attention')
-        ->assertSee('Recent audit activity')
+        ->assertSee('Website health')
+        ->assertSee('Your homepage needs a clear search description.')
+        ->assertSee('2 resolved')
+        ->assertSee('1 new')
+        ->assertSee('Refresh the services page introduction.')
+        ->assertDontSee('Recent audit activity')
+        ->assertDontSee('Workspace totals')
+        ->assertDontSee('Form activity')
         ->assertDontSee('href="'.route('admin.forms.index').'"', false)
         ->assertSee('href="'.route('admin.form-submissions.index').'"', false);
 });
@@ -53,10 +72,47 @@ it('shows the next site audit and content queue jobs', function (): void {
     $this->actingAs($user)
         ->get(route('admin.dashboard'))
         ->assertSuccessful()
-        ->assertSee('Automation schedule')
-        ->assertSee('Site audit')
-        ->assertSee('Content queue')
+        ->assertSee('Next health check')
+        ->assertSee('Next preparation')
         ->assertSee('Scheduled website');
+});
+
+it('shows connected search performance and optional form activity for the selected website', function (): void {
+    $user = User::factory()->create();
+    $website = Website::factory()->for($user, 'owner')->create(['name' => 'Connected website']);
+    $connection = SearchConsoleConnection::factory()->for($website)->for($user, 'connector')->create();
+    SearchConsoleMetric::factory()->for($website)->for($connection, 'connection')->create([
+        'month' => today()->startOfMonth(),
+        'clicks' => 1234,
+        'impressions' => 9876,
+        'ctr' => 0.125,
+        'position' => 8.4,
+    ]);
+    Form::factory()->for($website)->create();
+
+    $this->actingAs($user)
+        ->get(route('admin.dashboard'))
+        ->assertOk()
+        ->assertSee('Google Search Console')
+        ->assertSee('1,234')
+        ->assertSee('9,876')
+        ->assertSee('12.5%')
+        ->assertSee('Form activity')
+        ->assertSee('Connected forms');
+});
+
+it('shows active onboarding trial context on the website overview', function (): void {
+    $user = User::factory()->create([
+        'onboarding_status' => 'trial_active',
+        'onboarding_trial_ends_at' => now()->addDays(10),
+    ]);
+    Website::factory()->for($user, 'owner')->create();
+
+    $this->actingAs($user)
+        ->get(route('admin.dashboard'))
+        ->assertOk()
+        ->assertSee('Your Essential trial is active')
+        ->assertSee('Weekly health reports are included during your trial.');
 });
 
 it('keeps forms and submissions inside the website workspace', function (): void {

@@ -37,7 +37,9 @@ class FormController extends Controller
 
         $form->load('website');
 
-        return view('admin.forms.show', compact('form'));
+        $canUseAutoresponders = $form->website->canUseAutoresponders(Auth::user());
+
+        return view('admin.forms.show', compact('form', 'canUseAutoresponders'));
     }
 
     public function update(Request $request, Form $form)
@@ -56,6 +58,12 @@ class FormController extends Controller
             'webhook_url_override' => ['nullable', 'url', 'max:255'],
             'webhook_secret_override' => ['nullable', 'string', 'max:255'],
         ]);
+
+        if ($data['autoresponder_mode'] === 'enabled' && ! $form->website->canUseAutoresponders(Auth::user())) {
+            throw ValidationException::withMessages([
+                'autoresponder_mode' => 'Automatic customer replies are available on Growth and Complete plans.',
+            ]);
+        }
 
         $emailRecipients = $this->parseEmailRecipients($request->input('email_recipients_override'));
 
