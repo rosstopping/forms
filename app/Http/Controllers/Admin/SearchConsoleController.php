@@ -9,6 +9,7 @@ use App\Models\Website;
 use App\Services\GoogleOAuthClient;
 use App\Services\SearchConsoleClient;
 use App\Services\SearchConsoleHistoryStore;
+use App\Services\SearchConsolePropertyMatcher;
 use App\Support\MembershipPlan;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,6 +17,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Throwable;
 
@@ -29,6 +31,7 @@ class SearchConsoleController extends Controller
         protected GoogleOAuthClient $oauth,
         protected SearchConsoleClient $searchConsole,
         protected SearchConsoleHistoryStore $historyStore,
+        protected SearchConsolePropertyMatcher $propertyMatcher,
     ) {}
 
     public function connect(Request $request, Website $website): RedirectResponse
@@ -61,7 +64,10 @@ class SearchConsoleController extends Controller
     {
         $this->authorizeWebsite($request, $website);
         $connection = $website->searchConsoleConnection()->firstOrFail();
-        $properties = $this->searchConsole->sites($connection);
+        $properties = collect($this->searchConsole->sites($connection))
+            ->filter(fn (array $property): bool => $this->propertyMatcher->matches($website, (string) ($property['siteUrl'] ?? '')))
+            ->values()
+            ->all();
 
         return view('admin.websites.search-console-property', compact('website', 'properties'));
     }
@@ -144,6 +150,13 @@ class SearchConsoleController extends Controller
         $connection = $website->searchConsoleConnection()->firstOrFail();
         $property = collect($this->searchConsole->sites($connection))->firstWhere('siteUrl', $request->validated('property_url'));
         abort_unless($property, 422, 'That Search Console property is not available to this Google account.');
+
+        if (! $this->propertyMatcher->matches($website, (string) $property['siteUrl'])) {
+            throw ValidationException::withMessages([
+                'property_url' => 'The Search Console property must match this website’s configured domain.',
+            ]);
+        }
+
         $connection->update([
             'property_url' => $property['siteUrl'],
             'permission_level' => $property['permissionLevel'] ?? null,

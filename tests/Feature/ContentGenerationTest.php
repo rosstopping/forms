@@ -122,6 +122,52 @@ test('Search Console verification never takes a domain from another workspace', 
         ->and($connection->fresh()->property_url)->toBe('sc-domain:client.test');
 });
 
+test('Search Console only offers properties matching the configured website domain', function (): void {
+    $owner = User::factory()->create([
+        'membership_tier' => MembershipPlan::ESSENTIAL,
+        'membership_status' => 'active',
+    ]);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $website->domains()->create(['domain' => 'client.test', 'is_primary' => true]);
+    $connection = SearchConsoleConnection::factory()->for($website)->for($owner, 'connector')->create(['property_url' => null]);
+    $this->mock(SearchConsoleClient::class)
+        ->shouldReceive('sites')
+        ->once()
+        ->withArgs(fn (SearchConsoleConnection $selectedConnection): bool => $selectedConnection->is($connection))
+        ->andReturn([
+            ['siteUrl' => 'sc-domain:client.test', 'permissionLevel' => 'siteOwner'],
+            ['siteUrl' => 'https://unrelated.test/', 'permissionLevel' => 'siteOwner'],
+        ]);
+
+    $this->actingAs($owner)
+        ->get(route('admin.search-console.property', $website))
+        ->assertOk()
+        ->assertSee('sc-domain:client.test')
+        ->assertDontSee('https://unrelated.test/');
+});
+
+test('Search Console rejects an available property from another domain', function (): void {
+    $owner = User::factory()->create([
+        'membership_tier' => MembershipPlan::ESSENTIAL,
+        'membership_status' => 'active',
+    ]);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $website->domains()->create(['domain' => 'client.test', 'is_primary' => true]);
+    $connection = SearchConsoleConnection::factory()->for($website)->for($owner, 'connector')->create(['property_url' => null]);
+    $this->mock(SearchConsoleClient::class)
+        ->shouldReceive('sites')
+        ->once()
+        ->andReturn([['siteUrl' => 'sc-domain:unrelated.test', 'permissionLevel' => 'siteOwner']]);
+
+    $this->actingAs($owner)
+        ->post(route('admin.search-console.property.store', $website), [
+            'property_url' => 'sc-domain:unrelated.test',
+        ])
+        ->assertSessionHasErrors('property_url');
+
+    expect($connection->fresh()->property_url)->toBeNull();
+});
+
 test('website owners cannot connect Search Console to another clients website', function () {
     $owner = User::factory()->create();
     $otherWebsite = Website::factory()->create();
