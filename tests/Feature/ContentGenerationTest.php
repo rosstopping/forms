@@ -450,7 +450,7 @@ test('website owners can queue and remove manual content requests', function () 
 
     $this->actingAs($owner)
         ->post(route('admin.content-requests.store', $website), ['instructions' => $instructions])
-        ->assertRedirect(route('admin.websites.show', $website));
+        ->assertRedirect(route('admin.websites.section', [$website, 'content']));
 
     $contentRequest = $website->contentRequests()->sole();
     expect($contentRequest->instructions)->toBe($instructions)
@@ -469,7 +469,7 @@ test('website owners can queue and remove manual content requests', function () 
 
     $this->actingAs($owner)
         ->delete(route('admin.content-requests.destroy', [$website, $contentRequest]))
-        ->assertRedirect(route('admin.websites.show', $website));
+        ->assertRedirect(route('admin.websites.section', [$website, 'content']));
 
     $this->assertModelMissing($contentRequest);
 });

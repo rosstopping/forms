@@ -27,7 +27,7 @@ class ContentRequestController extends Controller
             GenerateContentRequestPixelOptimisations::dispatch($contentRequest, $request->user());
         }
 
-        return Redirect::route('admin.websites.show', $website)->with('status', 'Content request added for the next generation.');
+        return Redirect::route('admin.websites.section', [$website, 'content'])->with('status', 'Content request added for the next generation.');
     }
 
     public function destroy(Request $request, Website $website, ContentRequest $contentRequest): RedirectResponse
@@ -48,6 +48,6 @@ class ContentRequestController extends Controller
             $contentRequest->delete();
         });
 
-        return Redirect::route('admin.websites.show', $website)->with('status', 'Content request removed.');
+        return Redirect::route('admin.websites.section', [$website, 'content'])->with('status', 'Content request removed.');
     }
 }

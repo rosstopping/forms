@@ -122,7 +122,7 @@ it('allows an administrator to grant and remove a membership without Stripe', fu
         ->post(route('admin.content-requests.store', $website), [
             'instructions' => 'Create a service page.',
         ])
-        ->assertRedirect(route('admin.websites.show', $website));
+        ->assertRedirect(route('admin.websites.section', [$website, 'content']));
 
     expect($website->contentRequests()->exists())->toBeTrue();
 
