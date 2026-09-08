@@ -78,8 +78,10 @@ test('a signed email suggestion link adds the opportunity to the content queue',
 
     $this->get($url)
         ->assertSuccessful()
+        ->assertSee('rel="stylesheet"', false)
         ->assertSee('Added to the content queue')
-        ->assertSee($website->name);
+        ->assertSee($website->name)
+        ->assertSee('You can close this window.');
 
     expect($opportunity->fresh()->status)->toBe(SearchOpportunity::STATUS_QUEUED)
         ->and($website->contentRequests()->sole()->instructions)->toContain('roof repairs doncaster')
