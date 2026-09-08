@@ -709,14 +709,17 @@
         &lt;textarea name="message" required&gt;&lt;/textarea&gt;
     &lt;/label&gt;
 
-@if($website->turnstile_enabled && $website->turnstile_site_key)
-    &lt;div class="cf-turnstile" data-sitekey="{{ $website->turnstile_site_key }}"&gt;&lt;/div&gt;
+    &lt;!-- Replace YOUR_TURNSTILE_SITE_KEY with your Cloudflare public site key.
+         Save the matching site and secret keys in Sitewell website settings
+         and enable Turnstile protection. Never put the secret key here.
+         The widget adds the cf-turnstile-response field automatically. --&gt;
+    &lt;div class="cf-turnstile" data-sitekey="{{ $website->turnstile_site_key ?: 'YOUR_TURNSTILE_SITE_KEY' }}"&gt;&lt;/div&gt;
 
-@endif
     &lt;button type="submit"&gt;Send enquiry&lt;/button&gt;
-&lt;/form&gt;@if($website->turnstile_enabled && $website->turnstile_site_key)
+&lt;/form&gt;
 
-&lt;script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer&gt;&lt;/script&gt;@endif</textarea>
+&lt;!-- Include this script once per page. --&gt;
+&lt;script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer&gt;&lt;/script&gt;</textarea>
                 </div>
             </div>
             </details>

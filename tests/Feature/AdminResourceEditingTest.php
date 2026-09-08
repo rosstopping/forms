@@ -4,6 +4,7 @@ use App\Models\Form;
 use App\Models\User;
 use App\Models\Website;
 use App\Support\MembershipPlan;
+use Dom\HTMLDocument;
 use Illuminate\Support\Facades\Hash;
 
 it('allows an administrator to edit a user and optionally change their password', function (): void {
@@ -259,6 +260,32 @@ it('allows an administrator to configure website webhook settings', function ():
         ->webhook_url->toBe('https://hooks.example.com/submissions')
         ->webhook_secret->toBe('signing-secret');
 });
+
+it('includes Turnstile in the copyable form example before and after configuration', function (bool $enabled, ?string $siteKey): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $website = Website::factory()->create([
+        'turnstile_enabled' => $enabled,
+        'turnstile_site_key' => $siteKey,
+        'turnstile_secret_key' => 'private-turnstile-secret',
+    ]);
+
+    $response = $this->actingAs($admin)
+        ->get(route('admin.websites.show', ['website' => $website, 'tab' => 'forms']))
+        ->assertSuccessful();
+
+    $document = HTMLDocument::createFromString($response->getContent(), LIBXML_NOERROR);
+    $example = $document->getElementById('form-onboarding-example')->textContent;
+
+    expect($example)
+        ->toContain('<div class="cf-turnstile" data-sitekey="'.($siteKey ?: 'YOUR_TURNSTILE_SITE_KEY').'"></div>')
+        ->toContain('<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>')
+        ->toContain('cf-turnstile-response')
+        ->not->toContain('private-turnstile-secret');
+})->with([
+    'not configured' => [false, null],
+    'saved key with protection disabled' => [false, 'public-site-key'],
+    'protection enabled' => [true, 'public-site-key'],
+]);
 
 it('allows an administrator to configure website Turnstile protection', function (): void {
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
