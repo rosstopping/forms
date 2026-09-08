@@ -73,6 +73,43 @@ it('retrieves every page of repositories available to an installation', function
     Http::assertSent(fn ($request): bool => $request->url() === 'https://api.github.test/installation/repositories?per_page=100&page=2');
 });
 
+it('opens existing installation repositories from the content connection link', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $website = Website::factory()->create();
+    $installation = GithubInstallation::factory()->create(['installation_id' => 9876]);
+
+    mock(GithubAppClient::class)
+        ->shouldReceive('repositories')
+        ->once()
+        ->with(9876)
+        ->andReturn([[
+            'id' => 456,
+            'full_name' => 'acme/marketing',
+            'default_branch' => 'main',
+            'private' => true,
+        ]]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.websites.show', ['website' => $website, 'tab' => 'content']))
+        ->assertOk()
+        ->assertSee('href="'.route('admin.website-repositories.create', $website).'"', false)
+        ->assertDontSee('href="'.route('admin.github.connect', $website).'"', false);
+
+    $this->get(route('admin.website-repositories.create', $website))
+        ->assertOk()
+        ->assertSee('acme/marketing')
+        ->assertSee('value="'.$installation->id.':456"', false);
+});
+
+it('starts installation from the repository selector when no installation exists', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $website = Website::factory()->create();
+
+    $this->actingAs($admin)
+        ->get(route('admin.website-repositories.create', $website))
+        ->assertRedirect(route('admin.github.connect', $website));
+});
+
 it('starts a GitHub App installation for an administrator', function (): void {
     config(['services.github.app_slug' => 'website-health-bot']);
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
