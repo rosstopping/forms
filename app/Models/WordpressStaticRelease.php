@@ -26,6 +26,7 @@ class WordpressStaticRelease extends Model
         'created_by',
         'public_id',
         'commit_sha',
+        'github_workflow_run_id',
         'source_ref',
         'status',
         'storage_path',
@@ -37,6 +38,7 @@ class WordpressStaticRelease extends Model
     ];
 
     protected $casts = [
+        'github_workflow_run_id' => 'integer',
         'ready_at' => 'datetime',
         'activated_at' => 'datetime',
     ];

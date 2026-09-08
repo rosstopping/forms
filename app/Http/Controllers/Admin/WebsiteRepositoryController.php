@@ -90,6 +90,8 @@ class WebsiteRepositoryController extends Controller
             'private' => $repository['private'],
             'permissions' => $repository['permissions'] ?? [],
             'project_path' => $data['project_path'] ?? null,
+            'wordpress_workflow_path' => $data['wordpress_workflow_path'] ?? null,
+            'wordpress_artifact_name' => $data['wordpress_artifact_name'] ?? null,
         ]);
 
         return Redirect::route('admin.websites.show', $website)

@@ -42,6 +42,8 @@ class StoreWebsiteRepositoryRequest extends FormRequest
             'github_installation_id' => ['required', 'integer', 'exists:github_installations,id'],
             'repository_id' => ['required', 'integer'],
             'project_path' => ['nullable', 'string', 'max:255', 'regex:/^(?!\/)(?!.*\.\.)(?!.*\/\/)[A-Za-z0-9._\/-]+$/'],
+            'wordpress_workflow_path' => ['nullable', 'required_with:wordpress_artifact_name', 'string', 'max:255', 'regex:~^\.github/workflows/[A-Za-z0-9_-]+\.ya?ml$~'],
+            'wordpress_artifact_name' => ['nullable', 'required_with:wordpress_workflow_path', 'string', 'max:255', 'regex:/^[A-Za-z0-9._-]+$/'],
         ];
     }
 }

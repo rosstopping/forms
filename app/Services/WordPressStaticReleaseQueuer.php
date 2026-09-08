@@ -11,7 +11,7 @@ use RuntimeException;
 class WordPressStaticReleaseQueuer
 {
     /** @return array{release: WordpressStaticRelease, created: bool} */
-    public function queue(Website $website, ?int $createdBy = null, ?string $commitSha = null): array
+    public function queue(Website $website, ?int $createdBy = null, ?string $commitSha = null, ?int $workflowRunId = null): array
     {
         $repository = $website->repository;
 
@@ -19,7 +19,7 @@ class WordPressStaticReleaseQueuer
             throw new RuntimeException('Connect a GitHub repository before creating a static release.');
         }
 
-        $result = DB::transaction(function () use ($website, $repository, $createdBy, $commitSha): array {
+        $result = DB::transaction(function () use ($website, $repository, $createdBy, $commitSha, $workflowRunId): array {
             Website::query()->whereKey($website->getKey())->lockForUpdate()->firstOrFail();
 
             $query = $website->wordpressStaticReleases()
@@ -30,7 +30,7 @@ class WordPressStaticReleaseQueuer
                 ]);
 
             $existing = filled($commitSha)
-                ? (clone $query)->where('commit_sha', $commitSha)->first()
+                ? (clone $query)->where('commit_sha', $commitSha)->where('github_workflow_run_id', $workflowRunId)->first()
                 : (clone $query)->whereIn('status', [WordpressStaticRelease::STATUS_QUEUED, WordpressStaticRelease::STATUS_BUILDING])->first();
 
             if ($existing) {
@@ -40,6 +40,7 @@ class WordPressStaticReleaseQueuer
             $release = $website->wordpressStaticReleases()->create([
                 'created_by' => $createdBy,
                 'commit_sha' => $commitSha,
+                'github_workflow_run_id' => $workflowRunId,
                 'source_ref' => $repository->default_branch,
                 'status' => WordpressStaticRelease::STATUS_QUEUED,
             ]);

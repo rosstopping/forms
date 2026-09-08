@@ -28,7 +28,15 @@ class WordPressStaticReleaseBuilder
     public function build(WordpressStaticRelease $release, WebsiteRepository $repository): WordpressStaticRelease
     {
         $release->update(['status' => WordpressStaticRelease::STATUS_BUILDING, 'error' => null]);
-        $archive = $this->github->repositoryArchive($repository, $release->commit_sha ?: $release->source_ref);
+        $fromArtifact = $repository->usesActionsArtifact();
+
+        if ($release->github_workflow_run_id !== null && ! $fromArtifact) {
+            throw new RuntimeException('GitHub Actions deployment was disabled after this build was queued.');
+        }
+
+        $archive = $fromArtifact
+            ? $this->github->workflowArtifactArchive($repository, $release->commit_sha, $release->github_workflow_run_id)
+            : $this->github->repositoryArchive($repository, $release->commit_sha ?: $release->source_ref);
 
         if (strlen($archive['archive']) > self::MAX_ARCHIVE_BYTES) {
             throw new RuntimeException('The GitHub repository archive is larger than the 50 MB deployment limit.');
@@ -42,7 +50,11 @@ class WordPressStaticReleaseBuilder
         $disk->put($sourcePath, $archive['archive']);
 
         try {
-            $this->repack($disk->path($sourcePath), $disk->path($releasePath), $repository->project_path);
+            $this->repack($disk->path($sourcePath), $disk->path($releasePath), $fromArtifact ? null : $repository->project_path, ! $fromArtifact);
+
+            if ($fromArtifact && $this->github->branchCommit($repository) !== $archive['commit_sha']) {
+                throw new RuntimeException('A newer commit arrived while preparing this release. Waiting for its build.');
+            }
         } catch (Throwable $exception) {
             $disk->delete($releasePath);
 
@@ -62,6 +74,7 @@ class WordPressStaticReleaseBuilder
 
         $release->update([
             'commit_sha' => strtolower($archive['commit_sha']),
+            'github_workflow_run_id' => $archive['workflow_run_id'] ?? null,
             'status' => WordpressStaticRelease::STATUS_READY,
             'storage_path' => $releasePath,
             'checksum' => $checksum,
@@ -73,7 +86,7 @@ class WordPressStaticReleaseBuilder
         return $release->refresh();
     }
 
-    private function repack(string $sourcePath, string $releasePath, ?string $projectPath): void
+    private function repack(string $sourcePath, string $releasePath, ?string $projectPath, bool $stripRepositoryRoot = true): void
     {
         if (! class_exists(ZipArchive::class)) {
             throw new RuntimeException('The PHP ZIP extension is required to build WordPress static releases.');
@@ -105,7 +118,7 @@ class WordPressStaticReleaseBuilder
                     throw new RuntimeException('The repository archive contains an invalid file path.');
                 }
 
-                $relativeName = $this->relativeArchivePath($sourceName, $normalizedProjectPath);
+                $relativeName = $stripRepositoryRoot ? $this->relativeArchivePath($sourceName, $normalizedProjectPath) : $sourceName;
 
                 if ($relativeName === null || str_ends_with($relativeName, '/')) {
                     continue;
@@ -115,6 +128,12 @@ class WordPressStaticReleaseBuilder
 
                 if (! $this->shouldPackage($relativeName)) {
                     continue;
+                }
+
+                $stat = $source->statIndex($index);
+
+                if (! is_array($stat) || $bytes + $stat['size'] > self::MAX_EXTRACTED_BYTES) {
+                    throw new RuntimeException('The static site exceeds the deployment file or size limit.');
                 }
 
                 $contents = $source->getFromIndex($index);
@@ -138,7 +157,7 @@ class WordPressStaticReleaseBuilder
             }
 
             if (! $hasIndex) {
-                throw new RuntimeException('The selected repository path does not contain an index.html file.');
+                throw new RuntimeException('The selected deployment files do not contain an index.html file at the root. Upload the contents of your build output folder.');
             }
         } finally {
             $source->close();

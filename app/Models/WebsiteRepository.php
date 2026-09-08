@@ -22,6 +22,8 @@ class WebsiteRepository extends Model
         'private',
         'permissions',
         'project_path',
+        'wordpress_workflow_path',
+        'wordpress_artifact_name',
     ];
 
     protected function casts(): array
@@ -30,6 +32,11 @@ class WebsiteRepository extends Model
             'private' => 'boolean',
             'permissions' => 'array',
         ];
+    }
+
+    public function usesActionsArtifact(): bool
+    {
+        return filled($this->wordpress_workflow_path) && filled($this->wordpress_artifact_name);
     }
 
     public function website(): BelongsTo
