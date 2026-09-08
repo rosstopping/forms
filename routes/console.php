@@ -54,3 +54,7 @@ Schedule::command('search-console:sync-history')
 Schedule::command('ranking-reports:dispatch')
     ->weeklyOn(1, '08:00')
     ->withoutOverlapping();
+
+Schedule::command('ranking-reports:dispatch-monthly')
+    ->monthlyOn(8, '09:00')
+    ->withoutOverlapping();

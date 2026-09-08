@@ -68,7 +68,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Ai/Agents/WebsiteDataAssistant.php,Services/WebsiteAiContext.php,Http/Controllers/Admin/WebsiteAiChatController.php,Models/WebsiteAiQuestion.php},resources/views/admin/websites/show.blade.php,routes/web.php | .ai/rules/views-admin-websites.md |
 | app/Http/Controllers/Admin/DashboardController.php,resources/views/admin/dashboard.blade.php | .ai/rules/views-admin.md |
 | app/{Ai,Jobs,Services,Http/Controllers/Admin}/**/*Pixel*.php,resources/views/admin/{websites/**,website-health-reports/**} | .ai/rules/views-adminwebsites.md |
-| app/{Jobs,Mail,Services,Console/Commands}/**/*.php,resources/views/emails/** | .ai/rules/views-emails.md |
+| app/{Jobs,Mail,Services,Console/Commands}/**/*.php,resources/views/emails/**, app/{Jobs,Mail,Services,Console/Commands}/**/*.php,resources/views/emails/**,routes/console.php | .ai/rules/views-emails.md |
 | {app/Http/Controllers/MarketingController.php,config/marketing.php,resources/views/marketing/{landing,features}.blade.php,routes/web.php,tests/Feature/MarketingPagesTest.php} | .ai/rules/views-marketing-feature.md |
 | app/{Http/Controllers/FreeSiteAuditController.php,Http/Requests/StoreFreeSiteAuditRequest.php,Jobs/GenerateWebsiteAudit.php,Models/WebsiteAudit.php,Services/MarketingTurnstileVerifier.php},resources/views/marketing/{free-site-audit,website-audit}.blade.php,routes/web.php | .ai/rules/views-marketing.md |
 | app/Models/Website.php,resources/views/admin/websites/**,resources/views/admin/website-health-reports/** | .ai/rules/website-health-reports.md |
