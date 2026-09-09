@@ -47,6 +47,51 @@ test('managers manage normalized targets without starting paid checks', function
     Queue::assertPushed(CheckSeoTargetKeywordRanking::class, 1);
 });
 
+test('managers bulk add up to 20 normal priority target keywords from collapsed entry', function (): void {
+    Queue::fake();
+    Http::preventStrayRequests();
+    $website = Website::factory()->create();
+
+    $this->actingAs($website->owner)
+        ->get(route('admin.websites.show', [$website, 'tab' => 'seo', 'seo_section' => 'targets']))
+        ->assertSuccessful()
+        ->assertSee('Bulk add keywords');
+
+    $this->post(route('admin.seo-target-keywords.bulk-store', $website), [
+        'bulk_terms' => "  Boiler repair Barnsley  \nBoiler installation Barnsley\n\nboiler repair barnsley\nEmergency plumber Barnsley",
+    ])->assertRedirect()->assertSessionHas('status', '3 target keywords added.');
+
+    expect($website->seoTargetKeywords()->pluck('normalized_term')->sort()->values()->all())->toBe([
+        'boiler installation barnsley',
+        'boiler repair barnsley',
+        'emergency plumber barnsley',
+    ])->and($website->seoTargetKeywords()->pluck('priority')->unique()->all())->toBe([SeoTargetKeyword::PRIORITY_NORMAL]);
+    Queue::assertNothingPushed();
+    Http::assertNothingSent();
+});
+
+test('bulk target entry respects submitted and active keyword limits', function (): void {
+    $emptyWebsite = Website::factory()->create();
+    $this->actingAs($emptyWebsite->owner)->post(route('admin.seo-target-keywords.bulk-store', $emptyWebsite), [
+        'bulk_terms' => collect(range(1, 20))->map(fn (int $number): string => "target keyword {$number}")->implode("\n"),
+    ])->assertRedirect();
+    expect($emptyWebsite->seoTargetKeywords()->count())->toBe(20);
+
+    $website = Website::factory()->create();
+    SeoTargetKeyword::factory()->count(19)->for($website)->create();
+    $this->actingAs($website->owner);
+
+    $this->post(route('admin.seo-target-keywords.bulk-store', $website), [
+        'bulk_terms' => "one more keyword\na second keyword",
+    ])->assertSessionHasErrors('bulk_terms');
+    expect($website->seoTargetKeywords()->count())->toBe(19);
+
+    $this->post(route('admin.seo-target-keywords.bulk-store', $website), [
+        'bulk_terms' => collect(range(1, 21))->map(fn (int $number): string => "keyword {$number}")->implode("\n"),
+    ])->assertSessionHasErrors('bulk_terms');
+    expect($website->seoTargetKeywords()->count())->toBe(19);
+});
+
 test('target limits permissions gates and website isolation are enforced', function (): void {
     $website = Website::factory()->create();
     SeoTargetKeyword::factory()->count(20)->for($website)->create();
@@ -55,11 +100,13 @@ test('target limits permissions gates and website isolation are enforced', funct
     $website->members()->attach($viewer, ['role' => Website::MEMBER_ROLE_VIEWER]);
     $target = $website->seoTargetKeywords()->first();
     $this->actingAs($viewer)->get(route('admin.websites.show', [$website, 'tab' => 'seo', 'seo_section' => 'targets']))->assertSuccessful()->assertSee($target->term);
+    $this->post(route('admin.seo-target-keywords.bulk-store', $website), ['bulk_terms' => 'viewer keyword'])->assertForbidden();
     $this->post(route('admin.seo-target-keywords.check', [$website, $target]))->assertForbidden();
     $other = Website::factory()->create();
     $this->actingAs($other->owner)->post(route('admin.seo-target-keywords.check', [$other, $target]))->assertNotFound();
     $website->owner->update(['membership_tier' => 'essential']);
     $this->actingAs($website->owner)->post(route('admin.seo-target-keywords.check', [$website, $target]))->assertRedirect(route('admin.billing.index'));
+    $this->post(route('admin.seo-target-keywords.bulk-store', $website), ['bulk_terms' => 'gated keyword'])->assertRedirect(route('admin.billing.index'));
 });
 
 test('rank checks store exact and cached observations with cost only for provider calls', function (): void {

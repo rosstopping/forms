@@ -284,6 +284,7 @@ Route::middleware(['web', 'auth', ResolveCurrentWebsite::class])->prefix('admin'
     Route::put('websites/{website}/seo-snapshot-settings', SeoSnapshotSettingsController::class)->middleware('membership:growth')->name('seo-snapshot-settings.update');
     Route::middleware('membership:growth')->controller(SeoTargetKeywordController::class)->group(function (): void {
         Route::post('websites/{website}/seo-target-keywords', 'store')->name('seo-target-keywords.store');
+        Route::post('websites/{website}/seo-target-keywords/bulk', 'bulkStore')->name('seo-target-keywords.bulk-store');
         Route::put('websites/{website}/seo-target-keywords/{seoTargetKeyword}', 'update')->name('seo-target-keywords.update');
         Route::delete('websites/{website}/seo-target-keywords/{seoTargetKeyword}', 'archive')->name('seo-target-keywords.archive');
         Route::post('websites/{website}/seo-target-keywords/{seoTargetKeyword}/restore', 'restore')->name('seo-target-keywords.restore');

@@ -9,14 +9,30 @@
                 <p class="mt-1 max-w-2xl text-sm text-slate-600">Track terms this website intends to rank for, including terms with no current visibility.@if ($targetKeywords->isNotEmpty()) Positions are exact DataForSEO desktop checks in location {{ config('services.dataforseo.location_code') }} ({{ strtoupper(config('services.dataforseo.language_code')) }}), separate from Search Console measurements.@endif</p>
             </div>
             @if ($canManageWebsite)
-                <form method="POST" action="{{ route('admin.seo-target-keywords.store', $website) }}" class="grid w-full min-w-0 gap-4 rounded-lg bg-slate-50 p-4 sm:grid-cols-[10rem_minmax(0,1fr)] lg:max-w-xl">
-                    @csrf
-                    <div class="min-w-0 sm:col-span-2"><label for="target-term" class="block">Search term</label><input id="target-term" name="term" value="{{ old('term') }}" required maxlength="255" placeholder="e.g. emergency plumber barnsley" class="w-full min-w-0"></div>
-                    <div class="min-w-0"><label for="target-priority" class="block">Priority</label><select id="target-priority" name="priority" class="w-full"><option value="normal">Normal</option><option value="high" @selected(old('priority') === 'high')>High</option></select></div>
-                    <div class="min-w-0"><label for="target-note" class="block">Business context <span class="text-slate-500">(optional)</span></label><input id="target-note" name="note" value="{{ old('note') }}" maxlength="1000" placeholder="Service, audience, location…" class="w-full min-w-0"></div>
-                    @error('term')<p class="text-sm text-red-700 sm:col-span-2">{{ $message }}</p>@enderror
-                    <div class="sm:col-span-2"><button type="submit" class="w-full rounded-lg bg-teal-700 px-3 py-2.5 text-sm font-semibold text-white hover:bg-teal-800 sm:w-auto">Add target</button></div>
-                </form>
+                <div class="w-full min-w-0 lg:max-w-xl">
+                    <form method="POST" action="{{ route('admin.seo-target-keywords.store', $website) }}" class="grid min-w-0 gap-4 rounded-lg bg-slate-50 p-4 sm:grid-cols-[10rem_minmax(0,1fr)]">
+                        @csrf
+                        <div class="min-w-0 sm:col-span-2"><label for="target-term" class="block">Search term</label><input id="target-term" name="term" value="{{ old('term') }}" required maxlength="255" placeholder="e.g. emergency plumber barnsley" class="w-full min-w-0"></div>
+                        <div class="min-w-0"><label for="target-priority" class="block">Priority</label><select id="target-priority" name="priority" class="w-full"><option value="normal">Normal</option><option value="high" @selected(old('priority') === 'high')>High</option></select></div>
+                        <div class="min-w-0"><label for="target-note" class="block">Business context <span class="text-slate-500">(optional)</span></label><input id="target-note" name="note" value="{{ old('note') }}" maxlength="1000" placeholder="Service, audience, location…" class="w-full min-w-0"></div>
+                        @error('term')<p class="text-sm text-red-700 sm:col-span-2">{{ $message }}</p>@enderror
+                        <div class="sm:col-span-2"><button type="submit" class="w-full rounded-lg bg-teal-700 px-3 py-2.5 text-sm font-semibold text-white hover:bg-teal-800 sm:w-auto">Add target</button></div>
+                    </form>
+
+                    <details class="mt-3 rounded-lg border border-slate-200 bg-white p-3" @if ($errors->has('bulk_terms')) open @endif>
+                        <summary class="cursor-pointer select-none text-sm font-semibold text-slate-700">Bulk add keywords</summary>
+                        <form method="POST" action="{{ route('admin.seo-target-keywords.bulk-store', $website) }}" class="mt-3 grid min-w-0 gap-3 border-t border-slate-100 pt-3">
+                            @csrf
+                            <div class="min-w-0">
+                                <label for="target-bulk-terms" class="block">Keywords</label>
+                                <textarea id="target-bulk-terms" name="bulk_terms" rows="8" maxlength="6000" required class="mt-1 min-h-40 w-full min-w-0" placeholder="emergency plumber barnsley&#10;boiler installation barnsley&#10;boiler repair barnsley">{{ old('bulk_terms') }}</textarea>
+                                <p class="mt-1 text-xs text-slate-500">Enter one keyword per line, up to 20. Every keyword will use normal priority.</p>
+                            </div>
+                            @error('bulk_terms')<p class="text-sm text-red-700">{{ $message }}</p>@enderror
+                            <button type="submit" class="w-full rounded-lg bg-teal-700 px-3 py-2.5 text-sm font-semibold text-white hover:bg-teal-800 sm:w-auto sm:justify-self-start">Add keywords</button>
+                        </form>
+                    </details>
+                </div>
             @endif
         </div>
     </div>

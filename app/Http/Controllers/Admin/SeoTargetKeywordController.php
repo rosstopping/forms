@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\BulkStoreSeoTargetKeywordsRequest;
 use App\Http\Requests\StoreSeoTargetKeywordRequest;
 use App\Http\Requests\UpdateSeoTargetKeywordRequest;
 use App\Jobs\CheckSeoTargetKeywordRanking;
@@ -30,6 +31,42 @@ class SeoTargetKeywordController extends Controller
         });
 
         return $this->redirect($website, 'Target keyword added.');
+    }
+
+    public function bulkStore(BulkStoreSeoTargetKeywordsRequest $request, Website $website): RedirectResponse
+    {
+        $added = DB::transaction(function () use ($request, $website): int {
+            Website::query()->whereKey($website)->lockForUpdate()->firstOrFail();
+
+            $terms = collect($request->terms())
+                ->mapWithKeys(fn (string $term): array => [SeoTargetKeyword::normalize($term) => $term]);
+            $existingTerms = $website->seoTargetKeywords()
+                ->whereIn('normalized_term', $terms->keys())
+                ->pluck('normalized_term');
+            $newTerms = $terms->except($existingTerms->all());
+            $activeCount = $website->seoTargetKeywords()->whereNull('archived_at')->count();
+
+            if ($activeCount + $newTerms->count() > 20) {
+                $remaining = max(0, 20 - $activeCount);
+
+                throw ValidationException::withMessages([
+                    'bulk_terms' => "This website can add {$remaining} more active target ".str('keyword')->plural($remaining).'.',
+                ]);
+            }
+
+            $website->seoTargetKeywords()->createMany($newTerms->map(fn (string $term): array => [
+                'term' => $term,
+                'priority' => SeoTargetKeyword::PRIORITY_NORMAL,
+            ])->values()->all());
+
+            return $newTerms->count();
+        });
+
+        $message = $added === 0
+            ? 'No new target keywords were added.'
+            : $added.' target '.str('keyword')->plural($added).' added.';
+
+        return $this->redirect($website, $message);
     }
 
     public function update(UpdateSeoTargetKeywordRequest $request, Website $website, SeoTargetKeyword $seoTargetKeyword): RedirectResponse
