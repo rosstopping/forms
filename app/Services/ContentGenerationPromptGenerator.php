@@ -18,15 +18,16 @@ class ContentGenerationPromptGenerator
     public function generate(ContentGeneration $generation): string
     {
         $generation->loadMissing(['plan.website', 'repository', 'contentRequests']);
-        $audience = Str::limit((string) $generation->plan->audience, self::AUDIENCE_LIMIT, PHP_EOL.'[Audience truncated for the generation task.]');
-        $guidance = Str::limit((string) $generation->plan->guidance, self::GUIDANCE_LIMIT, PHP_EOL.'[Editorial guidance truncated for the generation task.]');
+        $hasCompetitorContext = ! empty($generation->competitor_context);
+        $audience = Str::limit((string) $generation->plan->audience, $hasCompetitorContext ? 2000 : self::AUDIENCE_LIMIT, PHP_EOL.'[Audience truncated for the generation task.]');
+        $guidance = Str::limit((string) $generation->plan->guidance, $hasCompetitorContext ? 6000 : self::GUIDANCE_LIMIT, PHP_EOL.'[Editorial guidance truncated for the generation task.]');
         $performanceRows = $generation->search_performance ?? [];
         $searchConsoleGuidance = $performanceRows === []
             ? 'Base the decision on existing coverage, internal-link opportunities, and the manual requests and editorial context supplied below.'
             : 'Base the decision on existing coverage, internal-link opportunities, and the Search Console data below.';
         $searchConsoleSection = $performanceRows === []
             ? ''
-            : PHP_EOL.PHP_EOL.'Search Console top query/page rows for the last 28 days (directional, not exhaustive):'.PHP_EOL.$this->performanceForPrompt($performanceRows);
+            : PHP_EOL.PHP_EOL.'Search Console top query/page rows for the last 28 days (directional, not exhaustive):'.PHP_EOL.$this->performanceForPrompt($performanceRows, $hasCompetitorContext ? 3000 : self::PERFORMANCE_LIMIT);
         $projectPath = $generation->repository->project_path ?: 'repository root';
         $manualRequests = $generation->contentRequests->isEmpty()
             ? 'No manual content requests were queued for this run.'
@@ -56,11 +57,18 @@ Requirements:
 - Run the most relevant tests/build checks available and summarize the content choice and validation in the pull request.{$searchConsoleSection}
 PROMPT;
 
-        return Str::limit($prompt, self::PROMPT_LIMIT, PHP_EOL.'[Prompt truncated at 30,000 characters.]');
+        if (mb_strlen($prompt) > self::PROMPT_LIMIT) {
+            $guidanceLimit = max(0, mb_strlen($guidance) - (mb_strlen($prompt) - self::PROMPT_LIMIT) - 100);
+            $prompt = str_replace('Editorial guidance: '.$guidance, 'Editorial guidance: '.Str::limit($guidance, $guidanceLimit, PHP_EOL.'[Editorial guidance truncated for the generation task.]'), $prompt);
+        }
+        $available = max(0, self::PROMPT_LIMIT - mb_strlen($prompt) - 300);
+        $competitorContext = app(CompetitorContentContext::class)->forPrompt($generation->competitor_context ?? [], min(10000, $available));
+
+        return $prompt.$competitorContext;
     }
 
     /** @param array<int, array<string, mixed>> $rows */
-    protected function performanceForPrompt(array $rows): string
+    protected function performanceForPrompt(array $rows, int $limit = self::PERFORMANCE_LIMIT): string
     {
         $includedRows = [];
 
@@ -68,7 +76,7 @@ PROMPT;
             $candidate = [...$includedRows, $row];
             $encoded = json_encode($candidate, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
 
-            if (mb_strlen($encoded) > self::PERFORMANCE_LIMIT) {
+            if (mb_strlen($encoded) > $limit) {
                 break;
             }
 

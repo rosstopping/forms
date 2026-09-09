@@ -175,6 +175,7 @@ class WebsiteController extends Controller
         $seoDirection = $request->string('seo_direction')->toString() === 'asc' ? 'asc' : 'desc';
         $seoKeywords = null;
         $seoReferringDomains = collect();
+        $trackedCompetitors = $website->competitors()->with('latestAudit')->orderBy('excluded')->orderBy('domain')->get();
         $seoCompetitors = collect();
         $seoOpportunities = collect();
         $strikingDistanceCount = 0;
@@ -188,7 +189,6 @@ class WebsiteController extends Controller
             $seoCompetitors = $seoSnapshot->competitors()
                 ->orderByDesc('common_keywords')
                 ->orderByDesc('estimated_traffic')
-                ->limit(10)
                 ->get();
             $seoOpportunities = $seoSnapshot->opportunities()
                 ->with('keyword')
@@ -279,7 +279,7 @@ class WebsiteController extends Controller
         return view('admin.websites.show', compact(
             'website', 'canManageMembers', 'canManageWebsite', 'canRunHealthReports', 'canUseSearchConsole',
             'searchConsoleReport', 'searchConsoleHistory', 'searchConsoleReportUnavailable', 'seoGeneration', 'seoSnapshot', 'seoHistory',
-            'seoKeywords', 'seoReferringDomains', 'seoCompetitors', 'seoOpportunities', 'seoFilter', 'seoSort', 'seoDirection', 'strikingDistanceCount',
+            'trackedCompetitors', 'seoKeywords', 'seoReferringDomains', 'seoCompetitors', 'seoOpportunities', 'seoFilter', 'seoSort', 'seoDirection', 'strikingDistanceCount',
             'dataForSeoConfigured', 'outreachProspect', 'pixelInstallationSnippet', 'canUseGrowthFeatures', 'canUseCompleteFeatures', 'canUseAutoresponders',
             'websiteAiQuestions', 'websiteAiQuestionsUsed', 'websiteAiWeeklyLimit', 'pixelOptimisations', 'websiteUsers', 'soleManagerId',
             'hasContentDeliveryConnection', 'contentSupportCallUrl',

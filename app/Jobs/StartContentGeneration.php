@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\ContentGeneration;
+use App\Services\CompetitorContentContext;
 use App\Services\ContentGenerationPromptGenerator;
 use App\Services\CopilotAgentClient;
 use App\Services\SearchConsoleClient;
@@ -58,7 +59,9 @@ class StartContentGeneration implements ShouldBeEncrypted, ShouldBeUnique, Shoul
             ->limit(2)
             ->get();
         $this->generation->setRelation('contentRequests', $contentRequests);
-        $this->generation->setRelation('contentRequests', $contentRequests);
+        if ($this->generation->competitor_context === null) {
+            $this->generation->update(['competitor_context' => app(CompetitorContentContext::class)->forGeneration($this->generation, $contentRequests)]);
+        }
         $prompt = $prompts->generate($this->generation);
         $this->generation->update(['status' => ContentGeneration::STATUS_RUNNING, 'prompt' => $prompt, 'started_at' => now(), 'error' => null]);
         $task = $copilot->startTask($authorization, $this->generation->repository, $prompt);

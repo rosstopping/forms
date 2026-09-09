@@ -7,9 +7,13 @@
                     <button type="button" id="seo-section-tab-actions" class="shrink-0 rounded-md px-3 py-2 text-base font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 aria-selected:bg-slate-100 aria-selected:text-slate-950 sm:text-sm" role="tab" aria-selected="false" aria-controls="seo-section-panel-actions" tabindex="-1" data-tab="actions">Recommended Actions</button>
                     <button type="button" id="seo-section-tab-keywords" class="shrink-0 rounded-md px-3 py-2 text-base font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 aria-selected:bg-slate-100 aria-selected:text-slate-950 sm:text-sm" role="tab" aria-selected="false" aria-controls="seo-section-panel-keywords" tabindex="-1" data-tab="keywords">Keywords</button>
                     <button type="button" id="seo-section-tab-backlinks" class="shrink-0 rounded-md px-3 py-2 text-base font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 aria-selected:bg-slate-100 aria-selected:text-slate-950 sm:text-sm" role="tab" aria-selected="false" aria-controls="seo-section-panel-backlinks" tabindex="-1" data-tab="backlinks">Backlinks</button>
-                    <button type="button" id="seo-section-tab-competitors" class="shrink-0 rounded-md px-3 py-2 text-base font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 aria-selected:bg-slate-100 aria-selected:text-slate-950 sm:text-sm" role="tab" aria-selected="false" aria-controls="seo-section-panel-competitors" tabindex="-1" data-tab="competitors">Competitors</button>
                 @endif
+                    <button type="button" id="seo-section-tab-competitors" class="shrink-0 rounded-md px-3 py-2 text-base font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 aria-selected:bg-slate-100 aria-selected:text-slate-950 sm:text-sm" role="tab" aria-selected="false" aria-controls="seo-section-panel-competitors" tabindex="-1" data-tab="competitors">Competitors</button>
             </div>
+        </div>
+
+        <div id="seo-section-panel-competitors" role="tabpanel" aria-labelledby="seo-section-tab-competitors" data-tab-panel="competitors" hidden>
+            @include('admin.websites.partials.competitors')
         </div>
 
         <div id="seo-section-panel-overview" role="tabpanel" aria-labelledby="seo-section-tab-overview" data-tab-panel="overview">
@@ -211,50 +215,6 @@
                         <p class="mx-auto mt-2 max-w-[60ch] text-pretty text-base text-slate-600 sm:text-sm">No ranked keyword estimates were stored in this snapshot. Run another snapshot after the provider has discovered rankings for the website.</p>
                     </div>
                 @endforelse
-            </div>
-        </section>
-        </div>
-
-        <div id="seo-section-panel-competitors" role="tabpanel" aria-labelledby="seo-section-tab-competitors" data-tab-panel="competitors" hidden>
-        <section class="rounded-xl border bg-white shadow-sm" aria-labelledby="organic-competitors-title">
-            <div class="border-b border-slate-950/10 p-4">
-                <h3 id="organic-competitors-title" class="text-balance text-base font-semibold text-slate-950">Organic competitors</h3>
-                <p class="mt-1 text-pretty text-base text-slate-600 sm:text-sm">Domains appearing alongside this website for the same organic searches.</p>
-            </div>
-
-            @if (isset($seoSnapshot->errors['organic_competitors']))
-                <div class="border-b border-amber-950/10 bg-amber-50 p-4">
-                    <p class="text-base text-amber-800 sm:text-sm">Organic competitor data was unavailable when this snapshot was generated. Other successful SEO data has been retained.</p>
-                </div>
-            @endif
-
-            <div class="p-4">
-                <div class="-mx-4 -my-2 overflow-x-auto whitespace-nowrap">
-                    <div class="inline-block min-w-full px-4 py-2 align-middle">
-                        <table class="w-full divide-y divide-slate-950/10">
-                            <thead>
-                                <tr>
-                                    <th class="whitespace-nowrap py-3 pr-4 text-left">Domain</th>
-                                    <th class="whitespace-nowrap px-4 py-3 text-right">Shared keywords</th>
-                                    <th class="whitespace-nowrap px-4 py-3 text-right">Ranking keywords</th>
-                                    <th class="whitespace-nowrap py-3 pl-4 text-right">Estimated visits</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-950/5">
-                                @forelse ($seoCompetitors as $competitor)
-                                    <tr>
-                                        <td class="py-3 pr-4 font-medium text-slate-950">{{ $competitor->domain }}</td>
-                                        <td class="px-4 py-3 text-right font-medium tabular-nums text-teal-700">{{ number_format($competitor->common_keywords) }}</td>
-                                        <td class="px-4 py-3 text-right tabular-nums text-slate-700">{{ is_null($competitor->organic_keywords) ? '—' : number_format($competitor->organic_keywords) }}</td>
-                                        <td class="py-3 pl-4 text-right tabular-nums text-slate-700">{{ is_null($competitor->estimated_traffic) ? '—' : '~'.number_format((float) $competitor->estimated_traffic) }}</td>
-                                    </tr>
-                                @empty
-                                    <tr><td colspan="4" class="py-8 text-center text-slate-500">No organic competitors were returned for this snapshot.</td></tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
             </div>
         </section>
         </div>

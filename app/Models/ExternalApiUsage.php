@@ -12,7 +12,7 @@ class ExternalApiUsage extends Model
     /** @use HasFactory<ExternalApiUsageFactory> */
     use HasFactory;
 
-    protected $fillable = ['website_id', 'seo_snapshot_id', 'provider', 'endpoint', 'request_type', 'result_count', 'cost', 'provider_task_id', 'metadata', 'requested_at'];
+    protected $fillable = ['competitor_audit_id', 'website_id', 'seo_snapshot_id', 'provider', 'endpoint', 'request_type', 'result_count', 'cost', 'provider_task_id', 'metadata', 'requested_at'];
 
     protected function casts(): array
     {

@@ -100,6 +100,7 @@ return [
         'timeout' => (int) env('DATAFORSEO_TIMEOUT', 30),
         'ranked_keywords_limit' => (int) env('DATAFORSEO_RANKED_KEYWORDS_LIMIT', 500),
         'referring_domains_limit' => (int) env('DATAFORSEO_REFERRING_DOMAINS_LIMIT', 250),
+        'competitor_audits' => ['ranked_keywords' => 500, 'shared_keywords' => 500, 'missing_keywords' => 500, 'leading_pages' => 20, 'analyse_pages' => 5],
         'competitors_limit' => (int) env('DATAFORSEO_COMPETITORS_LIMIT', 25),
         'refresh_days' => (int) env('DATAFORSEO_REFRESH_DAYS', 7),
         'pending_timeout_minutes' => (int) env('DATAFORSEO_PENDING_TIMEOUT_MINUTES', 30),

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreContentRequestRequest;
 use App\Jobs\GenerateContentRequestPixelOptimisations;
+use App\Models\CompetitorOpportunity;
 use App\Models\ContentRequest;
 use App\Models\SearchOpportunity;
 use App\Models\SeoOpportunity;
@@ -45,6 +46,7 @@ class ContentRequestController extends Controller
                 'status' => SeoOpportunity::STATUS_OPEN,
                 'content_request_id' => null,
             ]);
+            CompetitorOpportunity::where('website_id', $contentRequest->website_id)->where('content_request_id', $contentRequest->id)->update(['status' => 'open', 'content_request_id' => null]);
             $contentRequest->delete();
         });
 

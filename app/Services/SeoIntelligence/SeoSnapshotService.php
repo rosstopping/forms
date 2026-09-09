@@ -4,6 +4,7 @@ namespace App\Services\SeoIntelligence;
 
 use App\Models\SeoSnapshot;
 use App\Models\Website;
+use App\Services\CompetitorDomain;
 use App\Services\DataForSEO\BacklinksService;
 use App\Services\DataForSEO\CompetitorsService;
 use App\Services\DataForSEO\Data\OrganicCompetitorData;
@@ -191,6 +192,9 @@ class SeoSnapshotService
 
                 $datasets[] = 'organic_competitors';
                 DB::transaction(function () use ($snapshot, $requestedAt, $competitorsResponse, $datasets, $keywordSampleVersion): void {
+                    foreach ($competitorsResponse->competitors as $competitor) {
+                        $snapshot->website->competitors()->firstOrCreate(['domain' => app(CompetitorDomain::class)->normalize($competitor->domain)], ['source' => 'discovered']);
+                    }
                     $snapshot->competitors()->createMany(array_map(
                         fn (OrganicCompetitorData $competitor): array => [
                             'website_id' => $snapshot->website_id,

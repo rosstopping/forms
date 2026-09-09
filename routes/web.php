@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\BusinessProfileController;
 use App\Http\Controllers\Admin\BusinessProfilePostController;
 use App\Http\Controllers\Admin\BusinessProfileRecommendationController;
 use App\Http\Controllers\Admin\BusinessProfileReviewController;
+use App\Http\Controllers\Admin\CompetitorController;
 use App\Http\Controllers\Admin\ContentPlanController;
 use App\Http\Controllers\Admin\ContentRequestController;
 use App\Http\Controllers\Admin\ContentRequestPixelController;
@@ -270,6 +271,13 @@ Route::middleware(['web', 'auth', ResolveCurrentWebsite::class])->prefix('admin'
     Route::get('websites/{website}/search-console/performance/query', [SearchConsoleController::class, 'query'])->middleware('membership:search_console')->name('search-console.queries.show');
     Route::delete('websites/{website}/search-console', [SearchConsoleController::class, 'destroy'])->middleware('membership:search_console')->name('search-console.destroy');
     Route::post('websites/{website}/search-opportunities/refresh', [SearchOpportunityController::class, 'refresh'])->middleware('membership:growth')->name('search-opportunities.refresh');
+    Route::middleware('membership:growth')->controller(CompetitorController::class)->group(function (): void {
+        Route::post('websites/{website}/competitors', 'store')->name('competitors.store');
+        Route::put('websites/{website}/competitors/{competitor}', 'update')->name('competitors.update');
+        Route::post('websites/{website}/competitors/{competitor}/audit', 'audit')->middleware('throttle:10,1')->name('competitors.audit');
+        Route::get('websites/{website}/competitor-audits/{audit}', 'show')->name('competitor-audits.show');
+        Route::post('websites/{website}/competitor-opportunities/{opportunity}/queue', 'queue')->name('competitor-opportunities.queue');
+    });
     Route::post('websites/{website}/seo-intelligence', SeoIntelligenceController::class)->middleware('membership:growth')->name('seo-intelligence.store');
     Route::get('websites/{website}/seo-keywords/{seoKeyword}', [SeoKeywordController::class, 'show'])->middleware('membership:growth')->name('seo-keywords.show');
     Route::put('websites/{website}/seo-snapshot-settings', SeoSnapshotSettingsController::class)->middleware('membership:growth')->name('seo-snapshot-settings.update');

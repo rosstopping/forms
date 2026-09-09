@@ -253,6 +253,11 @@ class Website extends Model
         return $this->hasMany(SeoReferringDomain::class);
     }
 
+    public function competitors(): HasMany
+    {
+        return $this->hasMany(WebsiteCompetitor::class);
+    }
+
     public function seoCompetitors(): HasMany
     {
         return $this->hasMany(SeoCompetitor::class);

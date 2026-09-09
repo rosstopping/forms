@@ -45,6 +45,15 @@ class RankedKeywordsService
         );
     }
 
+    public function forRange(string $domain, int $locationCode, string $languageCode, int $minimum, int $maximum, int $limit): RankedKeywordsResponse
+    {
+        $field = 'ranked_serp_element.serp_item.rank_group';
+        $response = $this->requestBucket($domain, $locationCode, $languageCode, [[$field, '>=', $minimum], 'and', [$field, '<=', $maximum]], min(1000, max(1, $limit)));
+        $keywords = $this->keywords($response);
+
+        return new RankedKeywordsResponse($keywords, $response->cost, count($keywords), $response->taskId, $response->endpoint);
+    }
+
     /** @param array<int, mixed> $filters */
     protected function requestBucket(string $domain, int $locationCode, string $languageCode, array $filters, int $limit): DataForSEOResponse
     {
