@@ -620,7 +620,26 @@
                         $isOnlyManager = $member->id === $soleManagerId;
                     @endphp
                     <div class="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div class="min-w-0"><p class="truncate text-base font-medium text-slate-900 sm:text-sm">{{ $member->name }}</p><p class="truncate text-base text-slate-500 sm:text-sm">{{ $member->email }}</p></div>
+                        <div class="min-w-0 flex-1">
+                            <p class="truncate text-base font-medium text-slate-900 sm:text-sm">{{ $member->name }}</p>
+                            <p class="truncate text-base text-slate-500 sm:text-sm">{{ $member->email }}</p>
+                            @if (Auth::user()?->isAdmin())
+                                <details class="mt-2 rounded-lg border border-slate-200 p-3">
+                                    <summary class="cursor-pointer text-sm font-medium text-slate-700">Manage membership</summary>
+                                    <form method="POST" action="{{ route('admin.websites.members.update', [$website, $member]) }}" class="mt-3">
+                                        @csrf
+                                        @method('PUT')
+                                        @include('admin.websites.partials.member-membership-fields', [
+                                            'membershipFormKey' => 'member_'.$member->id,
+                                            'membershipTier' => $member->admin_membership_tier,
+                                            'membershipEndsOn' => $member->admin_membership_expires_at?->format('Y-m-d'),
+                                            'membershipRequired' => true,
+                                        ])
+                                        <button type="submit" class="mt-3 rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">Save membership</button>
+                                    </form>
+                                </details>
+                            @endif
+                        </div>
                         @if ($canManageMembers && ! $isOnlyManager)
                             <div class="flex flex-wrap items-center gap-2">
                                 <form method="POST" action="{{ route('admin.websites.members.update', [$website, $member]) }}" class="flex items-center gap-2">
@@ -650,7 +669,17 @@
                 <form method="POST" action="{{ route('admin.websites.members.store', $website) }}" class="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_10rem_auto] sm:items-end">
                     @csrf
                     <div><label for="member_email" class="text-sm font-medium text-slate-700">Invite by email</label><input id="member_email" name="email" type="email" required autocomplete="email" value="{{ old('email') }}" placeholder="colleague@example.com" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"><p class="mt-1 text-xs text-slate-500">We’ll email them a secure link to set up their account.</p>@error('email')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror</div>
-                    <div><label for="member_role" class="text-sm font-medium text-slate-700">Access</label><select id="member_role" name="role" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"><option value="manager">Manager</option><option value="viewer">Viewer</option></select></div>
+                    <div><label for="member_role" class="text-sm font-medium text-slate-700">Access</label><select id="member_role" name="role" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"><option value="manager" @selected(old('role', 'viewer') === 'manager')>Manager</option><option value="viewer" @selected(old('role', 'viewer') === 'viewer')>Viewer</option></select></div>
+                    @if (Auth::user()?->isAdmin())
+                        <div class="rounded-lg border border-slate-200 bg-slate-50 p-4 sm:col-span-3">
+                            @include('admin.websites.partials.member-membership-fields', [
+                                'membershipFormKey' => 'invite',
+                                'membershipTier' => null,
+                                'membershipEndsOn' => now()->addMonthsNoOverflow(6)->format('Y-m-d'),
+                                'membershipRequired' => false,
+                            ])
+                        </div>
+                    @endif
                     <button type="submit" class="rounded-md border border-slate-950/15 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Send invitation</button>
                 </form>
             @elseif ($canManageMembers)

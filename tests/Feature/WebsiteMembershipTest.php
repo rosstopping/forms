@@ -46,8 +46,8 @@ it('keeps the only website manager from being demoted or removed', function (): 
         ->assertSuccessful()
         ->assertDontSee('Assign owner')
         ->assertDontSee('>Owner<', false)
-        ->assertDontSee(route('admin.websites.members.update', [$website, $legacyOwner]))
-        ->assertDontSee(route('admin.websites.members.destroy', [$website, $legacyOwner]));
+        ->assertDontSee('id="member_role_'.$legacyOwner->id.'"', false)
+        ->assertSee('Save membership');
 
     $this->put(route('admin.websites.members.update', [$website, $legacyOwner]), [
         'role' => Website::MEMBER_ROLE_VIEWER,

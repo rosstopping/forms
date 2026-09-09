@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\Website;
 use App\Notifications\WebsiteInvitation;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
@@ -37,6 +38,7 @@ class WebsiteMemberController extends Controller
 
             $this->ensureManagerRemains($website, $member, $data['role']);
             $website->members()->syncWithoutDetaching([$member->id => ['role' => $data['role']]]);
+            $this->applyMembershipChoice($website, $member, $data);
 
             return $member;
         });
@@ -53,9 +55,13 @@ class WebsiteMemberController extends Controller
 
             abort_unless($website->members()->whereKey($member->id)->exists() || $website->owner?->is($member), 404);
 
-            $role = $request->validated('role');
-            $this->ensureManagerRemains($website, $member, $role);
-            $website->members()->syncWithoutDetaching([$member->id => ['role' => $role]]);
+            if ($request->filled('role')) {
+                $role = $request->validated('role');
+                $this->ensureManagerRemains($website, $member, $role);
+                $website->members()->syncWithoutDetaching([$member->id => ['role' => $role]]);
+            }
+
+            $this->applyMembershipChoice($website, $member, $request->validated());
         });
 
         return back()->with('status', 'Website member updated.');
@@ -83,6 +89,35 @@ class WebsiteMemberController extends Controller
         });
 
         return back()->with('status', 'Website member removed.');
+    }
+
+    /** @param array<string, mixed> $data */
+    private function applyMembershipChoice(Website $website, User $member, array $data): void
+    {
+        if (blank($data['complimentary_membership_tier'] ?? null)) {
+            return;
+        }
+
+        if ($data['complimentary_membership_tier'] === 'existing') {
+            if (! $member->hasActiveMembership()) {
+                throw ValidationException::withMessages([
+                    'complimentary_membership_tier' => 'This account has no active membership. Choose a complimentary package instead.',
+                ]);
+            }
+        } else {
+            $member->update([
+                'admin_membership_tier' => $data['complimentary_membership_tier'],
+                'admin_membership_expires_at' => filled($data['complimentary_membership_ends_on'] ?? null)
+                    ? Carbon::parse($data['complimentary_membership_ends_on'])->endOfDay()
+                    : null,
+            ]);
+        }
+
+        if ($website->user_id && ! $website->members()->whereKey($website->user_id)->exists()) {
+            $website->members()->attach($website->user_id, ['role' => Website::MEMBER_ROLE_MANAGER]);
+        }
+
+        $website->update(['user_id' => $member->id]);
     }
 
     private function ensureManagerRemains(Website $website, User $member, ?string $newRole): void
