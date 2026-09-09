@@ -45,6 +45,7 @@ class MonthlyRankingReportBuilder
             'latestSeo' => $seo->get(0), 'previousSeo' => $seo->get(1), 'highlights' => $highlights,
             'queryWins' => $queryMovements->where('direction', 'improved')->take(5)->values(),
             'queryDeclines' => $queryMovements->where('direction', 'declined')->take(3)->values(),
+            'targetKeywords' => app(SeoTargetKeywordPerformance::class)->monthly($website),
         ];
     }
 

@@ -248,6 +248,11 @@ class Website extends Model
         return $this->hasMany(SeoKeyword::class);
     }
 
+    public function seoTargetKeywords(): HasMany
+    {
+        return $this->hasMany(SeoTargetKeyword::class);
+    }
+
     public function seoReferringDomains(): HasMany
     {
         return $this->hasMany(SeoReferringDomain::class);

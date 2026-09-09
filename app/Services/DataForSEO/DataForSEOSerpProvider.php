@@ -17,10 +17,15 @@ class DataForSEOSerpProvider implements SerpProvider
 
     public function search(string $keyword, string $location, int $depth = 100): SerpSearchResponse
     {
+        return $this->searchForMarket($keyword, $this->locations->resolve($location), (string) config('services.dataforseo.language_code'), $depth);
+    }
+
+    public function searchForMarket(string $keyword, int $locationCode, string $languageCode, int $depth = 100): SerpSearchResponse
+    {
         $response = $this->client->post(self::ENDPOINT, [
             'keyword' => $keyword,
-            'location_code' => $this->locations->resolve($location),
-            'language_code' => (string) config('services.dataforseo.language_code'),
+            'location_code' => $locationCode,
+            'language_code' => $languageCode,
             'device' => 'desktop',
             'depth' => min(max($depth, 10), 100),
         ]);

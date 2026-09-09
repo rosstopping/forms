@@ -8,6 +8,13 @@
 <tr><td style="padding:12px;background:#eef3ec;"><strong>{{ number_format($report['latestSearch']->clicks) }}</strong><br>Clicks</td><td style="padding:12px;background:#eef3ec;"><strong>{{ number_format($report['latestSearch']->impressions) }}</strong><br>Impressions</td><td style="padding:12px;background:#eef3ec;"><strong>{{ number_format($report['latestSearch']->ctr * 100, 1) }}%</strong><br>CTR</td><td style="padding:12px;background:#eef3ec;"><strong>{{ number_format($report['latestSearch']->position, 1) }}</strong><br>Position</td></tr>
 </table>
 @endif
+@if (collect($report['targetKeywords'] ?? [])->isNotEmpty())
+<h2 style="margin-top:24px;font-size:18px;">Target keyword checks</h2>
+<p style="color:#59685f;">Exact DataForSEO desktop positions for the configured market. These are separate from Search Console and broader visibility estimates.</p>
+@foreach ($report['targetKeywords'] as $item)
+<div style="margin-top:10px;padding:12px;border:1px solid #dce3dd;border-radius:8px;"><strong>{{ $item['target']->term }}</strong><p style="margin:5px 0 0;color:#59685f;">{{ $item['latest'] ? ($item['latest']->position ? 'Position '.$item['latest']->position : 'Not found in the top 100') : 'Awaiting first check' }} · {{ str($item['movement'])->replace('_', ' ')->headline() }}@if ($item['latest_failed']) · latest check failed; previous result retained @endif</p></div>
+@endforeach
+@endif
 @if ($report['latestSeo'])
 <h2 style="margin-top:24px;font-size:18px;">Estimated rankings</h2>
 <table class="metrics" role="presentation" width="100%" cellspacing="0" cellpadding="0" style="text-align:center;">
@@ -30,5 +37,5 @@
 <div style="margin-top:10px;padding:12px;border:1px solid #dce3dd;border-radius:8px;"><strong>{{ $opportunity->title }}</strong><p style="margin:5px 0 0;color:#59685f;">{{ $opportunity->summary }}</p></div>
 @endforeach
 @endif
-<p style="margin-top:24px;"><a href="{{ $reportUrl }}" class="button button-primary">View ranking performance</a></p>
+<p style="margin-top:24px;"><a href="{{ $reportUrl }}" class="button button-primary">{{ collect($report['targetKeywords'] ?? [])->isNotEmpty() ? 'View target keywords' : 'View ranking performance' }}</a></p>
 </x-email-layout>

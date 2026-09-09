@@ -9,6 +9,13 @@
 @else
 <p style="color:#59685f;">We need two complete months of connected Google Search Console data before we can show your month-on-month search performance.</p>
 @endif
+@if (collect($report['targetKeywords'] ?? [])->isNotEmpty())
+<h2 style="margin-top:24px;font-size:18px;">Monthly target movements</h2>
+<p style="color:#59685f;">Final compatible DataForSEO exact desktop checks from each complete calendar month.</p>
+@foreach ($report['targetKeywords'] as $item)
+<div style="margin-top:10px;padding:12px;border:1px solid #dce3dd;border-radius:8px;"><strong>{{ $item['target']->term }}</strong><p style="margin:5px 0 0;color:#59685f;">{{ $item['latest'] ? ($item['latest']->position ? 'Position '.$item['latest']->position : 'Not found in the top 100') : 'No completed-month observation' }} · {{ str($item['movement'])->replace('_', ' ')->headline() }}</p></div>
+@endforeach
+@endif
 @if ($report['highlights']->isNotEmpty())
 <h2 style="margin-top:24px;font-size:18px;">What changed</h2>
 <ul style="padding-left:20px;">
@@ -36,5 +43,5 @@
 <tr><td style="padding:12px;background:#eef3ec;"><strong>~{{ number_format($report['latestSeo']->estimated_organic_traffic) }}</strong><br>Estimated traffic</td><td style="padding:12px;background:#eef3ec;"><strong>{{ number_format($report['latestSeo']->organic_keywords) }}</strong><br>Ranking keywords</td><td style="padding:12px;background:#eef3ec;"><strong>{{ number_format($report['latestSeo']->top_10_keywords) }}</strong><br>Top 10</td></tr>
 </table>
 @endif
-<p style="margin-top:24px;"><a href="{{ $reportUrl }}" class="button button-primary">View search performance</a></p>
+<p style="margin-top:24px;"><a href="{{ $reportUrl }}" class="button button-primary">{{ collect($report['targetKeywords'] ?? [])->isNotEmpty() ? 'View target keywords' : 'View search performance' }}</a></p>
 </x-email-layout>

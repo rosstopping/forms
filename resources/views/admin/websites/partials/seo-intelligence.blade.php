@@ -3,6 +3,7 @@
         <div class="max-w-full overflow-x-auto border-b border-slate-950/10" role="tablist" aria-label="SEO Intelligence sections">
             <div class="flex min-w-max gap-1 pb-2">
                 <button type="button" id="seo-section-tab-overview" class="shrink-0 rounded-md px-3 py-2 text-base font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 aria-selected:bg-slate-100 aria-selected:text-slate-950 sm:text-sm" role="tab" aria-selected="true" aria-controls="seo-section-panel-overview" tabindex="0" data-tab="overview">Overview</button>
+                <button type="button" id="seo-section-tab-targets" class="shrink-0 rounded-md px-3 py-2 text-base font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 aria-selected:bg-slate-100 aria-selected:text-slate-950 sm:text-sm" role="tab" aria-selected="false" aria-controls="seo-section-panel-targets" tabindex="-1" data-tab="targets">Target keywords</button>
                 @if ($seoSnapshot)
                     <button type="button" id="seo-section-tab-actions" class="shrink-0 rounded-md px-3 py-2 text-base font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 aria-selected:bg-slate-100 aria-selected:text-slate-950 sm:text-sm" role="tab" aria-selected="false" aria-controls="seo-section-panel-actions" tabindex="-1" data-tab="actions">Recommended Actions</button>
                     <button type="button" id="seo-section-tab-keywords" class="shrink-0 rounded-md px-3 py-2 text-base font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 aria-selected:bg-slate-100 aria-selected:text-slate-950 sm:text-sm" role="tab" aria-selected="false" aria-controls="seo-section-panel-keywords" tabindex="-1" data-tab="keywords">Keywords</button>
@@ -14,6 +15,10 @@
 
         <div id="seo-section-panel-competitors" role="tabpanel" aria-labelledby="seo-section-tab-competitors" data-tab-panel="competitors" hidden>
             @include('admin.websites.partials.competitors')
+        </div>
+
+        <div id="seo-section-panel-targets" role="tabpanel" aria-labelledby="seo-section-tab-targets" data-tab-panel="targets" hidden>
+            @include('admin.websites.partials.seo-target-keywords')
         </div>
 
         <div id="seo-section-panel-overview" role="tabpanel" aria-labelledby="seo-section-tab-overview" data-tab-panel="overview">

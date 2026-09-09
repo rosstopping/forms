@@ -29,7 +29,9 @@ class MonthlyRankingReport extends Mailable implements ShouldQueue
     {
         return new Content(view: 'emails.monthly-ranking-report', with: [
             'website' => $this->website, 'report' => $this->report,
-            'reportUrl' => route('admin.websites.section', [$this->website, 'search']),
+            'reportUrl' => collect($this->report['targetKeywords'] ?? [])->isNotEmpty()
+                ? route('admin.websites.show', [$this->website, 'tab' => 'seo', 'seo_section' => 'targets'])
+                : route('admin.websites.section', [$this->website, 'search']),
         ]);
     }
 }

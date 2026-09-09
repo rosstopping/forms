@@ -12,7 +12,7 @@ class ExternalApiUsage extends Model
     /** @use HasFactory<ExternalApiUsageFactory> */
     use HasFactory;
 
-    protected $fillable = ['competitor_audit_id', 'website_id', 'seo_snapshot_id', 'provider', 'endpoint', 'request_type', 'result_count', 'cost', 'provider_task_id', 'metadata', 'requested_at'];
+    protected $fillable = ['competitor_audit_id', 'website_id', 'seo_snapshot_id', 'seo_target_keyword_id', 'provider', 'endpoint', 'request_type', 'result_count', 'cost', 'provider_task_id', 'metadata', 'requested_at'];
 
     protected function casts(): array
     {
@@ -27,5 +27,10 @@ class ExternalApiUsage extends Model
     public function snapshot(): BelongsTo
     {
         return $this->belongsTo(SeoSnapshot::class, 'seo_snapshot_id');
+    }
+
+    public function targetKeyword(): BelongsTo
+    {
+        return $this->belongsTo(SeoTargetKeyword::class, 'seo_target_keyword_id');
     }
 }

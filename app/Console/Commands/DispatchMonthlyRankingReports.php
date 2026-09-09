@@ -16,7 +16,7 @@ class DispatchMonthlyRankingReports extends Command
     {
         $queued = 0;
         Website::query()->where('is_active', true)->where('health_reports_enabled', true)
-            ->where(fn ($query) => $query->whereHas('seoSnapshots')->orWhereHas('searchConsoleConnection'))
+            ->where(fn ($query) => $query->whereHas('seoSnapshots')->orWhereHas('searchConsoleConnection')->orWhereHas('seoTargetKeywords', fn ($query) => $query->whereNull('archived_at')))
             ->each(function (Website $website) use (&$queued): void {
                 SendMonthlyRankingReport::dispatch($website);
                 $queued++;

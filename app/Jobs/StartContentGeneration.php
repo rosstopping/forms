@@ -7,6 +7,7 @@ use App\Services\CompetitorContentContext;
 use App\Services\ContentGenerationPromptGenerator;
 use App\Services\CopilotAgentClient;
 use App\Services\SearchConsoleClient;
+use App\Services\SeoTargetKeywordSelector;
 use Illuminate\Contracts\Queue\ShouldBeEncrypted;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -33,8 +34,9 @@ class StartContentGeneration implements ShouldBeEncrypted, ShouldBeUnique, Shoul
         return (string) $this->generation->id;
     }
 
-    public function handle(SearchConsoleClient $searchConsole, ContentGenerationPromptGenerator $prompts, CopilotAgentClient $copilot): void
+    public function handle(SearchConsoleClient $searchConsole, ContentGenerationPromptGenerator $prompts, CopilotAgentClient $copilot, ?SeoTargetKeywordSelector $targets = null): void
     {
+        $targets ??= app(SeoTargetKeywordSelector::class);
         $this->generation->refresh();
 
         if ($this->generation->copilot_task_id) {
@@ -59,6 +61,14 @@ class StartContentGeneration implements ShouldBeEncrypted, ShouldBeUnique, Shoul
             ->limit(2)
             ->get();
         $this->generation->setRelation('contentRequests', $contentRequests);
+        if ($this->generation->target_keyword_context === null) {
+            $activeTargets = $targets->active($this->generation->plan->website);
+            $selectedTarget = $contentRequests->isEmpty() ? $targets->select($activeTargets) : null;
+            $this->generation->update([
+                'seo_target_keyword_id' => $selectedTarget?->id,
+                'target_keyword_context' => $targets->snapshot($activeTargets),
+            ]);
+        }
         if ($this->generation->competitor_context === null) {
             $this->generation->update(['competitor_context' => app(CompetitorContentContext::class)->forGeneration($this->generation, $contentRequests)]);
         }
@@ -70,6 +80,7 @@ class StartContentGeneration implements ShouldBeEncrypted, ShouldBeUnique, Shoul
             'copilot_task_url' => $task['html_url'] ?? null,
             'copilot_task_state' => $task['state'] ?? 'queued',
         ]);
+        $this->generation->targetKeyword?->update(['last_selected_at' => now()]);
         $this->generation->plan->website->contentRequests()
             ->whereKey($contentRequests->modelKeys())
             ->whereNull('picked_up_at')

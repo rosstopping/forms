@@ -176,6 +176,15 @@ class WebsiteController extends Controller
         $seoKeywords = null;
         $seoReferringDomains = collect();
         $trackedCompetitors = $website->competitors()->with('latestAudit')->orderBy('excluded')->orderBy('domain')->get();
+        $targetKeywords = $website->seoTargetKeywords()
+            ->with(['rankings' => fn ($query) => $query
+                ->where('location_code', (int) config('services.dataforseo.location_code'))
+                ->where('language_code', (string) config('services.dataforseo.language_code'))
+                ->where('device', 'desktop')
+                ->latest('observed_at')->latest('id')])
+            ->orderByRaw('CASE WHEN archived_at IS NULL THEN 0 ELSE 1 END')
+            ->orderByRaw("CASE WHEN priority = 'high' THEN 0 ELSE 1 END")
+            ->orderBy('term')->get();
         $seoCompetitors = collect();
         $seoOpportunities = collect();
         $strikingDistanceCount = 0;
@@ -279,7 +288,7 @@ class WebsiteController extends Controller
         return view('admin.websites.show', compact(
             'website', 'canManageMembers', 'canManageWebsite', 'canRunHealthReports', 'canUseSearchConsole',
             'searchConsoleReport', 'searchConsoleHistory', 'searchConsoleReportUnavailable', 'seoGeneration', 'seoSnapshot', 'seoHistory',
-            'trackedCompetitors', 'seoKeywords', 'seoReferringDomains', 'seoCompetitors', 'seoOpportunities', 'seoFilter', 'seoSort', 'seoDirection', 'strikingDistanceCount',
+            'trackedCompetitors', 'targetKeywords', 'seoKeywords', 'seoReferringDomains', 'seoCompetitors', 'seoOpportunities', 'seoFilter', 'seoSort', 'seoDirection', 'strikingDistanceCount',
             'dataForSeoConfigured', 'outreachProspect', 'pixelInstallationSnippet', 'canUseGrowthFeatures', 'canUseCompleteFeatures', 'canUseAutoresponders',
             'websiteAiQuestions', 'websiteAiQuestionsUsed', 'websiteAiWeeklyLimit', 'pixelOptimisations', 'websiteUsers', 'soleManagerId',
             'hasContentDeliveryConnection', 'contentSupportCallUrl',

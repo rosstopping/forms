@@ -57,6 +57,7 @@ use App\Http\Controllers\Admin\SeoKeywordController;
 use App\Http\Controllers\Admin\SeoOpportunityController;
 use App\Http\Controllers\Admin\SeoProspectSearchController;
 use App\Http\Controllers\Admin\SeoSnapshotSettingsController;
+use App\Http\Controllers\Admin\SeoTargetKeywordController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\UserImpersonationController;
 use App\Http\Controllers\Admin\UserOnboardingCallController;
@@ -281,6 +282,13 @@ Route::middleware(['web', 'auth', ResolveCurrentWebsite::class])->prefix('admin'
     Route::post('websites/{website}/seo-intelligence', SeoIntelligenceController::class)->middleware('membership:growth')->name('seo-intelligence.store');
     Route::get('websites/{website}/seo-keywords/{seoKeyword}', [SeoKeywordController::class, 'show'])->middleware('membership:growth')->name('seo-keywords.show');
     Route::put('websites/{website}/seo-snapshot-settings', SeoSnapshotSettingsController::class)->middleware('membership:growth')->name('seo-snapshot-settings.update');
+    Route::middleware('membership:growth')->controller(SeoTargetKeywordController::class)->group(function (): void {
+        Route::post('websites/{website}/seo-target-keywords', 'store')->name('seo-target-keywords.store');
+        Route::put('websites/{website}/seo-target-keywords/{seoTargetKeyword}', 'update')->name('seo-target-keywords.update');
+        Route::delete('websites/{website}/seo-target-keywords/{seoTargetKeyword}', 'archive')->name('seo-target-keywords.archive');
+        Route::post('websites/{website}/seo-target-keywords/{seoTargetKeyword}/restore', 'restore')->name('seo-target-keywords.restore');
+        Route::post('websites/{website}/seo-target-keywords/{seoTargetKeyword}/check', 'check')->middleware('throttle:20,1')->name('seo-target-keywords.check');
+    });
     Route::post('websites/{website}/seo-opportunities/{seoOpportunity}/queue', [SeoOpportunityController::class, 'queue'])->middleware('membership:growth')->name('seo-opportunities.queue');
     Route::post('websites/{website}/search-opportunities/{searchOpportunity}/queue', [SearchOpportunityController::class, 'queue'])->middleware('membership:growth')->name('search-opportunities.queue');
     Route::delete('websites/{website}/search-opportunities/{searchOpportunity}', [SearchOpportunityController::class, 'dismiss'])->middleware('membership:growth')->name('search-opportunities.dismiss');
