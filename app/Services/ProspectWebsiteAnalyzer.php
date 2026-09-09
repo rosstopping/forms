@@ -90,7 +90,9 @@ class ProspectWebsiteAnalyzer
     protected function endpointCheck(string $url, string $key, string $label): array
     {
         try {
-            $response = $this->request()->get($url);
+            $response = $key === 'sitemap_xml'
+                ? app(SitemapFetcher::class)->fetch($this->request(), $url)
+                : $this->request()->get($url);
 
             return $this->check('Discoverability', $key, $label, $response->successful() ? 'passed' : 'warning', $response->successful() ? "{$label}." : "{$url} returned HTTP {$response->status()}.");
         } catch (\Throwable) {
