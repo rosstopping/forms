@@ -119,10 +119,6 @@ class UserController extends Controller
             throw ValidationException::withMessages(['user' => 'You cannot delete your own account.']);
         }
 
-        if ($user->websites()->exists()) {
-            throw ValidationException::withMessages(['user' => 'Reassign or delete this user’s websites before deleting their account.']);
-        }
-
         if ($user->isAdmin() && User::query()->where('role', User::ROLE_ADMIN)->count() === 1) {
             throw ValidationException::withMessages(['user' => 'The final administrator account cannot be deleted.']);
         }

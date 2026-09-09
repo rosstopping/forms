@@ -72,7 +72,7 @@
                                             <button type="submit" class="text-sm font-medium text-teal-700 hover:text-teal-900">View as user</button>
                                         </form>
                                     @endif
-                                    <form method="POST" action="{{ route('admin.users.destroy', $user) }}" onsubmit="return confirm('Delete this user? This cannot be undone.')">
+                                    <form method="POST" action="{{ route('admin.users.destroy', $user) }}" onsubmit="return confirm('Delete this user? Their websites will be kept. This cannot be undone.')">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="text-sm font-medium text-red-700 hover:text-red-900">Delete</button>
