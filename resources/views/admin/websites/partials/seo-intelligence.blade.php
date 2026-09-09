@@ -54,6 +54,19 @@
                         <button class="rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">Save</button>
                     </form>
                     <p class="max-w-sm text-right text-xs text-slate-500">Enabling this also imports available monthly history once.</p>
+                    <form method="POST" action="{{ route('admin.weekly-ranking-report-settings.update', $website) }}" class="mt-2 grid max-w-sm gap-2 rounded-lg border border-slate-200 bg-white p-3 text-left">
+                        @csrf @method('PUT')
+                        <label for="weekly-ranking-reports" class="flex items-start gap-2">
+                            <input type="hidden" name="weekly_ranking_reports_enabled" value="0">
+                            <input id="weekly-ranking-reports" type="checkbox" name="weekly_ranking_reports_enabled" value="1" class="mt-1" @checked($website->weekly_ranking_reports_enabled)>
+                            <span>
+                                <span class="block text-sm font-medium text-slate-700">Weekly ranking email</span>
+                                <span class="block text-xs leading-5 text-slate-500">Includes target keywords, Search Console performance and SEO estimates when available.</span>
+                            </span>
+                        </label>
+                        <p class="text-xs leading-5 text-slate-500">Email delivery does not run paid checks. Enable automatic weekly snapshots for fresh weekly target positions.</p>
+                        <button class="justify-self-start rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">Save email preference</button>
+                    </form>
                 </div>
             @endif
         </div>

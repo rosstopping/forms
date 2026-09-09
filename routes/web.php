@@ -73,6 +73,7 @@ use App\Http\Controllers\Admin\WebsiteHealthReportPageController;
 use App\Http\Controllers\Admin\WebsiteMemberController;
 use App\Http\Controllers\Admin\WebsiteProspectController;
 use App\Http\Controllers\Admin\WebsiteRepositoryController;
+use App\Http\Controllers\Admin\WeeklyRankingReportSettingsController;
 use App\Http\Controllers\Admin\WordPressConnectionController;
 use App\Http\Controllers\Admin\WordPressPairingCodeController;
 use App\Http\Controllers\Admin\WordPressStaticReleaseController;
@@ -282,6 +283,7 @@ Route::middleware(['web', 'auth', ResolveCurrentWebsite::class])->prefix('admin'
     Route::post('websites/{website}/seo-intelligence', SeoIntelligenceController::class)->middleware('membership:growth')->name('seo-intelligence.store');
     Route::get('websites/{website}/seo-keywords/{seoKeyword}', [SeoKeywordController::class, 'show'])->middleware('membership:growth')->name('seo-keywords.show');
     Route::put('websites/{website}/seo-snapshot-settings', SeoSnapshotSettingsController::class)->middleware('membership:growth')->name('seo-snapshot-settings.update');
+    Route::put('websites/{website}/weekly-ranking-report-settings', WeeklyRankingReportSettingsController::class)->middleware('membership:growth')->name('weekly-ranking-report-settings.update');
     Route::middleware('membership:growth')->controller(SeoTargetKeywordController::class)->group(function (): void {
         Route::post('websites/{website}/seo-target-keywords', 'store')->name('seo-target-keywords.store');
         Route::post('websites/{website}/seo-target-keywords/bulk', 'bulkStore')->name('seo-target-keywords.bulk-store');

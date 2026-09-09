@@ -176,7 +176,7 @@ test('selection and prompt snapshots prioritize unranked high priority targets',
 
 test('target movements appear in reports and make new websites report eligible', function (): void {
     Queue::fake();
-    $website = Website::factory()->create(['health_reports_enabled' => true]);
+    $website = Website::factory()->create(['weekly_ranking_reports_enabled' => true]);
     $target = SeoTargetKeyword::factory()->for($website)->create();
     SeoTargetKeywordRanking::factory()->for($target, 'targetKeyword')->create(['website_id' => $website->id, 'status' => 'not_found', 'position' => null, 'observed_at' => now()->subWeek()]);
     SeoTargetKeywordRanking::factory()->for($target, 'targetKeyword')->create(['website_id' => $website->id, 'position' => 38, 'observed_at' => now()]);
