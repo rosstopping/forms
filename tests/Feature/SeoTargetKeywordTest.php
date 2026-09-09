@@ -101,11 +101,13 @@ test('target limits permissions gates and website isolation are enforced', funct
     $target = $website->seoTargetKeywords()->first();
     $this->actingAs($viewer)->get(route('admin.websites.show', [$website, 'tab' => 'seo', 'seo_section' => 'targets']))->assertSuccessful()->assertSee($target->term);
     $this->post(route('admin.seo-target-keywords.bulk-store', $website), ['bulk_terms' => 'viewer keyword'])->assertForbidden();
+    $this->post(route('admin.seo-target-keywords.check-all', $website))->assertForbidden();
     $this->post(route('admin.seo-target-keywords.check', [$website, $target]))->assertForbidden();
     $other = Website::factory()->create();
     $this->actingAs($other->owner)->post(route('admin.seo-target-keywords.check', [$other, $target]))->assertNotFound();
     $website->owner->update(['membership_tier' => 'essential']);
     $this->actingAs($website->owner)->post(route('admin.seo-target-keywords.check', [$website, $target]))->assertRedirect(route('admin.billing.index'));
+    $this->post(route('admin.seo-target-keywords.check-all', $website))->assertRedirect(route('admin.billing.index'));
     $this->post(route('admin.seo-target-keywords.bulk-store', $website), ['bulk_terms' => 'gated keyword'])->assertRedirect(route('admin.billing.index'));
 });
 
@@ -132,6 +134,28 @@ test('weekly opt in queues one isolated check per active target', function (): v
     $this->artisan('seo:dispatch-weekly-snapshots')->assertSuccessful();
     Queue::assertPushed(CheckSeoTargetKeywordRanking::class, 1);
     Queue::assertPushed(CheckSeoTargetKeywordRanking::class, fn ($job): bool => $job->keyword->is($active));
+});
+
+test('managers queue ranking checks for every active target at once', function (): void {
+    Queue::fake();
+    $website = Website::factory()->create();
+    $active = SeoTargetKeyword::factory()->count(3)->for($website)->create();
+    $archived = SeoTargetKeyword::factory()->for($website)->create(['archived_at' => now()]);
+
+    $this->actingAs($website->owner)
+        ->get(route('admin.websites.show', [$website, 'tab' => 'seo', 'seo_section' => 'targets']))
+        ->assertSuccessful()
+        ->assertSee('Check all rankings');
+
+    $this->post(route('admin.seo-target-keywords.check-all', $website))
+        ->assertRedirect()
+        ->assertSessionHas('status', 'Ranking checks queued for 3 target keywords.');
+
+    Queue::assertPushed(CheckSeoTargetKeywordRanking::class, 3);
+    foreach ($active as $target) {
+        Queue::assertPushed(CheckSeoTargetKeywordRanking::class, fn (CheckSeoTargetKeywordRanking $job): bool => $job->keyword->is($target));
+    }
+    Queue::assertNotPushed(CheckSeoTargetKeywordRanking::class, fn (CheckSeoTargetKeywordRanking $job): bool => $job->keyword->is($archived));
 });
 
 test('selection and prompt snapshots prioritize unranked high priority targets', function (): void {

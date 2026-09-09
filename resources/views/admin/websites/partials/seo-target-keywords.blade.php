@@ -7,6 +7,12 @@
                     <span class="rounded-full bg-teal-50 px-2 py-1 text-xs font-medium text-teal-800">{{ $targetKeywords->whereNull('archived_at')->count() }} / 20 active</span>
                 </div>
                 <p class="mt-1 max-w-2xl text-sm text-slate-600">Track terms this website intends to rank for, including terms with no current visibility.@if ($targetKeywords->isNotEmpty()) Positions are exact DataForSEO desktop checks in location {{ config('services.dataforseo.location_code') }} ({{ strtoupper(config('services.dataforseo.language_code')) }}), separate from Search Console measurements.@endif</p>
+                @if ($canManageWebsite)
+                    <form method="POST" action="{{ route('admin.seo-target-keywords.check-all', $website) }}" class="mt-3">
+                        @csrf
+                        <button type="submit" @disabled($targetKeywords->whereNull('archived_at')->isEmpty()) class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">Check all rankings</button>
+                    </form>
+                @endif
             </div>
             @if ($canManageWebsite)
                 <div class="w-full min-w-0 lg:max-w-xl">

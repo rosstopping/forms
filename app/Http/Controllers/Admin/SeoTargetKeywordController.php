@@ -115,6 +115,20 @@ class SeoTargetKeywordController extends Controller
         return $this->redirect($website, 'Ranking check queued.');
     }
 
+    public function checkAll(Request $request, Website $website): RedirectResponse
+    {
+        abort_unless($website->isManageableBy($request->user()), 403);
+
+        $targets = $website->seoTargetKeywords()->whereNull('archived_at')->get();
+        $targets->each(fn (SeoTargetKeyword $target) => CheckSeoTargetKeywordRanking::dispatch($target));
+
+        $message = $targets->isEmpty()
+            ? 'There are no active target keywords to check.'
+            : 'Ranking checks queued for '.$targets->count().' target '.str('keyword')->plural($targets->count()).'.';
+
+        return $this->redirect($website, $message);
+    }
+
     private function assertNested(Website $website, SeoTargetKeyword $keyword): void
     {
         abort_unless($keyword->website_id === $website->id, 404);
