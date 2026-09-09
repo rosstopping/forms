@@ -9,6 +9,7 @@ use App\Services\InitialProspectOutreachGenerator;
 use App\Services\LoomVideoThumbnail;
 use App\Services\ProspectLifecycleManager;
 use App\Services\ProspectWebsiteAnalyzer;
+use Dom\HTMLDocument;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
@@ -294,10 +295,12 @@ it('sends the exact saved draft as a test to the administrator without contactin
 
     Mail::assertSent(ProspectOutreach::class, function (ProspectOutreach $mail) use ($admin, $prospect): bool {
         $mail->assertHasSubject($prospect->outreach_subject)
-            ->assertSeeInHtml($prospect->outreach_body)
             ->assertDontSeeInHtml('https://video.example.com/acme-plumbing')
             ->assertDontSeeInHtml('Your website video')
             ->assertDontSeeInHtml('https://cal.com/ross');
+
+        $document = HTMLDocument::createFromString($mail->render(), LIBXML_NOERROR);
+        expect($document->querySelector('.content-cell')->textContent)->toContain($prospect->outreach_body);
 
         return $mail->hasTo($admin->email) && ! $mail->hasTo($prospect->email);
     });

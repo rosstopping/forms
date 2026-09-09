@@ -75,6 +75,8 @@ use App\Http\Controllers\Admin\WordPressConnectionController;
 use App\Http\Controllers\Admin\WordPressPairingCodeController;
 use App\Http\Controllers\Admin\WordPressStaticReleaseController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\NewPasswordController;
+use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\WebsiteInvitationController;
 use App\Http\Controllers\CalWebhookController;
 use App\Http\Controllers\FormSubmissionController;
@@ -183,6 +185,13 @@ Route::middleware('web')->group(function () {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
     Route::post('/login', [AuthenticatedSessionController::class, 'store']);
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
+});
+
+Route::middleware(['web', 'guest'])->group(function () {
+    Route::get('/forgot-password', [PasswordResetLinkController::class, 'create'])->name('password.request');
+    Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])->middleware('throttle:5,1')->name('password.email');
+    Route::get('/reset-password/{token}', [NewPasswordController::class, 'create'])->name('password.reset');
+    Route::post('/reset-password', [NewPasswordController::class, 'store'])->middleware('throttle:5,1')->name('password.update');
 });
 
 Route::middleware(['web', 'signed', 'throttle:20,1'])->group(function () {

@@ -13,11 +13,11 @@ The report shows what is working well and the practical issues worth reviewing f
 
 If you’d like help deciding what to tackle first, get in touch or book a quick call with Ross.
 
-<x-mail::button :url="$contactUrl">
+<x-mail::button :url="$contactUrl" color="secondary">
 Get in touch
 </x-mail::button>
 
-<x-mail::button :url="$bookingUrl" color="success">
+<x-mail::button :url="$bookingUrl" color="secondary">
 Book a call with Ross
 </x-mail::button>
 
