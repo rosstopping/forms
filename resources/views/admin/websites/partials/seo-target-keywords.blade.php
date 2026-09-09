@@ -9,13 +9,13 @@
                 <p class="mt-1 max-w-2xl text-sm text-slate-600">Track terms this website intends to rank for, including terms with no current visibility.@if ($targetKeywords->isNotEmpty()) Positions are exact DataForSEO desktop checks in location {{ config('services.dataforseo.location_code') }} ({{ strtoupper(config('services.dataforseo.language_code')) }}), separate from Search Console measurements.@endif</p>
             </div>
             @if ($canManageWebsite)
-                <form method="POST" action="{{ route('admin.seo-target-keywords.store', $website) }}" class="grid w-full gap-3 rounded-lg bg-slate-50 p-3 lg:max-w-xl sm:grid-cols-2">
+                <form method="POST" action="{{ route('admin.seo-target-keywords.store', $website) }}" class="grid w-full min-w-0 gap-4 rounded-lg bg-slate-50 p-4 sm:grid-cols-[10rem_minmax(0,1fr)] lg:max-w-xl">
                     @csrf
-                    <div class="sm:col-span-2"><label for="target-term">Search term</label><input id="target-term" name="term" value="{{ old('term') }}" required maxlength="255" placeholder="e.g. emergency plumber barnsley"></div>
-                    <div><label for="target-priority">Priority</label><select id="target-priority" name="priority"><option value="normal">Normal</option><option value="high" @selected(old('priority') === 'high')>High</option></select></div>
-                    <div><label for="target-note">Business context <span class="text-slate-500">(optional)</span></label><input id="target-note" name="note" value="{{ old('note') }}" maxlength="1000" placeholder="Service, audience, location…"></div>
+                    <div class="min-w-0 sm:col-span-2"><label for="target-term" class="block">Search term</label><input id="target-term" name="term" value="{{ old('term') }}" required maxlength="255" placeholder="e.g. emergency plumber barnsley" class="w-full min-w-0"></div>
+                    <div class="min-w-0"><label for="target-priority" class="block">Priority</label><select id="target-priority" name="priority" class="w-full"><option value="normal">Normal</option><option value="high" @selected(old('priority') === 'high')>High</option></select></div>
+                    <div class="min-w-0"><label for="target-note" class="block">Business context <span class="text-slate-500">(optional)</span></label><input id="target-note" name="note" value="{{ old('note') }}" maxlength="1000" placeholder="Service, audience, location…" class="w-full min-w-0"></div>
                     @error('term')<p class="text-sm text-red-700 sm:col-span-2">{{ $message }}</p>@enderror
-                    <div class="sm:col-span-2"><button type="submit" class="rounded-lg bg-teal-700 px-3 py-2 text-sm font-semibold text-white hover:bg-teal-800">Add target</button></div>
+                    <div class="sm:col-span-2"><button type="submit" class="w-full rounded-lg bg-teal-700 px-3 py-2.5 text-sm font-semibold text-white hover:bg-teal-800 sm:w-auto">Add target</button></div>
                 </form>
             @endif
         </div>
@@ -57,14 +57,14 @@
                     </div>
                     @if ($canManageWebsite)
                         <div class="flex flex-wrap gap-2 lg:justify-end">
-                            <details class="w-full rounded-lg border bg-white p-2 lg:w-80">
-                                <summary class="cursor-pointer text-sm font-medium text-slate-700">Edit target</summary>
-                                <form method="POST" action="{{ route('admin.seo-target-keywords.update', [$website, $target]) }}" class="mt-3 grid gap-3">
+                            <details class="w-full rounded-lg border border-slate-200 bg-white p-3 open:shadow-sm lg:w-96">
+                                <summary class="cursor-pointer select-none text-sm font-medium text-slate-700">Edit target</summary>
+                                <form method="POST" action="{{ route('admin.seo-target-keywords.update', [$website, $target]) }}" class="mt-4 grid min-w-0 gap-4 border-t border-slate-100 pt-4">
                                     @csrf @method('PUT')
-                                    <div><label for="target-term-{{ $target->id }}">Search term</label><input id="target-term-{{ $target->id }}" name="term" value="{{ $target->term }}" required maxlength="255"></div>
-                                    <div><label for="target-priority-{{ $target->id }}">Priority</label><select id="target-priority-{{ $target->id }}" name="priority"><option value="normal" @selected($target->priority === 'normal')>Normal</option><option value="high" @selected($target->priority === 'high')>High</option></select></div>
-                                    <div><label for="target-note-{{ $target->id }}">Business context</label><textarea id="target-note-{{ $target->id }}" name="note" rows="2" maxlength="1000">{{ $target->note }}</textarea></div>
-                                    <button class="rounded-lg bg-slate-950 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800">Save changes</button>
+                                    <div class="min-w-0"><label for="target-term-{{ $target->id }}" class="block">Search term</label><input id="target-term-{{ $target->id }}" name="term" value="{{ $target->term }}" required maxlength="255" class="w-full min-w-0"></div>
+                                    <div class="max-w-40"><label for="target-priority-{{ $target->id }}" class="block">Priority</label><select id="target-priority-{{ $target->id }}" name="priority" class="w-full"><option value="normal" @selected($target->priority === 'normal')>Normal</option><option value="high" @selected($target->priority === 'high')>High</option></select></div>
+                                    <div class="min-w-0"><label for="target-note-{{ $target->id }}" class="block">Business context</label><textarea id="target-note-{{ $target->id }}" name="note" rows="3" maxlength="1000" class="min-h-24 w-full min-w-0">{{ $target->note }}</textarea></div>
+                                    <button class="w-full rounded-lg bg-slate-950 px-3 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 sm:w-auto sm:justify-self-start">Save changes</button>
                                 </form>
                             </details>
                             @if (!$target->archived_at)

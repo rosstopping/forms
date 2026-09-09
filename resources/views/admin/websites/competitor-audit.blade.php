@@ -6,7 +6,6 @@
         <a href="{{ route('admin.websites.show', [$website, 'tab' => 'seo', 'seo_section' => 'competitors']) }}" class="text-sm font-medium text-slate-600 hover:underline">← Back to competitors</a>
         <h1 class="break-all text-2xl font-semibold tracking-tight text-slate-950">{{ $audit->competitor_domain }}</h1>
         <p class="text-sm text-slate-600">Compared with {{ $audit->domain }} · {{ strtoupper($audit->language_code) }} · Location {{ $audit->location_code }} · {{ ucfirst(str_replace('_', ' ', $audit->status)) }}</p>
-        <p class="text-sm text-slate-500">Third-party estimates, not Search Console measurements. Collected {{ $audit->started_at?->format('j M Y, H:i') ?? 'Pending' }}. Provider cost: ${{ number_format((float) $cost, 4) }}.</p>
         <p class="text-sm text-slate-500">Sample limits: {{ $audit->limits['ranked_keywords'] }} ranked, {{ $audit->limits['shared_keywords'] }} shared and {{ $audit->limits['missing_keywords'] }} missing keywords; {{ $audit->limits['leading_pages'] }} leading pages and {{ $audit->limits['analyse_pages'] }} page analyses. Missing means not observed by the provider in this market.</p>
         <div class="flex flex-wrap items-center gap-3">
             @if ($canManageWebsite && ! $audit->competitor->excluded)<form method="POST" action="{{ route('admin.competitors.audit', [$website, $audit->competitor]) }}">@csrf<button class="rounded-md bg-slate-950 px-4 py-2 text-sm font-medium text-white">{{ $audit->status === 'failed' ? 'Retry audit' : 'Refresh audit' }}</button></form>@endif
