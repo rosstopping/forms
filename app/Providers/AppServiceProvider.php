@@ -7,6 +7,7 @@ use App\Services\CachedSerpProvider;
 use App\View\Composers\NavigationComposer;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -27,6 +28,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Gate::define('access-outreach', fn ($user): bool => $user->isAdmin());
         RateLimiter::for('website-audits', function (Request $request): array {
             $websiteUrl = Str::lower(trim((string) $request->input('website_url')));
             $websiteUrl = Str::startsWith($websiteUrl, ['http://', 'https://']) ? $websiteUrl : 'https://'.$websiteUrl;

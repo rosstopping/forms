@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Account\BillingController;
 use App\Http\Controllers\Account\ProfileController;
+use App\Http\Controllers\Admin\BacklinkAuditController;
 use App\Http\Controllers\Admin\BulkFormSubmissionController;
 use App\Http\Controllers\Admin\BulkProspectActionController;
 use App\Http\Controllers\Admin\BusinessProfileController;
@@ -279,6 +280,12 @@ Route::middleware(['web', 'auth', ResolveCurrentWebsite::class])->prefix('admin'
         Route::post('websites/{website}/competitors/{competitor}/audit', 'audit')->middleware('throttle:10,1')->name('competitors.audit');
         Route::get('websites/{website}/competitor-audits/{audit}', 'show')->name('competitor-audits.show');
         Route::post('websites/{website}/competitor-opportunities/{opportunity}/queue', 'queue')->name('competitor-opportunities.queue');
+    });
+    Route::middleware('membership:growth')->controller(BacklinkAuditController::class)->group(function (): void {
+        Route::post('websites/{website}/backlink-audits', 'store')->middleware('throttle:5,1')->name('backlink-audits.store');
+        Route::get('websites/{website}/backlink-audits/{audit}', 'show')->name('backlink-audits.show');
+        Route::post('websites/{website}/backlink-opportunities/{opportunity}/queue', 'queue')->name('backlink-opportunities.queue');
+        Route::post('websites/{website}/backlink-domain-gaps/{gap}/outreach', 'import')->name('backlink-domain-gaps.outreach');
     });
     Route::post('websites/{website}/seo-intelligence', SeoIntelligenceController::class)->middleware('membership:growth')->name('seo-intelligence.store');
     Route::get('websites/{website}/seo-keywords/{seoKeyword}', [SeoKeywordController::class, 'show'])->middleware('membership:growth')->name('seo-keywords.show');

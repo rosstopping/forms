@@ -127,6 +127,9 @@ class ContentRequestPixelOptimisationGenerator
         if ($contentRequest->competitor_context) {
             $instructions .= app(CompetitorContentContext::class)->forPrompt([$contentRequest->competitor_context], 10000);
         }
+        if ($contentRequest->backlink_context) {
+            $instructions .= app(BacklinkContentContext::class)->forPrompt([$contentRequest->backlink_context], 6000);
+        }
 
         return <<<PROMPT
 Content todo:

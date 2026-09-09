@@ -240,8 +240,12 @@
         <div id="seo-section-panel-backlinks" role="tabpanel" aria-labelledby="seo-section-tab-backlinks" data-tab-panel="backlinks" hidden>
         <section class="rounded-xl border bg-white shadow-sm" aria-labelledby="backlinks-title">
             <div class="border-b border-slate-950/10 p-4">
-                <h3 id="backlinks-title" class="text-balance text-base font-semibold text-slate-950">Backlinks</h3>
-                <p class="mt-1 text-pretty text-base text-slate-600 sm:text-sm">Who links to this website, based on locally stored third-party estimates.</p>
+                <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div><h3 id="backlinks-title" class="text-balance text-base font-semibold text-slate-950">Backlinks</h3><p class="mt-1 text-pretty text-base text-slate-600 sm:text-sm">Who links to this website, based on locally stored third-party estimates.</p></div>
+                    @if ($latestBacklinkAudit)
+                        <a href="{{ route('admin.backlink-audits.show', [$website, $latestBacklinkAudit]) }}" class="inline-flex min-h-11 items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50">View latest audit</a>
+                    @endif
+                </div>
             </div>
 
             @if (isset($seoSnapshot->errors['backlink_overview']) || isset($seoSnapshot->errors['referring_domains']))
@@ -271,16 +275,43 @@
                 </dl>
             </div>
 
+            <div class="border-t border-slate-950/10 bg-slate-50 p-4">
+                <form method="POST" action="{{ route('admin.backlink-audits.store', $website) }}" class="space-y-4">
+                    @csrf
+                    <div><h4 class="font-semibold text-slate-950">Actionable backlink audit</h4><p class="mt-1 text-sm text-slate-600">Collect detailed links, linked pages, new and lost trends, and optional gaps against up to three competitors. This is a paid, explicit DataForSEO audit; results are reused for seven days.</p></div>
+                    @if ($latestBacklinkAudit)<p class="text-sm text-slate-600">Latest audit: {{ ucfirst(str_replace('_', ' ', $latestBacklinkAudit->status)) }} · {{ ($latestBacklinkAudit->completed_at ?? $latestBacklinkAudit->updated_at)->format('j M Y, H:i') }}</p>@endif
+                    @if ($canManageWebsite)
+                        <fieldset><legend class="text-sm font-medium text-slate-800">Compare competitors (optional)</legend><div class="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                            @forelse ($trackedCompetitors->where('excluded', false) as $competitor)
+                                <label class="flex min-h-11 items-center gap-2 rounded-md border bg-white px-3 py-2 text-sm text-slate-700"><input type="checkbox" name="competitor_ids[]" value="{{ $competitor->id }}" class="rounded border-slate-300 text-teal-700 focus:ring-teal-600"> <span class="break-all">{{ $competitor->domain }}</span></label>
+                            @empty
+                                <p class="text-sm text-slate-500">Add competitors in the Competitors section to include link gaps.</p>
+                            @endforelse
+                        </div></fieldset>
+                        <button class="inline-flex min-h-11 items-center justify-center rounded-md bg-slate-950 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">{{ $latestBacklinkAudit?->status === 'failed' ? 'Retry backlink audit' : 'Run backlink audit' }}</button>
+                    @else
+                        <p class="text-sm text-slate-500">Managers can run backlink audits. Viewers can inspect saved results.</p>
+                    @endif
+                </form>
+            </div>
+
             <div class="border-t border-slate-950/10 p-4">
                 <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                     <div>
                         <h4 class="text-balance font-semibold text-slate-950">Strongest referring domains</h4>
                         <p class="text-pretty text-base text-slate-600 sm:text-sm">The highest-ranked domains in the stored sample.</p>
                     </div>
-                    @if ($seoSnapshot->referring_domains > $seoReferringDomains->count())
-                        <p class="text-base tabular-nums text-slate-500 sm:text-sm">Showing {{ number_format($seoReferringDomains->count()) }} of {{ number_format($seoSnapshot->referring_domains) }}</p>
-                    @endif
+                    <p class="text-base tabular-nums text-slate-500 sm:text-sm">{{ number_format($seoSnapshot->referringDomains()->count()) }} domains stored from this sample</p>
                 </div>
+
+                <form method="GET" action="{{ route('admin.websites.show', $website) }}" class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto]">
+                    <input type="hidden" name="tab" value="seo"><input type="hidden" name="seo_section" value="backlinks">
+                    <label><span class="sr-only">Search referring domains</span><input name="backlink_search" value="{{ $backlinkSearch }}" placeholder="Search domains" class="min-h-11 w-full rounded-md border-slate-300 text-sm"></label>
+                    <label><span class="sr-only">Filter referring domains by rank</span><select name="backlink_min_rank" class="min-h-11 w-full rounded-md border-slate-300 text-sm"><option value="0" @selected($backlinkMinRank === 0)>All domain ranks</option><option value="40" @selected($backlinkMinRank === 40)>Rank 40+</option><option value="70" @selected($backlinkMinRank === 70)>Rank 70+</option></select></label>
+                    <label><span class="sr-only">Sort referring domains</span><select name="backlink_sort" class="min-h-11 w-full rounded-md border-slate-300 text-sm"><option value="domain_rank" @selected($backlinkSort === 'domain_rank')>Domain rank</option><option value="backlinks_count" @selected($backlinkSort === 'backlinks_count')>Backlinks</option><option value="last_seen" @selected($backlinkSort === 'last_seen')>Last seen</option><option value="domain" @selected($backlinkSort === 'domain')>Domain</option></select></label>
+                    <label><span class="sr-only">Sort direction</span><select name="backlink_direction" class="min-h-11 w-full rounded-md border-slate-300 text-sm"><option value="desc" @selected($backlinkDirection === 'desc')>Descending</option><option value="asc" @selected($backlinkDirection === 'asc')>Ascending</option></select></label>
+                    <button class="min-h-11 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50">Apply</button>
+                </form>
 
                 <div class="-mx-4 -my-2 mt-4 overflow-x-auto whitespace-nowrap">
                     <div class="inline-block min-w-full px-4 py-2 align-middle">
@@ -289,7 +320,7 @@
                                 <tr>
                                     <th class="whitespace-nowrap py-3 pr-4 text-left">Domain</th>
                                     <th class="whitespace-nowrap px-4 py-3 text-right">Domain rank</th>
-                                    <th class="whitespace-nowrap py-3 pl-4 text-right">Backlinks</th>
+                                    <th class="whitespace-nowrap px-4 py-3 text-right">Backlinks</th><th class="whitespace-nowrap py-3 pl-4 text-right">Last seen</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-950/5">
@@ -297,15 +328,16 @@
                                     <tr>
                                         <td class="py-3 pr-4 font-medium text-slate-950">{{ $referringDomain->domain }}</td>
                                         <td class="px-4 py-3 text-right tabular-nums text-slate-700">{{ $referringDomain->domain_rank ?? '—' }}</td>
-                                        <td class="py-3 pl-4 text-right tabular-nums text-slate-700">{{ number_format($referringDomain->backlinks_count) }}</td>
+                                        <td class="px-4 py-3 text-right tabular-nums text-slate-700">{{ number_format($referringDomain->backlinks_count) }}</td><td class="py-3 pl-4 text-right text-slate-600">{{ $referringDomain->last_seen?->format('j M Y') ?? '—' }}</td>
                                     </tr>
                                 @empty
-                                    <tr><td colspan="3" class="py-8 text-center text-slate-500">No referring domains were returned for this snapshot.</td></tr>
+                                    <tr><td colspan="4" class="py-8 text-center text-slate-500">No referring domains matched this stored snapshot.</td></tr>
                                 @endforelse
                             </tbody>
                         </table>
                     </div>
                 </div>
+                @if (method_exists($seoReferringDomains, 'links'))<div class="mt-4">{{ $seoReferringDomains->links() }}</div>@endif
             </div>
         </section>
         </div>

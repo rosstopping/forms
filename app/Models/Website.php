@@ -265,6 +265,16 @@ class Website extends Model
         return $this->hasMany(WebsiteCompetitor::class);
     }
 
+    public function backlinkAudits(): HasMany
+    {
+        return $this->hasMany(BacklinkAudit::class);
+    }
+
+    public function backlinkOpportunities(): HasMany
+    {
+        return $this->hasMany(BacklinkOpportunity::class);
+    }
+
     public function seoCompetitors(): HasMany
     {
         return $this->hasMany(SeoCompetitor::class);

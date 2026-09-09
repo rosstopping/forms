@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\ContentGeneration;
+use App\Services\BacklinkContentContext;
 use App\Services\CompetitorContentContext;
 use App\Services\ContentGenerationPromptGenerator;
 use App\Services\CopilotAgentClient;
@@ -71,6 +72,9 @@ class StartContentGeneration implements ShouldBeEncrypted, ShouldBeUnique, Shoul
         }
         if ($this->generation->competitor_context === null) {
             $this->generation->update(['competitor_context' => app(CompetitorContentContext::class)->forGeneration($this->generation, $contentRequests)]);
+        }
+        if ($this->generation->backlink_context === null) {
+            $this->generation->update(['backlink_context' => app(BacklinkContentContext::class)->forGeneration($contentRequests)]);
         }
         $prompt = $prompts->generate($this->generation);
         $this->generation->update(['status' => ContentGeneration::STATUS_RUNNING, 'prompt' => $prompt, 'started_at' => now(), 'error' => null]);

@@ -175,6 +175,11 @@ class WebsiteController extends Controller
         $seoDirection = $request->string('seo_direction')->toString() === 'asc' ? 'asc' : 'desc';
         $seoKeywords = null;
         $seoReferringDomains = collect();
+        $backlinkSearch = Str::limit(trim($request->string('backlink_search')->toString()), 100, '');
+        $backlinkSort = in_array($request->string('backlink_sort')->toString(), ['domain', 'domain_rank', 'backlinks_count', 'last_seen'], true) ? $request->string('backlink_sort')->toString() : 'domain_rank';
+        $backlinkDirection = $request->string('backlink_direction')->toString() === 'asc' ? 'asc' : 'desc';
+        $backlinkMinRank = in_array($request->integer('backlink_min_rank'), [0, 40, 70], true) ? $request->integer('backlink_min_rank') : 0;
+        $latestBacklinkAudit = $website->backlinkAudits()->latest('id')->first();
         $trackedCompetitors = $website->competitors()->with('latestAudit')->orderBy('excluded')->orderBy('domain')->get();
         $targetKeywords = $website->seoTargetKeywords()
             ->with(['rankings' => fn ($query) => $query
@@ -191,10 +196,12 @@ class WebsiteController extends Controller
 
         if ($seoSnapshot) {
             $seoReferringDomains = $seoSnapshot->referringDomains()
-                ->orderByDesc('domain_rank')
+                ->when($backlinkSearch !== '', fn ($query) => $query->where('domain', 'like', '%'.addcslashes($backlinkSearch, '%_\\').'%'))
+                ->when($backlinkMinRank > 0, fn ($query) => $query->where('domain_rank', '>=', $backlinkMinRank))
+                ->orderBy($backlinkSort, $backlinkDirection)
                 ->orderByDesc('backlinks_count')
-                ->limit(10)
-                ->get();
+                ->simplePaginate(25, pageName: 'backlink_page')
+                ->withQueryString();
             $seoCompetitors = $seoSnapshot->competitors()
                 ->orderByDesc('common_keywords')
                 ->orderByDesc('estimated_traffic')
@@ -289,6 +296,7 @@ class WebsiteController extends Controller
             'website', 'canManageMembers', 'canManageWebsite', 'canRunHealthReports', 'canUseSearchConsole',
             'searchConsoleReport', 'searchConsoleHistory', 'searchConsoleReportUnavailable', 'seoGeneration', 'seoSnapshot', 'seoHistory',
             'trackedCompetitors', 'targetKeywords', 'seoKeywords', 'seoReferringDomains', 'seoCompetitors', 'seoOpportunities', 'seoFilter', 'seoSort', 'seoDirection', 'strikingDistanceCount',
+            'backlinkSearch', 'backlinkSort', 'backlinkDirection', 'backlinkMinRank', 'latestBacklinkAudit',
             'dataForSeoConfigured', 'outreachProspect', 'pixelInstallationSnippet', 'canUseGrowthFeatures', 'canUseCompleteFeatures', 'canUseAutoresponders',
             'websiteAiQuestions', 'websiteAiQuestionsUsed', 'websiteAiWeeklyLimit', 'pixelOptimisations', 'websiteUsers', 'soleManagerId',
             'hasContentDeliveryConnection', 'contentSupportCallUrl',

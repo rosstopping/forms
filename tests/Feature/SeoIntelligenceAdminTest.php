@@ -259,7 +259,7 @@ test('the seo tab displays and filters locally stored keyword estimates', functi
         ->assertDontSee('unrelated informational query')
         ->assertSee('Third-party market intelligence')
         ->assertSee('Locally stored third-party estimates')
-        ->assertDontSee('DataForSEO');
+        ->assertSee('DataForSEO');
 });
 
 test('website users can drill into locally observed keyword history', function (): void {

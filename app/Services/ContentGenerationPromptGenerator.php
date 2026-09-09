@@ -77,8 +77,10 @@ PROMPT;
 
         $available = max(0, self::PROMPT_LIMIT - mb_strlen($prompt) - 50);
         $competitorContext = app(CompetitorContentContext::class)->forPrompt($generation->competitor_context ?? [], min(5500, $available));
+        $available = max(0, $available - mb_strlen($competitorContext));
+        $backlinkContext = app(BacklinkContentContext::class)->forPrompt($generation->backlink_context ?? [], min(4000, $available));
 
-        return $prompt.$competitorContext;
+        return Str::limit($prompt.$competitorContext.$backlinkContext, self::PROMPT_LIMIT, '');
     }
 
     /** @param array<int, array<string, mixed>> $rows */

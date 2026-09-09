@@ -14,11 +14,11 @@ class ContentRequest extends Model
     /** @use HasFactory<ContentRequestFactory> */
     use HasFactory;
 
-    protected $fillable = ['competitor_context', 'competitor_fingerprint', 'website_id', 'created_by', 'content_generation_id', 'instructions', 'picked_up_at', 'pixel_processed_at', 'pixel_error'];
+    protected $fillable = ['backlink_context', 'backlink_fingerprint', 'competitor_context', 'competitor_fingerprint', 'website_id', 'created_by', 'content_generation_id', 'instructions', 'picked_up_at', 'pixel_processed_at', 'pixel_error'];
 
     protected function casts(): array
     {
-        return ['competitor_context' => 'array', 'picked_up_at' => 'datetime', 'pixel_processed_at' => 'datetime'];
+        return ['backlink_context' => 'array', 'competitor_context' => 'array', 'picked_up_at' => 'datetime', 'pixel_processed_at' => 'datetime'];
     }
 
     public function website(): BelongsTo

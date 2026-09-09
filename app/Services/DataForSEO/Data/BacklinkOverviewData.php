@@ -11,6 +11,9 @@ final readonly class BacklinkOverviewData
         public int $referringSubnets,
         public int $brokenBacklinks,
         public ?int $domainRank,
+        public ?int $dofollow,
+        public ?int $nofollow,
+        public ?int $spamScore,
     ) {}
 
     /** @param array<int, array<string, mixed>> $results */
@@ -25,6 +28,9 @@ final readonly class BacklinkOverviewData
             referringSubnets: self::integer(data_get($result, 'referring_subnets')),
             brokenBacklinks: self::integer(data_get($result, 'broken_backlinks')),
             domainRank: self::nullableInteger(data_get($result, 'rank')),
+            dofollow: self::nullableInteger(data_get($result, 'referring_links_attributes.dofollow')),
+            nofollow: self::nullableInteger(data_get($result, 'referring_links_attributes.nofollow')),
+            spamScore: self::nullableInteger(data_get($result, 'backlink_spam_score')),
         );
     }
 
