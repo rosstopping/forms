@@ -359,37 +359,56 @@
             </div>
         </form>
 
-        @php
-            $pendingContentRequests = $website->contentRequests->whereNull('picked_up_at');
-            $actionedContentRequests = $website->contentRequests->whereNotNull('picked_up_at');
-        @endphp
         <div class="mt-5 border-t border-slate-200 pt-4">
             <div class="flex items-center justify-between gap-3">
                 <h3 class="text-sm font-semibold text-slate-900">Pending todos</h3>
-                <span class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium tabular-nums text-amber-800">{{ $pendingContentRequests->count() }}</span>
+                <span class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium tabular-nums text-amber-800">{{ $pendingContentRequests->total() }}</span>
             </div>
             <div class="mt-3 space-y-3">
                 @forelse ($pendingContentRequests as $contentRequest)
+                    @php
+                        $queuePosition = $pendingContentRequests->firstItem() + $loop->index;
+                    @endphp
                     <article class="rounded-lg border border-slate-200 p-3">
                         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                             <div class="min-w-0">
                                 <div class="flex flex-wrap items-center gap-2">
-                                    <span class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800">Pending</span>
+                                    @if ($queuePosition === 1)
+                                        <span class="rounded-full bg-teal-100 px-2.5 py-1 text-xs font-medium text-teal-800">Up next</span>
+                                    @else
+                                        <span class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium tabular-nums text-amber-800">Queue #{{ $queuePosition }}</span>
+                                    @endif
+                                    @if ($contentRequest->bumped_at)
+                                        <span class="rounded-full bg-violet-100 px-2.5 py-1 text-xs font-medium text-violet-800">Bumped</span>
+                                    @endif
                                     <span class="text-xs text-slate-500">Added {{ $contentRequest->created_at->diffForHumans() }}{{ $contentRequest->creator ? ' by '.$contentRequest->creator->name : '' }}</span>
                                 </div>
                                 <p class="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700">{{ $contentRequest->instructions }}</p>
                             </div>
-                            <form method="POST" action="{{ route('admin.content-requests.destroy', [$website, $contentRequest]) }}" class="shrink-0">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="rounded-md border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50">Remove</button>
-                            </form>
+                            @if ($canManageWebsite)
+                                <div class="flex shrink-0 flex-col gap-2 sm:flex-row">
+                                    @if ($queuePosition !== 1)
+                                        <form method="POST" action="{{ route('admin.content-requests.bump', [$website, $contentRequest]) }}">
+                                            @csrf
+                                            <button type="submit" class="min-h-11 w-full rounded-md border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-medium text-violet-800 hover:bg-violet-100 sm:w-auto">Bump to top</button>
+                                        </form>
+                                    @endif
+                                    <form method="POST" action="{{ route('admin.content-requests.destroy', [$website, $contentRequest]) }}">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="min-h-11 w-full rounded-md border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 sm:w-auto">Remove</button>
+                                    </form>
+                                </div>
+                            @endif
                         </div>
                     </article>
                 @empty
                     <p class="rounded-lg bg-slate-50 p-3 text-sm text-slate-500">No pending content todos.</p>
                 @endforelse
             </div>
+            @if ($pendingContentRequests->hasPages())
+                <div class="mt-4">{{ $pendingContentRequests->links() }}</div>
+            @endif
         </div>
 
         @if ($actionedContentRequests->isNotEmpty())

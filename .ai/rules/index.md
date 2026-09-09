@@ -48,6 +48,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Models/User,Http/Controllers/Admin/{WebsiteController,UserController},Http/Middleware/ResolveCurrentWebsite}.php | .ai/rules/middleware.md |
 | app/{Actions/ActivateWebsiteAuditTrial.php,Models/{WebsiteAudit.php,WebsiteDomain.php},Http/Controllers/WebsiteAuditOnboardingController.php},database/migrations/**/*website*claim*.php,tests/Feature/**/*WebsiteAudit*.php | .ai/rules/migrations-feature.md |
 | app/{Enums,Models,Services,Jobs,Http/Controllers}/**/*Prospect*.php,config/outreach.php,database/migrations/**/*prospect*.php | .ai/rules/migrations.md |
+| app/{Models/ContentRequest.php,Jobs/StartContentGeneration.php,Http/Controllers/Admin/{ContentRequestController.php,ContentRequestPixelController.php}},resources/views/admin/websites/show.blade.php | .ai/rules/models-controllers-admin-views-admin-websites.md |
 | app/{Models/PixelPageSighting.php,Services/PixelHeartbeatRecorder.php,Http/Controllers/PixelHeartbeatController.php}, public/pixel.js | .ai/rules/models-controllers.md |
 | app/{Jobs,Mail,Http/Controllers}/**/*FormSubmission*.php,app/Models/Website.php,resources/views/admin/websites/show.blade.php | .ai/rules/models-views-admin-websites.md |
 | app/{Models/Optimisation*.php,Services/*Deployment*.php,Contracts/DeploymentDriver.php} | .ai/rules/models.md |
@@ -65,6 +66,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Services/SeoIntelligence/**,app/Models/SeoOpportunity.php | .ai/rules/seo-intelligence-models.md |
 | app/Services/SeoIntelligence/** | .ai/rules/seo-intelligence.md |
 | app/{Services/Github*,Http/Controllers/**/*Github*,Models/{GithubInstallation,WebsiteRepository,RemediationRun}.php}, app/{Services/PixelUrlNormalizer.php,Services/PixelPayloadBuilder.php,Http/Controllers/PixelPayloadController.php,Models/Optimisation.php} | .ai/rules/services-controllers.md |
+| app/Services/BacklinkAuditService.php,tests/Feature/BacklinkAuditTest.php | .ai/rules/services-feature.md |
 | app/{Services,Jobs,Http/Controllers/Admin}/**/*SeoProspect*.php, app/{Services,Jobs,Http/Controllers/Admin}/**/*Competitor*.php | .ai/rules/services-jobs-http-controllers-admin.md |
 | app/{Services,Jobs,Http/Controllers}/**/*Content*.php | .ai/rules/services-jobs-http-controllers.md |
 | app/Services/WebsiteCrawler.php, app/Services/Pixel*.php, app/Services/{SitemapFetcher,ProspectWebsiteAnalyzer,WebsiteHealthAuditor}.php | .ai/rules/services.md |

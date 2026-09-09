@@ -474,6 +474,78 @@ test('website owners can queue and remove manual content requests', function () 
     $this->assertModelMissing($contentRequest);
 });
 
+test('managers can bump pending content requests into a deterministic website queue', function () {
+    $owner = User::factory()->create();
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $manager = User::factory()->create();
+    $website->members()->attach($manager, ['role' => Website::MEMBER_ROLE_MANAGER]);
+    $requests = ContentRequest::factory()->count(21)->for($website)->for($manager, 'creator')->create();
+    $target = $requests->last();
+    $originalCreatedAt = $target->created_at;
+
+    $this->actingAs($manager)
+        ->post(route('admin.content-requests.bump', [$website, $target]))
+        ->assertRedirect(route('admin.websites.section', [$website, 'content']))
+        ->assertSessionHas('status', 'Content request moved to the top of the queue.');
+
+    expect($website->contentRequests()->pendingInQueueOrder()->first()->is($target))->toBeTrue()
+        ->and($target->fresh()->created_at->equalTo($originalCreatedAt))->toBeTrue();
+
+    $this->travel(1)->second();
+    $this->post(route('admin.content-requests.bump', [$website, $requests->first()]))->assertRedirect();
+    expect($website->contentRequests()->pendingInQueueOrder()->first()->is($requests->first()))->toBeTrue();
+    $this->travel(1)->second();
+    $this->post(route('admin.content-requests.bump', [$website, $target]))->assertRedirect();
+    expect($website->contentRequests()->pendingInQueueOrder()->first()->is($target))->toBeTrue();
+
+    $this->actingAs($owner)
+        ->get(route('admin.websites.section', [$website, 'content']))
+        ->assertSuccessful()
+        ->assertSeeInOrder(['Up next', $target->instructions, 'Queue #2']);
+    $this->get(route('admin.websites.section', [$website, 'content', 'content_queue_page' => 2]))
+        ->assertSuccessful()
+        ->assertSee('Queue #21')
+        ->assertSee($requests->get(19)->instructions);
+
+    $sameTime = now()->addMinute();
+    $requests->first()->update(['bumped_at' => $sameTime]);
+    $requests->get(1)->update(['bumped_at' => $sameTime]);
+
+    expect($website->contentRequests()->pendingInQueueOrder()->limit(2)->pluck('id')->all())
+        ->toBe([$requests->first()->id, $requests->get(1)->id]);
+});
+
+test('content queue bumping enforces management growth access and website isolation', function () {
+    $owner = User::factory()->create();
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $contentRequest = ContentRequest::factory()->for($website)->for($owner, 'creator')->create();
+    $viewer = User::factory()->create();
+    $website->members()->attach($viewer, ['role' => Website::MEMBER_ROLE_VIEWER]);
+
+    $this->actingAs($viewer)
+        ->post(route('admin.content-requests.bump', [$website, $contentRequest]))
+        ->assertForbidden();
+    $this->get(route('admin.websites.section', [$website, 'content']))
+        ->assertSuccessful()
+        ->assertDontSee('Bump to top');
+
+    $otherWebsite = Website::factory()->create();
+    $this->actingAs($otherWebsite->owner)
+        ->post(route('admin.content-requests.bump', [$otherWebsite, $contentRequest]))
+        ->assertNotFound();
+
+    $contentRequest->update(['picked_up_at' => now()]);
+    $this->actingAs($owner)
+        ->post(route('admin.content-requests.bump', [$website, $contentRequest]))
+        ->assertUnprocessable();
+
+    $contentRequest->update(['picked_up_at' => null]);
+    $owner->update(['membership_tier' => MembershipPlan::ESSENTIAL]);
+    $this->actingAs($owner)
+        ->post(route('admin.content-requests.bump', [$website, $contentRequest]))
+        ->assertRedirect(route('admin.billing.index'));
+});
+
 test('actioned content todos remain visible separately with their generation outcome', function () {
     $owner = User::factory()->create();
     $website = Website::factory()->for($owner, 'owner')->create();
@@ -496,6 +568,11 @@ test('actioned content todos remain visible separately with their generation out
         'picked_up_at' => now()->subHour(),
         'instructions' => 'Completed content todo',
     ]);
+    ContentRequest::factory()->for($website)->for($owner, 'creator')->create([
+        'content_generation_id' => $generation->id,
+        'picked_up_at' => now()->subHours(2),
+        'instructions' => 'Earlier completed content todo',
+    ]);
 
     $response = $this->actingAs($owner)->get(route('admin.websites.show', $website));
 
@@ -504,6 +581,7 @@ test('actioned content todos remain visible separately with their generation out
         ->assertSee('Pending content todo')
         ->assertSee('Actioned todos')
         ->assertSee('Completed content todo')
+        ->assertSeeInOrder(['Completed content todo', 'Earlier completed content todo'])
         ->assertSee('pull request open')
         ->assertSee('View pull request')
         ->assertSee('https://github.com/example/site/pull/42');
@@ -537,8 +615,9 @@ test('content generation uses search performance and pending requests to start a
     ]);
     $thirdRequest = ContentRequest::factory()->for($website)->create([
         'created_by' => $admin->id,
-        'instructions' => 'Create a separate guide in a later run.',
+        'instructions' => 'Create an urgent guide in this run.',
         'created_at' => now()->subMinute(),
+        'bumped_at' => now(),
     ]);
     $this->mock(SearchConsoleClient::class)->shouldReceive('performance')->once()->andReturn([
         ['query' => 'useful service', 'page' => 'https://example.test/', 'clicks' => 4.0, 'impressions' => 100.0, 'ctr' => 0.04, 'position' => 8.2],
@@ -547,8 +626,8 @@ test('content generation uses search performance and pending requests to start a
         ->withArgs(fn ($authorization, $passedRepository, string $prompt) => $passedRepository->is($repository)
             && str_contains($prompt, 'useful service')
             && str_contains($prompt, $firstRequest->instructions)
-            && str_contains($prompt, $secondRequest->instructions)
-            && ! str_contains($prompt, $thirdRequest->instructions))
+            && str_contains($prompt, $thirdRequest->instructions)
+            && ! str_contains($prompt, $secondRequest->instructions))
         ->andReturn(['id' => '11111111-1111-4111-8111-111111111111', 'state' => 'queued']);
 
     app()->call([new StartContentGeneration($generation), 'handle']);
@@ -557,10 +636,10 @@ test('content generation uses search performance and pending requests to start a
         ->and($generation->fresh()->search_performance[0]['query'])->toBe('useful service')
         ->and($firstRequest->fresh()->content_generation_id)->toBe($generation->id)
         ->and($firstRequest->fresh()->picked_up_at)->not->toBeNull()
-        ->and($secondRequest->fresh()->content_generation_id)->toBe($generation->id)
-        ->and($secondRequest->fresh()->picked_up_at)->not->toBeNull()
-        ->and($thirdRequest->fresh()->content_generation_id)->toBeNull()
-        ->and($thirdRequest->fresh()->picked_up_at)->toBeNull();
+        ->and($thirdRequest->fresh()->content_generation_id)->toBe($generation->id)
+        ->and($thirdRequest->fresh()->picked_up_at)->not->toBeNull()
+        ->and($secondRequest->fresh()->content_generation_id)->toBeNull()
+        ->and($secondRequest->fresh()->picked_up_at)->toBeNull();
     Queue::assertPushed(SyncContentGeneration::class);
 });
 

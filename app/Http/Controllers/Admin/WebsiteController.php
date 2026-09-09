@@ -146,6 +146,23 @@ class WebsiteController extends Controller
         $canRunHealthReports = $user?->isAdmin() === true || $website->owner?->hasMembershipFeature(MembershipPlan::FEATURE_HEALTH_REPORTS) === true;
         $canUseSearchConsole = $user?->isAdmin() === true || $website->owner?->hasMembershipFeature(MembershipPlan::FEATURE_SEARCH_CONSOLE) === true;
         $canUseGrowthFeatures = $user?->isAdmin() === true || $website->owner?->hasMembershipFeature(MembershipPlan::FEATURE_GROWTH) === true;
+        $pendingContentRequests = null;
+        $actionedContentRequests = collect();
+        if ($canUseGrowthFeatures) {
+            $pendingContentRequests = $website->contentRequests()
+                ->with('creator')
+                ->pendingInQueueOrder()
+                ->paginate(20, pageName: 'content_queue_page')
+                ->withQueryString()
+                ->fragment('content-requests-title');
+            $actionedContentRequests = $website->contentRequests()
+                ->with(['creator', 'generation'])
+                ->whereNotNull('picked_up_at')
+                ->latest('picked_up_at')
+                ->latest('id')
+                ->limit(50)
+                ->get();
+        }
         $hasContentDeliveryConnection = $website->pixel_last_seen_at !== null
             || $website->wordpressConnection?->isConnected() === true
             || $website->repository !== null;
@@ -300,6 +317,7 @@ class WebsiteController extends Controller
             'dataForSeoConfigured', 'outreachProspect', 'pixelInstallationSnippet', 'canUseGrowthFeatures', 'canUseCompleteFeatures', 'canUseAutoresponders',
             'websiteAiQuestions', 'websiteAiQuestionsUsed', 'websiteAiWeeklyLimit', 'pixelOptimisations', 'websiteUsers', 'soleManagerId',
             'hasContentDeliveryConnection', 'contentSupportCallUrl',
+            'pendingContentRequests', 'actionedContentRequests',
         ));
     }
 

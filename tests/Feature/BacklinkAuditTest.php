@@ -91,7 +91,9 @@ test('backlink evidence rejects unsafe URLs and destinations outside the audited
 test('linked pages trends and competitor gaps retain bounded provider evidence', function (): void {
     $audit = BacklinkAudit::factory()->create();
     $competitor = WebsiteCompetitor::factory()->for($audit->website)->create(['domain' => 'competitor.example']);
+    $secondCompetitor = WebsiteCompetitor::factory()->for($audit->website)->create(['domain' => 'second-competitor.example']);
     $audit->competitors()->create(['website_competitor_id' => $competitor->id, 'domain' => $competitor->domain]);
+    $audit->competitors()->create(['website_competitor_id' => $secondCompetitor->id, 'domain' => $secondCompetitor->domain]);
     Http::fake(function ($request) {
         if (str_ends_with($request->url(), '/backlinks/domain_pages/live')) {
             return Http::response(backlinkAuditResponse([['page' => 'https://example.com/guide', 'page_summary' => ['backlinks' => 30, 'referring_domains' => 12, 'rank' => 44]]], 'pages-task'));
@@ -100,7 +102,7 @@ test('linked pages trends and competitor gaps retain bounded provider evidence',
             return Http::response(backlinkAuditResponse([['date' => '2026-08-01 00:00:00 +00:00', 'new_backlinks' => 8, 'lost_backlinks' => 2, 'new_referring_domains' => 3, 'lost_referring_domains' => 1]], 'trend-task'));
         }
 
-        return Http::response(backlinkAuditResponse([['domain' => 'publisher.example', 'rank' => 65, 'domain_intersection' => ['1' => ['backlinks' => 4, 'rank' => 65]]]], 'gap-task'));
+        return Http::response(backlinkAuditResponse([['domain_intersection' => ['1' => ['type' => 'backlinks_domain_intersection', 'target' => 'www.publisher.example', 'backlinks' => 4, 'referring_pages' => 3, 'rank' => 65, 'backlinks_spam_score' => 8, 'first_seen' => '2025-01-01 00:00:00 +00:00', 'lost_date' => null], '2' => ['type' => 'backlinks_domain_intersection', 'target' => 'publisher.example', 'backlinks' => 2, 'referring_pages' => 2, 'rank' => 65, 'backlinks_spam_score' => 6, 'first_seen' => '2025-02-01 00:00:00 +00:00', 'lost_date' => null]], 'summary' => ['intersections_count' => 2]]], 'gap-task'));
     });
     $service = app(BacklinkAuditService::class);
     $service->process($audit, 'own_pages');
@@ -108,8 +110,25 @@ test('linked pages trends and competitor gaps retain bounded provider evidence',
     $service->process($audit->fresh(), 'gaps');
     expect($audit->pages()->sole()->referring_domains)->toBe(12)
         ->and($audit->fresh()->new_lost_trend[0]['new_backlinks'])->toBe(8)
+        ->and($audit->domainGaps()->sole()->domain)->toBe('publisher.example')
+        ->and($audit->domainGaps()->sole()->domain_rank)->toBe(65)
+        ->and($audit->domainGaps()->sole()->spam_score)->toBe(8)
+        ->and($audit->domainGaps()->sole()->competitor_count)->toBe(2)
         ->and($audit->domainGaps()->sole()->competitor_evidence)->toHaveKey('competitor.example')
+        ->and($audit->domainGaps()->sole()->competitor_evidence)->toHaveKey('second-competitor.example')
         ->and(ExternalApiUsage::where('backlink_audit_id', $audit->id)->count())->toBe(3);
+});
+
+test('malformed domain intersection rows retain cost and leave the gap stage retryable', function (): void {
+    $audit = BacklinkAudit::factory()->create();
+    $competitor = WebsiteCompetitor::factory()->for($audit->website)->create(['domain' => 'competitor.example']);
+    $audit->competitors()->create(['website_competitor_id' => $competitor->id, 'domain' => $competitor->domain]);
+    Http::fake(['*backlinks/domain_intersection/live' => Http::response(backlinkAuditResponse([['domain_intersection' => ['1' => ['backlinks' => 4]]]], 'malformed-gap-task'))]);
+
+    expect(fn () => app(BacklinkAuditService::class)->process($audit, 'gaps'))->toThrow(RuntimeException::class);
+    expect($audit->fresh()->stages)->not->toContain('gaps')
+        ->and($audit->domainGaps()->count())->toBe(0)
+        ->and(ExternalApiUsage::where('backlink_audit_id', $audit->id)->count())->toBe(1);
 });
 
 test('recovery and content opportunities stay grounded in stored evidence', function (): void {

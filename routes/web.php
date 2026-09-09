@@ -322,6 +322,7 @@ Route::middleware(['web', 'auth', ResolveCurrentWebsite::class])->prefix('admin'
     Route::post('websites/{website}/content-generations/{contentGeneration}/sync', [ContentPlanController::class, 'syncGeneration'])->middleware('membership:growth')->name('content-generations.sync');
     Route::delete('websites/{website}/content-generations/{contentGeneration}', [ContentPlanController::class, 'cancelGeneration'])->middleware('membership:growth')->name('content-generations.destroy');
     Route::post('websites/{website}/content-requests', [ContentRequestController::class, 'store'])->middleware('membership:growth')->name('content-requests.store');
+    Route::post('websites/{website}/content-requests/{contentRequest}/bump', [ContentRequestController::class, 'bump'])->middleware('membership:growth')->name('content-requests.bump');
     Route::delete('websites/{website}/content-requests/{contentRequest}', [ContentRequestController::class, 'destroy'])->middleware('membership:growth')->name('content-requests.destroy');
     Route::resource('forms', FormController::class);
     Route::patch('form-submissions/bulk', BulkFormSubmissionController::class)->name('form-submissions.bulk');

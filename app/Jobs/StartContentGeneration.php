@@ -57,8 +57,7 @@ class StartContentGeneration implements ShouldBeEncrypted, ShouldBeUnique, Shoul
         $performance = $connection?->property_url ? $searchConsole->performance($connection) : [];
         $this->generation->update(['search_performance' => $performance]);
         $contentRequests = $this->generation->plan->website->contentRequests()
-            ->whereNull('picked_up_at')
-            ->oldest()
+            ->pendingInQueueOrder()
             ->limit(2)
             ->get();
         $this->generation->setRelation('contentRequests', $contentRequests);

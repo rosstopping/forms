@@ -138,6 +138,21 @@ it('queues existing pending content todos from the pixel tab', function (): void
     Queue::assertPushed(fn (GenerateContentRequestPixelOptimisations $job): bool => $job->contentRequest->is($contentRequest));
 });
 
+it('uses content queue priority when preparing a bounded pixel batch', function (): void {
+    Queue::fake();
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $website = Website::factory()->for($admin, 'owner')->create(['pixel_enabled' => true]);
+    $requests = ContentRequest::factory()->count(21)->for($website)->for($admin, 'creator')->create();
+    $bumped = $requests->last();
+    $bumped->update(['bumped_at' => now()]);
+
+    $this->actingAs($admin)->post(route('admin.websites.pixel.content-requests.store', $website))->assertRedirect();
+
+    Queue::assertPushed(GenerateContentRequestPixelOptimisations::class, 20);
+    Queue::assertPushed(fn (GenerateContentRequestPixelOptimisations $job): bool => $job->contentRequest->is($bumped));
+    Queue::assertNotPushed(fn (GenerateContentRequestPixelOptimisations $job): bool => $job->contentRequest->is($requests->get(19)));
+});
+
 it('queues a search opportunity through pixel without a github repository', function (): void {
     Queue::fake();
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);

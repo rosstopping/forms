@@ -163,29 +163,49 @@ class BacklinkAuditService
         $this->usage($audit, $stage, $response->endpoint, $response->cost, count($items), $response->taskId);
         DB::transaction(function () use ($audit, $domains, $items): void {
             foreach ($items as $item) {
-                $domain = $item['domain'] ?? $item['target'] ?? null;
-                if (! is_string($domain) || $domain === '') {
+                $rawEvidence = $item['domain_intersection'] ?? null;
+                if (! is_array($rawEvidence) || $rawEvidence === []) {
                     throw new RuntimeException('The provider returned an invalid referring-domain gap.');
                 }
-                try {
-                    $domain = app(CompetitorDomain::class)->normalize($domain);
-                } catch (Throwable) {
+                $referringDomains = [];
+                $evidence = [];
+                foreach ($rawEvidence as $key => $value) {
+                    if (! is_array($value) || ! is_string($value['target'] ?? null)) {
+                        throw new RuntimeException('The provider returned an invalid referring-domain gap.');
+                    }
+                    try {
+                        $referringDomain = app(CompetitorDomain::class)->normalize($value['target']);
+                    } catch (Throwable) {
+                        throw new RuntimeException('The provider returned an invalid referring-domain gap.');
+                    }
+                    $targetNumber = is_numeric($key) ? (int) $key : 0;
+                    $competitorDomain = $targetNumber >= 1 ? ($domains[$targetNumber - 1] ?? null) : null;
+                    if (! $competitorDomain) {
+                        throw new RuntimeException('The provider returned an invalid referring-domain gap.');
+                    }
+                    $referringDomains[] = $referringDomain;
+                    $evidence[$competitorDomain] = [
+                        'backlinks' => max(0, $this->integer($value['backlinks'] ?? null) ?? 0),
+                        'referring_pages' => max(0, $this->integer($value['referring_pages'] ?? null) ?? 0),
+                        'rank' => $this->integer($value['rank'] ?? null),
+                        'backlinks_spam_score' => $this->integer($value['backlinks_spam_score'] ?? null),
+                        'first_seen' => is_string($value['first_seen'] ?? null) ? $value['first_seen'] : null,
+                        'lost_date' => is_string($value['lost_date'] ?? null) ? $value['lost_date'] : null,
+                    ];
+                }
+                $referringDomains = array_values(array_unique($referringDomains));
+                if (count($referringDomains) !== 1) {
                     throw new RuntimeException('The provider returned an invalid referring-domain gap.');
                 }
+                $domain = $referringDomains[0];
                 if ($domain === $audit->domain || in_array($domain, $domains, true)) {
                     continue;
                 }
-                $rawEvidence = is_array($item['domain_intersection'] ?? null) ? $item['domain_intersection'] : [];
-                $evidence = collect($rawEvidence)->mapWithKeys(function (mixed $value, string|int $key) use ($domains): array {
-                    $domain = $domains[max(0, (int) $key - 1)] ?? (string) $key;
-
-                    return [$domain => is_array($value) ? $value : []];
-                })->all();
-                $values = collect($evidence)->filter(fn (mixed $value): bool => is_array($value));
-                $count = $values->filter(fn (array $value): bool => (int) ($value['backlinks'] ?? $value['referring_pages'] ?? 0) > 0)->count();
-                $rank = $this->integer($item['rank'] ?? $values->max('rank'));
-                $spam = $this->integer($item['backlink_spam_score'] ?? null);
-                $audit->domainGaps()->updateOrCreate(['domain' => mb_strtolower($domain)], ['domain_rank' => $rank, 'spam_score' => $spam, 'competitor_count' => max(1, $count), 'competitor_evidence' => $evidence, 'priority_score' => max(0, min(500, max(1, $count) * 100 + ($rank ?? 0) - ($spam ?? 0)))]);
+                $values = collect($evidence);
+                $count = $values->count();
+                $rank = $this->integer($values->max('rank'));
+                $spam = $this->integer($values->max('backlinks_spam_score'));
+                $audit->domainGaps()->updateOrCreate(['domain' => $domain], ['domain_rank' => $rank, 'spam_score' => $spam, 'competitor_count' => $count, 'competitor_evidence' => $evidence, 'priority_score' => max(0, min(500, $count * 100 + ($rank ?? 0) - ($spam ?? 0)))]);
             }
         });
     }
