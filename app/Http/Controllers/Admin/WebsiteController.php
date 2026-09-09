@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class WebsiteController extends Controller
@@ -116,7 +117,7 @@ class WebsiteController extends Controller
 
         $website->load([
             'domains',
-            'owner:id,name,email,role,membership_tier,admin_membership_tier,membership_status,membership_current_period_end',
+            'owner:id,name,email,role,membership_tier,admin_membership_tier,admin_membership_expires_at,membership_status,membership_current_period_end',
             'members' => fn ($query) => $query->select('users.id', 'users.name', 'users.email')->orderBy('name'),
             'forms' => fn ($query) => $query->withCount('submissions')->latest('created_at'),
             'healthReports' => fn ($query) => $query
@@ -315,6 +316,7 @@ class WebsiteController extends Controller
 
         $data = $request->validate([
             'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'subscription_user_id' => ['sometimes', 'nullable', 'integer', 'exists:users,id'],
             'domain' => [
                 'sometimes',
                 ...$this->domainRules($primaryDomain),
@@ -348,6 +350,26 @@ class WebsiteController extends Controller
         $pixelEnabledChanged = array_key_exists('pixel_enabled', $data) && $website->pixel_enabled !== $data['pixel_enabled'];
 
         DB::transaction(function () use ($data, $domain, $pixelEnabledChanged, $primaryDomain, $website): void {
+            if (array_key_exists('subscription_user_id', $data)) {
+                Website::query()->whereKey($website->id)->lockForUpdate()->firstOrFail();
+                $website->refresh();
+                $subscriberId = $data['subscription_user_id'];
+
+                if ($subscriberId !== null && (int) $subscriberId !== $website->user_id
+                    && ! $website->members()->whereKey($subscriberId)->exists()) {
+                    throw ValidationException::withMessages([
+                        'subscription_user_id' => 'Choose an existing website member as the subscription account.',
+                    ]);
+                }
+
+                if ($website->user_id && ! $website->members()->whereKey($website->user_id)->exists()) {
+                    $website->members()->attach($website->user_id, ['role' => Website::MEMBER_ROLE_MANAGER]);
+                }
+
+                $data['user_id'] = $subscriberId;
+                unset($data['subscription_user_id']);
+            }
+
             $website->fill($data);
 
             if ($pixelEnabledChanged) {

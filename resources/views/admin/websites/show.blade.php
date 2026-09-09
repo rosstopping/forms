@@ -591,6 +591,23 @@
                 <span class="rounded-full bg-slate-100 px-2.5 py-1 text-sm font-medium text-slate-700">{{ $websiteUsers->count() }} {{ Str::plural('user', $websiteUsers->count()) }}</span>
             </div>
 
+            @if (Auth::user()?->isAdmin())
+                <form method="POST" action="{{ route('admin.websites.update', $website) }}" class="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                    @csrf
+                    @method('PUT')
+                    <label for="subscription_user_id" class="block text-sm font-medium text-slate-700">Subscription account</label>
+                    <p class="mt-1 text-sm text-slate-600">This member’s package unlocks the website’s features. Their Viewer or Manager access stays unchanged. Your administrator access lets you manage the website for them.</p>
+                    <select id="subscription_user_id" name="subscription_user_id" class="mt-3 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm">
+                        <option value="">No subscription account</option>
+                        @foreach ($websiteUsers as $websiteUser)
+                            <option value="{{ $websiteUser['user']->id }}" @selected((string) old('subscription_user_id', $website->user_id) === (string) $websiteUser['user']->id)>{{ $websiteUser['user']->name }} — {{ $websiteUser['user']->email }}</option>
+                        @endforeach
+                    </select>
+                    @error('subscription_user_id')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror
+                    <button type="submit" class="mt-3 rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">Save subscription account</button>
+                </form>
+            @endif
+
             @error('role')
                 <p class="mt-4 rounded-lg bg-red-50 p-3 text-base text-red-700 sm:text-sm" role="alert">{{ $message }}</p>
             @enderror

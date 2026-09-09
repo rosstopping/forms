@@ -40,6 +40,7 @@
                         <td class="px-4 py-3 text-sm text-slate-600">
                             {{ data_get($plans, $user->effectiveMembershipTier().'.name', 'None') }}
                             @if ($user->hasAdminManagedMembership())<span class="text-xs text-teal-700">(admin managed)</span>@endif
+                            @if ($user->admin_membership_expires_at)<span class="block text-xs text-slate-500">Admin access {{ $user->admin_membership_expires_at->isPast() ? 'ended' : 'ends' }} {{ $user->admin_membership_expires_at->format('j M Y') }}</span>@endif
                         </td>
                         <td class="px-4 py-3 text-sm text-slate-600">
                             @if ($user->onboarding_status === 'trial_active')
