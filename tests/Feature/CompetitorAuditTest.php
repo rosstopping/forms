@@ -146,6 +146,32 @@ test('brief generation bounds oversized analyst lists before validation', functi
         ->and($saved['outline'])->toHaveCount(8);
 });
 
+test('brief generation accepts an opportunity without supporting keyword ids', function (): void {
+    $audit = CompetitorAudit::factory()->create(['started_at' => now()]);
+    $keyword = CompetitorKeyword::factory()->for($audit, 'audit')->create(['search_intent' => 'commercial']);
+    $page = CompetitorPage::factory()->for($audit, 'audit')->create(['status' => 'completed', 'analysis' => ['title' => 'Detailed service guide']]);
+    $brief = [
+        'title' => 'Create a focused service guide',
+        'primary_keyword_id' => $keyword->id,
+        'source_urls' => [$page->url],
+        'search_intent' => 'commercial',
+        'relevance' => 3,
+        'relevance_reason' => 'Relevant to the supplied service evidence',
+        'existing_page_url' => '',
+        'content_format' => 'Guide',
+        'observations' => ['The competitor answers the primary service question'],
+        'ranking_hypotheses' => [],
+        'gaps' => ['No original examples'],
+        'improvements' => ['Add verified project examples'],
+        'outline' => ['Service overview'],
+    ];
+    CompetitorAnalyst::fake([['opportunities' => [$brief]]]);
+
+    app(CompetitorBriefGenerator::class)->generate($audit);
+
+    expect($audit->opportunities()->sole()->brief['keyword_ids'])->toBe([]);
+});
+
 test('all audit stages run with faked providers and retain empty evidence honestly', function (): void {
     Queue::fake();
     Http::fake(['*' => Http::response(competitorResponse([]))]);

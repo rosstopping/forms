@@ -33,7 +33,7 @@ class CompetitorBriefGenerator
         ];
         $response = (new CompetitorAnalyst)->prompt(json_encode($context, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR), timeout: 120);
         $items = $this->normalizeItems($response['opportunities']);
-        Validator::make(['opportunities' => $items], ['opportunities' => ['present', 'array', 'max:5'], 'opportunities.*' => ['array'], 'opportunities.*.title' => ['required', 'string', 'max:200'], 'opportunities.*.primary_keyword_id' => ['required', 'integer'], 'opportunities.*.keyword_ids' => ['required', 'array', 'max:10'], 'opportunities.*.source_urls' => ['required', 'array', 'min:1', 'max:5'], 'opportunities.*.relevance' => ['required', 'integer', 'between:1,3'], 'opportunities.*.existing_page_url' => ['present', 'nullable', 'string'], 'opportunities.*.improvements' => ['required', 'array', 'max:5'], 'opportunities.*.outline' => ['required', 'array', 'max:8'],
+        Validator::make(['opportunities' => $items], ['opportunities' => ['present', 'array', 'max:5'], 'opportunities.*' => ['array'], 'opportunities.*.title' => ['required', 'string', 'max:200'], 'opportunities.*.primary_keyword_id' => ['required', 'integer'], 'opportunities.*.keyword_ids' => ['present', 'array', 'max:10'], 'opportunities.*.source_urls' => ['required', 'array', 'min:1', 'max:5'], 'opportunities.*.relevance' => ['required', 'integer', 'between:1,3'], 'opportunities.*.existing_page_url' => ['present', 'nullable', 'string'], 'opportunities.*.improvements' => ['required', 'array', 'max:5'], 'opportunities.*.outline' => ['required', 'array', 'max:8'],
             'opportunities.*.keyword_ids.*' => ['integer'],
             'opportunities.*.source_urls.*' => ['string', 'max:2048'],
             'opportunities.*.search_intent' => ['required', 'string', 'max:100'],
@@ -85,6 +85,8 @@ class CompetitorBriefGenerator
             if (! is_array($item)) {
                 return $item;
             }
+
+            $item['keyword_ids'] = is_array($item['keyword_ids'] ?? null) ? $item['keyword_ids'] : [];
 
             foreach ($limits as $field => $limit) {
                 if (is_array($item[$field] ?? null)) {
