@@ -27,7 +27,7 @@
                 <h1 class="mt-1 truncate text-2xl font-semibold tracking-tight text-slate-950">{{ $report->website->name }}</h1>
                 <p class="mt-1 text-base text-slate-600 sm:text-sm">Generated {{ $report->created_at->toDayDateTimeString() }}.</p>
             </div>
-            <div class="flex flex-col gap-3 @md:flex-row @md:items-end">
+            <div class="flex flex-col gap-3 @md:flex-row @md:flex-wrap @md:items-end">
                 <label class="block min-w-0 @md:min-w-72">
                     <span class="block text-base font-medium text-slate-700 sm:text-sm">Previous reports</span>
                     <select data-health-report-selector class="mt-1 block w-full rounded-lg border border-slate-950/15 bg-white px-3 py-2 text-base text-slate-900 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/20 sm:text-sm" aria-label="Select a website health report">
@@ -40,6 +40,12 @@
                 </label>
                 @if (! $reportHistory->first()?->is($report))
                     <a href="{{ route('admin.websites.section', [$report->website, 'health']) }}" class="inline-flex shrink-0 items-center justify-center rounded-lg border border-slate-950/15 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600">Open latest</a>
+                @endif
+                @if (auth()->user()?->isAdmin())
+                    <form method="POST" action="{{ route('admin.website-health-reports.store', $report->website) }}" class="shrink-0">
+                        @csrf
+                        <button type="submit" class="w-full rounded-lg border border-slate-950/15 px-3 py-2 text-base font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600 sm:text-sm @md:w-auto">Run report again</button>
+                    </form>
                 @endif
             </div>
         </div>

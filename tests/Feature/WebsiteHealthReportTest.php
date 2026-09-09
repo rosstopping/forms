@@ -21,6 +21,7 @@ use App\Services\WebsiteHealthAuditor;
 use App\Services\WebsiteHealthReportPromptGenerator;
 use App\Services\WebsiteMailRecipients;
 use App\Support\MembershipPlan;
+use Dom\HTMLDocument;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
@@ -592,4 +593,54 @@ it('dispatches only due enabled websites from the scheduler command', function (
         ->and($disabled->healthReports()->count())->toBe(0)
         ->and($expiredTrial->healthReports()->count())->toBe(0);
     Queue::assertPushed(GenerateWebsiteHealthReport::class, 1);
+});
+
+it('lets administrators rerun a completed or failed report from the report page', function (string $status): void {
+    Queue::fake();
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $website = websiteWithDomain();
+    $previousReport = WebsiteHealthReport::factory()->for($website)->create(['status' => $status]);
+
+    $response = $this->actingAs($admin)
+        ->get(route('admin.website-health-reports.show', [$website, $previousReport]))
+        ->assertSuccessful()
+        ->assertSee('Run report again');
+    $document = HTMLDocument::createFromString($response->getContent(), LIBXML_NOERROR);
+    $form = collect($document->querySelectorAll('form'))->first(fn ($form): bool => $form->getAttribute('action') === route('admin.website-health-reports.store', $website));
+    expect($form)->not->toBeNull()
+        ->and($form->getAttribute('method'))->toBe('POST')
+        ->and($form->querySelector('input[name="_token"]'))->not->toBeNull();
+
+    $this->post($form->getAttribute('action'))->assertSessionHasNoErrors();
+    $newReport = $website->healthReports()->latest('id')->firstOrFail();
+    expect($newReport->is($previousReport))->toBeFalse()
+        ->and($newReport->status)->toBe(WebsiteHealthReport::STATUS_PENDING);
+    $this->assertModelExists($previousReport);
+    Queue::assertPushed(GenerateWebsiteHealthReport::class, fn ($job): bool => $job->report->is($newReport));
+})->with([WebsiteHealthReport::STATUS_COMPLETED, WebsiteHealthReport::STATUS_FAILED]);
+
+it('reuses an active report when the administrator clicks rerun', function (): void {
+    Queue::fake();
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $website = websiteWithDomain();
+    $activeReport = WebsiteHealthReport::factory()->for($website)->create(['status' => WebsiteHealthReport::STATUS_RUNNING]);
+
+    $this->actingAs($admin)->post(route('admin.website-health-reports.store', $website))
+        ->assertRedirect(route('admin.website-health-reports.show', [$website, $activeReport]))
+        ->assertSessionHas('status', 'A health report is already running.');
+    expect($website->healthReports()->count())->toBe(1);
+    Queue::assertNothingPushed();
+});
+
+it('does not offer report reruns to viewers', function (): void {
+    Queue::fake();
+    $viewer = User::factory()->create();
+    $website = websiteWithDomain();
+    $website->members()->attach($viewer, ['role' => Website::MEMBER_ROLE_VIEWER]);
+    $report = WebsiteHealthReport::factory()->for($website)->create();
+
+    $this->actingAs($viewer)->get(route('admin.website-health-reports.show', [$website, $report]))
+        ->assertSuccessful()->assertDontSee('Run report again');
+    $this->post(route('admin.website-health-reports.store', $website))->assertForbidden();
+    Queue::assertNothingPushed();
 });
