@@ -31,6 +31,9 @@ class BacklinkOpportunityGenerator
             'opportunities.*.observations' => ['present', 'array', 'max:5'], 'opportunities.*.hypotheses' => ['present', 'array', 'max:3'],
             'opportunities.*.improvements' => ['required', 'array', 'max:5'], 'opportunities.*.outline' => ['required', 'array', 'max:8'],
             'opportunities.*.internal_links' => ['present', 'array', 'max:5'],
+            'opportunities.*.observations.*' => ['string', 'max:500'], 'opportunities.*.hypotheses.*' => ['string', 'max:500'],
+            'opportunities.*.improvements.*' => ['string', 'max:500'], 'opportunities.*.outline.*' => ['string', 'max:250'],
+            'opportunities.*.internal_links.*' => ['string', 'max:500'],
         ])->validate();
         $ownUrls = $ownPages->pluck('url');
         foreach ($items as $item) {
@@ -67,11 +70,26 @@ class BacklinkOpportunityGenerator
         if (! is_array($items)) {
             return [];
         }
-        $limits = ['page_ids' => 5, 'observations' => 5, 'hypotheses' => 3, 'improvements' => 5, 'outline' => 8, 'internal_links' => 5];
+        $arrayLimits = ['page_ids' => 5, 'observations' => 5, 'hypotheses' => 3, 'improvements' => 5, 'outline' => 8, 'internal_links' => 5];
+        $stringLimits = ['title' => 200, 'user_need' => 500, 'relevance_reason' => 500, 'content_format' => 100];
+        $arrayStringLimits = ['observations' => 500, 'hypotheses' => 500, 'improvements' => 500, 'outline' => 250, 'internal_links' => 500];
 
-        return collect(array_slice(array_values($items), 0, 3))->filter(fn (mixed $item): bool => is_array($item))->map(function (array $item) use ($limits): array {
-            foreach ($limits as $field => $limit) {
+        return collect(array_slice(array_values($items), 0, 3))->filter(fn (mixed $item): bool => is_array($item))->map(function (array $item) use ($arrayLimits, $stringLimits, $arrayStringLimits): array {
+            foreach ($arrayLimits as $field => $limit) {
                 $item[$field] = array_slice(array_values(array_unique(is_array($item[$field] ?? null) ? $item[$field] : [], SORT_REGULAR)), 0, $limit);
+            }
+
+            foreach ($stringLimits as $field => $limit) {
+                if (is_string($item[$field] ?? null)) {
+                    $item[$field] = Str::limit(trim($item[$field]), $limit, '');
+                }
+            }
+
+            foreach ($arrayStringLimits as $field => $limit) {
+                $item[$field] = array_map(
+                    fn (mixed $value): mixed => is_string($value) ? Str::limit(trim($value), $limit, '') : $value,
+                    $item[$field],
+                );
             }
 
             return $item;

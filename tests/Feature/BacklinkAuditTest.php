@@ -140,6 +140,37 @@ test('recovery and content opportunities stay grounded in stored evidence', func
     expect($audit->opportunities()->where('type', 'lost_link')->count())->toBe(1)->and($audit->opportunities()->where('type', 'content')->sole()->evidence['source_urls'])->toBe([$page->url]);
 });
 
+test('content opportunities bound structured provider text before validation', function (): void {
+    $audit = BacklinkAudit::factory()->create(['started_at' => now()]);
+    $page = $audit->pages()->create(['domain' => 'competitor.example', 'kind' => 'competitor', 'url' => 'https://competitor.example/guide', 'url_hash' => fake()->sha256(), 'backlinks' => 100, 'referring_domains' => 50, 'status' => 'completed', 'analysis' => ['title' => 'A guide', 'main_content' => 'Useful evidence']]);
+    BacklinkAnalyst::fake([['opportunities' => [[
+        'title' => str_repeat('Original guide ', 30),
+        'page_ids' => [$page->id],
+        'user_need' => str_repeat('Understand the process. ', 30),
+        'relevance_reason' => str_repeat('This matches the audience. ', 30),
+        'existing_page_url' => '',
+        'content_format' => str_repeat('Detailed guide format ', 10),
+        'observations' => [str_repeat('Observed evidence. ', 40)],
+        'hypotheses' => [str_repeat('Possible explanation. ', 40)],
+        'improvements' => [str_repeat('Original improvement. ', 40)],
+        'outline' => [str_repeat('Useful section. ', 30)],
+        'internal_links' => [str_repeat('Relevant internal link. ', 40)],
+    ]]]]);
+
+    app(BacklinkOpportunityGenerator::class)->generate($audit);
+
+    $opportunity = $audit->opportunities()->where('type', 'content')->sole();
+    expect(mb_strlen($opportunity->title))->toBe(200)
+        ->and(mb_strlen($opportunity->evidence['user_need']))->toBe(500)
+        ->and(mb_strlen($opportunity->evidence['relevance_reason']))->toBe(500)
+        ->and(mb_strlen($opportunity->evidence['content_format']))->toBe(100)
+        ->and(mb_strlen($opportunity->evidence['observations'][0]))->toBe(500)
+        ->and(mb_strlen($opportunity->evidence['hypotheses'][0]))->toBe(500)
+        ->and(mb_strlen($opportunity->evidence['improvements'][0]))->toBe(500)
+        ->and(mb_strlen($opportunity->evidence['outline'][0]))->toBe(250)
+        ->and(mb_strlen($opportunity->evidence['internal_links'][0]))->toBe(500);
+});
+
 test('content briefs deduplicate and snapshot backlink evidence', function (): void {
     Queue::fake();
     $opportunity = BacklinkOpportunity::factory()->create(['evidence' => ['title' => 'Original research guide', 'observations' => ['Competitor pages have links'], 'hypotheses' => ['Original research may earn citations'], 'source_urls' => ['https://competitor.example/guide'], 'data_source' => 'dataforseo_estimate']]);
