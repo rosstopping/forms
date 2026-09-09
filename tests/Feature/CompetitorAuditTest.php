@@ -114,6 +114,38 @@ test('briefs are constrained to supplied keyword and successfully fetched page e
     expect($audit->opportunities()->count())->toBe(1)->and($audit->opportunities()->sole()->brief['audit_id'])->toBe($audit->id);
 });
 
+test('brief generation bounds oversized analyst lists before validation', function (): void {
+    $audit = CompetitorAudit::factory()->create(['started_at' => now()]);
+    $keywords = CompetitorKeyword::factory()->count(15)->for($audit, 'audit')->create(['search_intent' => 'commercial']);
+    $page = CompetitorPage::factory()->for($audit, 'audit')->create(['status' => 'completed', 'analysis' => ['title' => 'Detailed service guide']]);
+    $brief = [
+        'title' => 'Create a stronger service guide',
+        'primary_keyword_id' => $keywords->first()->id,
+        'keyword_ids' => $keywords->pluck('id')->all(),
+        'source_urls' => array_fill(0, 8, $page->url),
+        'search_intent' => 'commercial',
+        'relevance' => 3,
+        'relevance_reason' => 'Relevant to the supplied service evidence',
+        'existing_page_url' => '',
+        'content_format' => 'Guide',
+        'observations' => collect(range(1, 8))->map(fn (int $number): string => "Observation {$number}")->all(),
+        'ranking_hypotheses' => collect(range(1, 6))->map(fn (int $number): string => "Hypothesis {$number}")->all(),
+        'gaps' => collect(range(1, 8))->map(fn (int $number): string => "Gap {$number}")->all(),
+        'improvements' => collect(range(1, 8))->map(fn (int $number): string => "Improvement {$number}")->all(),
+        'outline' => collect(range(1, 12))->map(fn (int $number): string => "Section {$number}")->all(),
+    ];
+    CompetitorAnalyst::fake([['opportunities' => array_fill(0, 7, $brief)]]);
+
+    app(CompetitorBriefGenerator::class)->generate($audit);
+
+    $saved = $audit->opportunities()->sole()->brief;
+    expect($saved['keyword_ids'])->toHaveCount(10)
+        ->and($saved['source_urls'])->toHaveCount(1)
+        ->and($saved['observations'])->toHaveCount(5)
+        ->and($saved['ranking_hypotheses'])->toHaveCount(3)
+        ->and($saved['outline'])->toHaveCount(8);
+});
+
 test('all audit stages run with faked providers and retain empty evidence honestly', function (): void {
     Queue::fake();
     Http::fake(['*' => Http::response(competitorResponse([]))]);

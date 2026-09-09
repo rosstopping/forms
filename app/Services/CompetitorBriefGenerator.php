@@ -32,7 +32,7 @@ class CompetitorBriefGenerator
             'keywords' => $keywords->values()->toArray(), 'pages' => $pages->map(fn ($page): array => ['url' => $page->url, 'analysis' => $page->analysis])->all(),
         ];
         $response = (new CompetitorAnalyst)->prompt(json_encode($context, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR), timeout: 120);
-        $items = $response['opportunities'];
+        $items = $this->normalizeItems($response['opportunities']);
         Validator::make(['opportunities' => $items], ['opportunities' => ['present', 'array', 'max:5'], 'opportunities.*' => ['array'], 'opportunities.*.title' => ['required', 'string', 'max:200'], 'opportunities.*.primary_keyword_id' => ['required', 'integer'], 'opportunities.*.keyword_ids' => ['required', 'array', 'max:10'], 'opportunities.*.source_urls' => ['required', 'array', 'min:1', 'max:5'], 'opportunities.*.relevance' => ['required', 'integer', 'between:1,3'], 'opportunities.*.existing_page_url' => ['present', 'nullable', 'string'], 'opportunities.*.improvements' => ['required', 'array', 'max:5'], 'opportunities.*.outline' => ['required', 'array', 'max:8'],
             'opportunities.*.keyword_ids.*' => ['integer'],
             'opportunities.*.source_urls.*' => ['string', 'max:2048'],
@@ -63,5 +63,36 @@ class CompetitorBriefGenerator
                 $audit->opportunities()->firstOrCreate(['fingerprint' => $fingerprint], ['website_id' => $audit->website_id, 'title' => $item['title'], 'priority_score' => $score, 'brief' => $brief]);
             }
         });
+    }
+
+    private function normalizeItems(mixed $items): mixed
+    {
+        if (! is_array($items)) {
+            return $items;
+        }
+
+        $limits = [
+            'keyword_ids' => 10,
+            'source_urls' => 5,
+            'observations' => 5,
+            'ranking_hypotheses' => 3,
+            'gaps' => 5,
+            'improvements' => 5,
+            'outline' => 8,
+        ];
+
+        return collect(array_slice(array_values($items), 0, 5))->map(function (mixed $item) use ($limits): mixed {
+            if (! is_array($item)) {
+                return $item;
+            }
+
+            foreach ($limits as $field => $limit) {
+                if (is_array($item[$field] ?? null)) {
+                    $item[$field] = array_slice(array_values(array_unique($item[$field], SORT_REGULAR)), 0, $limit);
+                }
+            }
+
+            return $item;
+        })->all();
     }
 }
