@@ -2,9 +2,14 @@
 
 @section('content')
 <div class="space-y-6">
-    <div>
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
         <h1 class="text-2xl font-semibold">Leads</h1>
         <p class="text-sm text-slate-600">Find enquiries, assign owners, and keep every follow-up moving.</p>
+        </div>
+        @if ($manageableWebsiteIds->isNotEmpty())
+            <a href="{{ route('admin.form-submissions.create') }}" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white">Add lead</a>
+        @endif
     </div>
 
     @if (session('status'))
@@ -103,7 +108,7 @@
                                 </div>
                             @endif
                         </div>
-                        <div class="text-sm"><div class="text-slate-700">{{ $submission->form?->name ?: 'Unknown form' }}</div><div class="text-xs text-slate-500">{{ $submission->website?->name }}</div></div>
+                        <div class="text-sm"><div class="text-slate-700">{{ $submission->is_manual ? 'Manual lead' : ($submission->form?->name ?: 'Unknown form') }}</div><div class="text-xs text-slate-500">{{ $submission->website?->name }}</div></div>
                         <div class="text-sm"><span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">{{ $submission->resolvedStatusLabel() }}</span><div class="mt-2 text-xs text-slate-500">{{ $submission->assignee?->name ?: 'Unassigned' }}</div></div>
                         <div class="min-w-0 text-xs md:text-right">
                             <div class="text-slate-500">{{ $submission->created_at?->diffForHumans() }}</div>

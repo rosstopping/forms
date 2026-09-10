@@ -14,6 +14,14 @@ class FormSubmissionFactory extends Factory
 {
     protected $model = FormSubmission::class;
 
+    public function manual(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'is_manual' => true, 'form_id' => null, 'source_url' => null, 'source_domain' => null,
+            'ip_address' => null, 'user_agent' => null,
+        ]);
+    }
+
     public function definition(): array
     {
         return [

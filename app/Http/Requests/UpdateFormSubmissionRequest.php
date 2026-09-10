@@ -36,6 +36,10 @@ class UpdateFormSubmissionRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'name' => ['sometimes', 'required', 'string', 'max:200', Rule::prohibitedIf(! $this->route('form_submission')?->is_manual)],
+            'email' => ['sometimes', 'nullable', 'email:rfc', 'max:254', Rule::prohibitedIf(! $this->route('form_submission')?->is_manual)],
+            'phone' => ['sometimes', 'nullable', 'string', 'max:50', Rule::prohibitedIf(! $this->route('form_submission')?->is_manual)],
+            'message' => ['sometimes', 'nullable', 'string', 'max:10000', Rule::prohibitedIf(! $this->route('form_submission')?->is_manual)],
             'status' => ['required', 'string', Rule::in(FormSubmission::STATUSES)],
             'notes' => ['nullable', 'string', 'max:10000'],
             'assigned_to' => ['nullable', 'integer', Rule::exists('users', 'id')],

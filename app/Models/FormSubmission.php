@@ -23,6 +23,7 @@ class FormSubmission extends Model
 
     protected $fillable = [
         'website_id',
+        'is_manual',
         'form_id',
         'source_url',
         'source_domain',
@@ -47,7 +48,10 @@ class FormSubmission extends Model
         'webhook_error',
     ];
 
+    protected $attributes = ['is_manual' => false];
+
     protected $casts = [
+        'is_manual' => 'boolean',
         'data' => 'array',
         'is_spam' => 'boolean',
         'status' => 'string',

@@ -49,7 +49,8 @@ it('rejects invalid and unsafe review links', function (mixed $url) {
 it('previews the recipient subject and honest review message without sending', function () {
     $this->get(route('admin.form-submissions.show', $this->lead))->assertSuccessful()
         ->assertSee('Preview review invitation')->assertSee('customer@example.com')->assertSee('Share your experience with Example Services')
-        ->assertSee('honest review')->assertSee('https://example.com/review')->assertSee('Send review invitation');
+        ->assertSee('honest review')->assertSee('https://example.com/review')->assertSee('Send review invitation')
+        ->assertDontSee('Sent via Sitewell.');
     Queue::assertNothingPushed();
     Mail::assertNothingOutgoing();
 });
@@ -164,4 +165,22 @@ it('renders escaped customer content and the saved link in HTML and plain text',
     $mail->assertSeeInHtml('&lt;script&gt;', false)->assertDontSeeInHtml('<script>', false)
         ->assertSeeInHtml('Leave an honest review')->assertSeeInText('https://example.com/review');
     expect($mail->envelope()->from->address)->toBe(config('forms.autoresponder_from_address'));
+});
+
+it('brands review emails with the saved website name instead of Sitewell', function () {
+    $this->website->update(['name' => 'Example & Partners']);
+    $invitation = ($this->queueInvitation)();
+    $this->website->update(['name' => 'Renamed Business']);
+
+    $mail = new CustomerReviewInvitation($invitation);
+    $mail->assertSeeInHtml('<title>Example &amp; Partners</title>', false)
+        ->assertSeeInHtml('Example & Partners')
+        ->assertSeeInText('Example & Partners')
+        ->assertDontSeeInHtml('Sitewell')
+        ->assertDontSeeInText('Sitewell')
+        ->assertDontSeeInHtml('Renamed Business')
+        ->assertDontSeeInHtml('Your website, well looked after.')
+        ->assertDontSeeInHtml(route('marketing.home'));
+
+    expect($mail->envelope()->from->name)->toBe('Example & Partners');
 });

@@ -2,6 +2,8 @@
 
 ## Near term
 
+- Manual lead entry shipped 10 September 2026: managers can add and edit contact details without a website form, with normal statuses, tags, internal reminders and manual review invitations. Leads remain website-scoped and creation sends no form emails or webhooks.
+
 - Close the advertised-feature gaps below, starting with plan alignment and lead follow-up foundations.
 - Ship Search Console opportunity alerts for ranking gaps, weak click-through rates, declining pages, emerging queries, and query cannibalisation. Opportunities can be queued into the existing approval-first content workflow.
 - Add PageSpeed and Core Web Vitals monitoring for important pages on mobile and desktop.

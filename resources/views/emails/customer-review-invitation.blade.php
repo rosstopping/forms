@@ -1,4 +1,4 @@
-<x-email-layout :linked="false">
+<x-email-layout :linked="false" :brand-name="$invitation->from_name">
 @foreach (explode("\n\n", $invitation->body) as $paragraph)
 <p>{!! nl2br(e($paragraph)) !!}</p>
 @endforeach

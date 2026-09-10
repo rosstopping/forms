@@ -200,14 +200,14 @@ it('scopes leads and navigation counts to the website switcher selection', funct
         ->assertSee('aria-label="3 new leads"', false);
 });
 
-it('hides leads navigation when the selected website has no detected forms', function (): void {
+it('shows leads navigation even when the selected website has no detected forms', function (): void {
     $user = User::factory()->create();
     Website::factory()->for($user, 'owner')->create();
 
     $this->actingAs($user)
         ->get(route('admin.dashboard'))
         ->assertOk()
-        ->assertDontSee('href="'.route('admin.form-submissions.index').'"', false);
+        ->assertSee('href="'.route('admin.form-submissions.index').'"', false);
 });
 
 it('bulk updates statuses marks spam and deletes selected leads', function () {

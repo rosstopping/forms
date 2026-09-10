@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\FilterFormSubmissionsRequest;
+use App\Http\Requests\StoreManualLeadRequest;
 use App\Http\Requests\UpdateFormSubmissionRequest;
 use App\Mail\FormSubmissionReceived;
 use App\Models\FormSubmission;
@@ -71,6 +72,41 @@ class FormSubmissionController extends Controller
         return view('admin.form-submissions.index', compact('submissions', 'summary', 'followUpSummary', 'manageableWebsiteIds', 'bulkSelectableCount', 'bulkPageSelectableCount', 'users', 'leadTags'));
     }
 
+    public function create(Request $request): View
+    {
+        $website = $request->attributes->get('currentWebsite');
+        abort_unless($website instanceof Website && $website->isManageableBy($request->user()), 403);
+
+        return view('admin.form-submissions.create', compact('website'));
+    }
+
+    public function store(StoreManualLeadRequest $request): RedirectResponse
+    {
+        $data = $request->validated();
+        $website = $request->attributes->get('currentWebsite');
+        $lead = DB::transaction(function () use ($request, $data, $website): FormSubmission {
+            $lead = FormSubmission::create([
+                'website_id' => $website->id,
+                'form_id' => null,
+                'is_manual' => true,
+                'is_spam' => false,
+                'status' => $data['status'],
+                'notes' => $data['notes'] ?? null,
+                'follow_up_at' => $data['follow_up_at'] ?? null,
+                'data' => array_intersect_key($data, array_flip(['name', 'email', 'phone', 'message'])),
+            ]);
+            $lead->recordActivity('created', 'Lead added manually.', $request->user());
+            if ($lead->follow_up_at) {
+                $lead->followUpReminders()->create(['due_at' => $lead->follow_up_at]);
+                $lead->recordActivity('follow_up_changed', 'Follow-up scheduled for '.$lead->follow_up_at->format('j M Y, H:i').'.', $request->user());
+            }
+
+            return $lead;
+        });
+
+        return to_route('admin.form-submissions.show', $lead)->with('status', 'Lead added.');
+    }
+
     public function show(Request $request, FormSubmission $formSubmission): View
     {
         abort_unless($formSubmission->website?->isAccessibleBy($request->user()), 403);
@@ -92,7 +128,7 @@ class FormSubmissionController extends Controller
 
     public function update(UpdateFormSubmissionRequest $request, FormSubmission $formSubmission): RedirectResponse
     {
-        $data = $request->safe()->except(['return_to', 'tag_ids', 'new_tag', 'tags_present']);
+        $data = $request->safe()->except(['return_to', 'tag_ids', 'new_tag', 'tags_present', 'name', 'email', 'phone', 'message']);
 
         if (! $request->user()?->isAdmin() && filled($data['assigned_to'] ?? null) && (int) $data['assigned_to'] !== $request->user()->id) {
             abort(403);
@@ -100,7 +136,13 @@ class FormSubmissionController extends Controller
 
         DB::transaction(function () use ($formSubmission, $data, $request): void {
             $formSubmission = FormSubmission::query()->lockForUpdate()->findOrFail($formSubmission->id);
+            if ($formSubmission->is_manual && $request->hasAny(['name', 'email', 'phone', 'message'])) {
+                $data['data'] = [...($formSubmission->data ?? []), ...$request->safe()->only(['name', 'email', 'phone', 'message'])];
+            }
             $formSubmission->fill($data)->save();
+            if ($formSubmission->wasChanged('data')) {
+                $formSubmission->recordActivity('contact_details_updated', 'Manual lead contact details updated.', $request->user());
+            }
 
             if ($request->boolean('tags_present') || $request->has('tag_ids') || filled($request->validated('new_tag'))) {
                 $tagIds = array_map(intval(...), $request->validated('tag_ids', $request->boolean('tags_present') ? [] : $formSubmission->tags()->allRelatedIds()->all()));
@@ -178,6 +220,7 @@ class FormSubmissionController extends Controller
     public function resendNotification(Request $request, FormSubmission $formSubmission, FormSettingsResolver $formSettingsResolver): RedirectResponse
     {
         abort_unless($formSubmission->website?->isManageableBy($request->user()), 403);
+        abort_if($formSubmission->is_manual, 422, 'Manual leads do not have a form notification to resend.');
         abort_if($formSubmission->is_spam, 422, 'Spam submissions cannot be emailed.');
 
         $form = $formSubmission->form;

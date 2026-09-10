@@ -1,5 +1,5 @@
-{{ $invitation->body }}
+{!! $invitation->from_name !!}
 
-Leave an honest review: {{ $invitation->review_url }}
+{!! $invitation->body !!}
 
-Sent via Sitewell.
+Leave an honest review: {!! $invitation->review_url !!}
