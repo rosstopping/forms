@@ -20,6 +20,7 @@ use App\Http\Controllers\Admin\DeployPageOptimisationsController;
 use App\Http\Controllers\Admin\DeployReportOptimisationsController;
 use App\Http\Controllers\Admin\FormController;
 use App\Http\Controllers\Admin\FormSubmissionController as AdminFormSubmissionController;
+use App\Http\Controllers\Admin\FormSubmissionReviewInvitationController;
 use App\Http\Controllers\Admin\GeneratePageOptimisationsController;
 use App\Http\Controllers\Admin\GenerateReportOptimisationsController;
 use App\Http\Controllers\Admin\GithubConnectionController;
@@ -328,6 +329,8 @@ Route::middleware(['web', 'auth', ResolveCurrentWebsite::class])->prefix('admin'
     Route::patch('form-submissions/bulk', BulkFormSubmissionController::class)->name('form-submissions.bulk');
     Route::post('form-submissions/{formSubmission}/resend-notification', [AdminFormSubmissionController::class, 'resendNotification'])->middleware('throttle:5,1')->name('form-submissions.resend-notification');
     Route::patch('form-submissions/{form_submission}/spam', [AdminFormSubmissionController::class, 'markSpam'])->name('form-submissions.spam');
+    Route::put('form-submissions/{form_submission}/review-link', [FormSubmissionReviewInvitationController::class, 'updateLink'])->name('form-submissions.review-link');
+    Route::post('form-submissions/{form_submission}/review-invitations', [FormSubmissionReviewInvitationController::class, 'store'])->middleware('throttle:5,1')->name('form-submissions.review-invitations.store');
     Route::resource('form-submissions', AdminFormSubmissionController::class);
     Route::get('onboarding/call', OnboardingCallController::class)->middleware('throttle:30,1')->name('onboarding-call');
     Route::middleware(EnsureAdmin::class)->group(function (): void {

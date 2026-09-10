@@ -74,7 +74,7 @@ it('rechecks eligibility before a queued reminder sends', function (string $chan
     $reminder = FormSubmissionFollowUpReminder::factory()->for($this->lead, 'submission')->create(['due_at' => now()]);
     match ($change) {
         'spam' => $this->lead->update(['is_spam' => true]),
-        'won', 'lost' => $this->lead->update(['status' => $change]),
+        'won', 'lost', 'work_completed' => $this->lead->update(['status' => $change]),
         'cleared' => $this->lead->update(['follow_up_at' => null]),
         'rescheduled' => $this->lead->update(['follow_up_at' => now()->addHour()]),
         'inactive website' => $this->website->update(['is_active' => false]),
@@ -90,7 +90,7 @@ it('rechecks eligibility before a queued reminder sends', function (string $chan
         expect($reminder->fresh()->status)->toBe('cancelled')
             ->and($this->lead->activities()->where('type', 'follow_up_reminder_cancelled')->count())->toBe(1);
     }
-})->with(['spam', 'won', 'lost', 'cleared', 'rescheduled', 'inactive website', 'expired membership', 'viewer owner', 'deleted']);
+})->with(['spam', 'won', 'lost', 'work_completed', 'cleared', 'rescheduled', 'inactive website', 'expired membership', 'viewer owner', 'deleted']);
 
 it('waits for the due time and uses a unique job per reminder', function (): void {
     Queue::fake();

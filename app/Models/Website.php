@@ -36,6 +36,7 @@ class Website extends Model
     protected $fillable = [
         'user_id',
         'name',
+        'review_url',
         'is_active',
         'auto_discovered',
         'email_enabled',

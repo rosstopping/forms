@@ -61,7 +61,7 @@ class SendLeadFollowUpReminder implements ShouldBeUnique, ShouldQueue
                 }
                 $submission->load(['website.owner', 'website.members', 'assignee']);
                 $website = $submission->website;
-                if ($submission->is_spam || in_array($submission->status, ['won', 'lost'], true)) {
+                if ($submission->is_spam || in_array($submission->status, FormSubmission::CLOSED_STATUSES, true)) {
                     $reminder->cancel('Follow-up reminder cancelled because the lead is closed or spam.');
 
                     return;

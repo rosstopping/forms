@@ -11,6 +11,7 @@ use App\Models\LeadTag;
 use App\Models\User;
 use App\Models\Website;
 use App\Services\FormSettingsResolver;
+use App\Services\ReviewInvitationService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -74,14 +75,19 @@ class FormSubmissionController extends Controller
     {
         abort_unless($formSubmission->website?->isAccessibleBy($request->user()), 403);
 
-        $formSubmission->load(['website', 'form', 'assignee', 'activities.user', 'tags']);
+        $formSubmission->load(['website', 'form', 'assignee', 'activities.user', 'tags', 'reviewInvitation.requester']);
 
         $users = $request->user()?->isAdmin() ? User::query()->orderBy('name')->get(['id', 'name']) : collect([$request->user()]);
         $canManage = $formSubmission->website?->isManageableBy($request->user()) === true;
 
         $leadTags = LeadTag::query()->where('website_id', $formSubmission->website_id)->orderBy('name')->get();
 
-        return view('admin.form-submissions.show', compact('formSubmission', 'users', 'canManage', 'leadTags'));
+        $reviews = app(ReviewInvitationService::class);
+        $reviewUnavailableReason = $reviews->unavailableReason($formSubmission, $request->user());
+        $reviewPreview = $reviews->snapshot($formSubmission);
+        $reviewPreviewHash = $reviews->fingerprint($reviewPreview);
+
+        return view('admin.form-submissions.show', compact('formSubmission', 'users', 'canManage', 'leadTags', 'reviewUnavailableReason', 'reviewPreview', 'reviewPreviewHash'));
     }
 
     public function update(UpdateFormSubmissionRequest $request, FormSubmission $formSubmission): RedirectResponse

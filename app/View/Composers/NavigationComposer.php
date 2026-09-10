@@ -28,7 +28,7 @@ class NavigationComposer
             $followUpQuery = FormSubmission::query()
                 ->whereBelongsTo($currentWebsite)
                 ->where('is_spam', false)
-                ->whereNotIn('status', ['won', 'lost'])
+                ->whereNotIn('status', FormSubmission::CLOSED_STATUSES)
                 ->whereNotNull('follow_up_at')
                 ->where('follow_up_at', '<=', today()->endOfDay());
 

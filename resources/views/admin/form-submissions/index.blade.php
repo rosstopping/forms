@@ -11,8 +11,8 @@
         <div class="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{{ session('status') }}</div>
     @endif
 
-    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        @foreach (['new' => 'New', 'contacted' => 'Contacted', 'qualified' => 'Qualified', 'won' => 'Won', 'lost' => 'Lost'] as $status => $label)
+    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+        @foreach (\App\Models\FormSubmission::STATUS_LABELS as $status => $label)
             <a href="{{ route('admin.form-submissions.index', ['status' => $status]) }}" class="rounded-lg border bg-white p-4 shadow-sm hover:border-slate-400">
                 <div class="text-xs font-medium uppercase tracking-wide text-slate-500">{{ $label }}</div>
                 <div class="mt-1 text-2xl font-semibold text-slate-900">{{ $summary[$status] ?? 0 }}</div>
@@ -28,7 +28,7 @@
 
     <form method="GET" class="grid gap-3 rounded-lg border bg-white p-4 shadow-sm md:grid-cols-2 lg:grid-cols-5">
         <input name="search" value="{{ request('search') }}" placeholder="Search name, email or message" class="rounded-md border border-slate-300 px-3 py-2 text-sm lg:col-span-2">
-        <select name="status" class="rounded-md border border-slate-300 px-3 py-2 text-sm"><option value="">All statuses</option>@foreach (['new' => 'New', 'contacted' => 'Contacted', 'qualified' => 'Qualified', 'won' => 'Won', 'lost' => 'Lost'] as $value => $label)<option value="{{ $value }}" @selected(request('status') === $value)>{{ $label }}</option>@endforeach</select>
+        <select name="status" class="rounded-md border border-slate-300 px-3 py-2 text-sm"><option value="">All statuses</option>@foreach (\App\Models\FormSubmission::STATUS_LABELS as $value => $label)<option value="{{ $value }}" @selected(request('status') === $value)>{{ $label }}</option>@endforeach</select>
         <select name="follow_up" class="rounded-md border border-slate-300 px-3 py-2 text-sm"><option value="">Any follow-up</option><option value="overdue" @selected(request('follow_up') === 'overdue')>Overdue</option><option value="today" @selected(request('follow_up') === 'today')>Due today</option><option value="upcoming" @selected(request('follow_up') === 'upcoming')>Upcoming</option><option value="none" @selected(request('follow_up') === 'none')>Not scheduled</option></select>
         {{-- <select name="assigned_to" class="rounded-md border border-slate-300 px-3 py-2 text-sm"><option value="">Any owner</option><option value="unassigned" @selected(request('assigned_to') === 'unassigned')>Unassigned</option>@foreach ($users as $user)<option value="{{ $user->id }}" @selected((string) request('assigned_to') === (string) $user->id)>{{ $user->name }}</option>@endforeach</select> --}}
         <select name="spam" class="rounded-md border border-slate-300 px-3 py-2 text-sm"><option value="exclude" @selected(request('spam', 'exclude') === 'exclude')>Hide spam</option><option value="all" @selected(request('spam') === 'all')>Include spam</option><option value="only" @selected(request('spam') === 'only')>Spam only</option></select>
@@ -108,7 +108,7 @@
                         <div class="min-w-0 text-xs md:text-right">
                             <div class="text-slate-500">{{ $submission->created_at?->diffForHumans() }}</div>
                             @if ($submission->follow_up_at)
-                                <div class="mt-1 break-words font-medium {{ $submission->follow_up_at->isPast() && ! in_array($submission->status, ['won', 'lost']) ? 'text-red-600' : 'text-amber-700' }}">Follow up {{ $submission->follow_up_at->diffForHumans() }}</div>
+                                <div class="mt-1 break-words font-medium {{ $submission->follow_up_at->isPast() && ! in_array($submission->status, \App\Models\FormSubmission::CLOSED_STATUSES) ? 'text-red-600' : 'text-amber-700' }}">Follow up {{ $submission->follow_up_at->diffForHumans() }}</div>
                             @endif
                         </div>
                     </a>
@@ -125,7 +125,7 @@
                 <div data-bulk-leads-status-field class="mt-4 hidden">
                     <label for="bulk_lead_status" class="text-sm font-medium text-slate-700">New status</label>
                     <select id="bulk_lead_status" name="status" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
-                        @foreach (['new' => 'New', 'contacted' => 'Contacted', 'qualified' => 'Qualified', 'won' => 'Won', 'lost' => 'Lost'] as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach
+                        @foreach (\App\Models\FormSubmission::STATUS_LABELS as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach
                     </select>
                 </div>
                 <div class="mt-6 flex justify-end gap-2">
