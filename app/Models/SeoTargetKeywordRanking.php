@@ -18,11 +18,11 @@ class SeoTargetKeywordRanking extends Model
 
     public const STATUS_FAILED = 'failed';
 
-    protected $fillable = ['seo_target_keyword_id', 'website_id', 'provider', 'location_code', 'language_code', 'device', 'status', 'position', 'ranking_url', 'error', 'cached', 'provider_task_id', 'observed_at'];
+    protected $fillable = ['seo_target_keyword_id', 'website_id', 'provider', 'location_code', 'language_code', 'device', 'status', 'position', 'ranking_url', 'error', 'cached', 'provider_task_id', 'observed_at', 'organic_results'];
 
     protected function casts(): array
     {
-        return ['position' => 'integer', 'location_code' => 'integer', 'cached' => 'boolean', 'observed_at' => 'datetime'];
+        return ['position' => 'integer', 'location_code' => 'integer', 'cached' => 'boolean', 'observed_at' => 'datetime', 'organic_results' => 'array'];
     }
 
     public function targetKeyword(): BelongsTo

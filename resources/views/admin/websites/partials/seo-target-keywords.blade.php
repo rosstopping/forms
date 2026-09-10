@@ -1,3 +1,6 @@
+@php
+    $comparisonCompetitors = $trackedCompetitors->where('excluded', false);
+@endphp
 <section class="overflow-hidden rounded-xl border bg-white shadow-sm" aria-labelledby="target-keywords-title">
     <div class="border-b border-slate-200 p-4">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -7,6 +10,7 @@
                     <span class="rounded-full bg-teal-50 px-2 py-1 text-xs font-medium text-teal-800">{{ $targetKeywords->whereNull('archived_at')->count() }} / 20 active</span>
                 </div>
                 <p class="mt-1 max-w-2xl text-sm text-slate-600">Track terms this website intends to rank for, including terms with no current visibility.@if ($targetKeywords->isNotEmpty()) Positions are exact DataForSEO desktop checks in location {{ config('services.dataforseo.location_code') }} ({{ strtoupper(config('services.dataforseo.language_code')) }}), separate from Search Console measurements.@endif</p>
+                <a href="{{ route('admin.websites.show', [$website, 'tab' => 'seo', 'seo_section' => 'competitors']) }}" class="mt-2 inline-block text-sm font-medium text-teal-700 hover:underline">{{ $comparisonCompetitors->isEmpty() ? 'Add competitors to compare rankings' : 'Manage comparison competitors' }}</a>
                 @if ($canManageWebsite)
                     <form method="POST" action="{{ route('admin.seo-target-keywords.check-all', $website) }}" class="mt-3">
                         @csrf
@@ -98,6 +102,53 @@
                         </div>
                     @endif
                 </div>
+                @if ($comparisonCompetitors->isNotEmpty())
+                    <div class="mt-5 border-t border-slate-200 pt-4">
+                        <h4 class="text-sm font-semibold text-slate-950">Competitor comparison</h4>
+                        @if ($successful?->organic_results !== null)
+                            <p class="mt-1 text-xs text-slate-500">Same search results · {{ $successful->observed_at->format('j M Y, H:i') }} · {{ strtoupper($successful->language_code) }} · Location {{ $successful->location_code }} · {{ ucfirst($successful->device) }}{{ $successful->cached ? ' · Cached result' : '' }}. Lower positions rank higher.</p>
+                            <div class="mt-3 overflow-x-auto">
+                                <table class="w-full text-left text-sm">
+                                    <caption class="sr-only">Ranking comparison for {{ $target->term }}</caption>
+                                    <thead class="border-b border-slate-200 text-xs text-slate-500"><tr><th scope="col" class="px-3 py-2">Website</th><th scope="col" class="px-3 py-2">Position</th><th scope="col" class="px-3 py-2">Compared with you</th><th scope="col" class="px-3 py-2">Ranking page</th></tr></thead>
+                                    <tbody class="divide-y divide-slate-100">
+                                        <tr class="bg-teal-50">
+                                            <th scope="row" class="px-3 py-3 font-semibold text-teal-950">Your website</th>
+                                            <td class="whitespace-nowrap px-3 py-3 font-semibold tabular-nums">{{ $currentPosition ? '#'.$currentPosition : 'Not in top 100' }}</td>
+                                            <td class="px-3 py-3 text-slate-500">—</td>
+                                            <td class="px-3 py-3">@if ($successful->ranking_url && in_array(parse_url($successful->ranking_url, PHP_URL_SCHEME), ['http', 'https'], true))<a href="{{ $successful->ranking_url }}" target="_blank" rel="noopener noreferrer" class="block max-w-xs truncate text-teal-700 underline" title="{{ $successful->ranking_url }}">{{ $successful->ranking_url }}</a>@else — @endif</td>
+                                        </tr>
+                                        @foreach ($comparisonCompetitors as $competitor)
+                                            @php
+                                                $competitorResult = collect($successful->organic_results)->firstWhere('domain', \App\Models\WebsiteDomain::canonicalDomain(strtolower($competitor->domain)));
+                                                $competitorPosition = $competitorResult['position'] ?? null;
+                                                $competitorUrl = $competitorResult['url'] ?? null;
+                                            @endphp
+                                            <tr>
+                                                <th scope="row" class="break-all px-3 py-3 font-medium text-slate-900">{{ $competitor->domain }}</th>
+                                                <td class="whitespace-nowrap px-3 py-3 font-semibold tabular-nums">{{ $competitorPosition ? '#'.$competitorPosition : 'Not in top 100' }}</td>
+                                                <td class="whitespace-nowrap px-3 py-3">
+                                                    @if ($competitorPosition && $currentPosition)
+                                                        @if ($competitorPosition < $currentPosition)<span class="text-amber-800">{{ $currentPosition - $competitorPosition }} {{ Str::plural('place', $currentPosition - $competitorPosition) }} ahead of you</span>
+                                                        @elseif ($competitorPosition > $currentPosition)<span class="text-teal-800">{{ $competitorPosition - $currentPosition }} {{ Str::plural('place', $competitorPosition - $currentPosition) }} behind you</span>
+                                                        @else Same position
+                                                        @endif
+                                                    @elseif ($competitorPosition)<span class="text-amber-800">Ranks above you</span>
+                                                    @elseif ($currentPosition)<span class="text-teal-800">You rank higher</span>
+                                                    @else <span class="text-slate-500">Neither in top 100</span>
+                                                    @endif
+                                                </td>
+                                                <td class="px-3 py-3">@if ($competitorUrl && in_array(parse_url($competitorUrl, PHP_URL_SCHEME), ['http', 'https'], true))<a href="{{ $competitorUrl }}" target="_blank" rel="noopener noreferrer" class="block max-w-xs truncate text-teal-700 underline" title="{{ $competitorUrl }}">{{ $competitorUrl }}</a>@else — @endif</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @else
+                            <p class="mt-2 text-sm text-slate-600">Run a ranking check to compare your position with tracked competitors. Older checks do not contain competitor results.</p>
+                        @endif
+                    </div>
+                @endif
             </article>
         @empty
             <div class="p-8 text-center"><h3 class="font-semibold text-slate-950">No target keywords yet</h3><p class="mt-1 text-sm text-slate-600">Add the terms the business wants to rank for. Adding a term does not start a paid check.</p></div>

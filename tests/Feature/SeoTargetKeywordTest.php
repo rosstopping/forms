@@ -13,6 +13,7 @@ use App\Models\SeoTargetKeyword;
 use App\Models\SeoTargetKeywordRanking;
 use App\Models\User;
 use App\Models\Website;
+use App\Models\WebsiteCompetitor;
 use App\Services\CachedSerpProvider;
 use App\Services\ContentGenerationPromptGenerator;
 use App\Services\CopilotAgentClient;
@@ -199,3 +200,72 @@ test('generation selection is recorded only after Copilot accepts the task and m
     app()->call([new StartContentGeneration($generation), 'handle']);
     expect($generation->fresh()->seo_target_keyword_id)->toBeNull()->and($generation->fresh()->target_keyword_context)->toHaveCount(1)->and($target->fresh()->last_selected_at)->toBeNull();
 });
+
+test('rank checks retain the best organic result per domain from the same paid or cached response', function (): void {
+    $target = SeoTargetKeyword::factory()->create();
+    $target->website->domains()->create(['domain' => 'www.example.com', 'is_primary' => true]);
+    $this->mock(CachedSerpProvider::class)->shouldReceive('searchForMarket')->once()->andReturn(
+        new SerpSearchResponse('dataforseo', 'serp/live', collect([
+            new SerpResult(20, 'https://rival.example/second', 'rival.example'),
+            new SerpResult(17, 'https://example.com/service', 'www.EXAMPLE.com'),
+            new SerpResult(3, 'https://rival.example/best', 'WWW.RIVAL.EXAMPLE'),
+            new SerpResult(0, 'https://invalid.example', 'invalid.example'),
+            new SerpResult(101, 'https://outside.example', 'outside.example'),
+        ]), 0, null, true, now()->subDays(2)->toIso8601String()),
+    );
+    $ranking = app(SeoTargetKeywordRankChecker::class)->check($target)->fresh();
+    expect($ranking->position)->toBe(17)
+        ->and($ranking->organic_results)->toBe([
+            ['domain' => 'rival.example', 'position' => 3, 'url' => 'https://rival.example/best'],
+            ['domain' => 'example.com', 'position' => 17, 'url' => 'https://example.com/service'],
+        ])
+        ->and($ranking->observed_at->toDateString())->toBe(now()->subDays(2)->toDateString());
+    expect(ExternalApiUsage::count())->toBe(0);
+});
+
+test('target comparison shows tracked competitors from the same successful observation without provider calls', function (): void {
+    Http::preventStrayRequests();
+    $this->mock(CachedSerpProvider::class)->shouldNotReceive('searchForMarket');
+    $website = Website::factory()->create();
+    $target = SeoTargetKeyword::factory()->for($website)->create();
+    foreach (['ahead.example', 'behind.example', 'absent.example'] as $domain) {
+        WebsiteCompetitor::factory()->for($website)->create(['domain' => $domain]);
+    }
+    WebsiteCompetitor::factory()->for($website)->create(['domain' => 'excluded.example', 'excluded' => true]);
+    WebsiteCompetitor::factory()->create(['domain' => 'other-website.example']);
+    $ranking = SeoTargetKeywordRanking::factory()->for($target, 'targetKeyword')->create([
+        'website_id' => $website->id, 'position' => 17, 'observed_at' => now()->subDays(2),
+        'organic_results' => [
+            ['domain' => 'ahead.example', 'position' => 3, 'url' => 'https://ahead.example/service'],
+            ['domain' => 'behind.example', 'position' => 22, 'url' => 'https://behind.example/service'],
+        ],
+    ]);
+    SeoTargetKeywordRanking::factory()->for($target, 'targetKeyword')->create([
+        'website_id' => $website->id, 'status' => 'failed', 'position' => null, 'observed_at' => now(),
+    ]);
+    $viewer = User::factory()->create();
+    $website->members()->attach($viewer, ['role' => Website::MEMBER_ROLE_VIEWER]);
+    $response = $this->actingAs($viewer)->get(route('admin.websites.show', [$website, 'tab' => 'seo', 'seo_section' => 'targets']))->assertSuccessful();
+    $html = $response->getContent();
+    $start = strpos($html, '<section class="overflow-hidden rounded-xl border bg-white shadow-sm" aria-labelledby="target-keywords-title">');
+    $section = substr($html, $start, strpos($html, '</section>', $start) - $start);
+    expect($section)->toContain('Competitor comparison', '#17', '#3', '#22', '14 places ahead of you', '5 places behind you', 'absent.example', 'Not in top 100', 'https://ahead.example/service', $ranking->observed_at->format('j M Y, H:i'), 'Latest check failed')
+        ->not->toContain('excluded.example', 'other-website.example', 'Check now');
+    Http::assertNothingSent();
+});
+
+test('comparison distinguishes missing historical evidence from an unranked website', function (?array $results, string $message): void {
+    $website = Website::factory()->create();
+    WebsiteCompetitor::factory()->for($website)->create(['domain' => 'rival.example']);
+    $target = SeoTargetKeyword::factory()->for($website)->create();
+    SeoTargetKeywordRanking::factory()->for($target, 'targetKeyword')->create([
+        'website_id' => $website->id, 'status' => 'not_found', 'position' => null,
+        'organic_results' => $results,
+    ]);
+    $this->actingAs($website->owner)->get(route('admin.websites.show', [$website, 'tab' => 'seo', 'seo_section' => 'targets']))
+        ->assertSuccessful()->assertSee($message);
+})->with([
+    'legacy observation' => [null, 'Older checks do not contain competitor results.'],
+    'empty results' => [[], 'Neither in top 100'],
+    'competitor ranks but website does not' => [[['domain' => 'rival.example', 'position' => 8, 'url' => 'https://rival.example/']], 'Ranks above you'],
+]);
