@@ -164,16 +164,26 @@
         <div class="grid gap-6 xl:grid-cols-2">
             <section class="@container rounded-xl border border-slate-200 bg-white p-5 sm:p-6" aria-labelledby="search-heading">
                 <div class="flex items-start justify-between gap-4"><div><h2 id="search-heading" class="font-semibold text-slate-950">Google Search Console</h2><p class="mt-1 text-sm text-slate-600">Organic search performance from your connected property.</p></div><a href="{{ route('admin.websites.section', [$website, 'search']) }}" class="shrink-0 text-sm font-semibold text-teal-700 hover:text-teal-900">{{ $website->searchConsoleConnection ? 'View search' : 'Connect' }}</a></div>
-                @if ($website->searchConsoleConnection && $latestSearchMetric)
-                    <p class="mt-5 text-xs font-medium text-slate-500">{{ $latestSearchMetric->month->format('F Y') }}</p>
-                    <dl class="mt-2 grid grid-cols-2 gap-x-5 gap-y-4 @md:grid-cols-4">
-                        <div><dt class="text-sm text-slate-500">Clicks</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-slate-950">{{ number_format($latestSearchMetric->clicks) }}</dd></div>
-                        <div><dt class="text-sm text-slate-500">Impressions</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-slate-950">{{ number_format($latestSearchMetric->impressions) }}</dd></div>
-                        <div><dt class="text-sm text-slate-500">Click rate</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-slate-950">{{ number_format($latestSearchMetric->ctr * 100, 1) }}%</dd></div>
-                        <div><dt class="text-sm text-slate-500">Position</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-slate-950">{{ number_format($latestSearchMetric->position, 1) }}</dd></div>
-                    </dl>
-                @elseif ($website->searchConsoleConnection)
-                    <p class="mt-5 text-sm text-slate-600">Connected. Search performance will appear after the first metrics import.</p>
+                @if ($website->searchConsoleConnection)
+                    <div class="mt-5 flex flex-col gap-5">
+                        @foreach ($searchMonths as $searchMonth)
+                            @php($searchMetric = $searchMetrics->get($searchMonth->toDateString()))
+                            <div>
+                                <h3 class="text-xs font-medium text-slate-500">{{ $searchMonth->format('F Y') }} · {{ $loop->first ? 'Month to date' : 'Previous month' }}</h3>
+                                @if ($searchMetric)
+                                    <dl class="mt-2 grid grid-cols-2 gap-x-5 gap-y-4 @md:grid-cols-4">
+                                        <div><dt class="text-sm text-slate-500">Clicks</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-slate-950">{{ number_format($searchMetric->clicks) }}</dd></div>
+                                        <div><dt class="text-sm text-slate-500">Impressions</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-slate-950">{{ number_format($searchMetric->impressions) }}</dd></div>
+                                        <div><dt class="text-sm text-slate-500">Click rate</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-slate-950">{{ number_format($searchMetric->ctr * 100, 1) }}%</dd></div>
+                                        <div><dt class="text-sm text-slate-500">Position</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-slate-950">{{ number_format($searchMetric->position, 1) }}</dd></div>
+                                    </dl>
+                                @else
+                                    <p class="mt-2 text-sm text-slate-600">No search performance imported for this month yet.</p>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                    <p class="mt-4 text-xs text-slate-500">This month is incomplete. Figures reflect the latest imported data.</p>
                 @else
                     <p class="mt-5 text-sm text-slate-600">Connect Search Console to see clicks, visibility, and average position alongside website health.</p>
                 @endif

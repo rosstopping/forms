@@ -39,14 +39,18 @@ class DashboardController extends Controller
             'optimisations as live_pixel_changes_count' => fn ($query) => $query->where('status', 'deployed')->where('deployment_method', 'pixel'),
         ]);
 
-        $latestSearchMetric = $website->searchConsoleConnection
+        $currentSearchMonth = today()->startOfMonth();
+        $searchMonths = [$currentSearchMonth, $currentSearchMonth->copy()->subMonth()];
+        $searchMetrics = $website->searchConsoleConnection
             ? SearchConsoleMetric::query()
                 ->whereBelongsTo($website)
                 ->where('search_console_connection_id', $website->searchConsoleConnection->id)
                 ->where('dimension_key', SearchConsoleMetric::SITE_DIMENSION_KEY)
-                ->latest('month')
-                ->first()
-            : null;
+                ->where('property_hash', hash('sha256', $website->searchConsoleConnection->property_url ?? ''))
+                ->whereIn('month', $searchMonths)
+                ->get()
+                ->keyBy(fn (SearchConsoleMetric $metric): string => $metric->month->toDateString())
+            : collect();
 
         $automationSchedule = $schedule->forWebsites(collect([$website]));
         $isTrialActive = $user?->onboarding_status === 'trial_active' && $user->onboarding_trial_ends_at?->isFuture();
@@ -55,7 +59,8 @@ class DashboardController extends Controller
             'website' => $website,
             'report' => $website->latestHealthReport,
             'topFindings' => $this->topFindings($website),
-            'latestSearchMetric' => $latestSearchMetric,
+            'searchMonths' => $searchMonths,
+            'searchMetrics' => $searchMetrics,
             'nextHealthRun' => $automationSchedule->firstWhere('type', 'Health report'),
             'nextContentRun' => $automationSchedule->firstWhere('type', 'Content queue'),
             'canManageWebsite' => $website->isManageableBy($user),

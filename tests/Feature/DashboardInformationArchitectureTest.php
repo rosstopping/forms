@@ -10,6 +10,7 @@ use App\Models\Website;
 use App\Models\WebsiteHealthReport;
 use App\Models\WebsiteRepository;
 use App\Support\MembershipPlan;
+use Illuminate\Support\Carbon;
 
 it('prioritises the selected websites latest health and content work on the dashboard', function (): void {
     $user = User::factory()->create();
@@ -81,7 +82,7 @@ it('shows the next site audit and content queue jobs', function (): void {
 it('shows connected search performance and optional form activity for the selected website', function (): void {
     $user = User::factory()->create();
     $website = Website::factory()->for($user, 'owner')->create(['name' => 'Connected website']);
-    $connection = SearchConsoleConnection::factory()->for($website)->for($user, 'connector')->create();
+    $connection = SearchConsoleConnection::factory()->for($website)->for($user, 'connector')->create(['property_url' => 'sc-domain:example.com']);
     SearchConsoleMetric::factory()->for($website)->for($connection, 'connection')->create([
         'month' => today()->startOfMonth(),
         'clicks' => 1234,
@@ -102,6 +103,74 @@ it('shows connected search performance and optional form activity for the select
         ->assertSee('Connected forms')
         ->assertSee('href="'.route('admin.form-submissions.index').'"', false);
 });
+
+it('compares the current and previous calendar months even when either import is missing', function (string $date, bool $hasCurrent, bool $hasPrevious): void {
+    $this->travelTo(Carbon::parse($date));
+    $user = User::factory()->create();
+    $website = Website::factory()->for($user, 'owner')->create();
+    $connection = SearchConsoleConnection::factory()->for($website)->for($user, 'connector')->create(['property_url' => 'sc-domain:example.com']);
+    $currentMonth = today()->startOfMonth();
+    $previousMonth = $currentMonth->copy()->subMonth();
+
+    foreach ([[$currentMonth, $hasCurrent, 1234], [$previousMonth, $hasPrevious, 5678]] as [$month, $hasMetrics, $clicks]) {
+        if ($hasMetrics) {
+            SearchConsoleMetric::factory()->for($website)->for($connection, 'connection')->create([
+                'month' => $month,
+                'clicks' => $clicks,
+                'impressions' => 20000,
+                'ctr' => 0.125,
+                'position' => 8.4,
+            ]);
+        }
+    }
+
+    SearchConsoleMetric::factory()->for($website)->for($connection, 'connection')->create([
+        'month' => $currentMonth->copy()->subMonths(2),
+        'clicks' => 999999,
+    ]);
+    SearchConsoleMetric::factory()->for($website)->for($connection, 'connection')->create([
+        'month' => $currentMonth,
+        'query' => 'unrelated query',
+        'dimension_key' => hash('sha256', 'unrelated query'),
+        'clicks' => 999999,
+    ]);
+    SearchConsoleMetric::factory()->for($website)->for($connection, 'connection')->create([
+        'month' => $previousMonth,
+        'property_url' => 'sc-domain:old.example.com',
+        'property_hash' => hash('sha256', 'sc-domain:old.example.com'),
+        'clicks' => 999999,
+    ]);
+    SearchConsoleMetric::factory()->create(['month' => $previousMonth, 'clicks' => 999999]);
+
+    $response = $this->actingAs($user)->get(route('admin.dashboard'))
+        ->assertOk()
+        ->assertSeeInOrder([$currentMonth->format('F Y').' · Month to date', $previousMonth->format('F Y').' · Previous month'])
+        ->assertSee('This month is incomplete.')
+        ->assertDontSee('999,999');
+
+    if ($hasCurrent) {
+        $response->assertSee('1,234');
+    } else {
+        $response->assertDontSee('1,234');
+    }
+
+    if ($hasPrevious) {
+        $response->assertSee('5,678');
+    } else {
+        $response->assertDontSee('5,678');
+    }
+
+    if (! $hasCurrent || ! $hasPrevious) {
+        $response->assertSee('No search performance imported for this month yet.');
+    } else {
+        $response->assertDontSee('No search performance imported for this month yet.');
+    }
+})->with([
+    'both months at year rollover' => ['2026-01-01', true, true],
+    'current month missing' => ['2026-09-01', false, true],
+    'previous month missing at month end' => ['2026-03-31', true, false],
+    'both months missing' => ['2026-09-01', false, false],
+]);
 
 it('shows active onboarding trial context on the website overview', function (): void {
     $user = User::factory()->create([
