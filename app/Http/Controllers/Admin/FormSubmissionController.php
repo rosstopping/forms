@@ -11,6 +11,7 @@ use App\Models\Website;
 use App\Services\FormSettingsResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Str;
@@ -84,27 +85,37 @@ class FormSubmissionController extends Controller
             abort(403);
         }
 
-        $formSubmission->fill($data)->save();
+        DB::transaction(function () use ($formSubmission, $data, $request): void {
+            $formSubmission = FormSubmission::query()->lockForUpdate()->findOrFail($formSubmission->id);
+            $formSubmission->fill($data)->save();
 
-        if ($formSubmission->wasChanged('status')) {
-            $formSubmission->recordActivity('status_changed', 'Status changed to '.$formSubmission->resolvedStatusLabel().'.', $request->user());
-        }
+            if ($formSubmission->wasChanged('status')) {
+                $formSubmission->recordActivity('status_changed', 'Status changed to '.$formSubmission->resolvedStatusLabel().'.', $request->user());
+            }
 
-        if ($formSubmission->wasChanged('assigned_to')) {
-            $assigneeName = $formSubmission->assigned_to ? User::query()->whereKey($formSubmission->assigned_to)->value('name') : null;
-            $formSubmission->recordActivity('assignment_changed', $assigneeName ? 'Assigned to '.$assigneeName.'.' : 'Lead unassigned.', $request->user());
-        }
+            if ($formSubmission->wasChanged('assigned_to')) {
+                $assigneeName = $formSubmission->assigned_to ? User::query()->whereKey($formSubmission->assigned_to)->value('name') : null;
+                $formSubmission->recordActivity('assignment_changed', $assigneeName ? 'Assigned to '.$assigneeName.'.' : 'Lead unassigned.', $request->user());
+            }
 
-        if ($formSubmission->wasChanged('follow_up_at')) {
-            $description = $formSubmission->follow_up_at
-                ? 'Follow-up scheduled for '.$formSubmission->follow_up_at->format('j M Y, H:i').'.'
-                : 'Follow-up reminder cleared.';
-            $formSubmission->recordActivity('follow_up_changed', $description, $request->user());
-        }
+            if ($formSubmission->wasChanged('follow_up_at')) {
+                foreach ($formSubmission->followUpReminders()->where('status', 'pending')->lockForUpdate()->get() as $reminder) {
+                    $reminder->cancel('Follow-up date changed or cleared.');
+                }
+                if ($formSubmission->follow_up_at !== null) {
+                    $formSubmission->followUpReminders()->create(['due_at' => $formSubmission->follow_up_at]);
+                }
 
-        if ($formSubmission->wasChanged('notes')) {
-            $formSubmission->recordActivity('notes_updated', 'Lead notes updated.', $request->user());
-        }
+                $description = $formSubmission->follow_up_at
+                    ? 'Follow-up scheduled for '.$formSubmission->follow_up_at->format('j M Y, H:i').'.'
+                    : 'Follow-up reminder cleared.';
+                $formSubmission->recordActivity('follow_up_changed', $description, $request->user());
+            }
+
+            if ($formSubmission->wasChanged('notes')) {
+                $formSubmission->recordActivity('notes_updated', 'Lead notes updated.', $request->user());
+            }
+        });
 
         $redirectTo = $request->input('return_to');
 

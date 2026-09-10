@@ -193,6 +193,7 @@ test('disconnecting Search Console leaves content generation enabled', function 
 });
 
 test('a due weekly content plan queues one generation without Search Console', function () {
+    $this->travelTo(now('Europe/London')->startOfHour());
     Queue::fake();
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     GithubUserAuthorization::factory()->create(['user_id' => $admin->id]);
@@ -231,7 +232,7 @@ test('an admin can enable and manually run content generation without Search Con
             'guidance' => null,
         ])
         ->assertSessionDoesntHaveErrors()
-        ->assertRedirect(route('admin.websites.show', $website));
+        ->assertRedirect(route('admin.websites.section', [$website, 'section' => 'content']));
 
     expect($website->contentPlan()->firstOrFail()->enabled)->toBeTrue();
 
@@ -242,13 +243,14 @@ test('an admin can enable and manually run content generation without Search Con
 
     $this->actingAs($admin)
         ->post(route('admin.content-generations.store', $website))
-        ->assertRedirect(route('admin.websites.show', $website))
+        ->assertRedirect(route('admin.websites.section', [$website, 'section' => 'content']))
         ->assertSessionHas('status', 'Content generation queued.');
 
     Queue::assertPushed(StartContentGeneration::class, 1);
 });
 
 test('a due weekly content plan queues a generation while an earlier pull request remains open', function () {
+    $this->travelTo(now('Europe/London')->startOfHour());
     Queue::fake();
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     GithubUserAuthorization::factory()->create(['user_id' => $admin->id]);
@@ -397,7 +399,7 @@ test('content plans accept substantial audience and editorial guidance', functio
             'guidance' => $guidance,
         ])
         ->assertSessionDoesntHaveErrors()
-        ->assertRedirect(route('admin.websites.show', $website));
+        ->assertRedirect(route('admin.websites.section', [$website, 'section' => 'content']));
 
     $plan = $website->contentPlan()->firstOrFail();
 
@@ -420,7 +422,7 @@ test('updating website settings does not overwrite saved content plan settings',
             'audience' => 'Independent venue owners',
             'guidance' => 'Use a practical and direct tone',
         ])
-        ->assertRedirect(route('admin.websites.show', $website));
+        ->assertRedirect(route('admin.websites.section', [$website, 'section' => 'content']));
 
     $this->actingAs($admin)
         ->put(route('admin.websites.update', $website), [

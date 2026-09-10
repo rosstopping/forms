@@ -78,7 +78,7 @@
                         <div class="mt-4 max-w-xs"><label class="text-base font-medium text-slate-700 sm:text-sm" for="autoresponder_delay_minutes_override">Send delay override</label><input id="autoresponder_delay_minutes_override" type="number" min="0" max="10080" name="autoresponder_delay_minutes_override" value="{{ old('autoresponder_delay_minutes_override', $form->autoresponder_delay_minutes_override) }}" placeholder="Use website delay" class="mt-1 w-full rounded-lg border border-slate-950/15 px-3 py-2 text-base sm:text-sm"></div>
                     </section>
                 @else
-                    <section class="rounded-lg bg-slate-50 p-4" aria-labelledby="form-autoresponder-locked-title"><h3 id="form-autoresponder-locked-title" class="font-medium text-slate-900">Automatic customer reply</h3><p class="mt-1 text-base text-slate-600 sm:text-sm">Available on Growth and Complete plans.</p></section>
+                    <section class="rounded-lg bg-slate-50 p-4" aria-labelledby="form-autoresponder-locked-title"><h3 id="form-autoresponder-locked-title" class="font-medium text-slate-900">Automatic customer reply</h3><p class="mt-1 text-base text-slate-600 sm:text-sm">Available with an active Sitewell plan.</p></section>
                 @endif
             </div>
         </details>

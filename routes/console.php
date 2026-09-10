@@ -18,11 +18,13 @@ Schedule::command('onboarding:dispatch-lifecycle')
     ->withoutOverlapping();
 
 Schedule::command('content:dispatch')
-    ->hourly()
+    ->everyMinute()
+    ->onOneServer()
     ->withoutOverlapping();
 
 Schedule::command('content:send-suggestion-reminders')
-    ->hourly()
+    ->everyMinute()
+    ->onOneServer()
     ->withoutOverlapping();
 
 Schedule::command('business-profiles:dispatch-audits')
@@ -57,4 +59,9 @@ Schedule::command('ranking-reports:dispatch')
 
 Schedule::command('ranking-reports:dispatch-monthly')
     ->monthlyOn(8, '09:00')
+    ->withoutOverlapping();
+
+Schedule::command('leads:dispatch-follow-up-reminders')
+    ->everyMinute()
+    ->onOneServer()
     ->withoutOverlapping();

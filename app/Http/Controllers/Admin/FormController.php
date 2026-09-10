@@ -61,7 +61,7 @@ class FormController extends Controller
 
         if ($data['autoresponder_mode'] === 'enabled' && ! $form->website->canUseAutoresponders(Auth::user())) {
             throw ValidationException::withMessages([
-                'autoresponder_mode' => 'Automatic customer replies are available on Growth and Complete plans.',
+                'autoresponder_mode' => 'Automatic customer replies require an active Sitewell plan.',
             ]);
         }
 

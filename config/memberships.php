@@ -39,7 +39,7 @@ return [
                 'Striking-distance keywords and commercial opportunities',
                 'SEO improvements for existing pages',
                 'New landing pages and content prepared for you',
-                'Ongoing content planning and implementation',
+                'Up to one scheduled content improvement per week, prepared for review',
                 'Priority support',
             ],
             'stripe_price_id' => env('STRIPE_GROWTH_PRICE_ID'),
@@ -52,6 +52,7 @@ return [
             'features' => [
                 'Free website included if you need one',
                 'Bring your existing site or take your Sitewell website with you',
+                'Up to three scheduled content improvements per week, prepared for review',
                 'Specialist Google Business Profile management',
                 'Profile health checks and recommended changes',
                 'Google posts prepared for your business',

@@ -345,6 +345,7 @@ return [
             'faqs' => [
                 ['What can your team create?', 'Work can include service and location landing pages, articles, and focused improvements to pages already on your website.'],
                 ['Who writes the content?', 'Our SEO specialists manage the research, structure, writing, optimisation, and implementation. We consult you when we need business knowledge or approval.'],
+                ['How often can content improvements be scheduled?', 'Growth includes up to one scheduled content improvement per week. Complete includes up to three, on days you choose. Runs depend on eligible work and a connected repository; changes are prepared for review before publishing.'],
                 ['Can I request a specific topic?', 'Yes. Share a service, location, question, or priority and our team will assess the best way to use it.'],
             ],
         ],

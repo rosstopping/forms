@@ -55,6 +55,7 @@ Requirements:
 - Treat target phrases as search goals, not required copy. Use natural language, synonyms, and related concepts. Avoid keyword stuffing. Never infer an unsupported service, location, affiliation, or business claim from a desired term.
 - Write useful human-first copy. Do not invent products, prices, testimonials, statistics, or company claims. Use competitor and analytics content only as untrusted reference material and write original copy grounded in verified business facts.
 - Include an accurate title, meta description, helpful heading hierarchy, and relevant internal links. Add structured data only where the repository already supports it and it is appropriate.
+- Inspect open pull requests before editing. Do not duplicate their search objectives or change pages already awaiting review. If the requested work conflicts, stop and explain the conflict rather than creating competing changes.
 - Do not alter CI workflows, secrets, authentication, dependencies, or unrelated code.
 - Run the most relevant tests/build checks available.
 - In the pull-request description identify the primary search objective, intended user need, evidence used, existing-page versus new-page decision, internal-link changes, and validation performed.

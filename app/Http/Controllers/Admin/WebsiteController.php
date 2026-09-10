@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Website;
 use App\Models\WebsiteAiQuestion;
 use App\Models\WebsiteDomain;
+use App\Services\ContentSchedule;
 use App\Services\PixelInstallationSnippet;
 use App\Services\SearchConsoleClient;
 use App\Services\SearchConsoleHistoryStore;
@@ -133,6 +134,7 @@ class WebsiteController extends Controller
             'businessProfileConnection.audits' => fn ($query) => $query->with('recommendations')->latest()->limit(8),
             'businessProfileConnection.posts' => fn ($query) => $query->latest()->limit(8),
             'businessProfileConnection.reviews' => fn ($query) => $query->latest('reviewed_at')->limit(20),
+            'contentPlan.creator.githubAuthorization',
             'contentPlan.generations' => fn ($query) => $query->latest('created_at')->limit(8),
             'contentRequests' => fn ($query) => $query->with(['creator', 'generation'])->latest('created_at')->limit(50),
         ]);
@@ -309,6 +311,11 @@ class WebsiteController extends Controller
                 ->count();
         }
 
+        $contentSchedule = app(ContentSchedule::class);
+        $contentWeeklyLimit = $contentSchedule->weeklyLimit($website);
+        $contentScheduleReason = $website->contentPlan ? $contentSchedule->pauseReason($website->contentPlan) : 'Ask the Sitewell team to connect content automation.';
+        $nextContentRun = $website->contentPlan ? $contentSchedule->nextRunAt($website->contentPlan) : null;
+
         return view('admin.websites.show', compact(
             'website', 'canManageMembers', 'canManageWebsite', 'canRunHealthReports', 'canUseSearchConsole',
             'searchConsoleReport', 'searchConsoleHistory', 'searchConsoleReportUnavailable', 'seoGeneration', 'seoSnapshot', 'seoHistory',
@@ -316,7 +323,7 @@ class WebsiteController extends Controller
             'backlinkSearch', 'backlinkSort', 'backlinkDirection', 'backlinkMinRank', 'latestBacklinkAudit',
             'dataForSeoConfigured', 'outreachProspect', 'pixelInstallationSnippet', 'canUseGrowthFeatures', 'canUseCompleteFeatures', 'canUseAutoresponders',
             'websiteAiQuestions', 'websiteAiQuestionsUsed', 'websiteAiWeeklyLimit', 'pixelOptimisations', 'websiteUsers', 'soleManagerId',
-            'hasContentDeliveryConnection', 'contentSupportCallUrl',
+            'hasContentDeliveryConnection', 'contentSupportCallUrl', 'contentWeeklyLimit', 'contentScheduleReason', 'nextContentRun',
             'pendingContentRequests', 'actionedContentRequests',
         ));
     }

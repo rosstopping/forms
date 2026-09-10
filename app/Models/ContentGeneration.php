@@ -25,9 +25,11 @@ class ContentGeneration extends Model
 
     public const STATUS_CANCELLED = 'cancelled';
 
-    protected $fillable = ['backlink_context', 'competitor_context', 'target_keyword_context', 'seo_target_keyword_id', 'content_plan_id', 'website_repository_id', 'requested_by', 'scheduled_for', 'status', 'search_performance', 'prompt', 'copilot_task_id', 'copilot_task_url', 'copilot_task_state', 'pull_request_number', 'pull_request_url', 'pull_request_state', 'error', 'started_at', 'completed_at', 'merged_at', 'notification_emailed_at'];
+    public const STATUS_SKIPPED = 'skipped';
 
-    protected $attributes = ['status' => self::STATUS_PENDING];
+    protected $fillable = ['trigger', 'skip_reason', 'backlink_context', 'competitor_context', 'target_keyword_context', 'seo_target_keyword_id', 'content_plan_id', 'website_repository_id', 'requested_by', 'scheduled_for', 'status', 'search_performance', 'prompt', 'copilot_task_id', 'copilot_task_url', 'copilot_task_state', 'pull_request_number', 'pull_request_url', 'pull_request_state', 'error', 'started_at', 'completed_at', 'merged_at', 'notification_emailed_at'];
+
+    protected $attributes = ['status' => self::STATUS_PENDING, 'trigger' => 'legacy'];
 
     protected function casts(): array
     {

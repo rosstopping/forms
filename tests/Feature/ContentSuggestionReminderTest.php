@@ -3,6 +3,7 @@
 use App\Mail\ContentSuggestionReminder;
 use App\Models\ContentPlan;
 use App\Models\ContentRequest;
+use App\Models\GithubUserAuthorization;
 use App\Models\SearchOpportunity;
 use App\Models\SeoOpportunity;
 use App\Models\User;
@@ -19,6 +20,7 @@ test('an empty content queue receives suggestions 24 hours before its weekly run
     Carbon::setTestNow(Carbon::parse('2026-08-13 06:00:00', 'Europe/London'));
     Mail::fake();
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    GithubUserAuthorization::factory()->for($admin)->create();
     $website = Website::factory()->create();
     WebsiteRepository::factory()->for($website)->create();
     $plan = ContentPlan::factory()->for($website)->for($admin, 'creator')->create(['weekday' => 5, 'hour' => 6, 'timezone' => 'Europe/London']);
@@ -39,6 +41,7 @@ test('a reminder is not sent when the content queue already has a pending todo',
     Carbon::setTestNow(Carbon::parse('2026-08-13 06:00:00', 'Europe/London'));
     Mail::fake();
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    GithubUserAuthorization::factory()->for($admin)->create();
     $website = Website::factory()->create();
     WebsiteRepository::factory()->for($website)->create();
     ContentPlan::factory()->for($website)->for($admin, 'creator')->create(['weekday' => 5, 'hour' => 6]);
@@ -67,6 +70,7 @@ test('a content suggestion reminder is not sent to a viewer', function () {
 
 test('a signed email suggestion link adds the opportunity to the content queue', function () {
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    GithubUserAuthorization::factory()->for($admin)->create();
     $website = Website::factory()->create();
     WebsiteRepository::factory()->for($website)->create();
     ContentPlan::factory()->for($website)->for($admin, 'creator')->create();

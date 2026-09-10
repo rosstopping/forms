@@ -12,6 +12,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Jobs,Services/SeoIntelligence,Http/Controllers/Admin}/**/*Seo*.php,app/Models/Website.php | .ai/rules/admin-models.md |
 | app/{Http/Controllers/{CalWebhookController.php,Admin/OnboardingLeadController.php},Models/{User.php,WebsiteAudit.php}},resources/views/admin/onboarding-leads/**,routes/web.php,tests/Feature/{CalWebhookTest.php,OnboardingLeadTest.php} | .ai/rules/admin-onboarding-leads-feature.md |
 | app/{Mail,Models,Services,Http/Controllers}/**/*ProspectOutreach*.php,resources/views/admin/prospects/** | .ai/rules/admin-prospects.md |
+| app/{Services/Content*,Jobs/StartContentGeneration.php,Console/Commands/*Content*,Http/Controllers/Admin/ContentPlanController.php,Http/Requests/UpdateContentPlanRequest.php} | .ai/rules/admin-requests.md |
 | app/{Http/Controllers/Admin,Services,Jobs}/**/*Pixel*.php,resources/views/admin/{websites/**,website-health-reports/**},routes/web.php | .ai/rules/admin-services-jobs-views-adminwebsites.md |
 | app/{Http/Controllers/Admin,Services,Jobs}/**/*SeoProspect*.php | .ai/rules/admin-services-jobs.md |
 | {app/Support/MembershipPlan.php,app/Http/Middleware/EnsureMembershipFeature.php,app/Http/Controllers/Admin/{WebsiteController.php,WebsiteHealthReportController.php,SearchConsoleController.php},resources/views/admin/websites/**,routes/web.php} | .ai/rules/admin-views-admin-websites.md |
@@ -23,6 +24,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Jobs/StartContentGeneration.php,Services/ContentGenerationPromptGenerator.php,Services/SeoTargetKeywordSelector.php,Models/ContentGeneration.php} | .ai/rules/app-jobs.md |
 | app/{Services/Github*,Models/GithubUserAuthorization.php,Jobs/{StartCopilotRemediation,SyncCopilotRemediation}.php}, app/{Services/SearchConsoleHistoryStore.php,Services/WebsiteAiContext.php,Jobs/SyncSearchConsoleHistory.php} | .ai/rules/app-services.md |
 | app/{Actions/ActivateWebsiteAuditTrial.php,Models/User.php,Http/Controllers/WebsiteAuditOnboardingController.php},resources/views/{auth/complete-website-audit-onboarding.blade.php,admin/dashboard.blade.php},tests/Feature/{FreeSiteAuditTest.php,DashboardInformationArchitectureTest.php} | .ai/rules/auth-feature.md |
+| app/{Models/FormSubmissionFollowUpReminder.php,Jobs/SendLeadFollowUpReminder.php,Console/Commands/DispatchDueLeadFollowUpReminders.php,Http/Controllers/Admin/FormSubmissionController.php} | .ai/rules/commands-controllers-admin.md |
 | app/{Jobs,Services,Models,Mail,Console/Commands}/**/*ProspectOutreach*.php,routes/console.php,config/outreach.php | .ai/rules/commands.md |
 | app/{Models,Services,Jobs,Http/Controllers}/**/*SeoTargetKeyword*.php,app/Console/Commands/DispatchWeeklySeoSnapshots.php | .ai/rules/console-commands.md |
 | app/{Http/Controllers/Admin/SearchConsoleController.php,Services/SearchConsolePropertyMatcher.php,Actions/VerifyWebsiteDomainFromSearchConsole.php},resources/views/admin/websites/search-console-property.blade.php | .ai/rules/controllers-admin-views-admin-websites.md |

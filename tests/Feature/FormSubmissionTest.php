@@ -108,7 +108,7 @@ it('escapes submitted HTML exactly once when rendering the email', function (): 
     expect($submission->data['message'])->toBe($message);
 
     (new FormSubmissionReceived($submission))
-        ->assertSeeInHtml($message)
+        ->assertSeeInHtml("Hello, I'd like a &lt;strong&gt;website&lt;/strong&gt;.", false)
         ->assertDontSeeInHtml('&amp;#039;', false)
         ->assertDontSeeInHtml('<strong>website</strong>', false);
 });
@@ -579,3 +579,20 @@ it('rate limits submissions across the hourly window', function (): void {
 
     $this->assertDatabaseCount('form_submissions', 2);
 });
+
+it('queues customer acknowledgements only for active plan entitlements', function (string $tier, string $status, bool $expected): void {
+    $owner = User::factory()->create(['membership_tier' => $tier, 'membership_status' => $status]);
+    $website = Website::factory()->for($owner, 'owner')->create(['autoresponder_enabled' => true]);
+    $website->domains()->create(['domain' => 'acknowledgement.example', 'is_primary' => true]);
+    $this->withHeader('Origin', 'https://acknowledgement.example')->post('/submit', [
+        '_form_name' => 'Contact', 'name' => 'Ada', 'email' => 'ada@example.com', 'message' => 'Please contact me.',
+    ])->assertRedirect();
+    if ($expected) {
+        Queue::assertPushed(SendFormSubmissionAcknowledgement::class, 1);
+        Queue::assertPushed(SendFormSubmissionAcknowledgement::class, fn ($job): bool => $job->recipient === 'ada@example.com' && $job->fromEmail === config('forms.autoresponder_from_address'));
+    } else {
+        Queue::assertNotPushed(SendFormSubmissionAcknowledgement::class);
+    }
+})->with([
+    ['essential', 'active', true], ['growth', 'active', true], ['complete', 'active', true], ['essential', 'canceled', false],
+]);

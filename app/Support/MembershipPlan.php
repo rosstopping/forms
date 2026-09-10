@@ -79,9 +79,9 @@ class MembershipPlan
     {
         $ranks = [self::ESSENTIAL => 1, self::GROWTH => 2, self::COMPLETE => 3];
         $requiredRank = match ($feature) {
-            self::FEATURE_GROWTH, self::FEATURE_AUTORESPONDERS => 2,
+            self::FEATURE_GROWTH => 2,
             self::FEATURE_COMPLETE => 3,
-            self::FEATURE_HEALTH_REPORTS, self::FEATURE_SEARCH_CONSOLE => 1,
+            self::FEATURE_HEALTH_REPORTS, self::FEATURE_SEARCH_CONSOLE, self::FEATURE_AUTORESPONDERS => 1,
             default => 1,
         };
 

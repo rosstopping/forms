@@ -65,7 +65,7 @@
                 <div>
                     <label class="block text-sm font-medium text-slate-700" for="follow_up_at">Follow up</label>
                     <input id="follow_up_at" name="follow_up_at" type="datetime-local" value="{{ old('follow_up_at', $formSubmission->follow_up_at?->format('Y-m-d\\TH:i')) }}" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
-                    <p class="mt-1 text-xs text-slate-500">Leave blank to clear the reminder.</p>
+                    <p class="mt-1 text-xs text-slate-500">Setting or changing this date schedules one email to the eligible assignee, or otherwise the website owner. Leave blank to cancel it.</p>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700" for="notes">Notes</label>

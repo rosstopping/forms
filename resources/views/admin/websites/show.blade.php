@@ -300,22 +300,44 @@
         @endif
 
         @if ($website->repository || ($canUseGrowthFeatures && config('forms.pixel_ui_enabled') && $website->pixel_enabled))
-        @if ($website->repository && Auth::user()?->isAdmin())
+        @if ($canUseGrowthFeatures && $canManageWebsite)
         @php
             $contentPlan = $website->contentPlan;
         @endphp
         <div class="rounded-lg border bg-white p-4 shadow-sm">
             <div class="flex flex-wrap items-start justify-between gap-4">
-                <div><p class="text-xs font-medium uppercase tracking-wide text-slate-500">AI content</p><h2 class="mt-1 font-semibold">Weekly content generation</h2><p class="mt-1 text-sm text-slate-600">Sitewell chooses a blog post, landing page, or page improvement and opens a pull request for review.</p></div>
-                @if ($website->repository)
+                <div><p class="text-xs font-medium uppercase tracking-wide text-slate-500">AI content</p><h2 class="mt-1 font-semibold">Content schedule</h2><p class="mt-1 text-sm text-slate-600">Sitewell prioritises your queued requests, then eligible target keywords. Changes are prepared for review before publishing; runs with no useful work are skipped.</p></div>
+                @if ($website->repository && Auth::user()?->isAdmin())
                     <form method="POST" action="{{ route('admin.content-generations.store', $website) }}">@csrf<button class="rounded-md border px-3 py-2 text-sm font-medium text-slate-700">Generate now</button></form>
                 @endif
             </div>
             @if ($errors->has('enabled'))<p class="mt-3 text-sm text-red-700">{{ $errors->first('enabled') }}</p>@endif
+            @if ($nextContentRun)
+                <p class="mt-3 text-sm text-slate-600">Next scheduled run: {{ $nextContentRun->setTimezone($contentPlan->timezone)->format('l j F, H:i') }} ({{ $contentPlan->timezone }}).</p>
+            @elseif ($contentScheduleReason)
+                <p class="mt-3 text-sm text-amber-800">{{ $contentScheduleReason }}</p>
+            @endif
+            <p class="mt-2 text-sm text-slate-500">Growth includes one scheduled run per week. Complete includes up to three. Selected days share the same time and timezone. Automatic targets rest for at least 14 days between improvements.</p>
             <form method="POST" action="{{ route('admin.content-plans.update', $website) }}" class="mt-4 grid gap-4 md:grid-cols-2">
                 @csrf @method('PUT')
-                <label class="flex items-center gap-2 md:col-span-2"><input type="hidden" name="enabled" value="0"><input type="checkbox" name="enabled" value="1" @checked(old('enabled', $contentPlan?->enabled))><span class="text-sm font-medium">Generate one content PR each week</span></label>
-                <div><label class="block text-sm font-medium" for="weekday">Day</label><select id="weekday" name="weekday" class="mt-1 w-full rounded-md border px-3 py-2 text-sm">@foreach (['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'] as $value => $day)<option value="{{ $value }}" @selected((int) old('weekday', $contentPlan?->weekday ?? 1) === $value)>{{ $day }}</option>@endforeach</select></div>
+                <label class="flex items-center gap-2 md:col-span-2"><input type="hidden" name="enabled" value="0"><input type="checkbox" name="enabled" value="1" @checked(old('enabled', $contentPlan?->enabled))><span class="text-sm font-medium">Enable scheduled content improvements</span></label>
+                <div><label class="block text-sm font-medium" for="weekday">Primary day</label><select id="weekday" name="weekday" class="mt-1 w-full rounded-md border px-3 py-2 text-sm">@foreach (['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'] as $value => $day)<option value="{{ $value }}" @selected((int) old('weekday', $contentPlan?->weekday ?? 1) === $value)>{{ $day }}</option>@endforeach</select></div>
+                @if ($contentWeeklyLimit === 3)
+                    <fieldset class="md:col-span-2">
+                        <legend class="text-sm font-medium">Extra days (choose up to two, different from your primary day)</legend>
+                        <div class="mt-2 flex flex-wrap gap-3">
+                            @foreach (['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] as $value => $day)
+                                <label class="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" name="additional_weekdays[]" value="{{ $value }}" @checked(in_array($value, old('additional_weekdays', session()->hasOldInput() ? [] : ($contentPlan?->additional_weekdays ?? []))))>{{ $day }}</label>
+                            @endforeach
+                        </div>
+                        @error('additional_weekdays')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror
+                        @foreach ($errors->get('additional_weekdays.*') as $messages)
+                            @foreach ($messages as $message)<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@endforeach
+                        @endforeach
+                    </fieldset>
+                @elseif ($contentPlan?->additional_weekdays)
+                    <p class="text-sm text-amber-800 md:col-span-2">Your saved extra days are paused. They resume when this website has an active Complete subscription.</p>
+                @endif
                 <div><label class="block text-sm font-medium" for="hour">Hour</label><select id="hour" name="hour" class="mt-1 w-full rounded-md border px-3 py-2 text-sm">@for ($hour = 0; $hour < 24; $hour++)<option value="{{ $hour }}" @selected((int) old('hour', $contentPlan?->hour ?? 8) === $hour)>{{ str_pad($hour, 2, '0', STR_PAD_LEFT) }}:00</option>@endfor</select></div>
                 <div class="md:col-span-2"><label class="block text-sm font-medium" for="timezone">Timezone</label><input id="timezone" name="timezone" value="{{ old('timezone', $contentPlan?->timezone ?? 'Europe/London') }}" class="mt-1 w-full rounded-md border px-3 py-2 text-sm"></div>
                 <div>
@@ -333,7 +355,7 @@
                 <div class="md:col-span-2"><button class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white">Save content plan</button></div>
             </form>
             @if ($contentPlan?->generations->isNotEmpty())
-                <div class="mt-5 overflow-x-auto"><table class="min-w-full text-sm"><thead><tr class="border-b text-left text-xs uppercase text-slate-500"><th class="py-2">Date</th><th>Status</th><th>Pull request</th><th class="text-right">Actions</th></tr></thead><tbody>@foreach ($contentPlan->generations as $generation)<tr class="border-b"><td class="py-2">{{ $generation->scheduled_for->toFormattedDateString() }}</td><td>{{ str_replace('_', ' ', $generation->status) }}</td><td>@if ($generation->pull_request_url)<a class="font-medium underline" href="{{ $generation->pull_request_url }}">#{{ $generation->pull_request_number }}</a>@else — @endif</td><td><div class="flex justify-end gap-2">@if ($generation->pull_request_number && $generation->status === \App\Models\ContentGeneration::STATUS_PULL_REQUEST_OPEN)<form method="POST" action="{{ route('admin.content-generations.sync', [$website, $generation]) }}">@csrf<button class="rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">Check GitHub status</button></form><form method="POST" action="{{ route('admin.content-generations.destroy', [$website, $generation]) }}">@csrf @method('DELETE')<button class="rounded-md border border-red-200 bg-white px-2.5 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50">Cancel</button></form>@else — @endif</div></td></tr>@endforeach</tbody></table></div>
+                <div class="mt-5 overflow-x-auto"><table class="min-w-full text-sm"><thead><tr class="border-b text-left text-xs uppercase text-slate-500"><th class="py-2">Date</th><th>Status</th><th>Pull request</th><th class="text-right">Actions</th></tr></thead><tbody>@foreach ($contentPlan->generations as $generation)<tr class="border-b"><td class="py-2">{{ $generation->scheduled_for->toFormattedDateString() }}</td><td>{{ str_replace('_', ' ', $generation->status) }}@if ($generation->skip_reason)<p class="mt-1 max-w-sm text-xs text-slate-500">{{ $generation->skip_reason }}</p>@endif</td><td>@if ($generation->pull_request_url)<a class="font-medium underline" href="{{ $generation->pull_request_url }}">#{{ $generation->pull_request_number }}</a>@else — @endif</td><td><div class="flex justify-end gap-2">@if (Auth::user()?->isAdmin() && $generation->pull_request_number && $generation->status === \App\Models\ContentGeneration::STATUS_PULL_REQUEST_OPEN)<form method="POST" action="{{ route('admin.content-generations.sync', [$website, $generation]) }}">@csrf<button class="rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">Check GitHub status</button></form><form method="POST" action="{{ route('admin.content-generations.destroy', [$website, $generation]) }}">@csrf @method('DELETE')<button class="rounded-md border border-red-200 bg-white px-2.5 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50">Cancel</button></form>@else — @endif</div></td></tr>@endforeach</tbody></table></div>
             @endif
         </div>
         @endif
@@ -793,7 +815,7 @@
         <div class="rounded-xl border border-slate-950/10 bg-white p-5 lg:col-span-2 sm:p-6">
             <h2 class="font-semibold text-blue-950">Automatic customer reply</h2>
             @if (! $canUseAutoresponders)
-                <p class="mt-1 text-base text-slate-600 sm:text-sm">Automatic customer replies are available on Growth and Complete plans.</p>
+                <p class="mt-1 text-base text-slate-600 sm:text-sm">Automatic customer replies require an active Sitewell plan.</p>
                 <a href="{{ route('admin.billing.index') }}" class="mt-4 inline-flex items-center justify-center rounded-lg border border-slate-950/15 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600">View plans</a>
             @else
             <p class="mt-1 text-base text-blue-800 sm:text-sm">Set the website-wide acknowledgement. Individual forms can inherit or override it.</p>

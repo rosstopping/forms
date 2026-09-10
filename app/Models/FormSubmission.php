@@ -74,6 +74,11 @@ class FormSubmission extends Model
         return $this->hasMany(FormSubmissionActivity::class)->latest();
     }
 
+    public function followUpReminders(): HasMany
+    {
+        return $this->hasMany(FormSubmissionFollowUpReminder::class);
+    }
+
     public function emailDeliveries(): HasMany
     {
         return $this->hasMany(FormSubmissionEmailDelivery::class);

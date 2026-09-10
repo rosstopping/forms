@@ -504,10 +504,10 @@ it('links form settings back to the parent website forms tab', function () {
         ->assertSee('href="'.route('admin.websites.section', [$website, 'forms']).'"', false);
 });
 
-it('locks automatic replies for essential websites in the UI and on update', function (): void {
+it('locks automatic replies for inactive websites in the UI and on update', function (): void {
     $owner = User::factory()->create([
         'membership_tier' => MembershipPlan::ESSENTIAL,
-        'membership_status' => 'active',
+        'membership_status' => 'canceled',
     ]);
     $website = Website::factory()->for($owner, 'owner')->create();
     $form = Form::factory()->for($website)->create();
@@ -515,14 +515,14 @@ it('locks automatic replies for essential websites in the UI and on update', fun
     $this->actingAs($owner)
         ->get(route('admin.websites.section', [$website, 'forms']))
         ->assertOk()
-        ->assertSee('Automatic customer replies are available on Growth and Complete plans.')
+        ->assertSee('Automatic customer replies require an active Sitewell plan.')
         ->assertDontSee('postmark_server_token', false)
         ->assertDontSee('Managed Postmark');
 
     $this->get(route('admin.forms.show', $form))
         ->assertOk()
         ->assertSee('Additional settings')
-        ->assertSee('Available on Growth and Complete plans.')
+        ->assertSee('Available with an active Sitewell plan.')
         ->assertDontSee('data-autoresponder-content-editor', false);
 
     $this->from(route('admin.websites.section', [$website, 'forms']))
@@ -537,3 +537,16 @@ it('locks automatic replies for essential websites in the UI and on update', fun
         ->put(route('admin.forms.update', $form), ['autoresponder_mode' => 'enabled'])
         ->assertSessionHasErrors('autoresponder_mode');
 });
+
+it('allows automatic reply configuration across active plans without enabling it automatically', function (string $tier): void {
+    $owner = User::factory()->create(['membership_tier' => $tier]);
+    $website = Website::factory()->for($owner, 'owner')->create(['autoresponder_enabled' => false]);
+    $form = Form::factory()->for($website)->create();
+    $this->actingAs($owner)->get(route('admin.forms.show', $form))->assertOk()->assertSee('data-autoresponder-content-editor', false);
+    expect($website->fresh()->autoresponder_enabled)->toBeFalse();
+    $this->put(route('admin.websites.autoresponder.update', $website), [
+        'autoresponder_enabled' => true, 'autoresponder_content_type' => 'text', 'autoresponder_delay_minutes' => 0,
+    ])->assertSessionHasNoErrors()->assertRedirect();
+    $this->put(route('admin.forms.update', $form), ['autoresponder_mode' => 'enabled'])->assertSessionHasNoErrors()->assertRedirect();
+    expect($website->fresh()->autoresponder_enabled)->toBeTrue()->and($form->fresh()->autoresponder_enabled_override)->toBeTrue();
+})->with(['essential', 'growth', 'complete']);
