@@ -9,7 +9,7 @@
 - Add safe form heartbeat monitoring that validates form resolution, CORS, validation, mail, and webhook configuration without creating a lead or contacting customers.
 - Add invite-based sharing so a user can grant access to another account without handing over the full admin login.
 - Introduce per-user API keys for webhook and CRM integrations.
-- Add richer inbox-style filtering for submissions, including spam scoring and labels.
+- Lead tags and tag filtering shipped 10 September 2026: website-specific reusable tags, lead assignment/removal, activity history, and filtering that also scopes bulk actions. Richer spam-score filtering remains open.
 
 ## Medium term
 
@@ -18,7 +18,7 @@
 - Add SSL certificate, HTTPS, mixed-content, DNS, and domain-expiry monitoring where registry data is available.
 - Add uptime and response-time monitoring with consecutive-failure thresholds to avoid noisy alerts.
 - Add a customer-friendly monthly report covering health, search, content, forms, completed work, and pending approvals.
-- Extend the existing lead inbox with tags and shared customer conversations; see the all-in-one conversation inbox item below.
+- Extend the existing tagged lead inbox with shared customer conversations; see the all-in-one conversation inbox item below.
 - Add AI summaries and suggested follow-up actions for new submissions.
 - Support file uploads, multi-step forms, and appointment scheduling.
 

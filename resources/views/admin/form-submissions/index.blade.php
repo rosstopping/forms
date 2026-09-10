@@ -32,6 +32,11 @@
         <select name="follow_up" class="rounded-md border border-slate-300 px-3 py-2 text-sm"><option value="">Any follow-up</option><option value="overdue" @selected(request('follow_up') === 'overdue')>Overdue</option><option value="today" @selected(request('follow_up') === 'today')>Due today</option><option value="upcoming" @selected(request('follow_up') === 'upcoming')>Upcoming</option><option value="none" @selected(request('follow_up') === 'none')>Not scheduled</option></select>
         {{-- <select name="assigned_to" class="rounded-md border border-slate-300 px-3 py-2 text-sm"><option value="">Any owner</option><option value="unassigned" @selected(request('assigned_to') === 'unassigned')>Unassigned</option>@foreach ($users as $user)<option value="{{ $user->id }}" @selected((string) request('assigned_to') === (string) $user->id)>{{ $user->name }}</option>@endforeach</select> --}}
         <select name="spam" class="rounded-md border border-slate-300 px-3 py-2 text-sm"><option value="exclude" @selected(request('spam', 'exclude') === 'exclude')>Hide spam</option><option value="all" @selected(request('spam') === 'all')>Include spam</option><option value="only" @selected(request('spam') === 'only')>Spam only</option></select>
+        <select name="tag_id" aria-label="Filter by tag" class="rounded-md border border-slate-300 px-3 py-2 text-sm">
+            <option value="">All tags</option>
+            @foreach ($leadTags as $tag)<option value="{{ $tag->id }}" @selected((string) request('tag_id') === (string) $tag->id)>{{ $tag->name }}</option>@endforeach
+        </select>
+        @error('tag_id')<p class="text-sm text-red-700">{{ $message }}</p>@enderror
         <div class="flex gap-2 lg:col-span-4"><button class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white">Filter leads</button><a href="{{ route('admin.form-submissions.index', ['reset_filters' => 1]) }}" class="rounded-md border px-4 py-2 text-sm font-medium text-slate-700">Clear</a></div>
     </form>
 
@@ -40,6 +45,7 @@
         @method('PATCH')
         <input type="hidden" name="action" data-bulk-leads-action>
         <input type="hidden" name="selection_scope" value="page" data-bulk-leads-scope>
+        <input type="hidden" name="tag_id" value="{{ request('tag_id') }}">
         <input type="hidden" name="search" value="{{ request('search') }}">
         <input type="hidden" name="filter_status" value="{{ request('status') }}">
         <input type="hidden" name="assigned_to" value="{{ request('assigned_to') }}">
@@ -90,7 +96,13 @@
                         <span class="size-4 shrink-0" title="Read-only lead"></span>
                     @endif
                     <a href="{{ route('admin.form-submissions.show', $submission) }}" class="grid min-w-0 flex-1 gap-2 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_10rem] md:items-start">
-                        <div class="min-w-0"><div class="font-medium text-slate-900">{{ $submission->displayName() }}</div><div class="truncate text-sm text-slate-500">{{ $submission->replyToEmail() ?: $submission->messageExcerpt() ?: 'No contact details supplied' }}</div></div>
+                        <div class="min-w-0"><div class="font-medium text-slate-900">{{ $submission->displayName() }}</div><div class="truncate text-sm text-slate-500">{{ $submission->replyToEmail() ?: $submission->messageExcerpt() ?: 'No contact details supplied' }}</div>
+                            @if ($submission->tags->isNotEmpty())
+                                <div class="mt-2 flex flex-wrap gap-1.5">
+                                    @foreach ($submission->tags as $tag)<span class="rounded-full bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-800">{{ $tag->name }}</span>@endforeach
+                                </div>
+                            @endif
+                        </div>
                         <div class="text-sm"><div class="text-slate-700">{{ $submission->form?->name ?: 'Unknown form' }}</div><div class="text-xs text-slate-500">{{ $submission->website?->name }}</div></div>
                         <div class="text-sm"><span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">{{ $submission->resolvedStatusLabel() }}</span><div class="mt-2 text-xs text-slate-500">{{ $submission->assignee?->name ?: 'Unassigned' }}</div></div>
                         <div class="min-w-0 text-xs md:text-right">

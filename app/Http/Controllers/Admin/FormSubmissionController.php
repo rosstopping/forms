@@ -3,26 +3,32 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\FilterFormSubmissionsRequest;
 use App\Http\Requests\UpdateFormSubmissionRequest;
 use App\Mail\FormSubmissionReceived;
 use App\Models\FormSubmission;
+use App\Models\LeadTag;
 use App\Models\User;
 use App\Models\Website;
 use App\Services\FormSettingsResolver;
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class FormSubmissionController extends Controller
 {
-    public function index(Request $request)
+    public function index(FilterFormSubmissionsRequest $request): View
     {
-        $filterKeys = ['search', 'status', 'assigned_to', 'follow_up', 'spam'];
-        $sessionKey = 'admin.lead_filters.'.$request->user()->id;
+        $currentWebsite = $request->attributes->get('currentWebsite');
+        abort_unless($currentWebsite instanceof Website && $currentWebsite->isAccessibleBy($request->user()), 404);
+        $filterKeys = ['search', 'status', 'assigned_to', 'follow_up', 'spam', 'tag_id'];
+        $sessionKey = 'admin.lead_filters.'.$request->user()->id.'.'.$currentWebsite->id;
 
         if ($request->boolean('reset_filters')) {
             $request->session()->forget($sessionKey);
@@ -34,9 +40,6 @@ class FormSubmissionController extends Controller
         } else {
             $request->merge($request->session()->get($sessionKey, []));
         }
-
-        $currentWebsite = $request->attributes->get('currentWebsite');
-        abort_unless($currentWebsite instanceof Website && $currentWebsite->isAccessibleBy($request->user()), 404);
 
         $query = FormSubmission::query()->whereBelongsTo($currentWebsite);
 
@@ -54,7 +57,7 @@ class FormSubmissionController extends Controller
             ->count();
 
         $submissions = $query
-            ->with(['website', 'form', 'assignee'])
+            ->with(['website', 'form', 'assignee', 'tags'])
             ->latest('created_at')
             ->paginate(20)->withQueryString();
 
@@ -62,24 +65,28 @@ class FormSubmissionController extends Controller
         $bulkPageSelectableCount = $submissions->getCollection()->whereIn('website_id', $manageableWebsiteIds)->count();
         $users = $request->user()?->isAdmin() ? User::query()->orderBy('name')->get(['id', 'name']) : collect([$request->user()]);
 
-        return view('admin.form-submissions.index', compact('submissions', 'summary', 'followUpSummary', 'manageableWebsiteIds', 'bulkSelectableCount', 'bulkPageSelectableCount', 'users'));
+        $leadTags = LeadTag::query()->whereBelongsTo($currentWebsite)->orderBy('name')->get();
+
+        return view('admin.form-submissions.index', compact('submissions', 'summary', 'followUpSummary', 'manageableWebsiteIds', 'bulkSelectableCount', 'bulkPageSelectableCount', 'users', 'leadTags'));
     }
 
-    public function show(Request $request, FormSubmission $formSubmission)
+    public function show(Request $request, FormSubmission $formSubmission): View
     {
         abort_unless($formSubmission->website?->isAccessibleBy($request->user()), 403);
 
-        $formSubmission->load(['website', 'form', 'assignee', 'activities.user']);
+        $formSubmission->load(['website', 'form', 'assignee', 'activities.user', 'tags']);
 
         $users = $request->user()?->isAdmin() ? User::query()->orderBy('name')->get(['id', 'name']) : collect([$request->user()]);
         $canManage = $formSubmission->website?->isManageableBy($request->user()) === true;
 
-        return view('admin.form-submissions.show', compact('formSubmission', 'users', 'canManage'));
+        $leadTags = LeadTag::query()->where('website_id', $formSubmission->website_id)->orderBy('name')->get();
+
+        return view('admin.form-submissions.show', compact('formSubmission', 'users', 'canManage', 'leadTags'));
     }
 
-    public function update(UpdateFormSubmissionRequest $request, FormSubmission $formSubmission)
+    public function update(UpdateFormSubmissionRequest $request, FormSubmission $formSubmission): RedirectResponse
     {
-        $data = $request->safe()->except('return_to');
+        $data = $request->safe()->except(['return_to', 'tag_ids', 'new_tag', 'tags_present']);
 
         if (! $request->user()?->isAdmin() && filled($data['assigned_to'] ?? null) && (int) $data['assigned_to'] !== $request->user()->id) {
             abort(403);
@@ -88,6 +95,26 @@ class FormSubmissionController extends Controller
         DB::transaction(function () use ($formSubmission, $data, $request): void {
             $formSubmission = FormSubmission::query()->lockForUpdate()->findOrFail($formSubmission->id);
             $formSubmission->fill($data)->save();
+
+            if ($request->boolean('tags_present') || $request->has('tag_ids') || filled($request->validated('new_tag'))) {
+                $tagIds = array_map(intval(...), $request->validated('tag_ids', $request->boolean('tags_present') ? [] : $formSubmission->tags()->allRelatedIds()->all()));
+                if (filled($request->validated('new_tag'))) {
+                    $tag = LeadTag::query()->firstOrCreate(
+                        ['website_id' => $formSubmission->website_id, 'normalized_name' => Str::lower($request->validated('new_tag'))],
+                        ['name' => $request->validated('new_tag')],
+                    );
+                    $tagIds[] = $tag->id;
+                }
+                if (count(array_unique($tagIds)) > 20) {
+                    throw ValidationException::withMessages(['tag_ids' => 'Choose up to 20 tags per lead.']);
+                }
+                $changes = $formSubmission->tags()->sync(array_unique($tagIds));
+                if ($changes['attached'] !== [] || $changes['detached'] !== []) {
+                    $formSubmission->recordActivity('tags_updated', 'Lead tags updated.', $request->user(), [
+                        'tags' => $formSubmission->tags()->pluck('name')->all(),
+                    ]);
+                }
+            }
 
             if ($formSubmission->wasChanged('status')) {
                 $formSubmission->recordActivity('status_changed', 'Status changed to '.$formSubmission->resolvedStatusLabel().'.', $request->user());

@@ -29,6 +29,7 @@ class BulkFormSubmissionController extends Controller
             $authorizedQuery->whereKey($submissionIds);
         } else {
             $authorizedQuery->filtered([
+                'tag_id' => $data['tag_id'] ?? null,
                 'search' => $data['search'] ?? null,
                 'status' => $data['filter_status'] ?? null,
                 'assigned_to' => $data['assigned_to'] ?? null,

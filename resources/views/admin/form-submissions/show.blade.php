@@ -40,8 +40,16 @@
                 <div class="flex justify-between"><dt class="text-slate-500">Website</dt><dd class="font-medium">{{ $formSubmission->website?->name ?: 'Unknown website' }}</dd></div>
                 <div class="flex justify-between"><dt class="text-slate-500">Status</dt><dd class="font-medium"><span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">{{ $formSubmission->resolvedStatusLabel() }}</span></dd></div>
                 {{-- <div class="flex justify-between"><dt class="text-slate-500">Owner</dt><dd class="font-medium">{{ $formSubmission->assignee?->name ?: 'Unassigned' }}</dd></div> --}}
+                <div class="flex items-start justify-between gap-3"><dt class="text-slate-500">Tags</dt><dd class="flex flex-wrap justify-end gap-2">
+                    @forelse ($formSubmission->tags as $tag)
+                        <span class="rounded-full bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-800">{{ $tag->name }}</span>
+                    @empty
+                        <span class="text-slate-500">No tags</span>
+                    @endforelse
+                </dd></div>
             </dl>
 
+            @if ($canManage)
             <form method="POST" action="{{ route('admin.form-submissions.update', $formSubmission) }}" class="mt-5 space-y-4">
                 @csrf
                 @method('PUT')
@@ -71,8 +79,38 @@
                     <label class="block text-sm font-medium text-slate-700" for="notes">Notes</label>
                     <textarea id="notes" name="notes" rows="4" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">{{ old('notes', $formSubmission->notes) }}</textarea>
                 </div>
+                <fieldset>
+                    <legend class="text-sm font-medium text-slate-700">Lead tags</legend>
+                    <input type="hidden" name="tags_present" value="1">
+                    <p class="mt-1 text-xs text-slate-500">Select tags to keep, or untick them to remove. Tags are shared across this website.</p>
+                    @php
+                        $selectedTagIds = old('tag_ids', old('tags_present') ? [] : $formSubmission->tags->modelKeys());
+                        $selectedTagIds = is_array($selectedTagIds) ? $selectedTagIds : [];
+                    @endphp
+                    <div class="mt-2 flex flex-wrap gap-2">
+                        @foreach ($leadTags as $tag)
+                            <label class="flex min-h-11 items-center gap-2 rounded-md border border-slate-200 px-3 text-sm text-slate-700">
+                                <input type="checkbox" name="tag_ids[]" value="{{ $tag->id }}" @checked(in_array($tag->id, $selectedTagIds)) class="rounded border-slate-300">{{ $tag->name }}
+                            </label>
+                        @endforeach
+                    </div>
+                    <label for="new_tag" class="mt-3 block text-sm font-medium text-slate-700">New tag</label>
+                    <input id="new_tag" name="new_tag" value="{{ is_string(old('new_tag')) ? old('new_tag') : '' }}" maxlength="40" placeholder="e.g. Quote requested" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                    <p class="mt-1 text-xs text-slate-500">Added to this lead when you save. Up to 40 characters.</p>
+                    @error('new_tag')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror
+                    @error('tag_ids')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror
+                    @foreach ($errors->get('tag_ids.*') as $messages)
+                        @foreach ($messages as $message)<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@endforeach
+                    @endforeach
+                </fieldset>
                 <button type="submit" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">Save lead</button>
             </form>
+            @else
+                <dl class="mt-5 space-y-3 text-sm">
+                    <div><dt class="font-medium text-slate-700">Follow up</dt><dd class="mt-1 text-slate-600">{{ $formSubmission->follow_up_at?->format('j M Y, H:i') ?? 'Not scheduled' }}</dd></div>
+                    <div><dt class="font-medium text-slate-700">Notes</dt><dd class="mt-1 whitespace-pre-line text-slate-600">{{ $formSubmission->notes ?: 'No notes' }}</dd></div>
+                </dl>
+            @endif
         </div>
 
         <div class="rounded-lg border bg-white p-4 shadow-sm">

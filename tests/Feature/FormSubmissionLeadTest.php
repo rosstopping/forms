@@ -122,7 +122,7 @@ it('remembers lead filters for the signed in user', function () {
     $this->actingAs($admin)
         ->get(route('admin.form-submissions.index', ['status' => 'qualified']))
         ->assertOk()
-        ->assertSessionHas('admin.lead_filters.'.$admin->id, ['status' => 'qualified']);
+        ->assertSessionHas('admin.lead_filters.'.$admin->id.'.'.$website->id, ['status' => 'qualified']);
 
     $this->get(route('admin.form-submissions.index'))
         ->assertOk()
@@ -131,7 +131,7 @@ it('remembers lead filters for the signed in user', function () {
 
     $this->get(route('admin.form-submissions.index', ['reset_filters' => 1]))
         ->assertOk()
-        ->assertSessionMissing('admin.lead_filters.'.$admin->id)
+        ->assertSessionMissing('admin.lead_filters.'.$admin->id.'.'.$website->id)
         ->assertSee('Hidden Lead');
 });
 

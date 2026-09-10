@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
@@ -64,6 +65,11 @@ class FormSubmission extends Model
         return $this->belongsTo(Form::class);
     }
 
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(LeadTag::class)->orderBy('name');
+    }
+
     public function assignee(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to');
@@ -103,6 +109,7 @@ class FormSubmission extends Model
         return $query
             ->when($spam === 'exclude', fn (Builder $query) => $query->where('is_spam', false))
             ->when($spam === 'only', fn (Builder $query) => $query->where('is_spam', true))
+            ->when(filled($filters['tag_id'] ?? null), fn (Builder $query) => $query->whereHas('tags', fn (Builder $tags) => $tags->whereKey($filters['tag_id'])))
             ->when(filled($filters['status'] ?? null), fn (Builder $query) => $query->where('status', $filters['status']))
             ->when(filled($filters['website_id'] ?? null), fn (Builder $query) => $query->where('website_id', $filters['website_id']))
             ->when(filled($filters['assigned_to'] ?? null), fn (Builder $query) => $filters['assigned_to'] === 'unassigned'

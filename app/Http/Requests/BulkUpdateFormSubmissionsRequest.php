@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\FormSubmission;
+use App\Models\LeadTag;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -30,6 +31,7 @@ class BulkUpdateFormSubmissionsRequest extends FormRequest
             'submission_ids.*' => ['required', 'integer', 'distinct:strict', Rule::exists((new FormSubmission)->getTable(), 'id')],
             'action' => ['required', 'string', Rule::in(['update_status', 'resend_notification', 'mark_spam', 'delete'])],
             'status' => ['nullable', 'required_if:action,update_status', 'string', Rule::in(FormSubmission::STATUSES)],
+            'tag_id' => ['nullable', 'integer', Rule::exists(LeadTag::class, 'id')->where('website_id', $this->attributes->get('currentWebsite')?->id)],
             'search' => ['nullable', 'string', 'max:100'],
             'filter_status' => ['nullable', 'string', Rule::in(FormSubmission::STATUSES)],
             'assigned_to' => ['nullable', 'string', 'max:20'],
