@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\DeploymentMethod;
 use App\Enums\OptimisationStatus;
 use App\Models\ContentGeneration;
 use App\Models\ContentPlan;
@@ -118,3 +119,32 @@ it('groups website sections directly beneath Overview in both navigation menus',
         expect($urls)->not->toContain(route('admin.users.index'), route('admin.prospects.index'));
     }
 });
+
+it('excludes disabled-site Pixel reviews while retaining other deployment methods', function (OptimisationStatus $status): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $disabledWebsite = Website::factory()->create(['pixel_enabled' => false]);
+    $enabledWebsite = Website::factory()->create(['pixel_enabled' => true]);
+    $hidden = Optimisation::factory()->for($disabledWebsite)->create([
+        'status' => $status,
+        'deployment_method' => DeploymentMethod::Pixel,
+        'url' => 'https://disabled.example/hidden-pixel-review',
+    ]);
+    $visible = Optimisation::factory()->for($enabledWebsite)->create([
+        'status' => $status,
+        'deployment_method' => DeploymentMethod::Pixel,
+    ]);
+    $otherChanges = collect([DeploymentMethod::Manual, DeploymentMethod::Github, DeploymentMethod::Wordpress])
+        ->map(fn (DeploymentMethod $method): Optimisation => Optimisation::factory()->for($disabledWebsite)->create([
+            'status' => $status,
+            'deployment_method' => $method,
+        ]));
+
+    $this->actingAs($admin)->get(route('admin.overview'))
+        ->assertSuccessful()
+        ->assertDontSee($hidden->url)
+        ->assertViewHas('approvalCount', 4)
+        ->assertViewHas('optimisations', fn ($items): bool => $items->total() === 4
+            && $items->contains('id', $visible->id)
+            && ! $items->contains('id', $hidden->id)
+            && $otherChanges->every(fn (Optimisation $change): bool => $items->contains('id', $change->id)));
+})->with([OptimisationStatus::Draft, OptimisationStatus::PendingApproval]);

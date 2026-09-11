@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\DeploymentMethod;
 use App\Enums\OptimisationStatus;
 use App\Http\Controllers\Controller;
 use App\Models\ContentGeneration;
@@ -33,6 +34,9 @@ class DashboardController extends Controller
         $optimisations = Optimisation::query()
             ->whereIn('website_id', $websites->modelKeys())
             ->whereIn('status', [OptimisationStatus::Draft, OptimisationStatus::PendingApproval])
+            ->where(fn ($query) => $query
+                ->where('deployment_method', '!=', DeploymentMethod::Pixel)
+                ->orWhereHas('website', fn ($query) => $query->where('pixel_enabled', true)))
             ->with(['website:id,name', 'page:id,website_health_report_id'])
             ->oldest()->paginate(10, ['*'], 'changes_page');
 
