@@ -79,7 +79,7 @@ class BusinessProfileController extends Controller
         $audit = $connection->audits()->create(['status' => BusinessProfileAudit::STATUS_PENDING]);
         AuditBusinessProfile::dispatch($audit);
 
-        return Redirect::route('admin.websites.show', $website)->with('status', 'Google Business Profile connected and its first audit queued.');
+        return Redirect::route('admin.websites.section', [$website, 'business-profile'])->with('status', 'Google Business Profile connected and its first audit queued.');
     }
 
     public function update(Request $request, Website $website): RedirectResponse

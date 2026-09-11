@@ -7,7 +7,7 @@
     $pendingPixelContentRequests = $website->contentRequests->whereNull('picked_up_at')->whereNull('pixel_processed_at');
 @endphp
 
-<div id="website-panel-pixel" class="space-y-6" role="tabpanel" aria-labelledby="website-tab-pixel" data-tab-panel="pixel" hidden>
+<div id="website-panel-pixel" class="space-y-6" role="region" aria-labelledby="website-tab-pixel" data-tab-panel="pixel" @if ($currentWebsiteSection !== 'pixel') hidden @endif>
     <section class="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm" aria-labelledby="pixel-title">
         <div class="flex flex-col gap-4 border-b border-slate-200 p-4 sm:flex-row sm:items-start sm:justify-between">
             <div>

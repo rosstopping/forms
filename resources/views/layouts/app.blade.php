@@ -37,7 +37,7 @@
                     </span>
                 </a>
 
-                <nav class="mt-10" aria-label="Main navigation">
+                <nav class="mt-10 pb-24" aria-label="Main navigation">
                     <p class="truncate px-3 text-xs font-medium uppercase tracking-widest text-slate-500" data-website-navigation-heading title="{{ $currentWebsite?->name }}">{{ $currentWebsite?->name ?? 'Your website' }}</p>
                     <div class="mt-2 space-y-1">
                         <a href="{{ route('admin.dashboard') }}" @class(['flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium', 'bg-white/10 text-white' => request()->routeIs('admin.dashboard'), 'text-slate-400 hover:bg-white/5 hover:text-white' => ! request()->routeIs('admin.dashboard')])>
@@ -112,7 +112,7 @@
                     @endif
                 </nav>
 
-                <div class="mt-auto border-t border-white/10 pt-4">
+                <div class="fixed bottom-0 left-0 z-40 w-[17rem] border-t border-white/10 bg-slate-950 px-4 py-5" data-desktop-user-menu>
                     <div class="flex items-center gap-3 px-2">
                         <span class="grid size-9 shrink-0 place-items-center rounded-full bg-teal-400/15 text-sm font-semibold text-teal-300">{{ Str::upper(Str::substr(Auth::user()->name, 0, 1)) }}</span>
                         <a href="{{ route('admin.profile.edit') }}" class="min-w-0 flex-1 rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-400">

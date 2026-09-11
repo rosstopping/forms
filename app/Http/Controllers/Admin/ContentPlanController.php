@@ -106,7 +106,7 @@ class ContentPlanController extends Controller
             default => 'GitHub confirmed that the pull request is still open.',
         };
 
-        return Redirect::route('admin.websites.show', $website)->with('status', $message);
+        return Redirect::route('admin.websites.section', [$website, 'content'])->with('status', $message);
     }
 
     public function cancelGeneration(Request $request, Website $website, ContentGeneration $contentGeneration): RedirectResponse
@@ -120,7 +120,7 @@ class ContentPlanController extends Controller
             'error' => 'Cancelled manually after the pull request lifecycle could not be confirmed.',
         ]);
 
-        return Redirect::route('admin.websites.show', $website)->with('status', 'Content generation cancelled.');
+        return Redirect::route('admin.websites.section', [$website, 'content'])->with('status', 'Content generation cancelled.');
     }
 
     protected function ensureReady(Request $request, Website $website): void

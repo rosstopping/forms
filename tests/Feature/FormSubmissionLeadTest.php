@@ -437,7 +437,7 @@ it('lets a website owner configure the site wide automatic reply', function () {
         'autoresponder_body' => 'Thanks {name}. We will be in touch.',
         'autoresponder_content_type' => 'text',
         'autoresponder_delay_minutes' => 20,
-    ])->assertRedirect(route('admin.websites.show', $website));
+    ])->assertRedirect(route('admin.websites.section', [$website, 'forms']));
 
     expect($website->refresh()->autoresponder_enabled)->toBeTrue()
         ->and($website->autoresponder_from_name)->toBe('Willow & Stone')
@@ -474,7 +474,7 @@ it('stores raw html autoresponder messages without sanitizing them', function ()
         'autoresponder_body' => $rawHtml,
         'autoresponder_content_type' => 'html',
         'autoresponder_delay_minutes' => 0,
-    ])->assertRedirect(route('admin.websites.show', $website));
+    ])->assertRedirect(route('admin.websites.section', [$website, 'forms']));
 
     expect($website->refresh()->autoresponder_content_type)->toBe('html')
         ->and($website->autoresponder_body)->toBe($rawHtml);

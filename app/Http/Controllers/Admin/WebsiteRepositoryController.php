@@ -72,7 +72,7 @@ class WebsiteRepositoryController extends Controller
                 throw $exception;
             }
 
-            return Redirect::route('admin.websites.show', $website)
+            return Redirect::route('admin.websites.section', [$website, 'content'])
                 ->with('error', "The GitHub installation for {$installation->account_login} is no longer available. Reconnect the Sitewell GitHub App and try again.");
         }
 
@@ -94,7 +94,7 @@ class WebsiteRepositoryController extends Controller
             'wordpress_artifact_name' => $data['wordpress_artifact_name'] ?? null,
         ]);
 
-        return Redirect::route('admin.websites.show', $website)
+        return Redirect::route('admin.websites.section', [$website, 'content'])
             ->with('status', "Repository {$repository['full_name']} connected.");
     }
 
@@ -105,7 +105,7 @@ class WebsiteRepositoryController extends Controller
 
         $website->repository?->delete();
 
-        return Redirect::route('admin.websites.show', $website)
+        return Redirect::route('admin.websites.section', [$website, 'content'])
             ->with('status', 'The repository was disconnected.');
     }
 

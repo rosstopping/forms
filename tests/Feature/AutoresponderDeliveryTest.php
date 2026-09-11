@@ -37,7 +37,7 @@ it('stores a customer Postmark server token encrypted', function (): void {
         'autoresponder_delay_minutes' => 0,
         'mail_delivery_mode' => WebsiteMailConnection::MODE_CUSTOMER_POSTMARK,
         'postmark_server_token' => 'customer-server-token',
-    ])->assertRedirect();
+    ])->assertRedirect(route('admin.websites.section', [$website, 'forms']));
 
     $connection = $website->mailConnection()->sole();
 

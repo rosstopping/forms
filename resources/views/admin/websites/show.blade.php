@@ -4,7 +4,7 @@
 @php
     $primaryDomain = $website->domains->firstWhere('is_primary', true) ?? $website->domains->first();
 @endphp
-<div class="space-y-6" data-tabs data-default-tab="{{ $currentWebsiteSection }}">
+<div class="space-y-6" data-website-sections data-default-tab="{{ $currentWebsiteSection }}">
     @if (session('status'))
         <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{{ session('status') }}</div>
     @endif
@@ -69,23 +69,23 @@
         </section>
     @endif
 
-    <div class="hidden" role="tablist" aria-label="Website sections">
-        <button type="button" id="website-tab-health" class="website-tab" role="tab" aria-selected="true" aria-controls="website-panel-health" tabindex="0" data-tab="health">Health reports</button>
-        <button type="button" id="website-tab-search" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-search" tabindex="-1" data-tab="search">Search</button>
-        <button type="button" id="website-tab-seo" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-seo" tabindex="-1" data-tab="seo">SEO Intelligence</button>
-        <button type="button" id="website-tab-content" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-content" tabindex="-1" data-tab="content">Content</button>
+    <nav class="hidden" aria-label="Website sections">
+        <a href="{{ \App\Support\WebsiteNavigation::routeFor($website, 'health') }}" id="website-tab-health" data-tab="health">Health reports</a>
+        <a href="{{ \App\Support\WebsiteNavigation::routeFor($website, 'search') }}" id="website-tab-search" data-tab="search">Search</a>
+        <a href="{{ \App\Support\WebsiteNavigation::routeFor($website, 'seo') }}" id="website-tab-seo" data-tab="seo">SEO Intelligence</a>
+        <a href="{{ \App\Support\WebsiteNavigation::routeFor($website, 'content') }}" id="website-tab-content" data-tab="content">Content</a>
         @if ($website->wordpress_enabled)
-            <button type="button" id="website-tab-wordpress" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-wordpress" tabindex="-1" data-tab="wordpress">WordPress</button>
+            <a href="{{ \App\Support\WebsiteNavigation::routeFor($website, 'wordpress') }}" id="website-tab-wordpress" data-tab="wordpress">WordPress</a>
         @endif
         @if (config('forms.pixel_ui_enabled') && $canUseGrowthFeatures && $website->pixel_enabled)
-            <button type="button" id="website-tab-pixel" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-pixel" tabindex="-1" data-tab="pixel">Pixel</button>
+            <a href="{{ \App\Support\WebsiteNavigation::routeFor($website, 'pixel') }}" id="website-tab-pixel" data-tab="pixel">Pixel</a>
         @endif
-        <button type="button" id="website-tab-business-profile" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-business-profile" tabindex="-1" data-tab="business-profile">Business Profile</button>
-        <button type="button" id="website-tab-forms" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-forms" tabindex="-1" data-tab="forms">Forms</button>
-        <button type="button" id="website-tab-settings" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-settings" tabindex="-1" data-tab="settings">Settings</button>
-    </div>
+        <a href="{{ \App\Support\WebsiteNavigation::routeFor($website, 'business-profile') }}" id="website-tab-business-profile" data-tab="business-profile">Business Profile</a>
+        <a href="{{ \App\Support\WebsiteNavigation::routeFor($website, 'forms') }}" id="website-tab-forms" data-tab="forms">Forms</a>
+        <a href="{{ \App\Support\WebsiteNavigation::routeFor($website, 'settings') }}" id="website-tab-settings" data-tab="settings">Settings</a>
+    </nav>
 
-    <div id="website-panel-health" class="space-y-6" role="tabpanel" aria-labelledby="website-tab-health" data-tab-panel="health">
+    <div id="website-panel-health" class="space-y-6" role="region" aria-labelledby="website-tab-health" data-tab-panel="health" @if ($currentWebsiteSection !== 'health') hidden @endif>
         @php
             $latestReport = $website->healthReports->first();
         @endphp
@@ -134,7 +134,7 @@
     </div>
 
     @if ($canUseSearchConsole)
-    <div id="website-panel-search" class="space-y-6" role="tabpanel" aria-labelledby="website-tab-search" data-tab-panel="search" hidden>
+    <div id="website-panel-search" class="space-y-6" role="region" aria-labelledby="website-tab-search" data-tab-panel="search" @if ($currentWebsiteSection !== 'search') hidden @endif>
         <section class="rounded-lg border bg-white p-4 shadow-sm">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
@@ -189,7 +189,7 @@
     </div>
 
     @else
-    <div id="website-panel-search" class="space-y-6" role="tabpanel" aria-labelledby="website-tab-search" data-tab-panel="search" hidden>
+    <div id="website-panel-search" class="space-y-6" role="region" aria-labelledby="website-tab-search" data-tab-panel="search" @if ($currentWebsiteSection !== 'search') hidden @endif>
         <x-feature-upgrade-banner tier="Essential" title="Connect Google Search Console" description="An active Sitewell plan lets you connect Google Search Console and see clicks, impressions, rankings, and the searches people use to find your website." />
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-label="Search performance preview">
             @foreach (['Clicks and impressions', 'Average position', 'Top customer searches', 'Best-performing pages'] as $feature)
@@ -217,7 +217,7 @@
     ])
 
     @else
-    <div id="website-panel-seo" class="space-y-6" role="tabpanel" aria-labelledby="website-tab-seo" data-tab-panel="seo" hidden>
+    <div id="website-panel-seo" class="space-y-6" role="region" aria-labelledby="website-tab-seo" data-tab-panel="seo" @if ($currentWebsiteSection !== 'seo') hidden @endif>
         <x-feature-upgrade-banner tier="Growth" title="See where your website can grow" description="SEO Intelligence tracks keyword visibility, competitors, backlinks, and prioritised recommendations so you know what to improve next." />
         <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             @foreach ([['Keyword opportunities', 'Find valuable searches where a focused improvement could move your website up.'], ['Competitor visibility', 'Compare the businesses competing for the same searches and customers.'], ['Recommended actions', 'Turn SEO evidence into a practical, prioritised improvement list.']] as [$feature, $description])
@@ -227,7 +227,7 @@
     </div>
     @endif
 
-    <div id="website-panel-content" class="space-y-6" role="tabpanel" aria-labelledby="website-tab-content" data-tab-panel="content" hidden>
+    <div id="website-panel-content" class="space-y-6" role="region" aria-labelledby="website-tab-content" data-tab-panel="content" @if ($currentWebsiteSection !== 'content') hidden @endif>
         @unless ($canUseGrowthFeatures)
             <x-feature-upgrade-banner tier="Growth" title="Plan and request new content" description="Upgrade to Growth to submit content requests, plan improvements, and prepare reviewable website changes." />
         @endunless
@@ -483,7 +483,7 @@
     </div>
 
     @if ($website->wordpress_enabled)
-        <div id="website-panel-wordpress" class="space-y-6" role="tabpanel" aria-labelledby="website-tab-wordpress" data-tab-panel="wordpress" hidden>
+        <div id="website-panel-wordpress" class="space-y-6" role="region" aria-labelledby="website-tab-wordpress" data-tab-panel="wordpress" @if ($currentWebsiteSection !== 'wordpress') hidden @endif>
             @include('admin.websites.partials.wordpress-connection')
         </div>
     @endif
@@ -498,7 +498,7 @@
     @if ($canUseCompleteFeatures)
         @include('admin.websites.partials.business-profile')
     @else
-        <div id="website-panel-business-profile" class="space-y-6" role="tabpanel" aria-labelledby="website-tab-business-profile" data-tab-panel="business-profile" hidden>
+        <div id="website-panel-business-profile" class="space-y-6" role="region" aria-labelledby="website-tab-business-profile" data-tab-panel="business-profile" @if ($currentWebsiteSection !== 'business-profile') hidden @endif>
             <x-feature-upgrade-banner tier="Complete" title="Put your local presence to work" description="Upgrade to Complete for Google Business Profile health checks, recommended changes, generated post drafts, and approval-first review replies." />
             <div class="grid gap-4 md:grid-cols-2">
                 @foreach ([['Profile health checks', 'Spot missing or outdated details and receive practical recommendations.'], ['Google post drafts', 'Keep your profile active with useful, reviewable post ideas.'], ['Review reply assistance', 'Prepare thoughtful responses while keeping every reply under your control.'], ['Advanced automations', 'Keep profile checks and drafts moving without adding another manual routine.']] as [$feature, $description])
@@ -508,7 +508,7 @@
         </div>
     @endif
 
-    <div id="website-panel-settings" class="space-y-6" role="tabpanel" aria-labelledby="website-tab-settings" data-tab-panel="settings" hidden>
+    <div id="website-panel-settings" class="space-y-6" role="region" aria-labelledby="website-tab-settings" data-tab-panel="settings" @if ($currentWebsiteSection !== 'settings') hidden @endif>
         <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm" aria-labelledby="website-settings-title">
             <div class="border-b border-slate-200 p-5 sm:p-6">
                 <p class="font-mono text-sm text-teal-700">Website settings</p>
@@ -729,7 +729,7 @@
         </section>
     </div>
 
-    <div id="website-panel-forms" class="grid gap-6 lg:grid-cols-2" role="tabpanel" aria-labelledby="website-tab-forms" data-tab-panel="forms" hidden>
+    <div id="website-panel-forms" class="grid gap-6 lg:grid-cols-2" role="region" aria-labelledby="website-tab-forms" data-tab-panel="forms" @if ($currentWebsiteSection !== 'forms') hidden @endif>
         <section class="@container rounded-xl border border-slate-950/10 bg-white p-5 lg:col-span-2 sm:p-6" aria-labelledby="form-onboarding-title">
             <h2 id="form-onboarding-title" class="text-xl font-semibold text-slate-950">Connect a website form</h2>
             <p class="mt-1 text-base text-slate-600 sm:text-sm">Use the installation example when adding a new form to this website.</p>

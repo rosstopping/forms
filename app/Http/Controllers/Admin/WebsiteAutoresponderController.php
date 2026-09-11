@@ -42,6 +42,6 @@ class WebsiteAutoresponderController extends Controller
 
         $connection->save();
 
-        return redirect()->route('admin.websites.show', $website)->with('status', 'Automatic reply settings updated.');
+        return redirect()->route('admin.websites.section', [$website, 'forms'])->with('status', 'Automatic reply settings updated.');
     }
 }

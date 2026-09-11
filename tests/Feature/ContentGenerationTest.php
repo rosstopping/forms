@@ -77,7 +77,7 @@ test('website owners can connect Search Console to their website', function () {
         ->post(route('admin.search-console.property.store', $website), [
             'property_url' => 'sc-domain:client.test',
         ])
-        ->assertRedirect(route('admin.websites.show', $website));
+        ->assertRedirect(route('admin.websites.section', [$website, 'search']));
 
     $domain->refresh();
 
@@ -113,7 +113,7 @@ test('Search Console verification never takes a domain from another workspace', 
         ->post(route('admin.search-console.property.store', $website), [
             'property_url' => 'sc-domain:client.test',
         ])
-        ->assertRedirect(route('admin.websites.show', $website));
+        ->assertRedirect(route('admin.websites.section', [$website, 'search']));
 
     expect($pendingDomain->fresh()->ownership_status)->toBe(WebsiteDomain::OWNERSHIP_CONFLICT)
         ->and($pendingDomain->verified_domain)->toBeNull()
@@ -185,7 +185,7 @@ test('disconnecting Search Console leaves content generation enabled', function 
 
     $this->actingAs($admin)
         ->delete(route('admin.search-console.destroy', $website))
-        ->assertRedirect(route('admin.websites.show', $website))
+        ->assertRedirect(route('admin.websites.section', [$website, 'search']))
         ->assertSessionHas('status', 'Google Search Console disconnected.');
 
     expect($website->searchConsoleConnection()->exists())->toBeFalse()
@@ -319,7 +319,7 @@ test('an admin can reconcile a merged content pull request when its webhook was 
 
     $this->actingAs($admin)
         ->post(route('admin.content-generations.sync', [$website, $generation]))
-        ->assertRedirect(route('admin.websites.show', $website))
+        ->assertRedirect(route('admin.websites.section', [$website, 'content']))
         ->assertSessionHas('status', 'GitHub confirmed that the content pull request was merged.');
 
     expect($generation->fresh()->status)->toBe(ContentGeneration::STATUS_COMPLETED)
@@ -340,7 +340,7 @@ test('an admin can cancel a stale open content generation', function () {
 
     $this->actingAs($admin)
         ->delete(route('admin.content-generations.destroy', [$website, $generation]))
-        ->assertRedirect(route('admin.websites.show', $website))
+        ->assertRedirect(route('admin.websites.section', [$website, 'content']))
         ->assertSessionHas('status', 'Content generation cancelled.');
 
     expect($generation->fresh()->status)->toBe(ContentGeneration::STATUS_CANCELLED)

@@ -174,7 +174,7 @@ class SearchConsoleController extends Controller
             ? 'Google Search Console connected and website ownership verified.'
             : 'Google Search Console connected.';
 
-        return Redirect::route('admin.websites.show', $website)->with('status', $status);
+        return Redirect::route('admin.websites.section', [$website, 'search'])->with('status', $status);
     }
 
     public function destroy(Request $request, Website $website): RedirectResponse
@@ -182,7 +182,7 @@ class SearchConsoleController extends Controller
         $this->authorizeWebsite($request, $website);
         $website->searchConsoleConnection()->delete();
 
-        return Redirect::route('admin.websites.show', $website)->with('status', 'Google Search Console disconnected.');
+        return Redirect::route('admin.websites.section', [$website, 'search'])->with('status', 'Google Search Console disconnected.');
     }
 
     protected function authorizeWebsite(Request $request, Website $website): void

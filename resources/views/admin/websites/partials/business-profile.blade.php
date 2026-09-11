@@ -1,4 +1,4 @@
-<div id="website-panel-business-profile" class="space-y-6" role="tabpanel" aria-labelledby="website-tab-business-profile" data-tab-panel="business-profile" hidden>
+<div id="website-panel-business-profile" class="space-y-6" role="region" aria-labelledby="website-tab-business-profile" data-tab-panel="business-profile" @if ($currentWebsiteSection !== 'business-profile') hidden @endif>
     @php($profile = $website->businessProfileConnection)
     @if (! $profile)
         <section class="rounded-lg border border-slate-200 bg-white p-6"><h2 class="text-lg font-semibold text-slate-950">Google Business Profile</h2><p class="mt-2 max-w-2xl text-sm text-slate-600">Connect a managed location for weekly health checks, approval-first changes, generated post drafts, and approval-first review replies.</p>

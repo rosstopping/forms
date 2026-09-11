@@ -299,7 +299,7 @@ it('binds only a repository returned by the selected installation', function ():
             'repository' => $installation->id.':456',
             'project_path' => '/apps/site/',
         ])
-        ->assertRedirect(route('admin.websites.show', $website));
+        ->assertRedirect(route('admin.websites.section', [$website, 'content']));
 
     $repository = $website->repository()->sole();
     expect($repository->full_name)->toBe('acme/marketing')
@@ -510,7 +510,7 @@ it('allows website owners to connect a repository from their GitHub installation
         ->post(route('admin.website-repositories.store', $website), [
             'repository' => $installation->id.':456',
         ])
-        ->assertRedirect(route('admin.websites.show', $website));
+        ->assertRedirect(route('admin.websites.section', [$website, 'content']));
 
     expect($website->repository()->sole()->full_name)->toBe('client/website');
 });
@@ -570,7 +570,7 @@ it('turns a stale installation during repository selection into a reconnect mess
         ->post(route('admin.website-repositories.store', $website), [
             'repository' => $installation->id.':456',
         ])
-        ->assertRedirect(route('admin.websites.show', $website))
+        ->assertRedirect(route('admin.websites.section', [$website, 'content']))
         ->assertSessionHas('error', 'The GitHub installation for old-organisation is no longer available. Reconnect the Sitewell GitHub App and try again.');
 
     expect($installation->fresh()->status)->toBe(GithubInstallation::STATUS_DELETED);

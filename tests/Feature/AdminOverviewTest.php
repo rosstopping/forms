@@ -63,6 +63,14 @@ it('renders an empty admin overview with desktop and mobile navigation', functio
     expect(substr_count($response->getContent(), 'href="'.route('admin.overview').'"'))->toBe(2);
     $document = new DOMDocument;
     @$document->loadHTML($response->getContent());
+    $xpath = new DOMXPath($document);
+    $userMenu = $xpath->query('//aside/*[@data-desktop-user-menu]')->item(0);
+    expect($userMenu)->not->toBeNull();
+    foreach (['fixed', 'bottom-0', 'left-0', 'w-[17rem]'] as $class) {
+        expect(explode(' ', $userMenu->getAttribute('class')))->toContain($class);
+    }
+    expect($xpath->query('.//a', $userMenu)->item(0)->getAttribute('href'))->toBe(route('admin.profile.edit'));
+    expect($xpath->query('.//form', $userMenu)->item(0)->getAttribute('action'))->toBe(route('logout'));
     $navigationLinks = (new DOMXPath($document))->query('//nav/p[normalize-space()="Administration"]/following-sibling::*[1]/self::a | //nav/p[normalize-space()="Administration"]/following-sibling::*[1]/a[1]');
     expect($navigationLinks->length)->toBe(2);
     foreach ($navigationLinks as $link) {

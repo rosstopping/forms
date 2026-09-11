@@ -1,27 +1,32 @@
-<div id="website-panel-seo" class="space-y-6" role="tabpanel" aria-labelledby="website-tab-seo" data-tab-panel="seo" hidden>
-    <div class="space-y-6" data-tabs data-tabs-key="seo-intelligence" data-default-tab="{{ request('seo_section', request()->has('seo_filter') ? 'keywords' : 'overview') }}">
-        <div class="max-w-full overflow-x-auto border-b border-slate-950/10" role="tablist" aria-label="SEO Intelligence sections">
+@php
+    $availableSeoSections = $seoSnapshot ? ['overview', 'targets', 'actions', 'keywords', 'backlinks', 'competitors'] : ['overview', 'targets', 'competitors'];
+    $requestedSeoSection = request('seo_section', request()->has('seo_filter') ? 'keywords' : 'overview');
+    $currentSeoSection = in_array($requestedSeoSection, $availableSeoSections, true) ? $requestedSeoSection : 'overview';
+@endphp
+<div id="website-panel-seo" class="space-y-6" role="region" aria-labelledby="website-tab-seo" data-tab-panel="seo" @if ($currentWebsiteSection !== 'seo') hidden @endif>
+    <div class="space-y-6" data-seo-sections data-tabs-key="seo-intelligence" data-default-tab="{{ request('seo_section', request()->has('seo_filter') ? 'keywords' : 'overview') }}">
+        <div class="max-w-full overflow-x-auto border-b border-slate-950/10" role="navigation" aria-label="SEO Intelligence sections">
             <div class="flex min-w-max gap-1 pb-2">
-                <button type="button" id="seo-section-tab-overview" class="shrink-0 rounded-md px-3 py-2 text-base font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 aria-selected:bg-slate-100 aria-selected:text-slate-950 sm:text-sm" role="tab" aria-selected="true" aria-controls="seo-section-panel-overview" tabindex="0" data-tab="overview">Overview</button>
-                <button type="button" id="seo-section-tab-targets" class="shrink-0 rounded-md px-3 py-2 text-base font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 aria-selected:bg-slate-100 aria-selected:text-slate-950 sm:text-sm" role="tab" aria-selected="false" aria-controls="seo-section-panel-targets" tabindex="-1" data-tab="targets">Target keywords</button>
+                <a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'overview']) }}" id="seo-section-tab-overview" class="shrink-0 rounded-md px-3 py-2 text-base font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 aria-[current=page]:bg-slate-100 aria-[current=page]:text-slate-950 sm:text-sm" @if ($currentSeoSection === 'overview') aria-current="page" @endif data-tab="overview">Overview</a>
+                <a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'targets']) }}" id="seo-section-tab-targets" class="shrink-0 rounded-md px-3 py-2 text-base font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 aria-[current=page]:bg-slate-100 aria-[current=page]:text-slate-950 sm:text-sm" @if ($currentSeoSection === 'targets') aria-current="page" @endif data-tab="targets">Target keywords</a>
                 @if ($seoSnapshot)
-                    <button type="button" id="seo-section-tab-actions" class="shrink-0 rounded-md px-3 py-2 text-base font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 aria-selected:bg-slate-100 aria-selected:text-slate-950 sm:text-sm" role="tab" aria-selected="false" aria-controls="seo-section-panel-actions" tabindex="-1" data-tab="actions">Recommended Actions</button>
-                    <button type="button" id="seo-section-tab-keywords" class="shrink-0 rounded-md px-3 py-2 text-base font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 aria-selected:bg-slate-100 aria-selected:text-slate-950 sm:text-sm" role="tab" aria-selected="false" aria-controls="seo-section-panel-keywords" tabindex="-1" data-tab="keywords">Keywords</button>
-                    <button type="button" id="seo-section-tab-backlinks" class="shrink-0 rounded-md px-3 py-2 text-base font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 aria-selected:bg-slate-100 aria-selected:text-slate-950 sm:text-sm" role="tab" aria-selected="false" aria-controls="seo-section-panel-backlinks" tabindex="-1" data-tab="backlinks">Backlinks</button>
+                    <a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'actions']) }}" id="seo-section-tab-actions" class="shrink-0 rounded-md px-3 py-2 text-base font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 aria-[current=page]:bg-slate-100 aria-[current=page]:text-slate-950 sm:text-sm" @if ($currentSeoSection === 'actions') aria-current="page" @endif data-tab="actions">Recommended Actions</a>
+                    <a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'keywords']) }}" id="seo-section-tab-keywords" class="shrink-0 rounded-md px-3 py-2 text-base font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 aria-[current=page]:bg-slate-100 aria-[current=page]:text-slate-950 sm:text-sm" @if ($currentSeoSection === 'keywords') aria-current="page" @endif data-tab="keywords">Keywords</a>
+                    <a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'backlinks']) }}" id="seo-section-tab-backlinks" class="shrink-0 rounded-md px-3 py-2 text-base font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 aria-[current=page]:bg-slate-100 aria-[current=page]:text-slate-950 sm:text-sm" @if ($currentSeoSection === 'backlinks') aria-current="page" @endif data-tab="backlinks">Backlinks</a>
                 @endif
-                    <button type="button" id="seo-section-tab-competitors" class="shrink-0 rounded-md px-3 py-2 text-base font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 aria-selected:bg-slate-100 aria-selected:text-slate-950 sm:text-sm" role="tab" aria-selected="false" aria-controls="seo-section-panel-competitors" tabindex="-1" data-tab="competitors">Competitors</button>
+                    <a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'competitors']) }}" id="seo-section-tab-competitors" class="shrink-0 rounded-md px-3 py-2 text-base font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 aria-[current=page]:bg-slate-100 aria-[current=page]:text-slate-950 sm:text-sm" @if ($currentSeoSection === 'competitors') aria-current="page" @endif data-tab="competitors">Competitors</a>
             </div>
         </div>
 
-        <div id="seo-section-panel-competitors" role="tabpanel" aria-labelledby="seo-section-tab-competitors" data-tab-panel="competitors" hidden>
+        <div id="seo-section-panel-competitors" role="region" aria-labelledby="seo-section-tab-competitors" data-tab-panel="competitors" @if ($currentSeoSection !== 'competitors') hidden @endif>
             @include('admin.websites.partials.competitors')
         </div>
 
-        <div id="seo-section-panel-targets" role="tabpanel" aria-labelledby="seo-section-tab-targets" data-tab-panel="targets" hidden>
+        <div id="seo-section-panel-targets" role="region" aria-labelledby="seo-section-tab-targets" data-tab-panel="targets" @if ($currentSeoSection !== 'targets') hidden @endif>
             @include('admin.websites.partials.seo-target-keywords')
         </div>
 
-        <div id="seo-section-panel-overview" role="tabpanel" aria-labelledby="seo-section-tab-overview" data-tab-panel="overview">
+        <div id="seo-section-panel-overview" role="region" aria-labelledby="seo-section-tab-overview" data-tab-panel="overview" @if ($currentSeoSection !== 'overview') hidden @endif>
     <section class="overflow-hidden rounded-xl border bg-white shadow-sm" aria-labelledby="seo-intelligence-title">
         <div class="@container border-b border-slate-200 p-4">
         <div class="flex flex-col gap-4 @xl:flex-row @xl:items-start @xl:justify-between">
@@ -141,7 +146,7 @@
         </div>
 
     @if ($seoSnapshot)
-        <div id="seo-section-panel-actions" role="tabpanel" aria-labelledby="seo-section-tab-actions" data-tab-panel="actions" hidden>
+        <div id="seo-section-panel-actions" role="region" aria-labelledby="seo-section-tab-actions" data-tab-panel="actions" @if ($currentSeoSection !== 'actions') hidden @endif>
         <section class="rounded-xl border bg-white shadow-sm" aria-labelledby="seo-opportunities-title">
             <div class="border-b border-slate-950/10 p-4">
                 <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
@@ -237,7 +242,7 @@
         </section>
         </div>
 
-        <div id="seo-section-panel-backlinks" role="tabpanel" aria-labelledby="seo-section-tab-backlinks" data-tab-panel="backlinks" hidden>
+        <div id="seo-section-panel-backlinks" role="region" aria-labelledby="seo-section-tab-backlinks" data-tab-panel="backlinks" @if ($currentSeoSection !== 'backlinks') hidden @endif>
         <section class="rounded-xl border bg-white shadow-sm" aria-labelledby="backlinks-title">
             <div class="border-b border-slate-950/10 p-4">
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -304,7 +309,7 @@
                     <p class="text-base tabular-nums text-slate-500 sm:text-sm">{{ number_format($seoSnapshot->referringDomains()->count()) }} domains stored from this sample</p>
                 </div>
 
-                <form method="GET" action="{{ route('admin.websites.show', $website) }}" class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto]">
+                <form method="GET" action="{{ route('admin.websites.section', [$website, 'seo']) }}" class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto]">
                     <input type="hidden" name="tab" value="seo"><input type="hidden" name="seo_section" value="backlinks">
                     <label><span class="sr-only">Search referring domains</span><input name="backlink_search" value="{{ $backlinkSearch }}" placeholder="Search domains" class="min-h-11 w-full rounded-md border-slate-300 text-sm"></label>
                     <label><span class="sr-only">Filter referring domains by rank</span><select name="backlink_min_rank" class="min-h-11 w-full rounded-md border-slate-300 text-sm"><option value="0" @selected($backlinkMinRank === 0)>All domain ranks</option><option value="40" @selected($backlinkMinRank === 40)>Rank 40+</option><option value="70" @selected($backlinkMinRank === 70)>Rank 70+</option></select></label>
@@ -342,7 +347,7 @@
         </section>
         </div>
 
-        <div id="seo-section-panel-keywords" role="tabpanel" aria-labelledby="seo-section-tab-keywords" data-tab-panel="keywords" hidden>
+        <div id="seo-section-panel-keywords" role="region" aria-labelledby="seo-section-tab-keywords" data-tab-panel="keywords" @if ($currentSeoSection !== 'keywords') hidden @endif>
         <section class="rounded-xl border bg-white shadow-sm" aria-labelledby="ranking-keywords-title">
             <div class="@container border-b border-slate-200 p-4">
             <div class="flex flex-col gap-4 @4xl:flex-row @4xl:items-end @4xl:justify-between">
@@ -350,7 +355,7 @@
                     <h3 id="ranking-keywords-title" class="text-base font-semibold text-slate-950">Ranking keywords</h3>
                     <p class="mt-1 text-sm text-slate-600">Locally stored third-party estimates from this snapshot.</p>
                 </div>
-                <form method="GET" action="{{ route('admin.websites.show', $website) }}" class="grid gap-3 @md:grid-cols-3">
+                <form method="GET" action="{{ route('admin.websites.section', [$website, 'seo']) }}" class="grid gap-3 @md:grid-cols-3">
                     <input type="hidden" name="tab" value="seo">
                     <input type="hidden" name="seo_section" value="keywords">
                     <div>
