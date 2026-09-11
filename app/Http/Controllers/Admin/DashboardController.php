@@ -2,7 +2,11 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\OptimisationStatus;
 use App\Http\Controllers\Controller;
+use App\Models\ContentGeneration;
+use App\Models\Optimisation;
+use App\Models\RemediationRun;
 use App\Models\SearchConsoleMetric;
 use App\Models\Website;
 use App\Models\WebsiteDomain;
@@ -15,6 +19,45 @@ use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
+    public function overview(Request $request, DashboardSchedule $schedule): View
+    {
+        abort_unless($request->user()?->isAdmin(), 403);
+
+        $websites = Website::query()
+            ->accessibleTo($request->user())
+            ->with(['owner', 'latestHealthReport', 'contentPlan.website.owner', 'contentPlan.website.repository', 'contentPlan.creator.githubAuthorization'])
+            ->withCount(['contentRequests as pending_content_requests_count' => fn ($query) => $query->whereNull('picked_up_at')])
+            ->orderBy('name')
+            ->get();
+
+        $optimisations = Optimisation::query()
+            ->whereIn('website_id', $websites->modelKeys())
+            ->whereIn('status', [OptimisationStatus::Draft, OptimisationStatus::PendingApproval])
+            ->with(['website:id,name', 'page:id,website_health_report_id'])
+            ->oldest()->paginate(10, ['*'], 'changes_page');
+
+        $contentReviews = ContentGeneration::query()
+            ->whereHas('plan', fn ($query) => $query->whereIn('website_id', $websites->modelKeys()))
+            ->where('status', ContentGeneration::STATUS_PULL_REQUEST_OPEN)
+            ->with('plan.website:id,name')
+            ->oldest()->paginate(10, ['*'], 'content_page');
+
+        $remediationReviews = RemediationRun::query()
+            ->whereHas('report', fn ($query) => $query->whereIn('website_id', $websites->modelKeys()))
+            ->where('status', RemediationRun::STATUS_PULL_REQUEST_OPEN)
+            ->with('report.website:id,name')
+            ->oldest()->paginate(10, ['*'], 'fixes_page');
+
+        return view('admin.overview', [
+            'websites' => $websites,
+            'automationSchedule' => $schedule->forWebsites($websites->filter(fn (Website $website): bool => $website->is_active && (! $website->owner || $website->owner->hasActiveMembership()))),
+            'optimisations' => $optimisations,
+            'contentReviews' => $contentReviews,
+            'remediationReviews' => $remediationReviews,
+            'approvalCount' => $optimisations->total() + $contentReviews->total() + $remediationReviews->total(),
+        ]);
+    }
+
     public function index(Request $request, DashboardSchedule $schedule): View
     {
         $user = $request->user();

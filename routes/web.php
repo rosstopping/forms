@@ -334,6 +334,7 @@ Route::middleware(['web', 'auth', ResolveCurrentWebsite::class])->prefix('admin'
     Route::resource('form-submissions', AdminFormSubmissionController::class);
     Route::get('onboarding/call', OnboardingCallController::class)->middleware('throttle:30,1')->name('onboarding-call');
     Route::middleware(EnsureAdmin::class)->group(function (): void {
+        Route::get('overview', [DashboardController::class, 'overview'])->name('overview');
         Route::get('onboarding', OnboardingLeadController::class)->name('onboarding.index');
         Route::patch('users/{user}/onboarding-call', UserOnboardingCallController::class)->name('users.onboarding-call.update');
         Route::get('assistant/reports/{websiteAiQuestion}', [WebsiteAiQuestionReportController::class, 'show'])->name('website-ai-question-reports.show');
