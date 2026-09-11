@@ -13,6 +13,7 @@ use App\Models\Website;
 use App\Models\WebsiteDomain;
 use App\Services\ContentQueueOverview;
 use App\Services\DashboardSchedule;
+use App\Services\DashboardWorkActivity;
 use App\Support\WebsiteNavigation;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\Request;
@@ -21,7 +22,7 @@ use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function overview(Request $request, DashboardSchedule $schedule, ContentQueueOverview $contentQueue): View
+    public function overview(Request $request, DashboardSchedule $schedule, ContentQueueOverview $contentQueue, DashboardWorkActivity $workActivity): View
     {
         abort_unless($request->user()?->isAdmin(), 403);
 
@@ -56,6 +57,7 @@ class DashboardController extends Controller
         return view('admin.overview', [
             'websites' => $websites,
             'contentQueue' => $contentQueue->forWebsites($websites),
+            'workActivity' => $workActivity->forWebsites($websites->modelKeys()),
             'automationSchedule' => $schedule->forWebsites($websites->filter(fn (Website $website): bool => $website->is_active && (! $website->owner || $website->owner->hasActiveMembership()))),
             'optimisations' => $optimisations,
             'contentReviews' => $contentReviews,

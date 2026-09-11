@@ -53,6 +53,30 @@
             </div>
         </section>
 
+        <div class="grid gap-6 xl:grid-cols-2">
+            @foreach (['attention' => 'Needs attention', 'completed' => 'Recently completed'] as $kind => $heading)
+                <section class="min-w-0 rounded-xl border border-slate-200 bg-white p-5 sm:p-6" aria-labelledby="work-{{ $kind }}-heading">
+                    <h2 id="work-{{ $kind }}-heading" class="text-xl font-semibold text-slate-950">{{ $heading }}</h2>
+                    <p class="mt-1 text-sm text-slate-600">{{ $kind === 'attention' ? 'Up to 10 recently updated failures or possibly stalled jobs. Running audits are flagged after 15 minutes; content and fixes after two hours.' : 'The latest 10 finished reports, content changes and website fixes.' }}</p>
+                    <div class="mt-5 divide-y divide-slate-100">
+                        @forelse ($workActivity[$kind] as $item)
+                            <div class="space-y-2 py-4 first:pt-0 last:pb-0">
+                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                    <a href="{{ $item['url'] }}" class="font-semibold text-slate-950 hover:text-teal-700">{{ $item['website'] }}</a>
+                                    <span @class(['rounded-full px-2.5 py-1 text-xs font-semibold', 'bg-red-50 text-red-700' => $item['status'] === 'Failed', 'bg-amber-50 text-amber-800' => $item['status'] === 'Possibly stalled', 'bg-teal-50 text-teal-800' => $kind === 'completed'])>{{ $item['status'] }}</span>
+                                </div>
+                                <p class="text-sm text-slate-600">{{ $item['type'] }} · <time datetime="{{ $item['age_at']->toIso8601String() }}" title="{{ $item['age_at']->format('j M Y, H:i').' '.config('app.timezone') }}">{{ $item['age_at']->diffForHumans() }}</time></p>
+                                @if ($kind === 'attention')<p class="line-clamp-3 break-words text-sm text-slate-600">{{ $item['reason'] }}</p>@endif
+                                <a href="{{ $item['url'] }}" class="inline-flex py-1 text-sm font-semibold text-teal-700 hover:text-teal-900">{{ $kind === 'attention' ? 'Investigate' : 'View work' }} →</a>
+                            </div>
+                        @empty
+                            <p class="text-sm text-slate-500">{{ $kind === 'attention' ? 'No failed or stalled work found.' : 'No completed work yet.' }}</p>
+                        @endforelse
+                    </div>
+                </section>
+            @endforeach
+        </div>
+
         <section id="content-queue" class="scroll-mt-20 rounded-xl border border-slate-200 bg-white p-5 sm:p-6" aria-labelledby="content-queue-heading">
             <h2 id="content-queue-heading" class="text-xl font-semibold text-slate-950">Content queue</h2>
             <p class="mt-1 text-sm text-slate-600">Requests awaiting preparation across websites. Sites needing attention appear first. Each run selects eligible work; it may not clear the whole queue.</p>

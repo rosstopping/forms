@@ -76,7 +76,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Services/BacklinkAuditService.php,tests/Feature/BacklinkAuditTest.php | .ai/rules/services-feature.md |
 | app/{Services,Jobs,Http/Controllers/Admin}/**/*SeoProspect*.php, app/{Services,Jobs,Http/Controllers/Admin}/**/*Competitor*.php | .ai/rules/services-jobs-http-controllers-admin.md |
 | app/{Services,Jobs,Http/Controllers}/**/*Content*.php | .ai/rules/services-jobs-http-controllers.md |
-| app/Services/ContentQueueOverview.php,resources/views/admin/overview.blade.php | .ai/rules/services-views-admin.md |
+| app/Services/ContentQueueOverview.php,resources/views/admin/overview.blade.php, app/Services/DashboardWorkActivity.php,resources/views/admin/overview.blade.php | .ai/rules/services-views-admin.md |
 | app/Services/WebsiteCrawler.php, app/Services/Pixel*.php, app/Services/{SitemapFetcher,ProspectWebsiteAnalyzer,WebsiteHealthAuditor}.php | .ai/rules/services.md |
 | {app/Services/WordPressStaticReleaseBuilder.php,app/Http/Controllers/WordPress*Release*Controller.php,wordpress-plugin/sitewell-by-digizu/**} | .ai/rules/sitewell-by-digizu.md |
 | {app/Models/User.php,app/Http/Controllers/Admin/UserImpersonationController.php,resources/views/{admin/users/index.blade.php,layouts/app.blade.php},routes/web.php,tests/Feature/UserImpersonationTest.php} | .ai/rules/users-feature.md |
