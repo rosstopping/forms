@@ -11,6 +11,7 @@ use App\Models\Website;
 use App\Models\WebsiteHealthReport;
 use App\Models\WebsiteHealthReportPage;
 use App\Models\WebsiteRepository;
+use App\Support\WebsiteNavigation;
 use Illuminate\Support\Facades\Http;
 
 it('shows cross-site schedules and pending reviews without changing the selected website', function (): void {
@@ -59,6 +60,16 @@ it('renders an empty admin overview with desktop and mobile navigation', functio
         ->assertViewHas('approvalCount', 0);
 
     expect(substr_count($response->getContent(), 'href="'.route('admin.overview').'"'))->toBe(2);
+    $document = new DOMDocument;
+    @$document->loadHTML($response->getContent());
+    $navigationLinks = (new DOMXPath($document))->query('//nav/p[normalize-space()="Administration"]/following-sibling::*[1]/self::a | //nav/p[normalize-space()="Administration"]/following-sibling::*[1]/a[1]');
+    expect($navigationLinks->length)->toBe(2);
+    foreach ($navigationLinks as $link) {
+        expect($link->getAttribute('href'))->toBe(route('admin.overview'))
+            ->and(trim($link->textContent))->toBe('Dashboard')
+            ->and($link->getElementsByTagName('svg')->length)->toBe(1);
+    }
+
 });
 
 it('orders eligible health and content runs and excludes inactive or expired websites', function (): void {
@@ -79,4 +90,31 @@ it('orders eligible health and content runs and excludes inactive or expired web
                 && $items->every(fn ($item): bool => $item['website']->is($website))
                 && $items->first()['next_run_at']->lessThan($items->last()['next_run_at']);
         });
+});
+
+it('groups website sections directly beneath Overview in both navigation menus', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $website = Website::factory()->create();
+    $response = $this->actingAs($admin)->get(route('admin.overview'))->assertSuccessful();
+    $document = new DOMDocument;
+    @$document->loadHTML($response->getContent());
+    $xpath = new DOMXPath($document);
+    $headings = $xpath->query('//*[@data-website-navigation-heading]');
+    expect($headings->length)->toBe(2);
+    foreach ($headings as $heading) {
+        expect(trim($heading->textContent))->toBe($website->name);
+    }
+    $groups = $xpath->query('//*[@data-website-navigation]');
+    expect($groups->length)->toBe(2);
+
+    foreach ($groups as $group) {
+        $overview = $xpath->query('preceding-sibling::*[1]', $group)->item(0);
+        expect($overview->getAttribute('href'))->toBe(route('admin.dashboard'));
+        $links = $xpath->query('.//a', $group);
+        $urls = array_map(fn ($link): string => $link->getAttribute('href'), iterator_to_array($links));
+        foreach (['health', 'search', 'seo', 'content', 'forms', 'business-profile', 'settings'] as $section) {
+            expect($urls)->toContain(WebsiteNavigation::routeFor($website, $section));
+        }
+        expect($urls)->not->toContain(route('admin.users.index'), route('admin.prospects.index'));
+    }
 });

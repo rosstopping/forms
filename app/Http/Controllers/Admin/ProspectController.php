@@ -76,8 +76,13 @@ class ProspectController extends Controller
             ->when($request->filled('search'), fn ($query) => $query->matchingSearchTerms($request->string('search')->toString()));
         $matchingProspectsCount = (clone $query)->count();
         $prospects = $query
+            ->select([
+                'id', 'business_name', 'contact_name', 'email', 'website_url',
+                'status', 'lead_temperature', 'scheduled_send_at',
+                'opportunity_score', 'analysis_status', 'created_at',
+            ])
             ->orderByRaw("case lead_temperature when 'hot' then 1 when 'warm' then 2 else 3 end")
-            ->latest()->paginate(20)->withQueryString();
+            ->latest()->orderByDesc('id')->paginate(20)->withQueryString();
 
         return view('admin.prospects.index', array_merge(
             compact('activeTab', 'prospects', 'summary', 'temperatureSummary', 'matchingProspectsCount', 'hotVideoProspects', 'hotVideoProspectsCount', 'manualFollowUpProspects', 'manualFollowUpProspectsCount'),

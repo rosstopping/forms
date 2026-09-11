@@ -38,25 +38,33 @@
                 </a>
 
                 <nav class="mt-10" aria-label="Main navigation">
-                    <p class="px-3 text-xs font-medium uppercase tracking-widest text-slate-500">Workspace</p>
+                    <p class="truncate px-3 text-xs font-medium uppercase tracking-widest text-slate-500" data-website-navigation-heading title="{{ $currentWebsite?->name }}">{{ $currentWebsite?->name ?? 'Your website' }}</p>
                     <div class="mt-2 space-y-1">
                         <a href="{{ route('admin.dashboard') }}" @class(['flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium', 'bg-white/10 text-white' => request()->routeIs('admin.dashboard'), 'text-slate-400 hover:bg-white/5 hover:text-white' => ! request()->routeIs('admin.dashboard')])>
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="size-5 shrink-0" aria-hidden="true"><path d="M4 13h6V4H4v9Zm0 7h6v-4H4v4Zm10 0h6v-9h-6v9Zm0-16v4h6V4h-6Z" stroke-linejoin="round"/></svg>
                             Overview
                         </a>
-                        @if (Auth::user()?->isAdmin())
-                            <a href="{{ route('admin.onboarding.index') }}" @class(['flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium', 'bg-white/10 text-white' => request()->routeIs('admin.onboarding.*'), 'text-slate-400 hover:bg-white/5 hover:text-white' => ! request()->routeIs('admin.onboarding.*')])>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="size-5 shrink-0" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm8-1 2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                                Onboarding
-                            </a>
-                            <a href="{{ route('admin.websites.index') }}" @class(['flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium', 'bg-white/10 text-white' => request()->routeIs('admin.websites.index', 'admin.websites.create'), 'text-slate-400 hover:bg-white/5 hover:text-white' => ! request()->routeIs('admin.websites.index', 'admin.websites.create')])>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="size-5 shrink-0" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg>
-                                Websites
-                            </a>
-                            <a href="{{ route('admin.website-builder.create') }}" @class(['flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium', 'bg-white/10 text-white' => request()->routeIs('admin.website-builder.*'), 'text-slate-400 hover:bg-white/5 hover:text-white' => ! request()->routeIs('admin.website-builder.*')])>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="size-5 shrink-0" aria-hidden="true"><path d="M12 3v18M3 12h18" stroke-linecap="round"/><path d="M5 5h14v14H5z" opacity=".35"/></svg>
-                                Website builder
-                            </a>
+                        @if ($currentWebsite)
+                            @php($isWebsiteWorkspace = request()->route('website') instanceof \App\Models\Website || request()->routeIs('admin.forms.*'))
+                            <div class="ml-5 space-y-1 border-l border-white/10 pl-3" data-website-navigation>
+                                @foreach ([
+                                    'health' => 'Website health',
+                                    'search' => 'Search performance',
+                                    'seo' => 'SEO Intelligence',
+                                    'content' => 'Content',
+                                    'forms' => 'Forms',
+                                ] as $section => $label)
+                                    <a href="{{ \App\Support\WebsiteNavigation::routeFor($currentWebsite, $section) }}" @class(['flex rounded-lg px-3 py-2 text-sm font-medium', 'bg-white/10 text-white' => $isWebsiteWorkspace && $currentWebsiteSection === $section, 'text-slate-400 hover:bg-white/5 hover:text-white' => ! ($isWebsiteWorkspace && $currentWebsiteSection === $section)])>{{ $label }}</a>
+                                @endforeach
+                                @if ($currentWebsite->wordpress_enabled)
+                                    <a href="{{ \App\Support\WebsiteNavigation::routeFor($currentWebsite, 'wordpress') }}" @class(['flex rounded-lg px-3 py-2 text-sm font-medium', 'bg-white/10 text-white' => $isWebsiteWorkspace && $currentWebsiteSection === 'wordpress', 'text-slate-400 hover:bg-white/5 hover:text-white' => ! ($isWebsiteWorkspace && $currentWebsiteSection === 'wordpress')])>WordPress</a>
+                                @endif
+                                @if (config('forms.pixel_ui_enabled') && $currentWebsite->pixel_enabled && (Auth::user()?->isAdmin() || $currentWebsite->owner?->hasMembershipFeature(\App\Support\MembershipPlan::FEATURE_GROWTH)))
+                                    <a href="{{ \App\Support\WebsiteNavigation::routeFor($currentWebsite, 'pixel') }}" @class(['flex rounded-lg px-3 py-2 text-sm font-medium', 'bg-white/10 text-white' => $isWebsiteWorkspace && $currentWebsiteSection === 'pixel', 'text-slate-400 hover:bg-white/5 hover:text-white' => ! ($isWebsiteWorkspace && $currentWebsiteSection === 'pixel')])>Pixel</a>
+                                @endif
+                                <a href="{{ \App\Support\WebsiteNavigation::routeFor($currentWebsite, 'business-profile') }}" @class(['flex rounded-lg px-3 py-2 text-sm font-medium', 'bg-white/10 text-white' => $isWebsiteWorkspace && $currentWebsiteSection === 'business-profile', 'text-slate-400 hover:bg-white/5 hover:text-white' => ! ($isWebsiteWorkspace && $currentWebsiteSection === 'business-profile')])>Business Profile</a>
+                                <a href="{{ \App\Support\WebsiteNavigation::routeFor($currentWebsite, 'settings') }}" @class(['flex rounded-lg px-3 py-2 text-sm font-medium', 'bg-white/10 text-white' => $isWebsiteWorkspace && $currentWebsiteSection === 'settings', 'text-slate-400 hover:bg-white/5 hover:text-white' => ! ($isWebsiteWorkspace && $currentWebsiteSection === 'settings')])>Settings</a>
+                            </div>
                         @endif
                         @if ($currentWebsite)
                         <a href="{{ route('admin.form-submissions.index') }}" @class(['flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium', 'bg-white/10 text-white' => request()->routeIs('admin.form-submissions.*'), 'text-slate-400 hover:bg-white/5 hover:text-white' => ! request()->routeIs('admin.form-submissions.*')])>
@@ -74,42 +82,28 @@
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="size-5 shrink-0" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18M7 15h3" stroke-linecap="round"/></svg>
                             Billing
                         </a>
-                        @if (Auth::user()?->isAdmin())
+                    </div>
+
+                    @if (Auth::user()?->isAdmin())
+                        <p class="mt-8 px-3 text-xs font-medium uppercase tracking-widest text-slate-500">Administration</p>
+                        <div class="mt-2 space-y-1">
+                            <a href="{{ route('admin.overview') }}" @class(['flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium', 'bg-white/10 text-white' => request()->routeIs('admin.overview'), 'text-slate-400 hover:bg-white/5 hover:text-white' => ! request()->routeIs('admin.overview')])><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="size-5 shrink-0" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Dashboard</span></a>
+                            <a href="{{ route('admin.onboarding.index') }}" @class(['flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium', 'bg-white/10 text-white' => request()->routeIs('admin.onboarding.*'), 'text-slate-400 hover:bg-white/5 hover:text-white' => ! request()->routeIs('admin.onboarding.*')])>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="size-5 shrink-0" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm8-1 2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                Onboarding
+                            </a>
+                            <a href="{{ route('admin.websites.index') }}" @class(['flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium', 'bg-white/10 text-white' => request()->routeIs('admin.websites.index', 'admin.websites.create'), 'text-slate-400 hover:bg-white/5 hover:text-white' => ! request()->routeIs('admin.websites.index', 'admin.websites.create')])>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="size-5 shrink-0" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg>
+                                Websites
+                            </a>
+                            <a href="{{ route('admin.website-builder.create') }}" @class(['flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium', 'bg-white/10 text-white' => request()->routeIs('admin.website-builder.*'), 'text-slate-400 hover:bg-white/5 hover:text-white' => ! request()->routeIs('admin.website-builder.*')])>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="size-5 shrink-0" aria-hidden="true"><path d="M12 3v18M3 12h18" stroke-linecap="round"/><path d="M5 5h14v14H5z" opacity=".35"/></svg>
+                                Website builder
+                            </a>
                             <a href="{{ route('admin.prospects.index') }}" @class(['flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium', 'bg-white/10 text-white' => request()->routeIs('admin.prospects.*'), 'text-slate-400 hover:bg-white/5 hover:text-white' => ! request()->routeIs('admin.prospects.*')])>
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="size-5 shrink-0" aria-hidden="true"><path d="M4 19V9m6 10V5m6 14v-7m4 7H2" stroke-linecap="round"/><path d="m4 7 6-4 6 7-4 3" stroke-linecap="round" stroke-linejoin="round"/></svg>
                                 Outreach
                             </a>
-                        @endif
-                    </div>
-
-                    @if ($currentWebsite)
-                        @php($isWebsiteWorkspace = request()->route('website') instanceof \App\Models\Website || request()->routeIs('admin.forms.*'))
-                        <p class="mt-8 truncate px-3 text-xs font-medium uppercase tracking-widest text-slate-500" title="{{ $currentWebsite->name }}">{{ $currentWebsite->name }}</p>
-                        <div class="mt-2 space-y-1">
-                            @foreach ([
-                                'health' => 'Website health',
-                                'search' => 'Search performance',
-                                'seo' => 'SEO Intelligence',
-                                'content' => 'Content',
-                                'forms' => 'Forms',
-                            ] as $section => $label)
-                                <a href="{{ \App\Support\WebsiteNavigation::routeFor($currentWebsite, $section) }}" @class(['flex rounded-lg px-3 py-2 text-sm font-medium', 'bg-white/10 text-white' => $isWebsiteWorkspace && $currentWebsiteSection === $section, 'text-slate-400 hover:bg-white/5 hover:text-white' => ! ($isWebsiteWorkspace && $currentWebsiteSection === $section)])>{{ $label }}</a>
-                            @endforeach
-                            @if ($currentWebsite->wordpress_enabled)
-                                <a href="{{ \App\Support\WebsiteNavigation::routeFor($currentWebsite, 'wordpress') }}" @class(['flex rounded-lg px-3 py-2 text-sm font-medium', 'bg-white/10 text-white' => $isWebsiteWorkspace && $currentWebsiteSection === 'wordpress', 'text-slate-400 hover:bg-white/5 hover:text-white' => ! ($isWebsiteWorkspace && $currentWebsiteSection === 'wordpress')])>WordPress</a>
-                            @endif
-                            @if (config('forms.pixel_ui_enabled') && $currentWebsite->pixel_enabled && (Auth::user()?->isAdmin() || $currentWebsite->owner?->hasMembershipFeature(\App\Support\MembershipPlan::FEATURE_GROWTH)))
-                                <a href="{{ \App\Support\WebsiteNavigation::routeFor($currentWebsite, 'pixel') }}" @class(['flex rounded-lg px-3 py-2 text-sm font-medium', 'bg-white/10 text-white' => $isWebsiteWorkspace && $currentWebsiteSection === 'pixel', 'text-slate-400 hover:bg-white/5 hover:text-white' => ! ($isWebsiteWorkspace && $currentWebsiteSection === 'pixel')])>Pixel</a>
-                            @endif
-                            <a href="{{ \App\Support\WebsiteNavigation::routeFor($currentWebsite, 'business-profile') }}" @class(['flex rounded-lg px-3 py-2 text-sm font-medium', 'bg-white/10 text-white' => $isWebsiteWorkspace && $currentWebsiteSection === 'business-profile', 'text-slate-400 hover:bg-white/5 hover:text-white' => ! ($isWebsiteWorkspace && $currentWebsiteSection === 'business-profile')])>Business Profile</a>
-                            <a href="{{ \App\Support\WebsiteNavigation::routeFor($currentWebsite, 'settings') }}" @class(['flex rounded-lg px-3 py-2 text-sm font-medium', 'bg-white/10 text-white' => $isWebsiteWorkspace && $currentWebsiteSection === 'settings', 'text-slate-400 hover:bg-white/5 hover:text-white' => ! ($isWebsiteWorkspace && $currentWebsiteSection === 'settings')])>Settings</a>
-                        </div>
-                    @endif
-
-                    @if (Auth::user()?->isAdmin())
-                        <p class="mt-8 px-3 text-xs font-medium uppercase tracking-widest text-slate-500">Administration</p>
-                        <div class="mt-2">
-                            <a href="{{ route('admin.overview') }}" @class(['flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium', 'bg-white/10 text-white' => request()->routeIs('admin.overview'), 'text-slate-400 hover:bg-white/5 hover:text-white' => ! request()->routeIs('admin.overview')])>Admin overview</a>
                             <a href="{{ route('admin.users.index') }}" @class(['flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium', 'bg-white/10 text-white' => request()->routeIs('admin.users.*'), 'text-slate-400 hover:bg-white/5 hover:text-white' => ! request()->routeIs('admin.users.*')])>
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="size-5 shrink-0" aria-hidden="true"><path d="M16 20v-1.5a4.5 4.5 0 0 0-4.5-4.5h-4A4.5 4.5 0 0 0 3 18.5V20M9.5 10a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM17 11a3 3 0 0 0 0-6M16 14a4 4 0 0 1 5 4v2" stroke-linecap="round"/></svg>
                                 Users
@@ -174,8 +168,10 @@
                             <button type="button" class="relative rounded-lg p-2 text-slate-400 hover:bg-white/5 hover:text-white" aria-label="Close navigation" data-mobile-nav-close><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="size-6" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" stroke-linecap="round"/></svg><span class="absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2" aria-hidden="true"></span></button>
                         </div>
                         <nav class="mt-8 space-y-2" aria-label="Mobile navigation">
+                            <p class="truncate px-3 text-xs font-medium uppercase tracking-widest text-slate-500" data-website-navigation-heading title="{{ $currentWebsite?->name }}">{{ $currentWebsite?->name ?? 'Your website' }}</p>
                             <a href="{{ route('admin.dashboard') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Overview</a>
                             @if ($currentWebsite)
+                                <div class="ml-5 space-y-1 border-l border-white/10 pl-3" data-website-navigation>
                                 @foreach ([
                                     'health' => 'Website health',
                                     'search' => 'Search performance',
@@ -193,13 +189,14 @@
                                 @endif
                                 <a href="{{ \App\Support\WebsiteNavigation::routeFor($currentWebsite, 'business-profile') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Business Profile</a>
                                 <a href="{{ \App\Support\WebsiteNavigation::routeFor($currentWebsite, 'settings') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Settings</a>
+                                </div>
                             @endif
                             @if ($currentWebsite)
                                 <a href="{{ route('admin.form-submissions.index') }}" class="flex items-center justify-between gap-3 rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5"><span>Leads</span><span class="flex gap-1">@if ($newLeadCount > 0)<span data-new-leads-count class="min-w-7 rounded-full bg-teal-400 px-2 py-0.5 text-center text-xs font-semibold tabular-nums text-slate-950" aria-label="{{ $newLeadCount }} new leads">{{ $newLeadCount > 99 ? '99+' : $newLeadCount }}</span>@endif @if ($followUpReminderCount > 0)<span class="min-w-7 rounded-full bg-amber-300 px-2 py-0.5 text-center text-xs font-semibold tabular-nums text-slate-950" aria-label="{{ $followUpReminderCount }} lead follow-ups due">{{ $followUpReminderCount > 99 ? '99+' : $followUpReminderCount }}</span>@endif</span></a>
                             @endif
                             <a href="{{ route('admin.billing.index') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Billing</a>
                             <a href="{{ route('admin.profile.edit') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Profile</a>
-                            @if (Auth::user()?->isAdmin())<a href="{{ route('admin.overview') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Admin overview</a><a href="{{ route('admin.onboarding.index') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Onboarding</a><a href="{{ route('admin.websites.index') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Websites</a><a href="{{ route('admin.website-builder.create') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Website builder</a><a href="{{ route('admin.prospects.index') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Outreach</a><a href="{{ route('admin.users.index') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Users</a>@endif
+                            @if (Auth::user()?->isAdmin())<p class="mt-8 px-3 text-xs font-medium uppercase tracking-widest text-slate-500">Administration</p><a href="{{ route('admin.overview') }}" class="flex items-center gap-3 rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="size-5 shrink-0" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Dashboard</span></a><a href="{{ route('admin.onboarding.index') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Onboarding</a><a href="{{ route('admin.websites.index') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Websites</a><a href="{{ route('admin.website-builder.create') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Website builder</a><a href="{{ route('admin.prospects.index') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Outreach</a><a href="{{ route('admin.users.index') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Users</a>@endif
                         </nav>
                         <form method="POST" action="{{ route('logout') }}" class="mt-auto border-t border-white/10 pt-4">
                             @csrf

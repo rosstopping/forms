@@ -107,3 +107,27 @@ it('explains lifecycle controls and places website opportunities last in a colla
         ->assertSee('<details class="group', false)
         ->assertSeeInOrder(['Activity timeline', 'Website opportunities']);
 });
+
+it('paginates prospect summaries without sorting research payloads', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $prospects = Prospect::factory()->count(21)->for($admin, 'owner')->create([
+        'created_at' => now()->startOfSecond(),
+        'findings' => ['evidence' => str_repeat('Research evidence ', 20000)],
+        'outreach_body' => str_repeat('Draft email ', 20000),
+    ]);
+    Prospect::factory()->for($admin, 'owner')->create(['lead_temperature' => 'hot']);
+    $expectedIds = $prospects->sortByDesc('id')->modelKeys();
+
+    $this->actingAs($admin)->get(route('admin.prospects.index'))
+        ->assertSuccessful()
+        ->assertViewHas('prospects', function ($page) use ($expectedIds): bool {
+            return $page->total() === 21
+                && $page->getCollection()->modelKeys() === array_slice($expectedIds, 0, 20)
+                && ! array_key_exists('findings', $page->first()->getAttributes())
+                && ! array_key_exists('outreach_body', $page->first()->getAttributes());
+        });
+
+    $this->get(route('admin.prospects.index', ['page' => 2]))
+        ->assertSuccessful()
+        ->assertViewHas('prospects', fn ($page): bool => $page->getCollection()->modelKeys() === array_slice($expectedIds, 20));
+});
