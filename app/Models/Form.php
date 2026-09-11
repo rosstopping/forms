@@ -35,6 +35,8 @@ class Form extends Model
     ];
 
     protected $casts = [
+        'setup_check_results' => 'array',
+        'setup_checked_at' => 'datetime',
         'is_active' => 'boolean',
         'auto_discovered' => 'boolean',
         'email_enabled_override' => 'boolean',

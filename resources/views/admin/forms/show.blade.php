@@ -20,7 +20,48 @@
         </dl>
     </section>
 
-    <form method="POST" action="{{ route('admin.forms.update', $form) }}" class="rounded-xl border border-slate-950/10 bg-white p-5 sm:p-6">
+    <section class="rounded-xl border border-slate-950/10 bg-white p-5 sm:p-6" aria-labelledby="form-setup-title">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+                <h2 id="form-setup-title" class="font-semibold text-slate-950">Form setup check</h2>
+                <p class="mt-1 text-sm text-slate-600">Check saved configuration without creating a lead or sending email or webhooks. This does not test the live form or prove delivery.</p>
+                <p class="mt-2 text-xs text-slate-500">Last checked: @if ($form->setup_checked_at)<time datetime="{{ $form->setup_checked_at->toIso8601String() }}">{{ $form->setup_checked_at->format('j M Y, H:i') }} {{ config('app.timezone') }}</time>. Run again after changing settings.@else Never.@endif</p>
+            </div>
+            @if ($form->website->isManageableBy(Auth::user()))
+                <form method="POST" action="{{ route('admin.forms.setup-check', $form) }}" class="shrink-0">
+                    @csrf
+                    <button type="submit" class="rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-800">Check form setup</button>
+                </form>
+            @endif
+        </div>
+        @if ($form->setup_check_results)
+            @php
+                $needsAttention = collect($form->setup_check_results)->contains('status', 'needs_attention');
+            @endphp
+            <p @class(['mt-4 font-semibold', 'text-amber-800' => $needsAttention, 'text-teal-800' => ! $needsAttention])>{{ $needsAttention ? 'Needs attention' : 'Configuration checks passed' }}</p>
+            <div class="mt-3 divide-y divide-slate-100">
+                @foreach ($form->setup_check_results as $check)
+                    <div class="flex flex-col gap-2 py-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div class="min-w-0"><p class="text-sm font-medium text-slate-900">{{ $check['label'] }}</p><p class="mt-1 text-sm text-slate-600">{{ $check['message'] }}</p>
+                            @if ($check['status'] === 'needs_attention')
+                                @php
+                                    $checkUrl = match ($check['action']) {
+                                        'settings', 'search' => \App\Support\WebsiteNavigation::routeFor($form->website, $check['action']),
+                                        'support' => route('marketing.contact'),
+                                        default => '#form-settings',
+                                    };
+                                @endphp
+                                <a href="{{ $checkUrl }}" class="mt-2 inline-flex text-sm font-semibold text-teal-700 hover:text-teal-900">{{ $check['action'] === 'support' ? 'Contact support' : 'Review settings' }} →</a>
+                            @endif
+                        </div>
+                        <span @class(['shrink-0 text-xs font-semibold', 'text-amber-800' => $check['status'] === 'needs_attention', 'text-teal-800' => $check['status'] === 'passed'])>{{ $check['status'] === 'passed' ? 'Passed' : 'Needs attention' }}</span>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+    </section>
+
+    <form id="form-settings" method="POST" action="{{ route('admin.forms.update', $form) }}" class="rounded-xl border border-slate-950/10 bg-white p-5 sm:p-6">
         @csrf
         @method('PUT')
         @if (! $canUseAutoresponders)<input type="hidden" name="autoresponder_mode" value="inherit">@endif

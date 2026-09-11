@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DeployPageOptimisationsController;
 use App\Http\Controllers\Admin\DeployReportOptimisationsController;
 use App\Http\Controllers\Admin\FormController;
+use App\Http\Controllers\Admin\FormSetupCheckController;
 use App\Http\Controllers\Admin\FormSubmissionController as AdminFormSubmissionController;
 use App\Http\Controllers\Admin\FormSubmissionReviewInvitationController;
 use App\Http\Controllers\Admin\GeneratePageOptimisationsController;
@@ -326,6 +327,7 @@ Route::middleware(['web', 'auth', ResolveCurrentWebsite::class])->prefix('admin'
     Route::post('websites/{website}/content-requests', [ContentRequestController::class, 'store'])->middleware('membership:growth')->name('content-requests.store');
     Route::post('websites/{website}/content-requests/{contentRequest}/bump', [ContentRequestController::class, 'bump'])->middleware('membership:growth')->name('content-requests.bump');
     Route::delete('websites/{website}/content-requests/{contentRequest}', [ContentRequestController::class, 'destroy'])->middleware('membership:growth')->name('content-requests.destroy');
+    Route::post('forms/{form}/setup-check', FormSetupCheckController::class)->middleware('throttle:10,1')->name('forms.setup-check');
     Route::resource('forms', FormController::class);
     Route::patch('form-submissions/bulk', BulkFormSubmissionController::class)->name('form-submissions.bulk');
     Route::post('form-submissions/{formSubmission}/resend-notification', [AdminFormSubmissionController::class, 'resendNotification'])->middleware('throttle:5,1')->name('form-submissions.resend-notification');
