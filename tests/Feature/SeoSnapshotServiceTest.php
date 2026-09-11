@@ -24,6 +24,7 @@ beforeEach(function (): void {
 test('it persists domain metrics and ranked keywords as a historical snapshot', function (): void {
     $website = Website::factory()->create();
     $website->domains()->create(['domain' => 'offline-example.com', 'is_primary' => true]);
+    $selection = $website->competitors()->create(['domain' => 'competitor-one.example', 'excluded' => true]);
     Http::fake(function (Request $request) {
         if (str_contains($request->url(), 'domain_rank_overview')) {
             return Http::response(dataForSEOTaskResponse(domainOverviewResult(), 0.0101, 'overview-task'));
@@ -72,6 +73,7 @@ test('it persists domain metrics and ranked keywords as a historical snapshot', 
         ->and($snapshot->apiUsages()->sum('cost'))->toEqual(0.0628)
         ->and($snapshot->apiUsages()->pluck('provider_task_id')->all())->toBe(['overview-task', 'keywords-task', 'backlinks-task', 'referring-domains-task', 'competitors-task']);
 
+    expect($selection->fresh()->excluded)->toBeTrue()->and($website->competitors()->count())->toBe(2);
     Http::assertSentCount(6);
 });
 

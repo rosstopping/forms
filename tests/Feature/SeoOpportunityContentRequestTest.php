@@ -72,7 +72,7 @@ test('removing an unprocessed content todo reopens its seo recommendation', func
 
     $this->actingAs($owner)
         ->delete(route('admin.content-requests.destroy', [$website, $contentRequest]))
-        ->assertRedirect(route('admin.websites.show', $website));
+        ->assertRedirect(route('admin.websites.section', [$website, 'content']));
 
     expect($opportunity->fresh()->status)->toBe(SeoOpportunity::STATUS_OPEN)
         ->and($opportunity->fresh()->content_request_id)->toBeNull();

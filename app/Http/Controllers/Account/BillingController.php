@@ -32,11 +32,10 @@ class BillingController extends Controller
             return $this->portal($request, $stripe);
         }
 
-        $plan = MembershipPlan::find($data['tier']);
-        $priceId = (string) ($plan['stripe_price_id'] ?? '');
+        $priceId = MembershipPlan::checkoutPriceId($data['tier']);
 
         if ($priceId === '') {
-            return Redirect::back()->with('error', 'The Stripe price for this package has not been configured.');
+            return Redirect::back()->with('error', 'The Stripe price for this package or offer has not been configured.');
         }
 
         $session = $stripe->createCheckoutSession(

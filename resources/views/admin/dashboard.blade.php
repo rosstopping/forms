@@ -1,98 +1,208 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="space-y-6">
-    <header class="relative overflow-hidden rounded-2xl bg-slate-950 p-6 text-white shadow-xl shadow-slate-950/10 sm:p-8">
-        <div class="absolute -top-24 right-0 size-64 rounded-full bg-teal-400/15 blur-3xl" aria-hidden="true"></div>
-        <div class="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-                <p class="font-mono text-xs font-medium uppercase tracking-widest text-teal-300">Workspace overview</p>
-                <h1 class="mt-2 text-white">What needs attention next</h1>
-                <p class="mt-2 max-w-2xl text-base text-slate-300 sm:text-sm">See website health, active work, and the next scheduled audits and content runs in one place.</p>
+@if (! $website)
+    <section class="mx-auto max-w-2xl rounded-xl border border-slate-200 bg-white p-8 text-center">
+        <h1 class="text-2xl font-semibold text-slate-950">Welcome to Sitewell</h1>
+        <p class="mt-2 text-base text-slate-600 sm:text-sm">Add a website to start monitoring its health and planning improvements.</p>
+        @if (Auth::user()?->isAdmin())
+            <a href="{{ route('admin.websites.create') }}" class="mt-6 inline-flex items-center justify-center rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600">Add a website</a>
+        @endif
+    </section>
+@else
+    @php
+        $status = $report?->overall_status ?: $report?->status;
+        $statusLabel = $report ? ucfirst(str_replace('_', ' ', $status)) : 'Not checked yet';
+        $primaryDomain = $website->domains->firstWhere('is_primary', true)?->domain ?: $website->domains->first()?->domain;
+        $newIssues = (int) data_get($report?->metrics, 'changes.new_issues', 0);
+        $resolvedIssues = (int) data_get($report?->metrics, 'changes.resolved_issues', 0);
+    @endphp
+
+    <div class="space-y-6">
+        <header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div class="min-w-0">
+                <p class="font-mono text-xs text-teal-700">Website overview</p>
+                <h1 class="mt-1 truncate text-2xl font-semibold text-slate-950 sm:text-3xl">{{ $website->name }}</h1>
+                <p class="mt-2 text-base text-slate-600 sm:text-sm">Your latest website health, content work, and connected services in one place.</p>
             </div>
-            <a href="{{ route('admin.websites.index') }}" class="inline-flex shrink-0 items-center justify-center rounded-lg bg-teal-400 px-3 py-2 text-sm font-medium text-slate-950 hover:bg-teal-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-400">View websites</a>
-        </div>
-    </header>
+            @if ($primaryDomain)
+                <a href="{{ str_starts_with($primaryDomain, 'http') ? $primaryDomain : 'https://'.$primaryDomain }}" target="_blank" rel="noreferrer" class="inline-flex shrink-0 items-center gap-2 text-sm font-medium text-slate-600 hover:text-teal-700">Visit website <span aria-hidden="true">↗</span></a>
+            @endif
+        </header>
 
-    <div class="@container">
-        <dl class="grid grid-cols-2 gap-3 @2xl:grid-cols-4">
-            <div class="rounded-xl border border-slate-200 bg-white p-5"><dt class="truncate text-sm font-medium text-slate-500">Websites</dt><dd class="mt-3 text-3xl font-semibold tabular-nums text-slate-950">{{ $websites->count() }}</dd><div class="mt-4 h-1 w-10 rounded-full bg-slate-300"></div></div>
-            <div class="rounded-xl border border-slate-200 bg-white p-5"><dt class="truncate text-sm font-medium text-slate-500">Needs attention</dt><dd class="mt-3 text-3xl font-semibold tabular-nums text-amber-700">{{ $needsAttentionCount }}</dd><div class="mt-4 h-1 w-10 rounded-full bg-amber-400"></div></div>
-            <div class="rounded-xl border border-slate-200 bg-white p-5"><dt class="truncate text-sm font-medium text-slate-500">Pending content</dt><dd class="mt-3 text-3xl font-semibold tabular-nums text-violet-700">{{ $pendingContentCount }}</dd><div class="mt-4 h-1 w-10 rounded-full bg-violet-400"></div></div>
-            <div class="rounded-xl border border-slate-200 bg-white p-5"><dt class="truncate text-sm font-medium text-slate-500">Live Pixel changes</dt><dd class="mt-3 text-3xl font-semibold tabular-nums text-teal-700">{{ $livePixelChangesCount }}</dd><div class="mt-4 h-1 w-10 rounded-full bg-teal-400"></div></div>
-        </dl>
-    </div>
-
-    <div class="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(20rem,0.65fr)]">
-        <section class="overflow-hidden rounded-xl border border-slate-200 bg-white" aria-labelledby="automation-schedule-heading">
-            <div class="border-b border-slate-200 p-5">
-                <p class="text-xs font-medium uppercase tracking-widest text-teal-700">Upcoming work</p>
-                <h2 id="automation-schedule-heading" class="mt-1 font-semibold text-slate-950">Automation schedule</h2>
-                <p class="mt-1 text-sm text-slate-600">The next enabled audit and content jobs, shown in {{ config('app.timezone') }}.</p>
-            </div>
-            <div class="divide-y divide-slate-100">
-                @forelse ($automationSchedule as $scheduledJob)
-                    <a href="{{ route('admin.websites.show', $scheduledJob['website']) }}" class="grid gap-2 p-4 hover:bg-teal-50/40 sm:grid-cols-[9rem_minmax(0,1fr)_auto] sm:items-center">
-                        <span class="text-sm font-semibold text-slate-950">{{ $scheduledJob['type'] }}</span>
-                        <span class="min-w-0"><span class="block truncate text-sm font-medium text-slate-800">{{ $scheduledJob['website']->name }}</span><span class="block truncate text-xs text-slate-500">{{ $scheduledJob['detail'] }}</span></span>
-                        <time datetime="{{ $scheduledJob['next_run_at']->toIso8601String() }}" class="text-sm font-medium tabular-nums text-teal-700 sm:text-right">{{ $scheduledJob['next_run_at']->format('D j M, H:i') }}<span class="block text-xs font-normal text-slate-500">{{ $scheduledJob['next_run_at']->diffForHumans() }}</span></time>
-                    </a>
-                @empty
-                    <p class="p-5 text-sm text-slate-500">No site audits or content plans are currently scheduled.</p>
-                @endforelse
-            </div>
-        </section>
-
-        <section class="rounded-xl border border-slate-200 bg-white p-5" aria-labelledby="workspace-stats-heading">
-            <p class="text-xs font-medium uppercase tracking-widest text-slate-500">Activity</p>
-            <h2 id="workspace-stats-heading" class="mt-1 font-semibold text-slate-950">Workspace totals</h2>
-            <dl class="mt-5 space-y-4">
-                <div class="flex items-center justify-between gap-4"><dt class="text-sm text-slate-600">Healthy websites</dt><dd class="text-lg font-semibold tabular-nums text-emerald-700">{{ $healthyCount }}</dd></div>
-                <div class="flex items-center justify-between gap-4"><dt class="text-sm text-slate-600">Not yet audited</dt><dd class="text-lg font-semibold tabular-nums text-slate-900">{{ $notAuditedCount }}</dd></div>
-                <div class="flex items-center justify-between gap-4"><dt class="text-sm text-slate-600">Form submissions</dt><dd class="text-lg font-semibold tabular-nums text-slate-900">{{ $submissionsCount }}</dd></div>
-                <div class="flex items-center justify-between gap-4"><dt class="text-sm text-slate-600">Scheduled jobs shown</dt><dd class="text-lg font-semibold tabular-nums text-slate-900">{{ $automationSchedule->count() }}</dd></div>
-            </dl>
-        </section>
-    </div>
-
-    <section class="overflow-hidden rounded-xl border border-slate-200 bg-white" aria-labelledby="websites-heading">
-        <div class="flex items-center justify-between gap-4 border-b border-slate-200 p-5">
-            <div><h2 id="websites-heading" class="font-semibold text-slate-950">Websites</h2><p class="text-sm text-slate-600">Latest audit position for each property.</p></div>
-            @if (Auth::user()?->isAdmin())<a href="{{ route('admin.websites.create') }}" class="rounded-md border border-slate-200 px-2.5 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">Add website</a>@endif
-        </div>
-        <div class="divide-y divide-slate-100">
-            @forelse ($websites as $website)
-                @php($report = $website->latestHealthReport)
-                <a href="{{ route('admin.websites.show', $website) }}" class="grid gap-3 p-5 hover:bg-teal-50/40 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-                    <div class="min-w-0">
-                        <div class="flex flex-wrap items-center gap-2">
-                            <h3 class="truncate font-medium text-slate-950">{{ $website->name }}</h3>
-                            <span @class(['rounded-full px-2 py-1 text-xs font-medium', 'bg-emerald-50 text-emerald-700' => $report?->overall_status === 'healthy', 'bg-amber-50 text-amber-700' => $report?->overall_status === 'needs_attention', 'bg-red-50 text-red-700' => $report?->overall_status === 'critical', 'bg-slate-100 text-slate-600' => ! $report || ! in_array($report->overall_status, ['healthy', 'needs_attention', 'critical'], true)])>{{ $report ? ucfirst(str_replace('_', ' ', $report->overall_status ?: $report->status)) : 'Not audited' }}</span>
+        @if ($isTrialActive)
+            <section class="overflow-hidden rounded-2xl bg-slate-950 text-white shadow-lg shadow-slate-950/10" aria-labelledby="onboarding-heading">
+                <div class="grid gap-8 p-6 sm:p-8 lg:grid-cols-[minmax(0,1.25fr)_minmax(20rem,0.75fr)] lg:items-center">
+                    <div>
+                        <p class="font-mono text-xs font-medium uppercase tracking-widest text-teal-300">Your next step</p>
+                        @if (Auth::user()->onboarding_call_completed_at)
+                            <h2 id="onboarding-heading" class="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">Your onboarding call is complete</h2>
+                            <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-300">Keep exploring your website health, SEO opportunities, and connected search data during the rest of your Growth trial.</p>
+                        @elseif (Auth::user()->onboarding_call_booked_at)
+                            <h2 id="onboarding-heading" class="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">Your onboarding call is booked</h2>
+                            <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-300">We’ll use the call to explain your findings, answer your questions, and agree which improvements are worth prioritising.</p>
+                            <a href="{{ route('admin.onboarding-call') }}" target="_blank" rel="noreferrer" class="mt-6 inline-flex items-center justify-center rounded-xl border border-white/20 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">Reschedule your call</a>
+                        @else
+                            <h2 id="onboarding-heading" class="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">Let’s turn your findings into a practical plan</h2>
+                            <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-300">Your free onboarding call is where a Sitewell specialist explains what we found, answers your questions, and agrees which improvements are worth doing first.</p>
+                            <a href="{{ route('admin.onboarding-call') }}" target="_blank" rel="noreferrer" class="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-teal-400 px-5 py-3.5 text-base font-semibold text-slate-950 hover:bg-teal-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-300 sm:w-auto">{{ Auth::user()->onboarding_call_booking_started_at ? 'Finish booking your free onboarding call' : 'Book your free onboarding call' }} <span class="ml-2" aria-hidden="true">→</span></a>
+                            <p class="mt-3 text-xs text-slate-400">No obligation. Choose a time that works for you.</p>
+                        @endif
+                    </div>
+                    <div class="rounded-xl border border-white/10 bg-white/5 p-5">
+                        <div class="flex items-center justify-between gap-3">
+                            <h3 class="font-semibold text-white">Getting started</h3>
+                            <span class="rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-slate-200">{{ $onboardingChecklist->where('complete', true)->count() }} of {{ $onboardingChecklist->count() }}</span>
                         </div>
-                        <p class="mt-1 truncate text-sm text-slate-500">{{ $website->domains->firstWhere('is_primary', true)?->domain ?: $website->domains->first()?->domain ?: 'No domain recorded' }}</p>
+                        <ol class="mt-4 space-y-3">
+                            @foreach ($onboardingChecklist as $item)
+                                <li class="flex items-center gap-3 text-sm">
+                                    <span @class(['grid size-6 shrink-0 place-items-center rounded-full text-xs font-bold', 'bg-teal-400 text-slate-950' => $item['complete'], 'border border-slate-600 text-slate-500' => ! $item['complete']])>{{ $item['complete'] ? '✓' : $loop->iteration }}</span>
+                                    @if ($item['complete'])
+                                        <span class="text-slate-400 line-through">{{ $item['label'] }}</span>
+                                    @else
+                                        <a href="{{ $item['url'] }}" class="text-slate-100 underline decoration-slate-600 underline-offset-4 hover:decoration-teal-300">{{ $item['label'] }}</a>
+                                    @endif
+                                </li>
+                            @endforeach
+                        </ol>
                     </div>
-                    <div class="flex gap-5 text-sm text-slate-500 sm:justify-end">
-                        @if ($report)<span><strong class="font-medium tabular-nums text-red-700">{{ $report->failed_checks }}</strong> failed</span><span><strong class="font-medium tabular-nums text-amber-700">{{ $report->warning_checks }}</strong> warnings</span><span>{{ $report->created_at->diffForHumans() }}</span>@else<span>Run the first audit</span>@endif
-                    </div>
-                </a>
-            @empty
-                <p class="p-6 text-center text-sm text-slate-500">No websites are available yet.</p>
-            @endforelse
-        </div>
-    </section>
+                </div>
+                <div class="flex flex-col gap-2 border-t border-white/10 bg-white/5 px-6 py-3 text-xs text-slate-300 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+                    <p><span class="font-semibold text-white">Your Growth trial is active.</span> You have {{ max(1, (int) now()->diffInDays(Auth::user()->onboarding_trial_ends_at, false)) }} days remaining. Weekly health reports and SEO performance features are included during your trial.</p>
+                    <a href="{{ route('admin.billing.index') }}" class="shrink-0 font-semibold text-teal-300 hover:text-teal-200">View trial details</a>
+                </div>
+            </section>
+        @endif
 
-    <section class="rounded-xl border border-slate-200 bg-white p-5" aria-labelledby="recent-audits-heading">
-        <h2 id="recent-audits-heading" class="font-semibold text-slate-950">Recent audit activity</h2>
-        <div class="mt-3 divide-y divide-slate-100">
-            @forelse ($recentReports as $report)
-                <a href="{{ route('admin.website-health-reports.show', [$report->website, $report]) }}" class="flex flex-col gap-1 py-3 hover:text-slate-600 sm:flex-row sm:items-center sm:justify-between">
-                    <span class="font-medium">{{ $report->website->name }}</span>
-                    <span class="text-sm text-slate-500">{{ ucfirst(str_replace('_', ' ', $report->overall_status ?: $report->status)) }} · {{ $report->failed_checks }} failed · {{ $report->warning_checks }} warnings · {{ $report->created_at->diffForHumans() }}</span>
-                </a>
-            @empty
-                <p class="py-3 text-sm text-slate-500">Audit activity will appear here after the first report runs.</p>
-            @endforelse
+        <section class="@container overflow-hidden rounded-xl border border-slate-200 bg-white" aria-labelledby="website-health-heading">
+            <div class="flex flex-col gap-4 border-b border-slate-200 p-5 sm:flex-row sm:items-start sm:justify-between sm:p-6">
+                <div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 id="website-health-heading" class="text-xl font-semibold text-slate-950">Website health</h2>
+                        <span @class([
+                            'rounded-full px-2.5 py-1 text-xs font-medium',
+                            'bg-emerald-50 text-emerald-700' => $status === 'healthy',
+                            'bg-amber-50 text-amber-700' => $status === 'needs_attention',
+                            'bg-red-50 text-red-700' => $status === 'critical',
+                            'bg-slate-100 text-slate-600' => ! in_array($status, ['healthy', 'needs_attention', 'critical'], true),
+                        ])>{{ $statusLabel }}</span>
+                    </div>
+                    <p class="mt-1 text-sm text-slate-600">
+                        @if ($report?->completed_at)
+                            Latest report completed {{ $report->completed_at->diffForHumans() }}.
+                        @elseif ($report)
+                            Your latest report is {{ strtolower($statusLabel) }}.
+                        @else
+                            Run your first report to establish a health baseline.
+                        @endif
+                    </p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    @if ($report)
+                        <a href="{{ route('admin.website-health-reports.show', [$website, $report]) }}" class="inline-flex items-center justify-center rounded-lg bg-teal-600 px-3.5 py-2 text-sm font-semibold text-white hover:bg-teal-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600">View health report</a>
+                    @elseif ($canManageWebsite)
+                        <form method="POST" action="{{ route('admin.website-health-reports.store', $website) }}">@csrf<button type="submit" class="inline-flex items-center justify-center rounded-lg bg-teal-600 px-3.5 py-2 text-sm font-semibold text-white hover:bg-teal-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600">Run health report</button></form>
+                    @endif
+                    @if ($report && $canManageWebsite)
+                        <form method="POST" action="{{ route('admin.website-health-reports.store', $website) }}">@csrf<button type="submit" class="inline-flex items-center justify-center rounded-lg border border-slate-300 px-3.5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600">Run again</button></form>
+                    @endif
+                </div>
+            </div>
+
+            @if ($report)
+                <dl class="grid grid-cols-2 border-b border-slate-200 @2xl:grid-cols-4">
+                    <div class="border-b border-r border-slate-200 p-4 @2xl:border-b-0"><dt class="truncate text-sm text-slate-500">Passed</dt><dd class="mt-1 text-2xl font-semibold tabular-nums text-emerald-700">{{ $report->passed_checks }}</dd></div>
+                    <div class="border-b border-slate-200 p-4 @2xl:border-b-0 @2xl:border-r"><dt class="truncate text-sm text-slate-500">Warnings</dt><dd class="mt-1 text-2xl font-semibold tabular-nums text-amber-700">{{ $report->warning_checks }}</dd></div>
+                    <div class="border-r border-slate-200 p-4"><dt class="truncate text-sm text-slate-500">Failed</dt><dd class="mt-1 text-2xl font-semibold tabular-nums text-red-700">{{ $report->failed_checks }}</dd></div>
+                    <div class="p-4"><dt class="truncate text-sm text-slate-500">Since last report</dt><dd class="mt-1 text-sm font-semibold text-slate-900"><span class="text-emerald-700">{{ $resolvedIssues }} resolved</span> · <span class="text-red-700">{{ $newIssues }} new</span></dd></div>
+                </dl>
+                <div class="p-5 sm:p-6">
+                    <h3 class="font-semibold text-slate-950">What needs attention</h3>
+                    <div class="mt-3 divide-y divide-slate-100">
+                        @forelse ($topFindings as $finding)
+                            <div class="flex gap-3 py-3 first:pt-0 last:pb-0">
+                                <span @class(['mt-1 size-2 shrink-0 rounded-full', 'bg-red-500' => $finding['status'] === 'failed', 'bg-amber-400' => $finding['status'] !== 'failed'])></span>
+                                <div class="min-w-0"><p class="font-medium text-slate-900">{{ $finding['label'] }}</p><p class="mt-0.5 text-sm text-slate-600">{{ $finding['message'] }}</p>@if ($finding['url'])<p class="mt-1 truncate text-xs text-slate-400">{{ $finding['url'] }}</p>@endif</div>
+                            </div>
+                        @empty
+                            <p class="py-2 text-sm text-slate-600">No outstanding findings were recorded in the latest report.</p>
+                        @endforelse
+                    </div>
+                </div>
+            @endif
+        </section>
+
+        <div class="grid gap-6 xl:grid-cols-2">
+            <section class="rounded-xl border border-slate-200 bg-white p-5 sm:p-6" aria-labelledby="content-heading">
+                <div class="flex items-start justify-between gap-4"><div><h2 id="content-heading" class="font-semibold text-slate-950">Website content</h2><p class="mt-1 text-sm text-slate-600">Ideas and updates waiting to be prepared.</p></div><a href="{{ route('admin.websites.section', [$website, 'content']) }}" class="shrink-0 text-sm font-semibold text-teal-700 hover:text-teal-900">View content</a></div>
+                <dl class="mt-5 grid grid-cols-2 gap-3">
+                    <div class="rounded-lg bg-slate-50 p-4"><dt class="text-sm text-slate-500">Pending requests</dt><dd class="mt-1 text-2xl font-semibold tabular-nums text-slate-950">{{ $website->pending_content_requests_count }}</dd></div>
+                    <div class="rounded-lg bg-slate-50 p-4"><dt class="text-sm text-slate-500">Next preparation</dt><dd class="mt-1 text-sm font-semibold text-slate-950">{{ $nextContentRun ? $nextContentRun['next_run_at']->format('D j M') : 'Not scheduled' }}</dd></div>
+                </dl>
+                <div class="mt-4 divide-y divide-slate-100">
+                    @forelse ($website->contentRequests->take(3) as $contentRequest)
+                        <div class="py-3 first:pt-0 last:pb-0"><p class="line-clamp-2 text-sm font-medium text-slate-800">{{ $contentRequest->instructions }}</p><p class="mt-1 text-xs text-slate-500">{{ $contentRequest->picked_up_at ? 'Preparation started' : 'Waiting to be prepared' }} · {{ $contentRequest->created_at->diffForHumans() }}</p></div>
+                    @empty
+                        <p class="text-sm text-slate-600">No content requests yet. Add an idea when you are ready to improve or expand a page.</p>
+                    @endforelse
+                </div>
+            </section>
+
+            <section class="rounded-xl border border-slate-200 bg-white p-5 sm:p-6" aria-labelledby="schedule-heading">
+                <h2 id="schedule-heading" class="font-semibold text-slate-950">Next health check</h2>
+                @if ($nextHealthRun)
+                    <time datetime="{{ $nextHealthRun['next_run_at']->toIso8601String() }}" class="mt-4 block text-2xl font-semibold tabular-nums text-slate-950">{{ $nextHealthRun['next_run_at']->format('D j M, H:i') }}</time>
+                    <p class="mt-1 text-sm text-slate-600">{{ $nextHealthRun['next_run_at']->diffForHumans() }} · {{ config('app.timezone') }}</p>
+                    <p class="mt-5 text-sm text-slate-600">Weekly reports help you spot regressions and new issues before they become bigger problems.</p>
+                @else
+                    <p class="mt-4 text-sm text-slate-600">Automatic health reports are not currently scheduled for this website.</p>
+                @endif
+            </section>
         </div>
-    </section>
-</div>
+
+        <div class="grid gap-6 xl:grid-cols-2">
+            <section class="@container rounded-xl border border-slate-200 bg-white p-5 sm:p-6" aria-labelledby="search-heading">
+                <div class="flex items-start justify-between gap-4"><div><h2 id="search-heading" class="font-semibold text-slate-950">Google Search Console</h2><p class="mt-1 text-sm text-slate-600">Organic search performance from your connected property.</p></div><a href="{{ route('admin.websites.section', [$website, 'search']) }}" class="shrink-0 text-sm font-semibold text-teal-700 hover:text-teal-900">{{ $website->searchConsoleConnection ? 'View search' : 'Connect' }}</a></div>
+                @if ($website->searchConsoleConnection)
+                    <div class="mt-5 flex flex-col gap-5">
+                        @foreach ($searchMonths as $searchMonth)
+                            @php($searchMetric = $searchMetrics->get($searchMonth->toDateString()))
+                            <div>
+                                <h3 class="text-xs font-medium text-slate-500">{{ $searchMonth->format('F Y') }} · {{ $loop->first ? 'Month to date' : 'Previous month' }}</h3>
+                                @if ($searchMetric)
+                                    <dl class="mt-2 grid grid-cols-2 gap-x-5 gap-y-4 @md:grid-cols-4">
+                                        <div><dt class="text-sm text-slate-500">Clicks</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-slate-950">{{ number_format($searchMetric->clicks) }}</dd></div>
+                                        <div><dt class="text-sm text-slate-500">Impressions</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-slate-950">{{ number_format($searchMetric->impressions) }}</dd></div>
+                                        <div><dt class="text-sm text-slate-500">Click rate</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-slate-950">{{ number_format($searchMetric->ctr * 100, 1) }}%</dd></div>
+                                        <div><dt class="text-sm text-slate-500">Position</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-slate-950">{{ number_format($searchMetric->position, 1) }}</dd></div>
+                                    </dl>
+                                @else
+                                    <p class="mt-2 text-sm text-slate-600">No search performance imported for this month yet.</p>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                    <p class="mt-4 text-xs text-slate-500">This month is incomplete. Figures reflect the latest imported data.</p>
+                @else
+                    <p class="mt-5 text-sm text-slate-600">Connect Search Console to see clicks, visibility, and average position alongside website health.</p>
+                @endif
+            </section>
+
+            @if (config('forms.pixel_ui_enabled') && $website->pixel_enabled)
+                <section class="rounded-xl border border-slate-200 bg-white p-5 sm:p-6" aria-labelledby="pixel-heading">
+                    <div class="flex items-start justify-between gap-4"><div><h2 id="pixel-heading" class="font-semibold text-slate-950">Sitewell Pixel</h2><p class="mt-1 text-sm text-slate-600">Connected delivery and website activity.</p></div><a href="{{ route('admin.websites.section', [$website, 'pixel']) }}" class="shrink-0 text-sm font-semibold text-teal-700 hover:text-teal-900">View Pixel</a></div>
+                    <dl class="mt-5 grid grid-cols-2 gap-3"><div class="rounded-lg bg-slate-50 p-4"><dt class="text-sm text-slate-500">Live changes</dt><dd class="mt-1 text-2xl font-semibold tabular-nums text-slate-950">{{ $website->live_pixel_changes_count }}</dd></div><div class="rounded-lg bg-slate-50 p-4"><dt class="text-sm text-slate-500">Last seen</dt><dd class="mt-1 text-sm font-semibold text-slate-950">{{ $website->pixel_last_seen_at?->diffForHumans() ?: 'Waiting for activity' }}</dd></div></dl>
+                </section>
+            @endif
+
+            @if ($website->forms_count > 0)
+                <section class="rounded-xl border border-slate-200 bg-white p-5 sm:p-6" aria-labelledby="forms-heading">
+                    <div class="flex items-start justify-between gap-4"><div><h2 id="forms-heading" class="font-semibold text-slate-950">Form activity</h2><p class="mt-1 text-sm text-slate-600">An optional view of responses received through Sitewell forms.</p></div><a href="{{ route('admin.websites.section', [$website, 'forms']) }}" class="shrink-0 text-sm font-semibold text-teal-700 hover:text-teal-900">View forms</a></div>
+                    <dl class="mt-5 grid grid-cols-2 gap-3"><div class="rounded-lg bg-slate-50 p-4"><dt class="text-sm text-slate-500">Connected forms</dt><dd class="mt-1 text-2xl font-semibold tabular-nums text-slate-950">{{ $website->forms_count }}</dd></div><div class="rounded-lg bg-slate-50 p-4"><dt class="text-sm text-slate-500">Submissions</dt><dd class="mt-1 text-2xl font-semibold tabular-nums text-slate-950">{{ $website->submissions_count }}</dd></div></dl>
+                </section>
+            @endif
+        </div>
+    </div>
+@endif
 @endsection

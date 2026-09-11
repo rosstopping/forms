@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\ContentPlan;
 use App\Models\Website;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
@@ -20,19 +19,19 @@ class DashboardSchedule
 
             if ($website->health_reports_enabled) {
                 $items[] = [
-                    'type' => 'Site audit',
+                    'type' => 'Health report',
                     'website' => $website,
                     'next_run_at' => $this->nextAuditAt($website),
-                    'detail' => 'Checked by the daily audit dispatcher at 06:00',
+                    'detail' => 'Checked by the daily health dispatcher at 06:00',
                 ];
             }
 
-            if ($website->contentPlan?->enabled) {
+            if ($website->contentPlan && ($nextContentAt = app(ContentSchedule::class)->nextRunAt($website->contentPlan))) {
                 $items[] = [
                     'type' => 'Content queue',
                     'website' => $website,
-                    'next_run_at' => $this->nextContentAt($website->contentPlan),
-                    'detail' => 'Weekly content preparation in '.$website->contentPlan->timezone,
+                    'next_run_at' => $nextContentAt,
+                    'detail' => 'Scheduled content preparation in '.$website->contentPlan->timezone,
                 ];
             }
 
@@ -62,18 +61,5 @@ class DashboardSchedule
         }
 
         return $nextRunAt;
-    }
-
-    private function nextContentAt(ContentPlan $plan): CarbonImmutable
-    {
-        $now = CarbonImmutable::now($plan->timezone);
-        $daysUntilRun = ((int) $plan->weekday - $now->dayOfWeek + 7) % 7;
-        $nextRunAt = $now->startOfDay()->addDays($daysUntilRun)->setHour((int) $plan->hour);
-
-        if ($nextRunAt->lessThanOrEqualTo($now)) {
-            $nextRunAt = $nextRunAt->addWeek();
-        }
-
-        return $nextRunAt->setTimezone(config('app.timezone'));
     }
 }

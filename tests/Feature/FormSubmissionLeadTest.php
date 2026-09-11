@@ -1,9 +1,12 @@
 <?php
 
+use App\Mail\FormSubmissionReceived;
 use App\Models\Form;
 use App\Models\FormSubmission;
 use App\Models\User;
 use App\Models\Website;
+use App\Support\MembershipPlan;
+use Illuminate\Support\Facades\Mail;
 
 it('allows an admin to update a lead status and assignment', function () {
     $admin = User::factory()->create([
@@ -119,7 +122,7 @@ it('remembers lead filters for the signed in user', function () {
     $this->actingAs($admin)
         ->get(route('admin.form-submissions.index', ['status' => 'qualified']))
         ->assertOk()
-        ->assertSessionHas('admin.lead_filters.'.$admin->id, ['status' => 'qualified']);
+        ->assertSessionHas('admin.lead_filters.'.$admin->id.'.'.$website->id, ['status' => 'qualified']);
 
     $this->get(route('admin.form-submissions.index'))
         ->assertOk()
@@ -128,7 +131,7 @@ it('remembers lead filters for the signed in user', function () {
 
     $this->get(route('admin.form-submissions.index', ['reset_filters' => 1]))
         ->assertOk()
-        ->assertSessionMissing('admin.lead_filters.'.$admin->id)
+        ->assertSessionMissing('admin.lead_filters.'.$admin->id.'.'.$website->id)
         ->assertSee('Hidden Lead');
 });
 
@@ -160,6 +163,53 @@ it('scopes the new lead navigation count to accessible websites', function () {
         ->assertDontSee('aria-label="3 new leads"', false);
 });
 
+it('scopes leads and navigation counts to the website switcher selection', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $selectedWebsite = Website::factory()->for($admin, 'owner')->create(['name' => 'Selected website']);
+    $otherWebsite = Website::factory()->for($admin, 'owner')->create(['name' => 'Other website']);
+    $selectedForm = Form::factory()->for($selectedWebsite)->create();
+    $otherForm = Form::factory()->for($otherWebsite)->create();
+    FormSubmission::factory()->for($selectedWebsite)->for($selectedForm)->count(2)->create([
+        'status' => 'new',
+        'data' => ['name' => 'Selected Lead'],
+    ]);
+    FormSubmission::factory()->for($otherWebsite)->for($otherForm)->count(3)->create([
+        'status' => 'new',
+        'data' => ['name' => 'Other Lead'],
+    ]);
+    $admin->update(['current_website_id' => $selectedWebsite->id]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.form-submissions.index'))
+        ->assertOk()
+        ->assertSee('Selected Lead')
+        ->assertDontSee('Other Lead')
+        ->assertSee('aria-label="2 new leads"', false)
+        ->assertDontSee('name="website_id" class="rounded-md', false)
+        ->assertDontSee('All websites');
+
+    $this->post(route('admin.current-website.update'), [
+        'website_id' => $otherWebsite->id,
+        'section' => 'leads',
+    ])->assertRedirect(route('admin.form-submissions.index'));
+
+    $this->get(route('admin.form-submissions.index'))
+        ->assertOk()
+        ->assertSee('Other Lead')
+        ->assertDontSee('Selected Lead')
+        ->assertSee('aria-label="3 new leads"', false);
+});
+
+it('shows leads navigation even when the selected website has no detected forms', function (): void {
+    $user = User::factory()->create();
+    Website::factory()->for($user, 'owner')->create();
+
+    $this->actingAs($user)
+        ->get(route('admin.dashboard'))
+        ->assertOk()
+        ->assertSee('href="'.route('admin.form-submissions.index').'"', false);
+});
+
 it('bulk updates statuses marks spam and deletes selected leads', function () {
     $owner = User::factory()->create();
     $website = Website::factory()->create(['user_id' => $owner->id]);
@@ -174,6 +224,7 @@ it('bulk updates statuses marks spam and deletes selected leads', function () {
         ->assertSee('data-bulk-leads-selection-menu', false)
         ->assertSee('Select this page')
         ->assertSee('Select all')
+        ->assertSee('Resend email notifications')
         ->assertSee('data-bulk-leads-dialog', false)
         ->assertSee('data-bulk-leads-status-field', false)
         ->assertDontSee('>Apply</button>', false);
@@ -200,6 +251,37 @@ it('bulk updates statuses marks spam and deletes selected leads', function () {
     expect($statusLead->refresh()->status)->toBe('won')
         ->and($spamLead->refresh()->is_spam)->toBeTrue();
     $this->assertModelMissing($deletedLead);
+});
+
+it('resends team email notifications for selected leads in bulk', function () {
+    Mail::fake();
+    $owner = User::factory()->create();
+    $website = Website::factory()->create(['user_id' => $owner->id]);
+    $form = Form::factory()->create([
+        'website_id' => $website->id,
+        'email_recipients_override' => ['team@example.com'],
+    ]);
+    $submissions = FormSubmission::factory()->count(2)->create([
+        'website_id' => $website->id,
+        'form_id' => $form->id,
+    ]);
+    $spamSubmission = FormSubmission::factory()->create([
+        'website_id' => $website->id,
+        'form_id' => $form->id,
+        'is_spam' => true,
+    ]);
+
+    $this->actingAs($owner)->patch(route('admin.form-submissions.bulk'), [
+        'submission_ids' => [...$submissions->modelKeys(), $spamSubmission->id],
+        'selection_scope' => 'page',
+        'action' => 'resend_notification',
+    ])->assertRedirect()
+        ->assertSessionHas('status', '2 email notifications resent. 1 lead skipped (spam, no recipients, or delivery failure).');
+
+    Mail::assertSent(FormSubmissionReceived::class, 2);
+    expect($submissions->each->refresh()->pluck('email_sent_at')->filter())->toHaveCount(2)
+        ->and($submissions->flatMap->activities->pluck('type')->filter(fn (string $type): bool => $type === 'team_email_resent'))->toHaveCount(2)
+        ->and($spamSubmission->refresh()->email_sent_at)->toBeNull();
 });
 
 it('rejects a bulk action when any selected lead is not manageable', function () {
@@ -268,6 +350,39 @@ it('marks a single lead as spam from its detail page', function () {
     expect($submission->refresh()->is_spam)->toBeTrue();
 });
 
+it('allows a website manager to resend the team email notification', function () {
+    Mail::fake();
+    $owner = User::factory()->create();
+    $website = Website::factory()->create(['user_id' => $owner->id]);
+    $form = Form::factory()->create([
+        'website_id' => $website->id,
+        'email_recipients_override' => ['team@example.com'],
+    ]);
+    $submission = FormSubmission::factory()->create([
+        'website_id' => $website->id,
+        'form_id' => $form->id,
+        'email_failed_at' => now(),
+        'email_error' => 'Previous delivery failed.',
+    ]);
+
+    $this->actingAs($owner)->get(route('admin.form-submissions.show', $submission))
+        ->assertOk()
+        ->assertSee('Resend email notification');
+
+    $this->post(route('admin.form-submissions.resend-notification', $submission))
+        ->assertRedirect(route('admin.form-submissions.show', $submission))
+        ->assertSessionHas('status', 'Email notification resent.');
+
+    Mail::assertSent(FormSubmissionReceived::class, fn (FormSubmissionReceived $mail): bool => $mail->hasTo('team@example.com'));
+    expect($submission->refresh())
+        ->email_sent_at->not->toBeNull()
+        ->email_failed_at->toBeNull()
+        ->email_error->toBeNull()
+        ->and($submission->activities()->latest()->first())
+        ->type->toBe('team_email_resent')
+        ->user_id->toBe($owner->id);
+});
+
 it('deletes a single lead from its detail page', function () {
     $owner = User::factory()->create();
     $website = Website::factory()->create(['user_id' => $owner->id]);
@@ -291,15 +406,20 @@ it('prevents viewers from moderating a single lead', function () {
     $this->actingAs($viewer)->get(route('admin.form-submissions.show', $submission))
         ->assertOk()
         ->assertDontSee('Mark as spam')
+        ->assertDontSee('Resend email notification')
         ->assertDontSee('data-confirm-danger', false);
 
+    $this->post(route('admin.form-submissions.resend-notification', $submission))->assertForbidden();
     $this->patch(route('admin.form-submissions.spam', $submission))->assertForbidden();
     $this->delete(route('admin.form-submissions.destroy', $submission))->assertForbidden();
     $this->assertModelExists($submission);
 });
 
 it('lets a website owner configure the site wide automatic reply', function () {
-    $owner = User::factory()->create();
+    $owner = User::factory()->create([
+        'membership_tier' => MembershipPlan::GROWTH,
+        'membership_status' => 'active',
+    ]);
     $website = Website::factory()->create(['user_id' => $owner->id]);
 
     $this->actingAs($owner)->get(route('admin.websites.show', $website))
@@ -311,6 +431,8 @@ it('lets a website owner configure the site wide automatic reply', function () {
 
     $this->put(route('admin.websites.autoresponder.update', $website), [
         'autoresponder_enabled' => true,
+        'autoresponder_from_name' => 'Willow & Stone',
+        'autoresponder_from_email' => 'hello@willowandstone.example',
         'autoresponder_subject' => 'We received your enquiry',
         'autoresponder_body' => 'Thanks {name}. We will be in touch.',
         'autoresponder_content_type' => 'text',
@@ -318,6 +440,8 @@ it('lets a website owner configure the site wide automatic reply', function () {
     ])->assertRedirect(route('admin.websites.show', $website));
 
     expect($website->refresh()->autoresponder_enabled)->toBeTrue()
+        ->and($website->autoresponder_from_name)->toBe('Willow & Stone')
+        ->and($website->autoresponder_from_email)->toBe('hello@willowandstone.example')
         ->and($website->autoresponder_subject)->toBe('We received your enquiry')
         ->and($website->autoresponder_body)->toBe('<div>Thanks {name}. We will be in touch.</div>')
         ->and($website->autoresponder_content_type)->toBe('text')
@@ -335,7 +459,10 @@ it('lets a website owner configure the site wide automatic reply', function () {
 });
 
 it('stores raw html autoresponder messages without sanitizing them', function () {
-    $owner = User::factory()->create();
+    $owner = User::factory()->create([
+        'membership_tier' => MembershipPlan::GROWTH,
+        'membership_status' => 'active',
+    ]);
     $website = Website::factory()->create(['user_id' => $owner->id]);
     $rawHtml = '<html><body><table style="color: red"><tr><td>Hello {name}</td></tr></table>'.str_repeat('<!-- email template styles -->', 2500).'</body></html>';
 
@@ -374,5 +501,52 @@ it('links form settings back to the parent website forms tab', function () {
         ->assertSee('Willow &amp; Stone', false)
         ->assertSee('Design &amp; Build', false)
         ->assertDontSee('&amp;amp;', false)
-        ->assertSee('href="'.route('admin.websites.show', [$website, 'tab' => 'forms']).'"', false);
+        ->assertSee('href="'.route('admin.websites.section', [$website, 'forms']).'"', false);
 });
+
+it('locks automatic replies for inactive websites in the UI and on update', function (): void {
+    $owner = User::factory()->create([
+        'membership_tier' => MembershipPlan::ESSENTIAL,
+        'membership_status' => 'canceled',
+    ]);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $form = Form::factory()->for($website)->create();
+
+    $this->actingAs($owner)
+        ->get(route('admin.websites.section', [$website, 'forms']))
+        ->assertOk()
+        ->assertSee('Automatic customer replies require an active Sitewell plan.')
+        ->assertDontSee('postmark_server_token', false)
+        ->assertDontSee('Managed Postmark');
+
+    $this->get(route('admin.forms.show', $form))
+        ->assertOk()
+        ->assertSee('Additional settings')
+        ->assertSee('Available with an active Sitewell plan.')
+        ->assertDontSee('data-autoresponder-content-editor', false);
+
+    $this->from(route('admin.websites.section', [$website, 'forms']))
+        ->put(route('admin.websites.autoresponder.update', $website), [
+            'autoresponder_enabled' => true,
+            'autoresponder_content_type' => 'text',
+            'autoresponder_delay_minutes' => 0,
+        ])
+        ->assertSessionHasErrors('autoresponder_enabled');
+
+    $this->from(route('admin.forms.show', $form))
+        ->put(route('admin.forms.update', $form), ['autoresponder_mode' => 'enabled'])
+        ->assertSessionHasErrors('autoresponder_mode');
+});
+
+it('allows automatic reply configuration across active plans without enabling it automatically', function (string $tier): void {
+    $owner = User::factory()->create(['membership_tier' => $tier]);
+    $website = Website::factory()->for($owner, 'owner')->create(['autoresponder_enabled' => false]);
+    $form = Form::factory()->for($website)->create();
+    $this->actingAs($owner)->get(route('admin.forms.show', $form))->assertOk()->assertSee('data-autoresponder-content-editor', false);
+    expect($website->fresh()->autoresponder_enabled)->toBeFalse();
+    $this->put(route('admin.websites.autoresponder.update', $website), [
+        'autoresponder_enabled' => true, 'autoresponder_content_type' => 'text', 'autoresponder_delay_minutes' => 0,
+    ])->assertSessionHasNoErrors()->assertRedirect();
+    $this->put(route('admin.forms.update', $form), ['autoresponder_mode' => 'enabled'])->assertSessionHasNoErrors()->assertRedirect();
+    expect($website->fresh()->autoresponder_enabled)->toBeTrue()->and($form->fresh()->autoresponder_enabled_override)->toBeTrue();
+})->with(['essential', 'growth', 'complete']);

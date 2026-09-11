@@ -16,6 +16,9 @@ return [
 
     'postmark' => [
         'key' => env('POSTMARK_API_KEY'),
+        'account_token' => env('POSTMARK_ACCOUNT_TOKEN'),
+        'api_url' => env('POSTMARK_API_URL', 'https://api.postmarkapp.com'),
+        'delivery_enabled' => env('POSTMARK_DELIVERY_ENABLED', false),
     ],
 
     'resend' => [
@@ -62,6 +65,22 @@ return [
         'pixel_api_url' => env('SITEWELL_PIXEL_API_URL', rtrim((string) env('APP_URL', 'http://localhost'), '/').'/api/pixel'),
     ],
 
+    'turnstile' => [
+        'verify_url' => env('TURNSTILE_VERIFY_URL', 'https://challenges.cloudflare.com/turnstile/v0/siteverify'),
+        'connect_timeout' => (int) env('TURNSTILE_CONNECT_TIMEOUT', 3),
+        'timeout' => (int) env('TURNSTILE_TIMEOUT', 5),
+        'marketing' => [
+            'enabled' => filter_var(env('MARKETING_TURNSTILE_ENABLED', false), FILTER_VALIDATE_BOOL),
+            'site_key' => env('MARKETING_TURNSTILE_SITE_KEY'),
+            'secret_key' => env('MARKETING_TURNSTILE_SECRET_KEY'),
+            'hostname' => env('MARKETING_TURNSTILE_HOSTNAME'),
+        ],
+    ],
+
+    'cal' => [
+        'webhook_secret' => env('CAL_WEBHOOK_SECRET'),
+    ],
+
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
@@ -81,6 +100,8 @@ return [
         'timeout' => (int) env('DATAFORSEO_TIMEOUT', 30),
         'ranked_keywords_limit' => (int) env('DATAFORSEO_RANKED_KEYWORDS_LIMIT', 500),
         'referring_domains_limit' => (int) env('DATAFORSEO_REFERRING_DOMAINS_LIMIT', 250),
+        'competitor_audits' => ['ranked_keywords' => 500, 'shared_keywords' => 500, 'missing_keywords' => 500, 'leading_pages' => 20, 'analyse_pages' => 5],
+        'backlink_audits' => ['current_links' => 500, 'lost_links' => 200, 'linked_pages' => 100, 'trend_months' => 12, 'gap_domains' => 500, 'competitor_pages' => 20, 'analyse_pages' => 5],
         'competitors_limit' => (int) env('DATAFORSEO_COMPETITORS_LIMIT', 25),
         'refresh_days' => (int) env('DATAFORSEO_REFRESH_DAYS', 7),
         'pending_timeout_minutes' => (int) env('DATAFORSEO_PENDING_TIMEOUT_MINUTES', 30),

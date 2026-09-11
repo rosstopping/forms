@@ -52,8 +52,9 @@ class RankingReportBuilder
             ->orderByDesc('priority_score')
             ->limit(3)
             ->get(['title', 'summary', 'priority_score']);
+        $targetKeywords = app(SeoTargetKeywordPerformance::class)->latest($website);
 
-        return compact('latestSeo', 'previousSeo', 'latestSearch', 'previousSearch', 'highlights', 'opportunities');
+        return compact('latestSeo', 'previousSeo', 'latestSearch', 'previousSearch', 'highlights', 'opportunities', 'targetKeywords');
     }
 
     /** @param Collection<int, array{label: string, change: string, direction: string}> $highlights */

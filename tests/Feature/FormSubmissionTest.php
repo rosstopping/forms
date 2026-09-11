@@ -5,8 +5,10 @@ use App\Mail\FormSubmissionAcknowledgement;
 use App\Mail\FormSubmissionReceived;
 use App\Models\Form;
 use App\Models\FormSubmission;
+use App\Models\User;
 use App\Models\Website;
-use App\Services\AutoresponderHtmlSanitizer;
+use App\Models\WebsiteDomain;
+use App\Services\AutoresponderDeliveryService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
@@ -15,7 +17,8 @@ use Illuminate\Testing\TestResponse;
 beforeEach(function (): void {
     Mail::fake();
     Queue::fake();
-    Http::fake();
+    Http::fake([]);
+    Http::preventStrayRequests();
 });
 
 it('auto-registers a website and form and stores the submission', function (): void {
@@ -42,6 +45,32 @@ it('allows public submissions without a CSRF token', function (): void {
         ]);
 
     $response->assertStatus(302);
+});
+
+it('does not send operational form alerts to website viewers', function (): void {
+    $viewer = User::factory()->create(['email' => 'viewer@example.com']);
+    $manager = User::factory()->create(['email' => 'manager@example.com']);
+    $website = Website::factory()->create();
+    $website->domains()->create(['domain' => 'recipient-policy.example', 'is_primary' => true]);
+    $website->members()->attach($viewer, ['role' => Website::MEMBER_ROLE_VIEWER]);
+    $website->members()->attach($manager, ['role' => Website::MEMBER_ROLE_MANAGER]);
+    Form::factory()->for($website)->create([
+        'name' => 'Contact form',
+        'slug' => 'contact-form',
+        'email_enabled_override' => true,
+        'email_recipients_override' => [$viewer->email, $manager->email],
+    ]);
+
+    $this->withHeader('Origin', 'https://recipient-policy.example')
+        ->post('/submit', [
+            '_form_name' => 'Contact form',
+            'name' => 'Grace Hopper',
+            'message' => 'Please send me a quote.',
+        ])
+        ->assertRedirectContains('/submitted');
+
+    Mail::assertSent(FormSubmissionReceived::class, fn (FormSubmissionReceived $mail): bool => $mail->hasTo($manager->email));
+    Mail::assertNotSent(FormSubmissionReceived::class, fn (FormSubmissionReceived $mail): bool => $mail->hasTo($viewer->email));
 });
 
 it('redirects to the submitted success url even when the request accepts json', function (): void {
@@ -79,7 +108,7 @@ it('escapes submitted HTML exactly once when rendering the email', function (): 
     expect($submission->data['message'])->toBe($message);
 
     (new FormSubmissionReceived($submission))
-        ->assertSeeInHtml($message)
+        ->assertSeeInHtml("Hello, I'd like a &lt;strong&gt;website&lt;/strong&gt;.", false)
         ->assertDontSeeInHtml('&amp;#039;', false)
         ->assertDontSeeInHtml('<strong>website</strong>', false);
 });
@@ -96,6 +125,35 @@ it('rejects unknown websites when auto discovery is disabled', function (): void
     $response->assertStatus(422);
     $this->assertDatabaseCount('websites', 0);
     $this->assertDatabaseCount('form_submissions', 0);
+});
+
+it('routes submissions only to the verified workspace when an onboarding claim duplicates its domain', function (): void {
+    config()->set('forms.auto_register_websites', false);
+    $verifiedWebsite = Website::factory()->create();
+    $verifiedWebsite->domains()->create(['domain' => 'shared.example', 'is_primary' => true]);
+    $verifiedForm = Form::factory()->for($verifiedWebsite)->create([
+        'name' => 'Contact form',
+        'slug' => 'contact-form',
+    ]);
+    $pendingWebsite = Website::factory()->create();
+    $pendingWebsite->domains()->create([
+        'domain' => 'shared.example',
+        'is_primary' => true,
+        'ownership_status' => WebsiteDomain::OWNERSHIP_PENDING,
+    ]);
+    Form::factory()->for($pendingWebsite)->create([
+        'name' => 'Contact form',
+        'slug' => 'contact-form',
+    ]);
+
+    $this->withHeader('Origin', 'https://shared.example')
+        ->post('/submit', [
+            '_form_name' => 'Contact form',
+            'name' => 'Grace Hopper',
+        ])
+        ->assertRedirectContains('/submitted');
+
+    expect(FormSubmission::query()->sole()->form_id)->toBe($verifiedForm->id);
 });
 
 it('detects honeypot spam without sending notifications', function (): void {
@@ -127,6 +185,83 @@ it('detects the site honeypot field without storing it', function (): void {
         ->and($submission->data)->not->toHaveKey('_sitewell_check');
     Mail::assertNothingSent();
     Http::assertNothingSent();
+});
+
+it('accepts submissions that pass Turnstile verification', function (): void {
+    Http::fake([
+        'https://challenges.cloudflare.com/turnstile/v0/siteverify' => Http::response([
+            'success' => true,
+            'hostname' => 'turnstile.example',
+        ]),
+    ]);
+    $website = Website::factory()->create([
+        'turnstile_enabled' => true,
+        'turnstile_secret_key' => 'secret-key',
+    ]);
+    $website->domains()->create(['domain' => 'turnstile.example', 'is_primary' => true]);
+    Form::factory()->for($website)->create(['name' => 'Contact form', 'slug' => 'contact-form']);
+
+    $this->withHeader('Origin', 'https://turnstile.example')->post('/submit', [
+        '_form_name' => 'Contact form',
+        'name' => 'Ada Lovelace',
+        'email' => 'ada@example.com',
+        'message' => 'Please send me a quote.',
+        'cf-turnstile-response' => 'valid-token',
+    ])->assertRedirectContains('/submitted');
+
+    expect(FormSubmission::query()->latest('id')->firstOrFail()->is_spam)->toBeFalse();
+    Http::assertSent(fn ($request): bool => $request['secret'] === 'secret-key'
+        && $request['response'] === 'valid-token'
+        && $request['remoteip'] === '127.0.0.1');
+});
+
+it('silently quarantines submissions that fail Turnstile verification', function (?string $token): void {
+    Http::fake([
+        'https://challenges.cloudflare.com/turnstile/v0/siteverify' => Http::response(['success' => false]),
+    ]);
+    $website = Website::factory()->create([
+        'turnstile_enabled' => true,
+        'turnstile_secret_key' => 'secret-key',
+    ]);
+    $website->domains()->create(['domain' => 'turnstile-failure.example', 'is_primary' => true]);
+    Form::factory()->for($website)->create(['name' => 'Contact form', 'slug' => 'contact-form']);
+
+    $this->withHeader('Origin', 'https://turnstile-failure.example')->post('/submit', array_filter([
+        '_form_name' => 'Contact form',
+        'name' => 'Automated visitor',
+        'message' => 'A message without links.',
+        'cf-turnstile-response' => $token,
+    ], fn (mixed $value): bool => $value !== null))->assertRedirectContains('/submitted');
+
+    expect(FormSubmission::query()->latest('id')->firstOrFail()->is_spam)->toBeTrue();
+    Mail::assertNothingSent();
+})->with([
+    'invalid token' => 'invalid-token',
+    'missing token' => null,
+]);
+
+it('quarantines a valid Turnstile token issued for another hostname', function (): void {
+    Http::fake([
+        'https://challenges.cloudflare.com/turnstile/v0/siteverify' => Http::response([
+            'success' => true,
+            'hostname' => 'different.example',
+        ]),
+    ]);
+    $website = Website::factory()->create([
+        'turnstile_enabled' => true,
+        'turnstile_secret_key' => 'secret-key',
+    ]);
+    $website->domains()->create(['domain' => 'protected.example', 'is_primary' => true]);
+    Form::factory()->for($website)->create(['name' => 'Contact form', 'slug' => 'contact-form']);
+
+    $this->withHeader('Origin', 'https://protected.example')->post('/submit', [
+        '_form_name' => 'Contact form',
+        'name' => 'Automated visitor',
+        'message' => 'A message without links.',
+        'cf-turnstile-response' => 'token-for-another-site',
+    ])->assertRedirectContains('/submitted');
+
+    expect(FormSubmission::query()->latest('id')->firstOrFail()->is_spam)->toBeTrue();
 });
 
 it('quarantines link-heavy submissions without sending notifications', function (): void {
@@ -175,18 +310,25 @@ it('quarantines unsolicited music download promotions', function (): void {
     Http::assertNothingSent();
 });
 
-it('does not flag a legitimate message containing one link', function (): void {
-    $this->withHeader('Origin', 'https://legitimate-check.example')
+it('quarantines any submission containing a link', function (string $message): void {
+    $this->withHeader('Origin', 'https://single-link-check.example')
         ->post('/submit', [
             '_form_name' => 'Contact form',
             'name' => 'Ada Lovelace',
             'email' => 'ada@example.com',
-            'message' => 'Could you quote for the project described at https://example.com/brief?',
+            'message' => $message,
         ])
         ->assertRedirectContains('/submitted');
 
-    expect(FormSubmission::query()->latest('id')->firstOrFail()->is_spam)->toBeFalse();
-});
+    expect(FormSubmission::query()->latest('id')->firstOrFail()->is_spam)->toBeTrue();
+    Mail::assertNothingSent();
+})->with([
+    'full URL' => 'Could you review https://example.com/brief?',
+    'www URL' => 'Could you review www.example.com/brief?',
+    'bare domain with an uncommon suffix' => 'Start here: gnosis.link/RoRZxz',
+    'short domain' => 'Start here: is.gd/qySLUJ',
+    'obfuscated domain' => 'Remove me at brnd .li/delist',
+]);
 
 it('does not flag a Robert name with an ordinary phone number', function (): void {
     $this->withHeader('Origin', 'https://legitimate-robert.example')
@@ -232,11 +374,28 @@ it('allows callback forms that do not include a message field', function (): voi
     expect(FormSubmission::query()->latest('id')->firstOrFail()->is_spam)->toBeFalse();
 });
 
+it('allows genuine enquiries with a dotted email local part', function (): void {
+    $this->withHeader('Origin', 'https://group-enquiry.example')
+        ->post('/submit', [
+            '_form_name' => 'Enquiry',
+            'name' => 'Elísa Rún Gunnlaugsdóttir',
+            'email' => 'elisa.gunnlaugs@gmail.com',
+            'phone' => '+3548454613',
+            'group_size' => '14',
+            'arrival_month' => 'May 2027',
+        ])
+        ->assertRedirectContains('/submitted');
+
+    expect(FormSubmission::query()->latest('id')->firstOrFail()->is_spam)->toBeFalse();
+});
+
 it('sends the configured website acknowledgement to a genuine lead', function (): void {
     $this->freezeTime();
     $website = Website::factory()->create([
         'name' => 'Acme Studio',
         'autoresponder_enabled' => true,
+        'autoresponder_from_name' => 'Acme Studio',
+        'autoresponder_from_email' => 'hello@acme.example',
         'autoresponder_subject' => 'Thanks {name}',
         'autoresponder_body' => 'Hello {name}, we received your {form_name} enquiry.',
         'autoresponder_delay_minutes' => 15,
@@ -260,6 +419,8 @@ it('sends the configured website acknowledgement to a genuine lead', function ()
     Queue::assertPushed(SendFormSubmissionAcknowledgement::class, function (SendFormSubmissionAcknowledgement $job): bool {
         return $job->recipient === 'ada@example.com'
             && $job->emailSubject === 'Thanks Ada Lovelace'
+            && $job->fromEmail === 'mail@digizu.co.uk'
+            && $job->fromName === 'Acme Studio'
             && $job->delay?->equalTo(now()->addMinutes(15));
     });
     expect(FormSubmission::query()->latest('id')->firstOrFail()->autoresponder_sent_at)->toBeNull();
@@ -273,11 +434,13 @@ it('sends a queued acknowledgement and records its delivery', function (): void 
         'ada@example.com',
         'We received your enquiry',
         'Hello Ada',
+        'hello@example.com',
+        'Example Studio',
     );
 
-    $job->handle(new AutoresponderHtmlSanitizer);
+    $job->handle(app(AutoresponderDeliveryService::class));
 
-    Mail::assertSent(FormSubmissionAcknowledgement::class, fn (FormSubmissionAcknowledgement $mail): bool => $mail->hasTo('ada@example.com'));
+    Mail::assertSent(FormSubmissionAcknowledgement::class, fn (FormSubmissionAcknowledgement $mail): bool => $mail->hasTo('ada@example.com') && $mail->hasFrom('hello@example.com', 'Example Studio'));
     expect($submission->refresh()->autoresponder_sent_at)->not->toBeNull()
         ->and($submission->activities()->where('type', 'autoresponder_sent')->exists())->toBeTrue();
 });
@@ -308,7 +471,10 @@ it('allows a form to disable the website acknowledgement', function (): void {
     Form::factory()->create(['website_id' => $website->id, 'name' => 'Contact form', 'slug' => 'contact-form', 'email_enabled_override' => false, 'autoresponder_enabled_override' => false]);
 
     $this->withHeader('Origin', 'https://no-reply.example')->post('/submit', [
-        '_form_name' => 'Contact form', 'name' => 'Ada', 'email' => 'ada@example.com', 'message' => 'A genuine enquiry.',
+        '_form_name' => 'Contact form',
+        'name' => 'Ada',
+        'email' => 'ada@example.com',
+        'message' => 'A genuine enquiry.',
     ]);
 
     Queue::assertNotPushed(SendFormSubmissionAcknowledgement::class);
@@ -413,3 +579,20 @@ it('rate limits submissions across the hourly window', function (): void {
 
     $this->assertDatabaseCount('form_submissions', 2);
 });
+
+it('queues customer acknowledgements only for active plan entitlements', function (string $tier, string $status, bool $expected): void {
+    $owner = User::factory()->create(['membership_tier' => $tier, 'membership_status' => $status]);
+    $website = Website::factory()->for($owner, 'owner')->create(['autoresponder_enabled' => true]);
+    $website->domains()->create(['domain' => 'acknowledgement.example', 'is_primary' => true]);
+    $this->withHeader('Origin', 'https://acknowledgement.example')->post('/submit', [
+        '_form_name' => 'Contact', 'name' => 'Ada', 'email' => 'ada@example.com', 'message' => 'Please contact me.',
+    ])->assertRedirect();
+    if ($expected) {
+        Queue::assertPushed(SendFormSubmissionAcknowledgement::class, 1);
+        Queue::assertPushed(SendFormSubmissionAcknowledgement::class, fn ($job): bool => $job->recipient === 'ada@example.com' && $job->fromEmail === config('forms.autoresponder_from_address'));
+    } else {
+        Queue::assertNotPushed(SendFormSubmissionAcknowledgement::class);
+    }
+})->with([
+    ['essential', 'active', true], ['growth', 'active', true], ['complete', 'active', true], ['essential', 'canceled', false],
+]);

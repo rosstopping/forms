@@ -78,8 +78,14 @@ it('allows an administrator to correct a website domain from settings', function
     $this->actingAs($admin)
         ->get(route('admin.websites.show', [$website, 'tab' => 'settings']))
         ->assertSuccessful()
-        ->assertSee('Website domain or URL')
-        ->assertSee('wrong.example.com');
+        ->assertDontSee('Website domain or URL')
+        ->assertDontSee('>Domains<', false)
+        ->assertDontSee('Website status')
+        ->assertDontSee('Weekly reports')
+        ->assertDontSee('WordPress workspace')
+        ->assertDontSee('Pixel workspace')
+        ->assertDontSee('Created</dt>', false)
+        ->assertSee('Website name');
 
     $this->actingAs($admin)
         ->put(route('admin.websites.update', $website), [
@@ -87,7 +93,7 @@ it('allows an administrator to correct a website domain from settings', function
             'domain' => 'https://www.Correct-Example.com/services',
             'user_id' => $website->user_id,
         ])
-        ->assertRedirect(route('admin.websites.show', $website))
+        ->assertRedirect(route('admin.websites.show', ['website' => $website, 'tab' => 'settings']))
         ->assertSessionHas('status', 'Website settings updated.');
 
     expect($website->fresh()->primaryDomain()?->domain)->toBe('www.correct-example.com')
@@ -112,4 +118,35 @@ it('does not allow a website domain assigned to another website', function (): v
         ->assertSessionHasErrors('domain');
 
     expect($website->fresh()->primaryDomain()?->domain)->toBe('original.example.com');
+});
+
+it('lets an administrator choose the WordPress and Pixel connection workspaces', function (): void {
+    config(['forms.pixel_ui_enabled' => true]);
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $website = Website::factory()->create([
+        'wordpress_enabled' => false,
+        'pixel_enabled' => true,
+        'pixel_payload_version' => 4,
+    ]);
+
+    $this->actingAs($admin)
+        ->put(route('admin.websites.update', $website), [
+            'wordpress_enabled' => '1',
+            'pixel_enabled' => '0',
+        ])
+        ->assertRedirect(route('admin.websites.show', ['website' => $website, 'tab' => 'settings']))
+        ->assertSessionHasNoErrors();
+
+    expect($website->fresh())
+        ->wordpress_enabled->toBeTrue()
+        ->pixel_enabled->toBeFalse()
+        ->pixel_payload_version->toBe(5);
+
+    $this->actingAs($admin)
+        ->get(route('admin.websites.show', $website))
+        ->assertSuccessful()
+        ->assertSee('data-tab="wordpress"', false)
+        ->assertDontSee('data-tab="pixel"', false)
+        ->assertSee('Enable the WordPress connection')
+        ->assertSee('Enable the Pixel connection');
 });

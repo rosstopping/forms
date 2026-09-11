@@ -3,6 +3,7 @@
 use App\Mail\ContentSuggestionReminder;
 use App\Models\ContentPlan;
 use App\Models\ContentRequest;
+use App\Models\GithubUserAuthorization;
 use App\Models\SearchOpportunity;
 use App\Models\SeoOpportunity;
 use App\Models\User;
@@ -19,6 +20,7 @@ test('an empty content queue receives suggestions 24 hours before its weekly run
     Carbon::setTestNow(Carbon::parse('2026-08-13 06:00:00', 'Europe/London'));
     Mail::fake();
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    GithubUserAuthorization::factory()->for($admin)->create();
     $website = Website::factory()->create();
     WebsiteRepository::factory()->for($website)->create();
     $plan = ContentPlan::factory()->for($website)->for($admin, 'creator')->create(['weekday' => 5, 'hour' => 6, 'timezone' => 'Europe/London']);
@@ -39,6 +41,7 @@ test('a reminder is not sent when the content queue already has a pending todo',
     Carbon::setTestNow(Carbon::parse('2026-08-13 06:00:00', 'Europe/London'));
     Mail::fake();
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    GithubUserAuthorization::factory()->for($admin)->create();
     $website = Website::factory()->create();
     WebsiteRepository::factory()->for($website)->create();
     ContentPlan::factory()->for($website)->for($admin, 'creator')->create(['weekday' => 5, 'hour' => 6]);
@@ -50,8 +53,24 @@ test('a reminder is not sent when the content queue already has a pending todo',
     Mail::assertNothingOutgoing();
 });
 
+test('a content suggestion reminder is not sent to a viewer', function () {
+    Carbon::setTestNow(Carbon::parse('2026-08-13 06:00:00', 'Europe/London'));
+    Mail::fake();
+    $viewer = User::factory()->create();
+    $website = Website::factory()->create();
+    $website->members()->attach($viewer, ['role' => Website::MEMBER_ROLE_VIEWER]);
+    WebsiteRepository::factory()->for($website)->create();
+    ContentPlan::factory()->for($website)->for($viewer, 'creator')->create(['weekday' => 5, 'hour' => 6, 'timezone' => 'Europe/London']);
+    SearchOpportunity::factory()->for($website)->create(['status' => SearchOpportunity::STATUS_OPEN]);
+
+    $this->artisan('content:send-suggestion-reminders')->assertSuccessful();
+
+    Mail::assertNothingOutgoing();
+});
+
 test('a signed email suggestion link adds the opportunity to the content queue', function () {
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    GithubUserAuthorization::factory()->for($admin)->create();
     $website = Website::factory()->create();
     WebsiteRepository::factory()->for($website)->create();
     ContentPlan::factory()->for($website)->for($admin, 'creator')->create();
@@ -63,8 +82,10 @@ test('a signed email suggestion link adds the opportunity to the content queue',
 
     $this->get($url)
         ->assertSuccessful()
+        ->assertSee('rel="stylesheet"', false)
         ->assertSee('Added to the content queue')
-        ->assertSee($website->name);
+        ->assertSee($website->name)
+        ->assertSee('You can close this window.');
 
     expect($opportunity->fresh()->status)->toBe(SearchOpportunity::STATUS_QUEUED)
         ->and($website->contentRequests()->sole()->instructions)->toContain('roof repairs doncaster')

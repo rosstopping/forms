@@ -9,6 +9,7 @@ beforeEach(function (): void {
     config([
         'memberships.plans.essential.stripe_price_id' => 'price_essential',
         'memberships.plans.growth.stripe_price_id' => 'price_growth',
+        'memberships.growth_offer.stripe_price_id' => 'price_growth_2026_offer',
         'memberships.plans.complete.stripe_price_id' => 'price_complete',
         'services.stripe.secret' => 'sk_test_sitewell',
         'services.stripe.webhook_secret' => 'whsec_sitewell',
@@ -27,10 +28,11 @@ it('shows the marketing packages on the account billing page', function (): void
         ->assertSee('Billing and membership')
         ->assertSee('Essential')
         ->assertSee('£149')
-        ->assertSee('Google Search Console performance')
-        ->assertSee('£249')
-        ->assertSee('Google Business Profile management')
-        ->assertSee('£399')
+        ->assertSee('Search performance interpreted by our SEO specialists')
+        ->assertSee('£316')
+        ->assertSee('£395')
+        ->assertSee('Specialist Google Business Profile management')
+        ->assertSee('£695')
         ->assertSee('Current package');
 });
 
@@ -53,9 +55,15 @@ it('starts a Stripe hosted subscription checkout for a selected package', functi
 
     Http::assertSent(fn ($request): bool => $request->url() === 'https://api.stripe.test/v1/checkout/sessions'
         && $request['mode'] === 'subscription'
-        && $request['line_items[0][price]'] === 'price_growth'
+        && $request['line_items[0][price]'] === 'price_growth_2026_offer'
         && $request['client_reference_id'] === (string) $user->id
         && $request['customer_email'] === $user->email);
+});
+
+it('returns Growth checkout to its standard Stripe price after the offer ends', function (): void {
+    $this->travelTo('2027-01-01 00:00:00 Europe/London');
+
+    expect(MembershipPlan::checkoutPriceId(MembershipPlan::GROWTH))->toBe('price_growth');
 });
 
 it('opens the Stripe hosted portal for package changes and cancellation', function (): void {
@@ -123,18 +131,29 @@ it('only enables explicitly tiered features at the required package level', func
     $complete = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE]);
 
     expect($essential->hasMembershipFeature(MembershipPlan::FEATURE_GROWTH))->toBeFalse()
+        ->and($essential->hasMembershipFeature(MembershipPlan::FEATURE_HEALTH_REPORTS))->toBeTrue()
+        ->and($essential->hasMembershipFeature(MembershipPlan::FEATURE_SEARCH_CONSOLE))->toBeTrue()
         ->and($growth->hasMembershipFeature(MembershipPlan::FEATURE_GROWTH))->toBeTrue()
         ->and($growth->hasMembershipFeature(MembershipPlan::FEATURE_COMPLETE))->toBeFalse()
         ->and($complete->hasMembershipFeature(MembershipPlan::FEATURE_COMPLETE))->toBeTrue();
 });
 
-it('blocks a website owner from Growth routes when they have Essential', function (): void {
-    $owner = User::factory()->create(['membership_tier' => MembershipPlan::ESSENTIAL]);
+it('blocks Search Console when the Essential membership is inactive', function (): void {
+    $owner = User::factory()->create([
+        'membership_tier' => MembershipPlan::ESSENTIAL,
+        'membership_status' => null,
+    ]);
     $website = Website::factory()->for($owner, 'owner')->create();
 
     $this->actingAs($owner)->get(route('admin.search-console.connect', $website))
         ->assertRedirect(route('admin.billing.index'))
         ->assertSessionHas('error');
+
+    $this->actingAs($owner)->post(route('admin.website-health-reports.store', $website))
+        ->assertRedirect(route('admin.billing.index'))
+        ->assertSessionHas('error');
+
+    expect($website->healthReports()->exists())->toBeFalse();
 });
 
 it('shows locked feature previews for website areas outside the owner package', function (): void {
@@ -148,7 +167,8 @@ it('shows locked feature previews for website areas outside the owner package', 
         ->assertSee('data-tab="business-profile"', false)
         ->assertSee('data-tab="content"', false)
         ->assertDontSee('Manual content requests')
-        ->assertSee('Unlock search performance')
+        ->assertSee('Connect Google')
+        ->assertDontSee('Unlock search performance')
         ->assertSee('See where your website can grow')
         ->assertSee('Plan and request new content')
         ->assertSee('Put your local presence to work')

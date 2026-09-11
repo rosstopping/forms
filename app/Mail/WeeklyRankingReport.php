@@ -29,7 +29,7 @@ class WeeklyRankingReport extends Mailable implements ShouldQueue
     {
         return new Content(
             view: 'emails.weekly-ranking-report',
-            with: ['website' => $this->website, 'report' => $this->report, 'reportUrl' => route('admin.websites.show', [$this->website, 'tab' => 'seo'])],
+            with: ['website' => $this->website, 'report' => $this->report, 'reportUrl' => route('admin.websites.show', collect($this->report['targetKeywords'] ?? [])->isNotEmpty() ? [$this->website, 'tab' => 'seo', 'seo_section' => 'targets'] : [$this->website, 'tab' => 'seo'])],
         );
     }
 }

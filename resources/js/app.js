@@ -139,6 +139,18 @@ const setMobileNavigationOpen = (open) => {
 mobileNavigationToggle?.addEventListener('click', () => setMobileNavigationOpen(true));
 mobileNavigationCloseButtons.forEach((button) => button.addEventListener('click', () => setMobileNavigationOpen(false)));
 
+document.querySelectorAll('[data-website-switcher]').forEach((select) => {
+    select.addEventListener('change', () => select.form?.requestSubmit());
+});
+
+document.querySelectorAll('[data-health-report-selector]').forEach((select) => {
+    select.addEventListener('change', () => {
+        if (select.value) {
+            window.location.assign(select.value);
+        }
+    });
+});
+
 document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && mobileNavigation && !mobileNavigation.classList.contains('hidden')) {
         setMobileNavigationOpen(false);
@@ -459,9 +471,10 @@ document.querySelectorAll('[data-bulk-leads-form]').forEach((form) => {
 
     form.querySelectorAll('[data-bulk-leads-open]').forEach((button) => button.addEventListener('click', () => {
         const selectedAction = button.dataset.bulkLeadsOpen;
-        const count = checkboxes.filter((checkbox) => checkbox.checked).length;
+        const count = allMatching ? totalMatching : checkboxes.filter((checkbox) => checkbox.checked).length;
         const content = {
             update_status: ['Update lead status?', `Choose the new status for ${count} selected lead${count === 1 ? '' : 's'}.`, 'Update status'],
+            resend_notification: ['Resend email notifications?', `The original lead notification will be sent again for ${count} selected lead${count === 1 ? '' : 's'}. Spam leads and leads without configured recipients will be skipped.`, 'Resend notifications'],
             mark_spam: ['Mark leads as spam?', `${count} selected lead${count === 1 ? '' : 's'} will be hidden from the default inbox.`, 'Mark as spam'],
             delete: ['Delete selected leads?', `${count} selected lead${count === 1 ? '' : 's'} will be permanently deleted. This cannot be undone.`, 'Delete leads'],
         }[selectedAction];
@@ -631,6 +644,11 @@ document.querySelectorAll('[data-bulk-prospects-form]').forEach((form) => {
         const confirmations = {
             delete: `Permanently delete ${selected} selected prospect${selected === 1 ? '' : 's'}?`,
             send_approved_email: `Send every eligible approved email for ${selected} selected prospect${selected === 1 ? '' : 's'} now?`,
+            stop: `Stop outreach for ${selected} selected prospect${selected === 1 ? '' : 's'}?`,
+            mark_replied: `Mark ${selected} selected prospect${selected === 1 ? '' : 's'} as replied and stop automated outreach?`,
+            mark_not_interested: `Mark ${selected} selected prospect${selected === 1 ? '' : 's'} as not interested and permanently stop automated outreach?`,
+            mark_customer: `Mark ${selected} selected prospect${selected === 1 ? '' : 's'} as ${selected === 1 ? 'a customer' : 'customers'} and stop automated outreach?`,
+            mark_pilot: `Mark ${selected} selected prospect${selected === 1 ? '' : 's'} as ${selected === 1 ? 'an active pilot' : 'active pilots'} and stop automated outreach?`,
         };
 
         if (confirmations[action.value] && !window.confirm(confirmations[action.value])) {

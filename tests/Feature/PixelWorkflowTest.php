@@ -16,6 +16,7 @@ use App\Models\Website;
 use App\Models\WebsiteHealthReport;
 use App\Models\WebsiteHealthReportPage;
 use App\Models\WebsiteRepository;
+use App\Models\WordpressConnection;
 use App\Services\ContentRequestPixelOptimisationGenerator;
 use App\Services\OptimisationDeploymentManager;
 use App\Services\PixelUrlNormalizer;
@@ -53,11 +54,15 @@ it('details live and reviewable changes on the pixel tab', function (): void {
         ->assertSee('Rollback');
 });
 
-it('uses one report action to queue both pixel and github remediation', function (): void {
+it('uses one report action to queue both pixel and wordpress remediation', function (): void {
     Queue::fake();
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     GithubUserAuthorization::factory()->for($admin)->create();
-    $website = Website::factory()->for($admin, 'owner')->create(['pixel_enabled' => true]);
+    $website = Website::factory()->for($admin, 'owner')->create([
+        'pixel_enabled' => true,
+        'wordpress_enabled' => true,
+    ]);
+    WordpressConnection::factory()->for($website)->create();
     $installation = GithubInstallation::factory()->create(['installed_by' => $admin->id]);
     WebsiteRepository::factory()->for($website)->create(['github_installation_id' => $installation->id]);
     $report = WebsiteHealthReport::factory()->for($website)->create([
@@ -67,6 +72,12 @@ it('uses one report action to queue both pixel and github remediation', function
         'url' => 'https://example.com/services',
         'checks' => [['key' => 'meta_description', 'label' => 'Meta description', 'status' => 'warning', 'message' => 'Missing description.']],
     ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.website-health-reports.show', [$website, $report]))
+        ->assertSuccessful()
+        ->assertSee('Pixel is enabled for supported page fixes, and WordPress is connected for repository fixes.')
+        ->assertDontSee('Sitewell will use every connected delivery path');
 
     $this->actingAs($admin)
         ->post(route('admin.report-remediation.store', [$website, $report]))
@@ -125,6 +136,21 @@ it('queues existing pending content todos from the pixel tab', function (): void
         ->assertRedirect(route('admin.websites.show', ['website' => $website, 'tab' => 'pixel']));
 
     Queue::assertPushed(fn (GenerateContentRequestPixelOptimisations $job): bool => $job->contentRequest->is($contentRequest));
+});
+
+it('uses content queue priority when preparing a bounded pixel batch', function (): void {
+    Queue::fake();
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $website = Website::factory()->for($admin, 'owner')->create(['pixel_enabled' => true]);
+    $requests = ContentRequest::factory()->count(21)->for($website)->for($admin, 'creator')->create();
+    $bumped = $requests->last();
+    $bumped->update(['bumped_at' => now()]);
+
+    $this->actingAs($admin)->post(route('admin.websites.pixel.content-requests.store', $website))->assertRedirect();
+
+    Queue::assertPushed(GenerateContentRequestPixelOptimisations::class, 20);
+    Queue::assertPushed(fn (GenerateContentRequestPixelOptimisations $job): bool => $job->contentRequest->is($bumped));
+    Queue::assertNotPushed(fn (GenerateContentRequestPixelOptimisations $job): bool => $job->contentRequest->is($requests->get(19)));
 });
 
 it('queues a search opportunity through pixel without a github repository', function (): void {

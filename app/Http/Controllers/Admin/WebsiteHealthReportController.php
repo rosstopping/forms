@@ -43,14 +43,23 @@ class WebsiteHealthReportController extends Controller
         abort_unless($website->isAccessibleBy($request->user()), 403);
         abort_unless($websiteHealthReport->website_id === $website->id, 404);
 
+        if ($request->user()?->onboarding_status === 'trial_active' && ! $request->user()->onboarding_health_report_viewed_at) {
+            $request->user()->forceFill(['onboarding_health_report_viewed_at' => now()])->save();
+        }
+
         $websiteHealthReport->load([
             'website.repository',
+            'website.wordpressConnection',
             'remediationRuns' => fn ($query) => $query->with('repository')->latest(),
             'pages' => fn ($query) => $query->with('optimisations')->orderBy('depth')->orderBy('url'),
         ]);
 
         return view('admin.website-health-reports.show', [
             'report' => $websiteHealthReport,
+            'reportHistory' => $website->healthReports()
+                ->latest('created_at')
+                ->latest('id')
+                ->get(['id', 'website_id', 'status', 'overall_status', 'passed_checks', 'warning_checks', 'failed_checks', 'created_at']),
             'canManageWebsite' => $website->isManageableBy($request->user()),
             'canUsePixel' => config('forms.pixel_ui_enabled') && ($request->user()?->isAdmin() || $website->owner?->hasMembershipFeature(MembershipPlan::FEATURE_GROWTH)),
             'aiPrompt' => $request->user()?->isAdmin() && $websiteHealthReport->status === WebsiteHealthReport::STATUS_COMPLETED

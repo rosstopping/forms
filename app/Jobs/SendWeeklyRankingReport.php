@@ -33,7 +33,7 @@ class SendWeeklyRankingReport implements ShouldBeUnique, ShouldQueue
     {
         $report = $builder->build($this->website);
 
-        foreach ($recipients->for($this->website) as $recipient) {
+        foreach ($recipients->forReports($this->website) as $recipient) {
             Mail::to($recipient)->send(new WeeklyRankingReport($this->website, $report));
         }
     }

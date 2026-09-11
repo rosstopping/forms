@@ -197,7 +197,9 @@ class WebsiteHealthAuditor
     protected function endpointCheck(string $url, string $key, string $label): array
     {
         try {
-            $response = $this->request()->get($url);
+            $response = $key === 'sitemap_xml'
+                ? app(SitemapFetcher::class)->fetch($this->request(), $url)
+                : $this->request()->get($url);
             $passed = $response->successful();
 
             return $this->check('discoverability', $key, $label, $passed ? 'passed' : 'warning', $passed ? "{$label}." : "{$url} returned HTTP {$response->status()}.");

@@ -3,6 +3,7 @@
 namespace App\View\Composers;
 
 use App\Models\FormSubmission;
+use App\Models\Website;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
@@ -14,26 +15,22 @@ class NavigationComposer
         $newLeadCount = 0;
         $followUpReminderCount = 0;
 
-        if ($user) {
+        $currentWebsite = request()->attributes->get('currentWebsite');
+
+        if ($user && $currentWebsite instanceof Website && $currentWebsite->isAccessibleBy($user)) {
             $query = FormSubmission::query()
+                ->whereBelongsTo($currentWebsite)
                 ->where('status', 'new')
                 ->where('is_spam', false);
-
-            if (! $user->isAdmin()) {
-                $query->whereHas('website', fn ($query) => $query->accessibleTo($user));
-            }
 
             $newLeadCount = $query->count();
 
             $followUpQuery = FormSubmission::query()
+                ->whereBelongsTo($currentWebsite)
                 ->where('is_spam', false)
-                ->whereNotIn('status', ['won', 'lost'])
+                ->whereNotIn('status', FormSubmission::CLOSED_STATUSES)
                 ->whereNotNull('follow_up_at')
                 ->where('follow_up_at', '<=', today()->endOfDay());
-
-            if (! $user->isAdmin()) {
-                $followUpQuery->whereHas('website', fn ($query) => $query->accessibleTo($user));
-            }
 
             $followUpReminderCount = $followUpQuery->count();
         }

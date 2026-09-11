@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreContentRequestRequest;
 use App\Jobs\GenerateContentRequestPixelOptimisations;
+use App\Models\CompetitorOpportunity;
 use App\Models\ContentRequest;
 use App\Models\SearchOpportunity;
 use App\Models\SeoOpportunity;
@@ -27,7 +28,7 @@ class ContentRequestController extends Controller
             GenerateContentRequestPixelOptimisations::dispatch($contentRequest, $request->user());
         }
 
-        return Redirect::route('admin.websites.show', $website)->with('status', 'Content request added for the next generation.');
+        return Redirect::route('admin.websites.section', [$website, 'content'])->with('status', 'Content request added for the next generation.');
     }
 
     public function destroy(Request $request, Website $website, ContentRequest $contentRequest): RedirectResponse
@@ -45,9 +46,21 @@ class ContentRequestController extends Controller
                 'status' => SeoOpportunity::STATUS_OPEN,
                 'content_request_id' => null,
             ]);
+            CompetitorOpportunity::where('website_id', $contentRequest->website_id)->where('content_request_id', $contentRequest->id)->update(['status' => 'open', 'content_request_id' => null]);
             $contentRequest->delete();
         });
 
-        return Redirect::route('admin.websites.show', $website)->with('status', 'Content request removed.');
+        return Redirect::route('admin.websites.section', [$website, 'content'])->with('status', 'Content request removed.');
+    }
+
+    public function bump(Request $request, Website $website, ContentRequest $contentRequest): RedirectResponse
+    {
+        abort_unless($website->isManageableBy($request->user()), 403);
+        abort_unless($contentRequest->website_id === $website->id, 404);
+        abort_if($contentRequest->picked_up_at, 422, 'A content request cannot be reordered after generation has started.');
+
+        $contentRequest->update(['bumped_at' => now()]);
+
+        return Redirect::route('admin.websites.section', [$website, 'content'])->with('status', 'Content request moved to the top of the queue.');
     }
 }

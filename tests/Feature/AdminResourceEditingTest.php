@@ -1,9 +1,11 @@
 <?php
 
 use App\Models\Form;
+use App\Models\FormSubmission;
 use App\Models\User;
 use App\Models\Website;
 use App\Support\MembershipPlan;
+use Dom\HTMLDocument;
 use Illuminate\Support\Facades\Hash;
 
 it('allows an administrator to edit a user and optionally change their password', function (): void {
@@ -122,7 +124,7 @@ it('allows an administrator to grant and remove a membership without Stripe', fu
         ->post(route('admin.content-requests.store', $website), [
             'instructions' => 'Create a service page.',
         ])
-        ->assertRedirect(route('admin.websites.show', $website));
+        ->assertRedirect(route('admin.websites.section', [$website, 'content']));
 
     expect($website->contentRequests()->exists())->toBeTrue();
 
@@ -177,23 +179,66 @@ it('allows an administrator to delete a user without owned websites', function (
     $this->assertModelMissing($user);
 });
 
-it('does not delete the current administrator or a website owner', function (): void {
+it('keeps websites and their data when an administrator deletes their subscription account', function (): void {
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
-    $owner = User::factory()->create();
-    Website::factory()->for($owner, 'owner')->create();
+    $user = User::factory()->create();
+    $viewer = User::factory()->create();
+    $website = Website::factory()->for($user, 'owner')->create();
+    $website->members()->attach($user, ['role' => Website::MEMBER_ROLE_MANAGER]);
+    $website->members()->attach($viewer, ['role' => Website::MEMBER_ROLE_VIEWER]);
+    $form = Form::factory()->for($website)->create();
+    $submission = FormSubmission::factory()->for($website)->for($form)->create(['assigned_to' => $user->id]);
+    $sharedWebsite = Website::factory()->create();
+    $sharedWebsite->members()->attach($user, ['role' => Website::MEMBER_ROLE_VIEWER]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.users.index'))
+        ->assertSee('Their websites will be kept.');
+
+    $this->delete(route('admin.users.destroy', $user))
+        ->assertRedirect(route('admin.users.index'))
+        ->assertSessionDoesntHaveErrors();
+
+    $this->assertModelMissing($user);
+    $this->assertModelExists($website);
+    $this->assertModelExists($form);
+    $this->assertModelExists($submission);
+    $this->assertDatabaseMissing('user_website', ['user_id' => $user->id]);
+
+    expect($website->fresh()->user_id)->toBeNull()
+        ->and($website->fresh()->membershipRoleFor($viewer))->toBe(Website::MEMBER_ROLE_VIEWER)
+        ->and($submission->fresh()->assigned_to)->toBeNull()
+        ->and($sharedWebsite->fresh()->user_id)->toBe($sharedWebsite->user_id);
+
+    $this->get(route('admin.websites.show', $website))->assertSuccessful();
+    $this->put(route('admin.websites.update', $website), [
+        'name' => 'Still managed by admin',
+        'health_reports_enabled' => false,
+    ])->assertSessionDoesntHaveErrors();
+
+    expect($website->fresh()->name)->toBe('Still managed by admin');
+});
+
+it('prevents normal users from deleting user accounts', function (): void {
+    $user = User::factory()->create();
+    $otherUser = User::factory()->create();
+
+    $this->actingAs($user)
+        ->delete(route('admin.users.destroy', $otherUser))
+        ->assertForbidden();
+
+    $this->assertModelExists($otherUser);
+});
+
+it('does not delete the current administrator', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
 
     $this->actingAs($admin)
         ->from(route('admin.users.index'))
         ->delete(route('admin.users.destroy', $admin))
         ->assertSessionHasErrors('user');
 
-    $this->actingAs($admin)
-        ->from(route('admin.users.index'))
-        ->delete(route('admin.users.destroy', $owner))
-        ->assertSessionHasErrors('user');
-
     $this->assertModelExists($admin);
-    $this->assertModelExists($owner);
 });
 
 it('allows an administrator to rename and delete a website', function (): void {
@@ -208,7 +253,7 @@ it('allows an administrator to rename and delete a website', function (): void {
             'health_reports_enabled' => false,
         ])
         ->assertSessionDoesntHaveErrors()
-        ->assertRedirect(route('admin.websites.show', $website));
+        ->assertRedirect(route('admin.websites.show', ['website' => $website, 'tab' => 'settings']));
 
     expect($website->fresh()->name)->toBe('Renamed website');
 
@@ -241,7 +286,7 @@ it('allows an administrator to configure website webhook settings', function ():
             'webhook_secret' => 'signing-secret',
         ])
         ->assertSessionDoesntHaveErrors()
-        ->assertRedirect(route('admin.websites.show', $website));
+        ->assertRedirect(route('admin.websites.show', ['website' => $website, 'tab' => 'settings']));
 
     expect($website->fresh())
         ->webhook_enabled->toBeTrue()
@@ -258,6 +303,68 @@ it('allows an administrator to configure website webhook settings', function ():
         ->webhook_enabled->toBeTrue()
         ->webhook_url->toBe('https://hooks.example.com/submissions')
         ->webhook_secret->toBe('signing-secret');
+});
+
+it('includes Turnstile in the copyable form example before and after configuration', function (bool $enabled, ?string $siteKey): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $website = Website::factory()->create([
+        'turnstile_enabled' => $enabled,
+        'turnstile_site_key' => $siteKey,
+        'turnstile_secret_key' => 'private-turnstile-secret',
+    ]);
+
+    $response = $this->actingAs($admin)
+        ->get(route('admin.websites.show', ['website' => $website, 'tab' => 'forms']))
+        ->assertSuccessful();
+
+    $document = HTMLDocument::createFromString($response->getContent(), LIBXML_NOERROR);
+    $example = $document->getElementById('form-onboarding-example')->textContent;
+
+    expect($example)
+        ->toContain('<div class="cf-turnstile" data-sitekey="'.($siteKey ?: 'YOUR_TURNSTILE_SITE_KEY').'"></div>')
+        ->toContain('<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>')
+        ->toContain('cf-turnstile-response')
+        ->not->toContain('private-turnstile-secret');
+})->with([
+    'not configured' => [false, null],
+    'saved key with protection disabled' => [false, 'public-site-key'],
+    'protection enabled' => [true, 'public-site-key'],
+]);
+
+it('allows an administrator to configure website Turnstile protection', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $website = Website::factory()->create();
+
+    $this->actingAs($admin)
+        ->put(route('admin.websites.update', $website), [
+            'turnstile_enabled' => true,
+            'turnstile_site_key' => 'site-key',
+            'turnstile_secret_key' => 'secret-key',
+        ])
+        ->assertSessionDoesntHaveErrors();
+
+    expect($website->fresh())
+        ->turnstile_enabled->toBeTrue()
+        ->turnstile_site_key->toBe('site-key')
+        ->turnstile_secret_key->toBe('secret-key');
+
+    $this->actingAs($admin)
+        ->get(route('admin.websites.show', $website))
+        ->assertSuccessful()
+        ->assertSee('Protect submissions with Cloudflare Turnstile')
+        ->assertSee('data-sitekey="site-key"', false)
+        ->assertSee('https://challenges.cloudflare.com/turnstile/v0/api.js')
+        ->assertDontSee('secret-key');
+
+    $this->actingAs($admin)
+        ->put(route('admin.websites.update', $website), [
+            'turnstile_enabled' => true,
+            'turnstile_site_key' => 'site-key',
+            'turnstile_secret_key' => '',
+        ])
+        ->assertSessionDoesntHaveErrors();
+
+    expect($website->fresh()->turnstile_secret_key)->toBe('secret-key');
 });
 
 it('prevents website owners from deleting websites', function (): void {

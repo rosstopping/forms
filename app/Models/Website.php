@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\MembershipPlan;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -24,22 +25,32 @@ class Website extends Model
     protected $attributes = [
         'autoresponder_content_type' => 'text',
         'autoresponder_delay_minutes' => 0,
+        'pixel_enabled' => false,
+        'wordpress_enabled' => false,
+    ];
+
+    protected $hidden = [
+        'turnstile_secret_key',
     ];
 
     protected $fillable = [
         'user_id',
         'name',
+        'review_url',
         'is_active',
         'auto_discovered',
         'email_enabled',
         'email_recipients',
         'autoresponder_enabled',
+        'autoresponder_from_name',
+        'autoresponder_from_email',
         'autoresponder_subject',
         'autoresponder_body',
         'autoresponder_content_type',
         'autoresponder_delay_minutes',
         'webhook_enabled',
         'health_reports_enabled',
+        'weekly_ranking_reports_enabled',
         'seo_weekly_snapshots_enabled',
         'seo_history_backfilled_at',
         'webhook_url',
@@ -47,9 +58,11 @@ class Website extends Model
         'success_redirect_url',
         'failure_redirect_url',
         'turnstile_enabled',
+        'turnstile_site_key',
         'turnstile_secret_key',
         'first_seen_at',
         'pixel_enabled',
+        'wordpress_enabled',
         'copilot_build_task_id',
         'copilot_build_task_url',
         'copilot_build_task_state',
@@ -62,6 +75,7 @@ class Website extends Model
         'autoresponder_delay_minutes' => 'integer',
         'webhook_enabled' => 'boolean',
         'health_reports_enabled' => 'boolean',
+        'weekly_ranking_reports_enabled' => 'boolean',
         'seo_weekly_snapshots_enabled' => 'boolean',
         'seo_history_backfilled_at' => 'datetime',
         'turnstile_enabled' => 'boolean',
@@ -71,6 +85,7 @@ class Website extends Model
         'first_seen_at' => 'datetime',
         'pixel_last_seen_at' => 'datetime',
         'pixel_enabled' => 'boolean',
+        'wordpress_enabled' => 'boolean',
         'pixel_payload_version' => 'integer',
     ];
 
@@ -111,7 +126,9 @@ class Website extends Model
         }
 
         return $query->where(fn (Builder $query) => $query
-            ->where('user_id', $user->id)
+            ->where(fn (Builder $query) => $query
+                ->where('user_id', $user->id)
+                ->whereDoesntHave('members', fn (Builder $query) => $query->whereKey($user->id)))
             ->orWhereHas('members', fn (Builder $query) => $query
                 ->whereKey($user->id)
                 ->where('user_website.role', self::MEMBER_ROLE_MANAGER)));
@@ -124,16 +141,29 @@ class Website extends Model
 
     public function isManageableBy(?User $user): bool
     {
-        return $user !== null && ($user->isAdmin() || $this->user_id === $user->id || $this->members()->whereKey($user->id)->wherePivot('role', self::MEMBER_ROLE_MANAGER)->exists());
+        return $user !== null && ($user->isAdmin() || $this->membershipRoleFor($user) === self::MEMBER_ROLE_MANAGER);
+    }
+
+    public function canUseAutoresponders(?User $actingUser = null): bool
+    {
+        return $actingUser?->isAdmin() === true
+            || $this->owner === null
+            || $this->owner->hasMembershipFeature(MembershipPlan::FEATURE_AUTORESPONDERS);
     }
 
     public function membershipRoleFor(User $user): ?string
     {
-        if ($this->user_id === $user->id) {
-            return 'owner';
+        $member = $this->members()->whereKey($user->id)->first();
+
+        if ($member) {
+            return $member->pivot?->role;
         }
 
-        return $this->members()->whereKey($user->id)->first()?->pivot?->role;
+        if ($this->user_id === $user->id) {
+            return self::MEMBER_ROLE_MANAGER;
+        }
+
+        return null;
     }
 
     public function domains(): HasMany
@@ -151,6 +181,11 @@ class Website extends Model
         return $this->hasMany(FormSubmission::class);
     }
 
+    public function mailConnection(): HasOne
+    {
+        return $this->hasOne(WebsiteMailConnection::class);
+    }
+
     public function healthReports(): HasMany
     {
         return $this->hasMany(WebsiteHealthReport::class);
@@ -164,6 +199,16 @@ class Website extends Model
     public function repository(): HasOne
     {
         return $this->hasOne(WebsiteRepository::class);
+    }
+
+    public function wordpressConnection(): HasOne
+    {
+        return $this->hasOne(WordpressConnection::class);
+    }
+
+    public function wordpressStaticReleases(): HasMany
+    {
+        return $this->hasMany(WordpressStaticRelease::class);
     }
 
     public function searchConsoleConnection(): HasOne
@@ -206,9 +251,29 @@ class Website extends Model
         return $this->hasMany(SeoKeyword::class);
     }
 
+    public function seoTargetKeywords(): HasMany
+    {
+        return $this->hasMany(SeoTargetKeyword::class);
+    }
+
     public function seoReferringDomains(): HasMany
     {
         return $this->hasMany(SeoReferringDomain::class);
+    }
+
+    public function competitors(): HasMany
+    {
+        return $this->hasMany(WebsiteCompetitor::class);
+    }
+
+    public function backlinkAudits(): HasMany
+    {
+        return $this->hasMany(BacklinkAudit::class);
+    }
+
+    public function backlinkOpportunities(): HasMany
+    {
+        return $this->hasMany(BacklinkOpportunity::class);
     }
 
     public function seoCompetitors(): HasMany

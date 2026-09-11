@@ -124,6 +124,12 @@ class ContentRequestPixelOptimisationGenerator
         ])->all();
         $encodedCandidates = json_encode($candidates, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
         $instructions = Str::limit($contentRequest->instructions, 3000, '');
+        if ($contentRequest->competitor_context) {
+            $instructions .= app(CompetitorContentContext::class)->forPrompt([$contentRequest->competitor_context], 10000);
+        }
+        if ($contentRequest->backlink_context) {
+            $instructions .= app(BacklinkContentContext::class)->forPrompt([$contentRequest->backlink_context], 6000);
+        }
 
         return <<<PROMPT
 Content todo:

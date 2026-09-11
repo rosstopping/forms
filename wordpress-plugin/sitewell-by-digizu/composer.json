@@ -1,0 +1,31 @@
+{
+    "name": "sitewell/static-frontend",
+    "description": "Serve a Sitewell-managed static frontend through WordPress.",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "require": {
+        "php": ">=8.2"
+    },
+    "require-dev": {
+        "dealerdirect/phpcodesniffer-composer-installer": "^1.0",
+        "phpcompatibility/phpcompatibility-wp": "^2.1",
+        "phpunit/phpunit": "^11.5",
+        "wp-coding-standards/wpcs": "^3.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Sitewell\\StaticFrontend\\": "src/"
+        }
+    },
+    "scripts": {
+        "lint": "phpcs --standard=phpcs.xml.dist",
+        "test": "phpunit --configuration phpunit.xml.dist",
+        "package": "sh bin/package.sh"
+    },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        },
+        "sort-packages": true
+    }
+}

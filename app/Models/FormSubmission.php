@@ -6,17 +6,24 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
 class FormSubmission extends Model
 {
-    public const STATUSES = ['new', 'contacted', 'qualified', 'won', 'lost'];
+    public const STATUSES = ['new', 'contacted', 'qualified', 'won', 'work_completed', 'lost'];
+
+    public const STATUS_LABELS = ['new' => 'New', 'contacted' => 'Contacted', 'qualified' => 'Qualified', 'won' => 'Won', 'work_completed' => 'Work completed', 'lost' => 'Lost'];
+
+    public const CLOSED_STATUSES = ['won', 'work_completed', 'lost'];
 
     use HasFactory;
 
     protected $fillable = [
         'website_id',
+        'is_manual',
         'form_id',
         'source_url',
         'source_domain',
@@ -41,7 +48,10 @@ class FormSubmission extends Model
         'webhook_error',
     ];
 
+    protected $attributes = ['is_manual' => false];
+
     protected $casts = [
+        'is_manual' => 'boolean',
         'data' => 'array',
         'is_spam' => 'boolean',
         'status' => 'string',
@@ -64,6 +74,16 @@ class FormSubmission extends Model
         return $this->belongsTo(Form::class);
     }
 
+    public function reviewInvitation(): HasOne
+    {
+        return $this->hasOne(ReviewInvitation::class);
+    }
+
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(LeadTag::class)->orderBy('name');
+    }
+
     public function assignee(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to');
@@ -72,6 +92,16 @@ class FormSubmission extends Model
     public function activities(): HasMany
     {
         return $this->hasMany(FormSubmissionActivity::class)->latest();
+    }
+
+    public function followUpReminders(): HasMany
+    {
+        return $this->hasMany(FormSubmissionFollowUpReminder::class);
+    }
+
+    public function emailDeliveries(): HasMany
+    {
+        return $this->hasMany(FormSubmissionEmailDelivery::class);
     }
 
     /** @param array<string, mixed>|null $metadata */
@@ -93,14 +123,15 @@ class FormSubmission extends Model
         return $query
             ->when($spam === 'exclude', fn (Builder $query) => $query->where('is_spam', false))
             ->when($spam === 'only', fn (Builder $query) => $query->where('is_spam', true))
+            ->when(filled($filters['tag_id'] ?? null), fn (Builder $query) => $query->whereHas('tags', fn (Builder $tags) => $tags->whereKey($filters['tag_id'])))
             ->when(filled($filters['status'] ?? null), fn (Builder $query) => $query->where('status', $filters['status']))
             ->when(filled($filters['website_id'] ?? null), fn (Builder $query) => $query->where('website_id', $filters['website_id']))
             ->when(filled($filters['assigned_to'] ?? null), fn (Builder $query) => $filters['assigned_to'] === 'unassigned'
                 ? $query->whereNull('assigned_to')
                 : $query->where('assigned_to', $filters['assigned_to']))
-            ->when(($filters['follow_up'] ?? null) === 'overdue', fn (Builder $query) => $query->where('follow_up_at', '<', now())->whereNotIn('status', ['won', 'lost']))
-            ->when(($filters['follow_up'] ?? null) === 'today', fn (Builder $query) => $query->whereBetween('follow_up_at', [today(), today()->endOfDay()])->whereNotIn('status', ['won', 'lost']))
-            ->when(($filters['follow_up'] ?? null) === 'upcoming', fn (Builder $query) => $query->where('follow_up_at', '>', today()->endOfDay())->whereNotIn('status', ['won', 'lost']))
+            ->when(($filters['follow_up'] ?? null) === 'overdue', fn (Builder $query) => $query->where('follow_up_at', '<', now())->whereNotIn('status', self::CLOSED_STATUSES))
+            ->when(($filters['follow_up'] ?? null) === 'today', fn (Builder $query) => $query->whereBetween('follow_up_at', [today(), today()->endOfDay()])->whereNotIn('status', self::CLOSED_STATUSES))
+            ->when(($filters['follow_up'] ?? null) === 'upcoming', fn (Builder $query) => $query->where('follow_up_at', '>', today()->endOfDay())->whereNotIn('status', self::CLOSED_STATUSES))
             ->when(($filters['follow_up'] ?? null) === 'none', fn (Builder $query) => $query->whereNull('follow_up_at'))
             ->when(filled($filters['search'] ?? null), function (Builder $query) use ($filters): void {
                 $search = '%'.Str::limit(Str::of($filters['search'])->trim(), 100, '').'%';
@@ -168,6 +199,7 @@ class FormSubmission extends Model
             'contacted' => 'Contacted',
             'qualified' => 'Qualified',
             'won' => 'Won',
+            'work_completed' => 'Work completed',
             'lost' => 'Lost',
             default => 'New',
         };

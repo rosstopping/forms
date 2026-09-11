@@ -26,6 +26,11 @@ class ProspectController extends Controller
      */
     public function index(Request $request, ProspectOutreachDashboard $dashboard): View
     {
+        $activeTab = $request->string('tab')->toString();
+        if (! in_array($activeTab, ['hot', 'warm', 'replies'], true)) {
+            $activeTab = 'dashboard';
+        }
+
         $query = Prospect::query()->accessibleTo($request->user());
         $summary = (clone $query)->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
         $temperatureSummary = (clone $query)->selectRaw('lead_temperature, count(*) as total')->groupBy('lead_temperature')->pluck('total', 'lead_temperature');
@@ -59,20 +64,23 @@ class ProspectController extends Controller
                 ->limit(1))
             ->limit(12)
             ->get();
-        $temperature = $request->string('temperature')->toString();
         $emailStatus = $request->string('email_status')->toString();
         $query->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')))
-            ->when(in_array($temperature, Prospect::LEAD_TEMPERATURES, true), fn ($query) => $query->where('lead_temperature', $temperature))
+            ->when($activeTab === 'dashboard', fn ($query) => $query
+                ->whereNotIn('lead_temperature', ['hot', 'warm'])
+                ->whereDoesntHave('outreachState', fn ($query) => $query->where('lifecycle_state', ProspectLifecycleState::Replied)))
+            ->when(in_array($activeTab, ['hot', 'warm'], true), fn ($query) => $query->where('lead_temperature', $activeTab))
+            ->when($activeTab === 'replies', fn ($query) => $query->whereHas('outreachState', fn ($query) => $query->where('lifecycle_state', ProspectLifecycleState::Replied)))
             ->when($emailStatus === 'missing', fn ($query) => $query->where(fn ($query) => $query->whereNull('email')->orWhere('email', '')))
             ->when($emailStatus === 'present', fn ($query) => $query->whereNotNull('email')->where('email', '!=', ''))
-            ->when($request->filled('search'), fn ($query) => $query->where(fn ($query) => $query->where('business_name', 'like', '%'.$request->string('search').'%')->orWhere('email', 'like', '%'.$request->string('search').'%')));
+            ->when($request->filled('search'), fn ($query) => $query->matchingSearchTerms($request->string('search')->toString()));
         $matchingProspectsCount = (clone $query)->count();
         $prospects = $query
             ->orderByRaw("case lead_temperature when 'hot' then 1 when 'warm' then 2 else 3 end")
             ->latest()->paginate(20)->withQueryString();
 
         return view('admin.prospects.index', array_merge(
-            compact('prospects', 'summary', 'temperatureSummary', 'matchingProspectsCount', 'hotVideoProspects', 'hotVideoProspectsCount', 'manualFollowUpProspects', 'manualFollowUpProspectsCount'),
+            compact('activeTab', 'prospects', 'summary', 'temperatureSummary', 'matchingProspectsCount', 'hotVideoProspects', 'hotVideoProspectsCount', 'manualFollowUpProspects', 'manualFollowUpProspectsCount'),
             $dashboard->for($request->user()),
         ));
     }

@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Support\MembershipPlan;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Redirect;
@@ -47,8 +48,10 @@ class UserController extends Controller
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'role' => ['required', 'string', Rule::in([User::ROLE_ADMIN, User::ROLE_USER])],
             'admin_membership_tier' => ['nullable', 'string', Rule::in(array_keys(MembershipPlan::all()))],
+            'admin_membership_expires_at' => ['nullable', 'date_format:Y-m-d'],
         ]);
 
+        $data = $this->normalizeMembershipExpiry($data);
         $data['password'] = Hash::make($data['password']);
 
         User::query()->create($data);
@@ -76,6 +79,7 @@ class UserController extends Controller
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
             'role' => ['required', 'string', Rule::in([User::ROLE_ADMIN, User::ROLE_USER])],
             'admin_membership_tier' => ['nullable', 'string', Rule::in(array_keys(MembershipPlan::all()))],
+            'admin_membership_expires_at' => ['nullable', 'date_format:Y-m-d'],
         ]);
 
         if (filled($data['password'] ?? null)) {
@@ -84,9 +88,27 @@ class UserController extends Controller
             unset($data['password']);
         }
 
-        $user->update($data);
+        $user->update($this->normalizeMembershipExpiry($data));
 
         return Redirect::route('admin.users.index')->with('status', 'User updated.');
+    }
+
+    /** @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    private function normalizeMembershipExpiry(array $data): array
+    {
+        if (array_key_exists('admin_membership_expires_at', $data)) {
+            $data['admin_membership_expires_at'] = filled($data['admin_membership_expires_at'])
+                ? Carbon::parse($data['admin_membership_expires_at'])->endOfDay()
+                : null;
+        }
+
+        if (array_key_exists('admin_membership_tier', $data) && blank($data['admin_membership_tier'])) {
+            $data['admin_membership_expires_at'] = null;
+        }
+
+        return $data;
     }
 
     public function destroy(Request $request, User $user): RedirectResponse
@@ -95,10 +117,6 @@ class UserController extends Controller
 
         if ($request->user()->is($user)) {
             throw ValidationException::withMessages(['user' => 'You cannot delete your own account.']);
-        }
-
-        if ($user->websites()->exists()) {
-            throw ValidationException::withMessages(['user' => 'Reassign or delete this user’s websites before deleting their account.']);
         }
 
         if ($user->isAdmin() && User::query()->where('role', User::ROLE_ADMIN)->count() === 1) {

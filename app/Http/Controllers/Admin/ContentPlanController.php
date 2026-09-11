@@ -6,12 +6,15 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateContentPlanRequest;
 use App\Jobs\StartContentGeneration;
 use App\Models\ContentGeneration;
+use App\Models\ContentPlan;
 use App\Models\Website;
+use App\Services\ContentSchedule;
 use App\Services\CopilotAgentClient;
 use App\Services\GithubAppClient;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\ValidationException;
 
@@ -20,39 +23,64 @@ class ContentPlanController extends Controller
     public function update(UpdateContentPlanRequest $request, Website $website): RedirectResponse
     {
         $data = $request->validated();
-
-        if ($data['enabled']) {
-            try {
-                $this->ensureReady($request, $website);
-            } catch (ValidationException $exception) {
-                $website->contentPlan()->updateOrCreate(
-                    ['website_id' => $website->id],
-                    [...$data, 'enabled' => false, 'created_by' => $request->user()->id],
-                );
-
-                throw $exception;
+        DB::transaction(function () use ($request, $website, $data): void {
+            Website::query()->lockForUpdate()->findOrFail($website->id);
+            $plan = $website->contentPlan()->lockForUpdate()->first() ?? $website->contentPlan()->make();
+            if (! $plan->created_by && $request->user()->isAdmin()) {
+                $plan->created_by = $request->user()->id;
             }
+            if (app(ContentSchedule::class)->weeklyLimit($website) < 3) {
+                unset($data['additional_weekdays']);
+            } else {
+                $data['additional_weekdays'] = array_map(intval(...), $data['additional_weekdays'] ?? []);
+            }
+            $plan->fill($data);
+            if ($plan->enabled) {
+                $reason = app(ContentSchedule::class)->pauseReason($plan);
+                if ($reason) {
+                    $plan->enabled = false;
+                    $plan->save();
+
+                    return;
+                }
+            }
+            $plan->save();
+        });
+        $plan = $website->contentPlan()->firstOrFail();
+        if ($data['enabled'] && ! $plan->enabled) {
+            $plan->enabled = true;
+            throw ValidationException::withMessages(['enabled' => app(ContentSchedule::class)->pauseReason($plan)]);
         }
 
-        $website->contentPlan()->updateOrCreate(['website_id' => $website->id], [...$data, 'created_by' => $request->user()->id]);
-
-        return Redirect::route('admin.websites.show', $website)->with('status', 'Weekly content plan updated.');
+        return Redirect::route('admin.websites.section', [$website, 'section' => 'content'])->with('status', 'Content schedule updated.');
     }
 
     public function generate(Request $request, Website $website): RedirectResponse
     {
         abort_unless($request->user()?->isAdmin(), 403);
         $this->ensureReady($request, $website);
-        $plan = $website->contentPlan()->firstOrCreate([], ['created_by' => $request->user()->id]);
-        $generation = $plan->generations()->firstOrCreate(
-            ['scheduled_for' => now($plan->timezone)->toDateString()],
-            ['website_repository_id' => $website->repository->id, 'requested_by' => $request->user()->id],
-        );
-        if ($generation->wasRecentlyCreated) {
-            StartContentGeneration::dispatch($generation);
-        }
+        $created = DB::transaction(function () use ($request, $website): bool {
+            Website::query()->lockForUpdate()->findOrFail($website->id);
+            $plan = $website->contentPlan()->firstOrCreate([], ['created_by' => $request->user()->id]);
+            $plan = ContentPlan::query()->lockForUpdate()->findOrFail($plan->id);
+            if ($plan->generations()->whereIn('status', [ContentGeneration::STATUS_PENDING, ContentGeneration::STATUS_RUNNING])->exists()) {
+                return false;
+            }
+            if ($plan->generations()->whereDate('scheduled_for', now($plan->timezone)->toDateString())->exists()) {
+                return false;
+            }
+            $generation = $plan->generations()->firstOrCreate(
+                ['scheduled_for' => now($plan->timezone)->toDateString()],
+                ['trigger' => 'manual', 'website_repository_id' => $website->repository->id, 'requested_by' => $request->user()->id],
+            );
+            if ($generation->wasRecentlyCreated) {
+                StartContentGeneration::dispatch($generation)->afterCommit();
+            }
 
-        return Redirect::route('admin.websites.show', $website)->with('status', $generation->wasRecentlyCreated ? 'Content generation queued.' : 'A content generation already exists for today.');
+            return $generation->wasRecentlyCreated;
+        });
+
+        return Redirect::route('admin.websites.section', [$website, 'section' => 'content'])->with('status', $created ? 'Content generation queued.' : 'A content generation already exists today or is still running.');
     }
 
     public function syncGeneration(Request $request, Website $website, ContentGeneration $contentGeneration, GithubAppClient $github, CopilotAgentClient $copilot): RedirectResponse
@@ -97,13 +125,10 @@ class ContentPlanController extends Controller
 
     protected function ensureReady(Request $request, Website $website): void
     {
-        $website->loadMissing(['repository', 'searchConsoleConnection']);
+        $website->loadMissing('repository');
         $errors = [];
         if (! $website->repository) {
             $errors['enabled'] = 'Connect a GitHub repository first.';
-        }
-        if (! $website->searchConsoleConnection?->property_url) {
-            $errors['enabled'] = 'Connect a Search Console property first.';
         }
         if (! $request->user()?->githubAuthorization) {
             $errors['enabled'] = 'Authorize the GitHub automation first.';

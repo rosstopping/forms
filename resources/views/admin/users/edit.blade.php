@@ -61,6 +61,13 @@
                 @error('admin_membership_tier')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror
             </div>
 
+            <div>
+                <label class="block text-sm font-medium text-slate-700" for="admin_membership_expires_at">Admin-managed access ends on</label>
+                <input id="admin_membership_expires_at" name="admin_membership_expires_at" type="date" value="{{ old('admin_membership_expires_at', $user->admin_membership_expires_at?->format('Y-m-d')) }}" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                <p class="mt-1 text-xs text-slate-500">Leave blank for no expiry. For a six-month trial, choose a date six months from today. Access lasts through that date ({{ config('app.timezone') }}), then falls back to any active paid subscription.</p>
+                @error('admin_membership_expires_at')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror
+            </div>
+
             <button type="submit" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">Save changes</button>
         </form>
     </div>

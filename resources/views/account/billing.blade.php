@@ -12,7 +12,8 @@
 
     <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm" aria-labelledby="membership-status-title">
         <div class="flex flex-wrap items-center justify-between gap-4">
-            <div><p class="text-xs font-semibold uppercase tracking-widest text-slate-500">Current membership</p><h2 id="membership-status-title" class="mt-1 text-lg font-semibold text-slate-950">{{ data_get($plans, $user->effectiveMembershipTier().'.name', 'No active package') }}</h2><p class="mt-1 text-sm text-slate-600">Status: <span class="font-medium capitalize">{{ $user->hasAdminManagedMembership() ? 'admin managed' : str_replace('_', ' ', $user->membership_status ?: 'not subscribed') }}</span>@if (! $user->hasAdminManagedMembership() && $user->membership_current_period_end) · Current period ends {{ $user->membership_current_period_end->format('j F Y') }}@endif</p>@if (! $user->hasAdminManagedMembership() && $user->membership_cancel_at)<p class="mt-1 text-sm font-medium text-amber-700">Cancellation is scheduled for {{ $user->membership_cancel_at->format('j F Y') }}.</p>@endif</div>
+            <div><p class="text-xs font-semibold uppercase tracking-widest text-slate-500">Current membership</p><h2 id="membership-status-title" class="mt-1 text-lg font-semibold text-slate-950">{{ data_get($plans, $user->effectiveMembershipTier().'.name', 'No active package') }}</h2><p class="mt-1 text-sm text-slate-600">Status: <span class="font-medium capitalize">{{ $user->hasAdminManagedMembership() ? 'admin managed' : str_replace('_', ' ', $user->membership_status ?: 'not subscribed') }}</span>@if ($user->hasAdminManagedMembership() && $user->admin_membership_expires_at) · Admin-managed access ends {{ $user->admin_membership_expires_at->format('j F Y') }}@endif
+                @if (! $user->hasAdminManagedMembership() && $user->membership_current_period_end) · Current period ends {{ $user->membership_current_period_end->format('j F Y') }}@endif</p>@if (! $user->hasAdminManagedMembership() && $user->membership_cancel_at)<p class="mt-1 text-sm font-medium text-amber-700">Cancellation is scheduled for {{ $user->membership_cancel_at->format('j F Y') }}.</p>@endif</div>
             @if ($user->stripe_customer_id)<p class="text-xs text-slate-500">Package changes and cancellation open securely on Stripe.</p>@endif
         </div>
     </section>
@@ -23,7 +24,12 @@
             <article @class(['flex flex-col rounded-xl border bg-white p-6 shadow-sm', 'border-teal-500 ring-2 ring-teal-100' => $tier === 'growth', 'border-slate-200' => $tier !== 'growth'])>
                 <div class="flex items-center justify-between gap-3"><h2 class="text-xl font-semibold text-slate-950">{{ $plan['name'] }}</h2>@if ($tier === 'growth')<span class="rounded-full bg-teal-100 px-2.5 py-1 text-xs font-semibold text-teal-800">Most popular</span>@endif</div>
                 <p class="mt-3 min-h-12 text-sm leading-6 text-slate-600">{{ $plan['description'] }}</p>
-                <p class="mt-6"><span class="text-4xl font-semibold tracking-tight text-slate-950">£{{ $plan['price'] }}</span><span class="text-sm text-slate-500">/month</span></p>
+                @if ($tier === 'growth' && $growthOffer = \App\Support\MembershipPlan::activeGrowthOffer())
+                    <p class="mt-6 text-xs font-semibold uppercase tracking-widest text-teal-700">20% off until 31 December 2026</p>
+                    <p class="mt-2"><span class="text-4xl font-semibold tracking-tight text-slate-950">£{{ $growthOffer['price'] }}</span> <span class="text-sm text-slate-400 line-through">£{{ $plan['price'] }}</span><span class="text-sm text-slate-500">/month</span></p>
+                @else
+                    <p class="mt-6"><span class="text-4xl font-semibold tracking-tight text-slate-950">£{{ $plan['price'] }}</span><span class="text-sm text-slate-500">/month</span></p>
+                @endif
                 <p class="mt-3 text-sm font-semibold text-slate-700">{{ $plan['summary'] }}</p>
                 <ul class="mt-5 grid gap-3 text-sm leading-5 text-slate-600" role="list">@foreach ($plan['features'] as $feature)<li class="flex gap-2"><span class="text-teal-600" aria-hidden="true">✓</span><span>{{ $feature }}</span></li>@endforeach</ul>
                 <form method="POST" action="{{ $user->hasActiveMembership() && $user->stripe_customer_id ? route('admin.billing.portal') : route('admin.billing.checkout') }}" class="mt-auto pt-7">

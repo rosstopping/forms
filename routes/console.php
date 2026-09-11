@@ -12,12 +12,19 @@ Schedule::command('health-reports:dispatch')
     ->dailyAt('06:00')
     ->withoutOverlapping();
 
+Schedule::command('onboarding:dispatch-lifecycle')
+    ->dailyAt('09:00')
+    ->onOneServer()
+    ->withoutOverlapping();
+
 Schedule::command('content:dispatch')
-    ->hourly()
+    ->everyMinute()
+    ->onOneServer()
     ->withoutOverlapping();
 
 Schedule::command('content:send-suggestion-reminders')
-    ->hourly()
+    ->everyMinute()
+    ->onOneServer()
     ->withoutOverlapping();
 
 Schedule::command('business-profiles:dispatch-audits')
@@ -48,4 +55,13 @@ Schedule::command('search-console:sync-history')
 
 Schedule::command('ranking-reports:dispatch')
     ->weeklyOn(1, '08:00')
+    ->withoutOverlapping();
+
+Schedule::command('ranking-reports:dispatch-monthly')
+    ->monthlyOn(8, '09:00')
+    ->withoutOverlapping();
+
+Schedule::command('leads:dispatch-follow-up-reminders')
+    ->everyMinute()
+    ->onOneServer()
     ->withoutOverlapping();

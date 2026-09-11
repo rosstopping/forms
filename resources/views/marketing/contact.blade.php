@@ -1,15 +1,15 @@
 @extends('layouts.marketing')
 
-@section('title', 'Get started')
-@section('meta_description', 'Tell Sitewell about your business and get started with calm, guided website care.')
+@section('title', 'Contact Sitewell')
+@section('meta_description', 'Talk to a Sitewell specialist about managing your website, SEO, enquiries, content, and local visibility.')
 
 @section('content')
     <section class="py-16 sm:py-24">
         <div class="mx-auto grid max-w-7xl gap-12 px-5 sm:px-8 lg:grid-cols-[2fr_3fr] lg:px-10">
             <div>
-                <p class="font-mono text-sm uppercase tracking-wide text-garden">Get started</p>
-                <h1 class="mt-5 max-w-[20ch] font-display text-5xl font-semibold tracking-tight text-balance sm:text-6xl">A better website starts here</h1>
-                <p class="mt-6 max-w-[48ch] text-pretty text-lg text-ink/65 sm:text-base">Tell us about your business and your website. We’ll come back with a practical plan to get it healthier, more dependable, and better at handling leads.</p>
+                <p class="font-mono text-sm uppercase tracking-wide text-garden">Contact Sitewell</p>
+                <h1 class="mt-5 max-w-[20ch] font-display text-5xl font-semibold tracking-tight text-balance sm:text-6xl">Talk to our website team</h1>
+                <p class="mt-6 max-w-[48ch] text-pretty text-lg text-ink/65 sm:text-base">Tell us about your business and your website. One of our specialists will assess what needs attention and explain how we can manage its website health, SEO, and enquiries for you.</p>
                 <div class="mt-8 border-y border-ink/15 py-5">
                     <p class="font-mono text-sm uppercase tracking-wide text-garden">Prefer to talk?</p>
                     <a href="tel:+441302985828" class="group mt-3 inline-flex items-center gap-3 focus-visible:outline-offset-4">
@@ -19,7 +19,7 @@
                     <p class="mt-3 text-pretty text-base text-ink/55 sm:text-sm">Call our UK team for a straightforward conversation about your website.</p>
                 </div>
                 <dl class="mt-12 grid gap-8">
-                    @foreach ([['01', 'We understand your website', 'Your goals, current website, forms, and the things that need attention.'], ['02', 'We set up the essentials', 'Health checks, lead handling, reports, and the right connections for your plan.'], ['03', 'You stay in control', 'A clear workspace, practical updates, and support when you need it.']] as [$number, $title, $copy])
+                    @foreach ([['01', 'We understand your business', 'Your goals, services, customers, current website, and the work that needs attention.'], ['02', 'Our specialists take responsibility', 'We set up or take over the website, lead handling, reporting, and SEO included in your plan.'], ['03', 'We manage the ongoing work', 'You receive clear updates while our team keeps the website healthy and moving forward.']] as [$number, $title, $copy])
                         <div class="grid grid-cols-[3rem_1fr] gap-4 border-t border-ink/15 pt-5"><dt class="font-mono text-base text-garden sm:text-sm">{{ $number }}</dt><dd><p class="text-base font-medium sm:text-sm">{{ $title }}</p><p class="mt-2 text-pretty text-base text-ink/55 sm:text-sm">{{ $copy }}</p></dd></div>
                     @endforeach
                 </dl>
@@ -29,8 +29,8 @@
                 @if (session('status'))
                     <div class="mb-8 rounded-md bg-lichen px-4 py-3 text-base text-moss sm:text-sm" role="status">{{ session('status') }}</div>
                 @endif
-                <form method="POST" action="https://digizuforms.on-forge.com/submit" class="grid grid-cols-1 gap-y-4">
-                    <input type="hidden" name="_form_name" value="Contact form">
+                <form method="POST" action="{{ route('marketing.contact.store') }}" class="grid grid-cols-1 gap-y-4">
+                    @csrf
 
                     <div
                         style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden"
@@ -54,7 +54,7 @@
                     <div><label for="website" class="text-base font-medium sm:text-sm">Current website <span class="font-normal text-ink/50">(if you have one)</span></label><input id="website" name="website" type="url" inputmode="url" value="{{ old('website') }}" autocomplete="url" placeholder="https://example.com" @class(['mt-2 w-full rounded-md bg-white px-3.5 py-3 text-base shadow-sm ring-1 ring-ink/10 placeholder:text-ink/35 hover:ring-ink/20 focus:outline-2 focus:-outline-offset-1 focus:outline-garden sm:py-2.5 sm:text-sm', 'ring-red-600' => $errors->has('website')])>@error('website')<p class="mt-2 text-base text-red-700 sm:text-sm">{{ $message }}</p>@enderror</div>
                     <div><label for="goals" class="text-base font-medium sm:text-sm">What would you like to improve?</label><textarea id="goals" name="goals" rows="6" required placeholder="Tell us about your website today and what you would like it to do better for your business." @class(['mt-2 w-full resize-y rounded-md bg-white px-3.5 py-3 text-base shadow-sm ring-1 ring-ink/10 placeholder:text-ink/35 hover:ring-ink/20 focus:outline-2 focus:-outline-offset-1 focus:outline-garden sm:py-2.5 sm:text-sm', 'ring-red-600' => $errors->has('goals')])>{{ old('goals') }}</textarea>@error('goals')<p class="mt-2 text-base text-red-700 sm:text-sm">{{ $message }}</p>@enderror</div>
                     <div class="absolute -left-[9999rem]" aria-hidden="true"><label for="_sitewell_check">Leave this blank</label><input id="_sitewell_check" name="_sitewell_check" type="text" tabindex="-1" autocomplete="off"></div>
-                    <div class="flex flex-wrap items-center justify-between gap-5"><p class="max-w-[48ch] text-pretty text-base text-ink/50 sm:text-sm">We’ll use these details only to respond to your request.</p><button type="submit" class="rounded-md bg-garden px-4 py-3 text-base font-medium text-white ring-1 ring-garden hover:bg-moss focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden sm:text-sm">Get started</button></div>
+                    <div class="flex flex-wrap items-center justify-between gap-5"><p class="max-w-[48ch] text-pretty text-base text-ink/50 sm:text-sm">We’ll use these details only to respond to your request.</p><button type="submit" class="rounded-md bg-garden px-4 py-3 text-base font-medium text-white ring-1 ring-garden hover:bg-moss focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden sm:text-sm">Send enquiry</button></div>
                 </form>
             </div>
         </div>

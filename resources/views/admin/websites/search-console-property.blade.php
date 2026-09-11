@@ -10,14 +10,21 @@
         @csrf
         <div>
             <label for="property_url" class="block text-sm font-medium text-slate-700">Property</label>
-            <select id="property_url" name="property_url" required class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
-                @foreach ($properties as $property)
-                    <option value="{{ $property['siteUrl'] }}">{{ $property['siteUrl'] }} ({{ $property['permissionLevel'] ?? 'unknown access' }})</option>
-                @endforeach
-            </select>
+            @if ($properties !== [])
+                <select id="property_url" name="property_url" required class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                    @foreach ($properties as $property)
+                        <option value="{{ $property['siteUrl'] }}">{{ $property['siteUrl'] }} ({{ $property['permissionLevel'] ?? 'unknown access' }})</option>
+                    @endforeach
+                </select>
+            @else
+                <p class="mt-2 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">This Google account does not have a Search Console property matching this website’s configured domain.</p>
+            @endif
+            @error('property_url')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror
         </div>
         <div class="flex gap-2">
-            <button class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white">Save property</button>
+            @if ($properties !== [])
+                <button class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white">Save property</button>
+            @endif
             <a href="{{ route('admin.websites.show', $website) }}" class="rounded-md border px-3 py-2 text-sm font-medium text-slate-700">Cancel</a>
         </div>
     </form>

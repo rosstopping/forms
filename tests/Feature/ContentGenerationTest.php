@@ -11,6 +11,7 @@ use App\Models\GithubUserAuthorization;
 use App\Models\SearchConsoleConnection;
 use App\Models\User;
 use App\Models\Website;
+use App\Models\WebsiteDomain;
 use App\Models\WebsiteRepository;
 use App\Services\ContentGenerationNotifier;
 use App\Services\ContentGenerationPromptGenerator;
@@ -18,6 +19,7 @@ use App\Services\CopilotAgentClient;
 use App\Services\GithubAppClient;
 use App\Services\GoogleOAuthClient;
 use App\Services\SearchConsoleClient;
+use App\Support\MembershipPlan;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
@@ -43,8 +45,17 @@ test('google authorization requests offline read only search console access', fu
 });
 
 test('website owners can connect Search Console to their website', function () {
-    $owner = User::factory()->create();
+    $owner = User::factory()->create([
+        'membership_tier' => MembershipPlan::ESSENTIAL,
+        'membership_status' => 'trialing',
+        'membership_current_period_end' => now()->addDays(14),
+    ]);
     $website = Website::factory()->for($owner, 'owner')->create();
+    $domain = $website->domains()->create([
+        'domain' => 'client.test',
+        'is_primary' => true,
+        'ownership_status' => WebsiteDomain::OWNERSHIP_PENDING,
+    ]);
     $oauth = $this->mock(GoogleOAuthClient::class);
     $oauth->shouldReceive('authorizationUrl')->once()->andReturn('https://accounts.google.test/authorize');
 
@@ -68,7 +79,93 @@ test('website owners can connect Search Console to their website', function () {
         ])
         ->assertRedirect(route('admin.websites.show', $website));
 
-    expect($connection->fresh()->property_url)->toBe('sc-domain:client.test');
+    $domain->refresh();
+
+    expect($connection->fresh()->property_url)->toBe('sc-domain:client.test')
+        ->and($domain->ownership_status)->toBe(WebsiteDomain::OWNERSHIP_VERIFIED)
+        ->and($domain->verified_domain)->toBe('client.test')
+        ->and($domain->verification_method)->toBe('search_console');
+});
+
+test('Search Console verification never takes a domain from another workspace', function () {
+    $owner = User::factory()->create([
+        'membership_tier' => MembershipPlan::ESSENTIAL,
+        'membership_status' => 'active',
+    ]);
+    $existingWebsite = Website::factory()->create();
+    $existingDomain = $existingWebsite->domains()->create(['domain' => 'client.test', 'is_primary' => true]);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $pendingDomain = $website->domains()->create([
+        'domain' => 'client.test',
+        'is_primary' => true,
+        'ownership_status' => WebsiteDomain::OWNERSHIP_PENDING,
+    ]);
+    $connection = SearchConsoleConnection::factory()->for($website)->for($owner, 'connector')->create([
+        'property_url' => null,
+        'permission_level' => null,
+    ]);
+    $this->mock(SearchConsoleClient::class)
+        ->shouldReceive('sites')
+        ->once()
+        ->andReturn([['siteUrl' => 'sc-domain:client.test', 'permissionLevel' => 'siteOwner']]);
+
+    $this->actingAs($owner)
+        ->post(route('admin.search-console.property.store', $website), [
+            'property_url' => 'sc-domain:client.test',
+        ])
+        ->assertRedirect(route('admin.websites.show', $website));
+
+    expect($pendingDomain->fresh()->ownership_status)->toBe(WebsiteDomain::OWNERSHIP_CONFLICT)
+        ->and($pendingDomain->verified_domain)->toBeNull()
+        ->and($existingDomain->fresh()->ownership_status)->toBe(WebsiteDomain::OWNERSHIP_VERIFIED)
+        ->and($existingDomain->verified_domain)->toBe('client.test')
+        ->and($connection->fresh()->property_url)->toBe('sc-domain:client.test');
+});
+
+test('Search Console only offers properties matching the configured website domain', function (): void {
+    $owner = User::factory()->create([
+        'membership_tier' => MembershipPlan::ESSENTIAL,
+        'membership_status' => 'active',
+    ]);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $website->domains()->create(['domain' => 'client.test', 'is_primary' => true]);
+    $connection = SearchConsoleConnection::factory()->for($website)->for($owner, 'connector')->create(['property_url' => null]);
+    $this->mock(SearchConsoleClient::class)
+        ->shouldReceive('sites')
+        ->once()
+        ->withArgs(fn (SearchConsoleConnection $selectedConnection): bool => $selectedConnection->is($connection))
+        ->andReturn([
+            ['siteUrl' => 'sc-domain:client.test', 'permissionLevel' => 'siteOwner'],
+            ['siteUrl' => 'https://unrelated.test/', 'permissionLevel' => 'siteOwner'],
+        ]);
+
+    $this->actingAs($owner)
+        ->get(route('admin.search-console.property', $website))
+        ->assertOk()
+        ->assertSee('sc-domain:client.test')
+        ->assertDontSee('https://unrelated.test/');
+});
+
+test('Search Console rejects an available property from another domain', function (): void {
+    $owner = User::factory()->create([
+        'membership_tier' => MembershipPlan::ESSENTIAL,
+        'membership_status' => 'active',
+    ]);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $website->domains()->create(['domain' => 'client.test', 'is_primary' => true]);
+    $connection = SearchConsoleConnection::factory()->for($website)->for($owner, 'connector')->create(['property_url' => null]);
+    $this->mock(SearchConsoleClient::class)
+        ->shouldReceive('sites')
+        ->once()
+        ->andReturn([['siteUrl' => 'sc-domain:unrelated.test', 'permissionLevel' => 'siteOwner']]);
+
+    $this->actingAs($owner)
+        ->post(route('admin.search-console.property.store', $website), [
+            'property_url' => 'sc-domain:unrelated.test',
+        ])
+        ->assertSessionHasErrors('property_url');
+
+    expect($connection->fresh()->property_url)->toBeNull();
 });
 
 test('website owners cannot connect Search Console to another clients website', function () {
@@ -80,14 +177,29 @@ test('website owners cannot connect Search Console to another clients website', 
         ->assertForbidden();
 });
 
-test('a due weekly content plan queues one generation only', function () {
+test('disconnecting Search Console leaves content generation enabled', function () {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $website = Website::factory()->create();
+    SearchConsoleConnection::factory()->for($website)->for($admin, 'connector')->create();
+    $plan = ContentPlan::factory()->for($website)->for($admin, 'creator')->create(['enabled' => true]);
+
+    $this->actingAs($admin)
+        ->delete(route('admin.search-console.destroy', $website))
+        ->assertRedirect(route('admin.websites.show', $website))
+        ->assertSessionHas('status', 'Google Search Console disconnected.');
+
+    expect($website->searchConsoleConnection()->exists())->toBeFalse()
+        ->and($plan->fresh()->enabled)->toBeTrue();
+});
+
+test('a due weekly content plan queues one generation without Search Console', function () {
+    $this->travelTo(now('Europe/London')->startOfHour());
     Queue::fake();
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     GithubUserAuthorization::factory()->create(['user_id' => $admin->id]);
     $website = Website::factory()->create();
     $installation = GithubInstallation::factory()->create();
     $repository = WebsiteRepository::factory()->create(['website_id' => $website->id, 'github_installation_id' => $installation->id]);
-    SearchConsoleConnection::factory()->create(['website_id' => $website->id, 'connected_by' => $admin->id]);
     $plan = ContentPlan::factory()->create([
         'website_id' => $website->id,
         'created_by' => $admin->id,
@@ -103,7 +215,42 @@ test('a due weekly content plan queues one generation only', function () {
     Queue::assertPushed(StartContentGeneration::class, 1);
 });
 
+test('an admin can enable and manually run content generation without Search Console', function () {
+    Queue::fake();
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    GithubUserAuthorization::factory()->for($admin)->create();
+    $website = Website::factory()->create();
+    WebsiteRepository::factory()->for($website)->create();
+
+    $this->actingAs($admin)
+        ->put(route('admin.content-plans.update', $website), [
+            'enabled' => true,
+            'weekday' => 4,
+            'hour' => 15,
+            'timezone' => 'Europe/London',
+            'audience' => null,
+            'guidance' => null,
+        ])
+        ->assertSessionDoesntHaveErrors()
+        ->assertRedirect(route('admin.websites.section', [$website, 'section' => 'content']));
+
+    expect($website->contentPlan()->firstOrFail()->enabled)->toBeTrue();
+
+    $this->actingAs($admin)
+        ->get(route('admin.websites.show', $website))
+        ->assertSuccessful()
+        ->assertSee('Generate now');
+
+    $this->actingAs($admin)
+        ->post(route('admin.content-generations.store', $website))
+        ->assertRedirect(route('admin.websites.section', [$website, 'section' => 'content']))
+        ->assertSessionHas('status', 'Content generation queued.');
+
+    Queue::assertPushed(StartContentGeneration::class, 1);
+});
+
 test('a due weekly content plan queues a generation while an earlier pull request remains open', function () {
+    $this->travelTo(now('Europe/London')->startOfHour());
     Queue::fake();
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     GithubUserAuthorization::factory()->create(['user_id' => $admin->id]);
@@ -252,7 +399,7 @@ test('content plans accept substantial audience and editorial guidance', functio
             'guidance' => $guidance,
         ])
         ->assertSessionDoesntHaveErrors()
-        ->assertRedirect(route('admin.websites.show', $website));
+        ->assertRedirect(route('admin.websites.section', [$website, 'section' => 'content']));
 
     $plan = $website->contentPlan()->firstOrFail();
 
@@ -260,10 +407,10 @@ test('content plans accept substantial audience and editorial guidance', functio
         ->and($plan->guidance)->toBe($guidance);
 });
 
-test('updating the website owner does not overwrite saved content plan settings', function () {
+test('updating website settings does not overwrite saved content plan settings', function () {
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
-    $owner = User::factory()->create();
     $website = Website::factory()->create();
+    $billingUserId = $website->user_id;
     WebsiteRepository::factory()->for($website)->create();
 
     $this->actingAs($admin)
@@ -275,18 +422,17 @@ test('updating the website owner does not overwrite saved content plan settings'
             'audience' => 'Independent venue owners',
             'guidance' => 'Use a practical and direct tone',
         ])
-        ->assertRedirect(route('admin.websites.show', $website));
+        ->assertRedirect(route('admin.websites.section', [$website, 'section' => 'content']));
 
     $this->actingAs($admin)
         ->put(route('admin.websites.update', $website), [
-            'user_id' => $owner->id,
             'health_reports_enabled' => false,
         ])
-        ->assertRedirect(route('admin.websites.show', $website));
+        ->assertRedirect(route('admin.websites.show', ['website' => $website, 'tab' => 'settings']));
 
     $plan = $website->contentPlan()->firstOrFail();
 
-    expect($website->fresh()->user_id)->toBe($owner->id)
+    expect($website->fresh()->user_id)->toBe($billingUserId)
         ->and($plan->audience)->toBe('Independent venue owners')
         ->and($plan->guidance)->toBe('Use a practical and direct tone');
 
@@ -306,7 +452,7 @@ test('website owners can queue and remove manual content requests', function () 
 
     $this->actingAs($owner)
         ->post(route('admin.content-requests.store', $website), ['instructions' => $instructions])
-        ->assertRedirect(route('admin.websites.show', $website));
+        ->assertRedirect(route('admin.websites.section', [$website, 'content']));
 
     $contentRequest = $website->contentRequests()->sole();
     expect($contentRequest->instructions)->toBe($instructions)
@@ -325,9 +471,81 @@ test('website owners can queue and remove manual content requests', function () 
 
     $this->actingAs($owner)
         ->delete(route('admin.content-requests.destroy', [$website, $contentRequest]))
-        ->assertRedirect(route('admin.websites.show', $website));
+        ->assertRedirect(route('admin.websites.section', [$website, 'content']));
 
     $this->assertModelMissing($contentRequest);
+});
+
+test('managers can bump pending content requests into a deterministic website queue', function () {
+    $owner = User::factory()->create();
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $manager = User::factory()->create();
+    $website->members()->attach($manager, ['role' => Website::MEMBER_ROLE_MANAGER]);
+    $requests = ContentRequest::factory()->count(21)->for($website)->for($manager, 'creator')->create();
+    $target = $requests->last();
+    $originalCreatedAt = $target->created_at;
+
+    $this->actingAs($manager)
+        ->post(route('admin.content-requests.bump', [$website, $target]))
+        ->assertRedirect(route('admin.websites.section', [$website, 'content']))
+        ->assertSessionHas('status', 'Content request moved to the top of the queue.');
+
+    expect($website->contentRequests()->pendingInQueueOrder()->first()->is($target))->toBeTrue()
+        ->and($target->fresh()->created_at->equalTo($originalCreatedAt))->toBeTrue();
+
+    $this->travel(1)->second();
+    $this->post(route('admin.content-requests.bump', [$website, $requests->first()]))->assertRedirect();
+    expect($website->contentRequests()->pendingInQueueOrder()->first()->is($requests->first()))->toBeTrue();
+    $this->travel(1)->second();
+    $this->post(route('admin.content-requests.bump', [$website, $target]))->assertRedirect();
+    expect($website->contentRequests()->pendingInQueueOrder()->first()->is($target))->toBeTrue();
+
+    $this->actingAs($owner)
+        ->get(route('admin.websites.section', [$website, 'content']))
+        ->assertSuccessful()
+        ->assertSeeInOrder(['Up next', $target->instructions, 'Queue #2']);
+    $this->get(route('admin.websites.section', [$website, 'content', 'content_queue_page' => 2]))
+        ->assertSuccessful()
+        ->assertSee('Queue #21')
+        ->assertSee($requests->get(19)->instructions);
+
+    $sameTime = now()->addMinute();
+    $requests->first()->update(['bumped_at' => $sameTime]);
+    $requests->get(1)->update(['bumped_at' => $sameTime]);
+
+    expect($website->contentRequests()->pendingInQueueOrder()->limit(2)->pluck('id')->all())
+        ->toBe([$requests->first()->id, $requests->get(1)->id]);
+});
+
+test('content queue bumping enforces management growth access and website isolation', function () {
+    $owner = User::factory()->create();
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $contentRequest = ContentRequest::factory()->for($website)->for($owner, 'creator')->create();
+    $viewer = User::factory()->create();
+    $website->members()->attach($viewer, ['role' => Website::MEMBER_ROLE_VIEWER]);
+
+    $this->actingAs($viewer)
+        ->post(route('admin.content-requests.bump', [$website, $contentRequest]))
+        ->assertForbidden();
+    $this->get(route('admin.websites.section', [$website, 'content']))
+        ->assertSuccessful()
+        ->assertDontSee('Bump to top');
+
+    $otherWebsite = Website::factory()->create();
+    $this->actingAs($otherWebsite->owner)
+        ->post(route('admin.content-requests.bump', [$otherWebsite, $contentRequest]))
+        ->assertNotFound();
+
+    $contentRequest->update(['picked_up_at' => now()]);
+    $this->actingAs($owner)
+        ->post(route('admin.content-requests.bump', [$website, $contentRequest]))
+        ->assertUnprocessable();
+
+    $contentRequest->update(['picked_up_at' => null]);
+    $owner->update(['membership_tier' => MembershipPlan::ESSENTIAL]);
+    $this->actingAs($owner)
+        ->post(route('admin.content-requests.bump', [$website, $contentRequest]))
+        ->assertRedirect(route('admin.billing.index'));
 });
 
 test('actioned content todos remain visible separately with their generation outcome', function () {
@@ -352,6 +570,11 @@ test('actioned content todos remain visible separately with their generation out
         'picked_up_at' => now()->subHour(),
         'instructions' => 'Completed content todo',
     ]);
+    ContentRequest::factory()->for($website)->for($owner, 'creator')->create([
+        'content_generation_id' => $generation->id,
+        'picked_up_at' => now()->subHours(2),
+        'instructions' => 'Earlier completed content todo',
+    ]);
 
     $response = $this->actingAs($owner)->get(route('admin.websites.show', $website));
 
@@ -360,6 +583,7 @@ test('actioned content todos remain visible separately with their generation out
         ->assertSee('Pending content todo')
         ->assertSee('Actioned todos')
         ->assertSee('Completed content todo')
+        ->assertSeeInOrder(['Completed content todo', 'Earlier completed content todo'])
         ->assertSee('pull request open')
         ->assertSee('View pull request')
         ->assertSee('https://github.com/example/site/pull/42');
@@ -393,8 +617,9 @@ test('content generation uses search performance and pending requests to start a
     ]);
     $thirdRequest = ContentRequest::factory()->for($website)->create([
         'created_by' => $admin->id,
-        'instructions' => 'Create a separate guide in a later run.',
+        'instructions' => 'Create an urgent guide in this run.',
         'created_at' => now()->subMinute(),
+        'bumped_at' => now(),
     ]);
     $this->mock(SearchConsoleClient::class)->shouldReceive('performance')->once()->andReturn([
         ['query' => 'useful service', 'page' => 'https://example.test/', 'clicks' => 4.0, 'impressions' => 100.0, 'ctr' => 0.04, 'position' => 8.2],
@@ -403,8 +628,8 @@ test('content generation uses search performance and pending requests to start a
         ->withArgs(fn ($authorization, $passedRepository, string $prompt) => $passedRepository->is($repository)
             && str_contains($prompt, 'useful service')
             && str_contains($prompt, $firstRequest->instructions)
-            && str_contains($prompt, $secondRequest->instructions)
-            && ! str_contains($prompt, $thirdRequest->instructions))
+            && str_contains($prompt, $thirdRequest->instructions)
+            && ! str_contains($prompt, $secondRequest->instructions))
         ->andReturn(['id' => '11111111-1111-4111-8111-111111111111', 'state' => 'queued']);
 
     app()->call([new StartContentGeneration($generation), 'handle']);
@@ -413,10 +638,32 @@ test('content generation uses search performance and pending requests to start a
         ->and($generation->fresh()->search_performance[0]['query'])->toBe('useful service')
         ->and($firstRequest->fresh()->content_generation_id)->toBe($generation->id)
         ->and($firstRequest->fresh()->picked_up_at)->not->toBeNull()
-        ->and($secondRequest->fresh()->content_generation_id)->toBe($generation->id)
-        ->and($secondRequest->fresh()->picked_up_at)->not->toBeNull()
-        ->and($thirdRequest->fresh()->content_generation_id)->toBeNull()
-        ->and($thirdRequest->fresh()->picked_up_at)->toBeNull();
+        ->and($thirdRequest->fresh()->content_generation_id)->toBe($generation->id)
+        ->and($thirdRequest->fresh()->picked_up_at)->not->toBeNull()
+        ->and($secondRequest->fresh()->content_generation_id)->toBeNull()
+        ->and($secondRequest->fresh()->picked_up_at)->toBeNull();
+    Queue::assertPushed(SyncContentGeneration::class);
+});
+
+test('content generation omits Search Console context when no property is connected', function () {
+    Queue::fake();
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    GithubUserAuthorization::factory()->for($admin)->create();
+    $website = Website::factory()->create(['name' => 'Example Site']);
+    $repository = WebsiteRepository::factory()->for($website)->create();
+    $plan = ContentPlan::factory()->for($website)->for($admin, 'creator')->create();
+    $generation = ContentGeneration::factory()->for($plan, 'plan')->for($repository, 'repository')->for($admin, 'requester')->create();
+
+    $this->mock(SearchConsoleClient::class)->shouldNotReceive('performance');
+    $this->mock(CopilotAgentClient::class)->shouldReceive('startTask')->once()
+        ->withArgs(fn ($authorization, $passedRepository, string $prompt): bool => $passedRepository->is($repository)
+            && ! str_contains($prompt, 'Search Console'))
+        ->andReturn(['id' => '11111111-1111-4111-8111-111111111111', 'state' => 'queued']);
+
+    app()->call([new StartContentGeneration($generation), 'handle']);
+
+    expect($generation->fresh()->status)->toBe(ContentGeneration::STATUS_RUNNING)
+        ->and($generation->fresh()->search_performance)->toBe([]);
     Queue::assertPushed(SyncContentGeneration::class);
 });
 

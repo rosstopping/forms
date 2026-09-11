@@ -17,9 +17,8 @@ class ContentRequestPixelController extends Controller
         abort_unless(config('forms.pixel_ui_enabled') && $website->pixel_enabled, 422, 'Enable Pixel before preparing content todos.');
 
         $contentRequests = $website->contentRequests()
-            ->whereNull('picked_up_at')
+            ->pendingInQueueOrder()
             ->whereNull('pixel_processed_at')
-            ->oldest()
             ->limit(20)
             ->get();
 

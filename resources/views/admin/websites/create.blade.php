@@ -38,7 +38,7 @@
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-slate-700" for="user_id">Owner</label>
+                <label class="block text-sm font-medium text-slate-700" for="user_id">Initial manager</label>
                 <select id="user_id" name="user_id" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
                     <option value="">Unassigned</option>
                     @foreach ($users as $user)
@@ -52,7 +52,7 @@
                 <input type="checkbox" name="health_reports_enabled" value="1" class="mt-1 rounded border-slate-300" @checked(old('health_reports_enabled'))>
                 <span>
                     <span class="block text-sm font-medium text-slate-900">Send weekly website health reports</span>
-                    <span class="block text-xs text-slate-500">Reports will be sent to administrators and the assigned owner.</span>
+                    <span class="block text-xs text-slate-500">Reports will be sent to administrators and assigned website users.</span>
                 </span>
             </label>
 

@@ -1,8 +1,8 @@
 <div id="website-panel-business-profile" class="space-y-6" role="tabpanel" aria-labelledby="website-tab-business-profile" data-tab-panel="business-profile" hidden>
     @php($profile = $website->businessProfileConnection)
     @if (! $profile)
-        <section class="rounded-lg border border-slate-200 bg-white p-6"><h2 class="text-lg font-semibold text-slate-950">Google Business Profile</h2><p class="mt-2 max-w-2xl text-sm text-slate-600">Connect a managed location for weekly health checks, approval-first changes, generated post drafts, and approval-first review replies.</p><p class="mt-2 max-w-2xl text-sm text-slate-600 italic opacity-50">Integration coming soon...</p>
-            {{-- <a href="{{ route('admin.business-profile.connect', $website) }}" class="mt-4 inline-flex rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">Connect Google Business Profile</a> --}}
+        <section class="rounded-lg border border-slate-200 bg-white p-6"><h2 class="text-lg font-semibold text-slate-950">Google Business Profile</h2><p class="mt-2 max-w-2xl text-sm text-slate-600">Connect a managed location for weekly health checks, approval-first changes, generated post drafts, and approval-first review replies.</p>
+            <a href="{{ route('admin.business-profile.connect', $website) }}" class="mt-4 inline-flex rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">Connect Google Business Profile</a>
         </section>
     @else
         @if (blank($profile->location_name))

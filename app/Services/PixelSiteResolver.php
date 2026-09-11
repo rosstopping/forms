@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Website;
+use App\Models\WebsiteDomain;
 
 class PixelSiteResolver
 {
@@ -14,7 +15,9 @@ class PixelSiteResolver
     public function resolve(string $siteKey, string $url): ?Website
     {
         $website = Website::query()
-            ->with('domains:id,website_id,domain')
+            ->with(['domains' => fn ($query) => $query
+                ->select(['id', 'website_id', 'domain'])
+                ->where('ownership_status', WebsiteDomain::OWNERSHIP_VERIFIED)])
             ->where('pixel_public_key', $siteKey)
             ->where('pixel_enabled', true)
             ->first();

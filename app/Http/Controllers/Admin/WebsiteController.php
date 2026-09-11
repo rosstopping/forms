@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Website;
 use App\Models\WebsiteAiQuestion;
 use App\Models\WebsiteDomain;
+use App\Services\ContentSchedule;
 use App\Services\PixelInstallationSnippet;
 use App\Services\SearchConsoleClient;
 use App\Services\SearchConsoleHistoryStore;
@@ -20,6 +21,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class WebsiteController extends Controller
@@ -86,6 +88,10 @@ class WebsiteController extends Controller
                 'is_primary' => true,
             ]);
 
+            if ($website->user_id) {
+                $website->members()->attach($website->user_id, ['role' => Website::MEMBER_ROLE_MANAGER]);
+            }
+
             return $website;
         });
 
@@ -97,23 +103,38 @@ class WebsiteController extends Controller
         Website $website,
         WebsiteProspectService $websiteProspects,
         PixelInstallationSnippet $pixelInstallation,
-    ): View {
+    ): View|RedirectResponse {
         $user = Auth::user();
 
         abort_unless($website->isAccessibleBy($user), 403);
 
+        if ($request->routeIs('admin.websites.section') && $request->route('section') === 'health') {
+            $latestReport = $website->healthReports()->latest('created_at')->latest('id')->first();
+
+            if ($latestReport) {
+                return Redirect::route('admin.website-health-reports.show', [$website, $latestReport]);
+            }
+        }
+
         $website->load([
             'domains',
-            'owner:id,name,email,role,membership_tier,admin_membership_tier,membership_status',
-            'members' => fn ($query) => $query->select('users.id', 'users.name', 'users.email')->orderBy('name'),
+            'owner:id,name,email,role,membership_tier,admin_membership_tier,admin_membership_expires_at,membership_status,membership_current_period_end',
+            'members' => fn ($query) => $query->select('users.id', 'users.name', 'users.email', 'users.admin_membership_tier', 'users.admin_membership_expires_at')->orderBy('name'),
             'forms' => fn ($query) => $query->withCount('submissions')->latest('created_at'),
-            'healthReports' => fn ($query) => $query->latest('created_at')->limit(8),
+            'healthReports' => fn ($query) => $query
+                ->latest('created_at')
+                ->latest('id')
+                ->select(['id', 'website_id', 'status', 'overall_status', 'passed_checks', 'warning_checks', 'failed_checks', 'created_at']),
             'repository.installation',
+            'wordpressConnection',
+            'wordpressStaticReleases' => fn ($query) => $query->latest('created_at')->limit(5),
             'searchConsoleConnection',
+            'mailConnection',
             'searchOpportunities' => fn ($query) => $query->whereIn('status', ['open', 'queued'])->orderByDesc('priority_score')->limit(20),
             'businessProfileConnection.audits' => fn ($query) => $query->with('recommendations')->latest()->limit(8),
             'businessProfileConnection.posts' => fn ($query) => $query->latest()->limit(8),
             'businessProfileConnection.reviews' => fn ($query) => $query->latest('reviewed_at')->limit(20),
+            'contentPlan.creator.githubAuthorization',
             'contentPlan.generations' => fn ($query) => $query->latest('created_at')->limit(8),
             'contentRequests' => fn ($query) => $query->with(['creator', 'generation'])->latest('created_at')->limit(50),
         ]);
@@ -123,9 +144,36 @@ class WebsiteController extends Controller
                 ->where('status', 'deployed')
                 ->where('deployment_method', 'pixel'),
         ]);
-        $users = $user?->isAdmin() ? User::query()->orderBy('name')->get(['id', 'name', 'email']) : collect();
         $canManageMembers = $user?->can('manageMembers', $website) === true;
+        $canRunHealthReports = $user?->isAdmin() === true || $website->owner?->hasMembershipFeature(MembershipPlan::FEATURE_HEALTH_REPORTS) === true;
+        $canUseSearchConsole = $user?->isAdmin() === true || $website->owner?->hasMembershipFeature(MembershipPlan::FEATURE_SEARCH_CONSOLE) === true;
         $canUseGrowthFeatures = $user?->isAdmin() === true || $website->owner?->hasMembershipFeature(MembershipPlan::FEATURE_GROWTH) === true;
+        $pendingContentRequests = null;
+        $actionedContentRequests = collect();
+        if ($canUseGrowthFeatures) {
+            $pendingContentRequests = $website->contentRequests()
+                ->with('creator')
+                ->pendingInQueueOrder()
+                ->paginate(20, pageName: 'content_queue_page')
+                ->withQueryString()
+                ->fragment('content-requests-title');
+            $actionedContentRequests = $website->contentRequests()
+                ->with(['creator', 'generation'])
+                ->whereNotNull('picked_up_at')
+                ->latest('picked_up_at')
+                ->latest('id')
+                ->limit(50)
+                ->get();
+        }
+        $hasContentDeliveryConnection = $website->pixel_last_seen_at !== null
+            || $website->wordpressConnection?->isConnected() === true
+            || $website->repository !== null;
+        $contentSupportCallUrl = $user?->onboarding_status === 'trial_active'
+            && $user->onboarding_trial_ends_at?->isFuture() === true
+            && ! $user->onboarding_call_completed_at
+                ? route('admin.onboarding-call')
+                : (string) config('marketing.booking_url');
+        $canUseAutoresponders = $website->canUseAutoresponders($user);
         $canUseCompleteFeatures = $user?->isAdmin() === true || $website->owner?->hasMembershipFeature(MembershipPlan::FEATURE_COMPLETE) === true;
         $searchConsoleReport = null;
         $searchConsoleHistory = [];
@@ -146,20 +194,36 @@ class WebsiteController extends Controller
         $seoDirection = $request->string('seo_direction')->toString() === 'asc' ? 'asc' : 'desc';
         $seoKeywords = null;
         $seoReferringDomains = collect();
+        $backlinkSearch = Str::limit(trim($request->string('backlink_search')->toString()), 100, '');
+        $backlinkSort = in_array($request->string('backlink_sort')->toString(), ['domain', 'domain_rank', 'backlinks_count', 'last_seen'], true) ? $request->string('backlink_sort')->toString() : 'domain_rank';
+        $backlinkDirection = $request->string('backlink_direction')->toString() === 'asc' ? 'asc' : 'desc';
+        $backlinkMinRank = in_array($request->integer('backlink_min_rank'), [0, 40, 70], true) ? $request->integer('backlink_min_rank') : 0;
+        $latestBacklinkAudit = $website->backlinkAudits()->latest('id')->first();
+        $trackedCompetitors = $website->competitors()->with('latestAudit')->orderBy('excluded')->orderBy('domain')->get();
+        $targetKeywords = $website->seoTargetKeywords()
+            ->with(['rankings' => fn ($query) => $query
+                ->where('location_code', (int) config('services.dataforseo.location_code'))
+                ->where('language_code', (string) config('services.dataforseo.language_code'))
+                ->where('device', 'desktop')
+                ->latest('observed_at')->latest('id')])
+            ->orderByRaw('CASE WHEN archived_at IS NULL THEN 0 ELSE 1 END')
+            ->orderByRaw("CASE WHEN priority = 'high' THEN 0 ELSE 1 END")
+            ->orderBy('term')->get();
         $seoCompetitors = collect();
         $seoOpportunities = collect();
         $strikingDistanceCount = 0;
 
         if ($seoSnapshot) {
             $seoReferringDomains = $seoSnapshot->referringDomains()
-                ->orderByDesc('domain_rank')
+                ->when($backlinkSearch !== '', fn ($query) => $query->where('domain', 'like', '%'.addcslashes($backlinkSearch, '%_\\').'%'))
+                ->when($backlinkMinRank > 0, fn ($query) => $query->where('domain_rank', '>=', $backlinkMinRank))
+                ->orderBy($backlinkSort, $backlinkDirection)
                 ->orderByDesc('backlinks_count')
-                ->limit(10)
-                ->get();
+                ->simplePaginate(25, pageName: 'backlink_page')
+                ->withQueryString();
             $seoCompetitors = $seoSnapshot->competitors()
                 ->orderByDesc('common_keywords')
                 ->orderByDesc('estimated_traffic')
-                ->limit(10)
                 ->get();
             $seoOpportunities = $seoSnapshot->opportunities()
                 ->with('keyword')
@@ -187,7 +251,7 @@ class WebsiteController extends Controller
                 ->withQueryString();
         }
 
-        if ($website->is_active && $canUseGrowthFeatures && $website->searchConsoleConnection?->property_url) {
+        if ($website->is_active && $canUseSearchConsole && $website->searchConsoleConnection?->property_url) {
             try {
                 $connection = $website->searchConsoleConnection;
                 $cacheKey = 'search-console-report:'.$connection->id.':'.hash('sha256', $connection->property_url).':'.$connection->updated_at->timestamp;
@@ -199,6 +263,25 @@ class WebsiteController extends Controller
         }
 
         $canManageWebsite = $website->isManageableBy($user);
+        $websiteUsers = $website->members
+            ->map(fn (User $member): array => [
+                'user' => $member,
+                'role' => $member->pivot->role,
+            ]);
+
+        if ($website->owner && ! $websiteUsers->contains(fn (array $websiteUser): bool => $websiteUser['user']->is($website->owner))) {
+            $websiteUsers->prepend([
+                'user' => $website->owner,
+                'role' => Website::MEMBER_ROLE_MANAGER,
+            ]);
+        }
+
+        $managerIds = $websiteUsers
+            ->where('role', Website::MEMBER_ROLE_MANAGER)
+            ->pluck('user.id')
+            ->unique()
+            ->values();
+        $soleManagerId = $managerIds->count() === 1 ? $managerIds->first() : null;
         $dataForSeoConfigured = filled(config('services.dataforseo.login')) && filled(config('services.dataforseo.password'));
         $outreachProspect = $user?->isAdmin() ? $websiteProspects->find($website) : null;
         $pixelInstallationSnippet = $pixelInstallation->for($website);
@@ -228,12 +311,20 @@ class WebsiteController extends Controller
                 ->count();
         }
 
+        $contentSchedule = app(ContentSchedule::class);
+        $contentWeeklyLimit = $contentSchedule->weeklyLimit($website);
+        $contentScheduleReason = $website->contentPlan ? $contentSchedule->pauseReason($website->contentPlan) : 'Ask the Sitewell team to connect content automation.';
+        $nextContentRun = $website->contentPlan ? $contentSchedule->nextRunAt($website->contentPlan) : null;
+
         return view('admin.websites.show', compact(
-            'website', 'users', 'canManageMembers', 'canManageWebsite',
+            'website', 'canManageMembers', 'canManageWebsite', 'canRunHealthReports', 'canUseSearchConsole',
             'searchConsoleReport', 'searchConsoleHistory', 'searchConsoleReportUnavailable', 'seoGeneration', 'seoSnapshot', 'seoHistory',
-            'seoKeywords', 'seoReferringDomains', 'seoCompetitors', 'seoOpportunities', 'seoFilter', 'seoSort', 'seoDirection', 'strikingDistanceCount',
-            'dataForSeoConfigured', 'outreachProspect', 'pixelInstallationSnippet', 'canUseGrowthFeatures', 'canUseCompleteFeatures',
-            'websiteAiQuestions', 'websiteAiQuestionsUsed', 'websiteAiWeeklyLimit', 'pixelOptimisations',
+            'trackedCompetitors', 'targetKeywords', 'seoKeywords', 'seoReferringDomains', 'seoCompetitors', 'seoOpportunities', 'seoFilter', 'seoSort', 'seoDirection', 'strikingDistanceCount',
+            'backlinkSearch', 'backlinkSort', 'backlinkDirection', 'backlinkMinRank', 'latestBacklinkAudit',
+            'dataForSeoConfigured', 'outreachProspect', 'pixelInstallationSnippet', 'canUseGrowthFeatures', 'canUseCompleteFeatures', 'canUseAutoresponders',
+            'websiteAiQuestions', 'websiteAiQuestionsUsed', 'websiteAiWeeklyLimit', 'pixelOptimisations', 'websiteUsers', 'soleManagerId',
+            'hasContentDeliveryConnection', 'contentSupportCallUrl', 'contentWeeklyLimit', 'contentScheduleReason', 'nextContentRun',
+            'pendingContentRequests', 'actionedContentRequests',
         ));
     }
 
@@ -241,32 +332,93 @@ class WebsiteController extends Controller
     {
         $user = Auth::user();
 
-        abort_unless($user?->isAdmin(), 403);
+        abort_unless($website->isManageableBy($user), 403);
+
+        if (! $user?->isAdmin()) {
+            $data = $request->validate([
+                'name' => ['required', 'string', 'max:255'],
+            ]);
+
+            $website->update(['name' => $data['name']]);
+
+            return Redirect::route('admin.websites.show', ['website' => $website, 'tab' => 'settings'])->with('status', 'Website name updated.');
+        }
 
         if ($request->has('domain')) {
             $request->merge(['domain' => $this->normalizeDomain($request->string('domain')->toString())]);
+        }
+
+        foreach (['wordpress_enabled', 'pixel_enabled'] as $connectionSetting) {
+            if ($request->has($connectionSetting)) {
+                $request->merge([$connectionSetting => $request->boolean($connectionSetting)]);
+            }
         }
 
         $primaryDomain = $website->primaryDomain();
 
         $data = $request->validate([
             'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'subscription_user_id' => ['sometimes', 'nullable', 'integer', 'exists:users,id'],
             'domain' => [
                 'sometimes',
                 ...$this->domainRules($primaryDomain),
             ],
-            'user_id' => ['nullable', 'exists:users,id'],
             'health_reports_enabled' => ['sometimes', 'boolean'],
+            'wordpress_enabled' => ['sometimes', 'boolean'],
+            'pixel_enabled' => ['sometimes', 'boolean'],
             'webhook_enabled' => ['sometimes', 'boolean'],
             'webhook_url' => ['nullable', 'url', 'max:255'],
             'webhook_secret' => ['nullable', 'string', 'max:255'],
+            'turnstile_enabled' => ['sometimes', 'boolean'],
+            'turnstile_site_key' => ['nullable', 'string', 'max:255'],
+            'turnstile_secret_key' => ['nullable', 'string', 'max:255'],
         ]);
+
+        if (($data['turnstile_enabled'] ?? false) && blank($data['turnstile_site_key'] ?? $website->turnstile_site_key)) {
+            return back()->withErrors(['turnstile_site_key' => 'A Turnstile site key is required when protection is enabled.'])->withInput();
+        }
+
+        if (($data['turnstile_enabled'] ?? false) && blank($data['turnstile_secret_key'] ?? $website->turnstile_secret_key)) {
+            return back()->withErrors(['turnstile_secret_key' => 'A Turnstile secret key is required when protection is enabled.'])->withInput();
+        }
+
+        if (blank($data['turnstile_secret_key'] ?? null)) {
+            unset($data['turnstile_secret_key']);
+        }
 
         $domain = $data['domain'] ?? null;
         unset($data['domain']);
 
-        DB::transaction(function () use ($data, $domain, $primaryDomain, $website): void {
-            $website->fill($data)->save();
+        $pixelEnabledChanged = array_key_exists('pixel_enabled', $data) && $website->pixel_enabled !== $data['pixel_enabled'];
+
+        DB::transaction(function () use ($data, $domain, $pixelEnabledChanged, $primaryDomain, $website): void {
+            if (array_key_exists('subscription_user_id', $data)) {
+                Website::query()->whereKey($website->id)->lockForUpdate()->firstOrFail();
+                $website->refresh();
+                $subscriberId = $data['subscription_user_id'];
+
+                if ($subscriberId !== null && (int) $subscriberId !== $website->user_id
+                    && ! $website->members()->whereKey($subscriberId)->exists()) {
+                    throw ValidationException::withMessages([
+                        'subscription_user_id' => 'Choose an existing website member as the subscription account.',
+                    ]);
+                }
+
+                if ($website->user_id && ! $website->members()->whereKey($website->user_id)->exists()) {
+                    $website->members()->attach($website->user_id, ['role' => Website::MEMBER_ROLE_MANAGER]);
+                }
+
+                $data['user_id'] = $subscriberId;
+                unset($data['subscription_user_id']);
+            }
+
+            $website->fill($data);
+
+            if ($pixelEnabledChanged) {
+                $website->pixel_payload_version++;
+            }
+
+            $website->save();
 
             if ($domain !== null && $domain !== $primaryDomain?->domain) {
                 if ($primaryDomain) {
@@ -279,11 +431,7 @@ class WebsiteController extends Controller
             }
         });
 
-        if ($website->user_id) {
-            $website->members()->detach($website->user_id);
-        }
-
-        return Redirect::route('admin.websites.show', $website)->with('status', 'Website settings updated.');
+        return Redirect::route('admin.websites.show', ['website' => $website, 'tab' => 'settings'])->with('status', 'Website settings updated.');
     }
 
     public function destroy(Request $request, Website $website): RedirectResponse
@@ -323,6 +471,7 @@ class WebsiteController extends Controller
                 $equivalentDomains = [$apexDomain, 'www.'.$apexDomain];
                 $domainExists = WebsiteDomain::query()
                     ->whereIn('domain', $equivalentDomains)
+                    ->where('ownership_status', WebsiteDomain::OWNERSHIP_VERIFIED)
                     ->when($ignoredDomain, fn ($query) => $query->whereKeyNot($ignoredDomain->id))
                     ->exists();
 

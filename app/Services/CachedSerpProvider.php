@@ -24,6 +24,19 @@ class CachedSerpProvider implements SerpProvider
         return $this->fromPayload($payload, ! $generated);
     }
 
+    public function searchForMarket(string $keyword, int $locationCode, string $languageCode, int $depth = 100): SerpSearchResponse
+    {
+        $generated = false;
+        $key = 'target-keyword-serp:'.hash('sha256', json_encode([$keyword, $locationCode, $languageCode, 'desktop', min(max($depth, 10), 100)], JSON_THROW_ON_ERROR));
+        $payload = Cache::remember($key, now()->addDays($this->cacheDays()), function () use ($keyword, $locationCode, $languageCode, $depth, &$generated): array {
+            $generated = true;
+
+            return $this->toPayload($this->provider->searchForMarket($keyword, $locationCode, $languageCode, $depth));
+        });
+
+        return $this->fromPayload($payload, ! $generated);
+    }
+
     public function forget(string $keyword, string $location, int $depth): void
     {
         Cache::forget($this->key($keyword, $location, $depth));

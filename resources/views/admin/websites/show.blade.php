@@ -1,7 +1,10 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="space-y-6" data-tabs data-default-tab="{{ request('tab', $errors->any() && $website->repository ? 'content' : 'health') }}">
+@php
+    $primaryDomain = $website->domains->firstWhere('is_primary', true) ?? $website->domains->first();
+@endphp
+<div class="space-y-6" data-tabs data-default-tab="{{ $currentWebsiteSection }}">
     @if (session('status'))
         <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{{ session('status') }}</div>
     @endif
@@ -24,9 +27,34 @@
                     </form>
                 @endif
             @endif
-            <a href="{{ route('admin.websites.index') }}" class="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Back to websites</a>
+            @if (Auth::user()?->isAdmin())
+                <a href="{{ route('admin.websites.index') }}" class="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">All websites</a>
+            @endif
         </div>
     </div>
+
+    @if ($primaryDomain && ! $primaryDomain->isVerified())
+        <section class="flex flex-col gap-4 rounded-xl border border-amber-200 bg-amber-50 p-5 sm:flex-row sm:items-center sm:justify-between" aria-labelledby="ownership-title">
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-widest text-amber-700">Website ownership</p>
+                <h2 id="ownership-title" class="mt-1 font-semibold text-slate-950">
+                    {{ $primaryDomain->ownership_status === \App\Models\WebsiteDomain::OWNERSHIP_CONFLICT ? 'We need to review this website' : 'Verify that this is your website' }}
+                </h2>
+                <p class="mt-1 text-sm text-slate-700">
+                    @if ($primaryDomain->ownership_status === \App\Models\WebsiteDomain::OWNERSHIP_CONFLICT)
+                        Search Console access was confirmed, but we could not safely complete verification automatically. No existing website data has been shared or moved.
+                    @else
+                        Your public website review is ready. Connect a matching owner property in Google Search Console to unlock ownership-dependent features.
+                    @endif
+                </p>
+            </div>
+            @if ($primaryDomain->ownership_status === \App\Models\WebsiteDomain::OWNERSHIP_PENDING && $canUseSearchConsole)
+                <a href="{{ route('admin.search-console.connect', $website) }}" class="shrink-0 rounded-lg bg-amber-700 px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-amber-800">Verify with Google</a>
+            @else
+                <a href="{{ route('marketing.contact') }}" class="shrink-0 rounded-lg border border-amber-300 bg-white px-4 py-2.5 text-center text-sm font-semibold text-amber-900 hover:bg-amber-100">Contact a specialist</a>
+            @endif
+        </section>
+    @endif
 
     @if ($website->copilot_build_task_id)
         <section class="flex flex-col gap-4 rounded-xl border border-violet-200 bg-violet-50 p-5 sm:flex-row sm:items-center sm:justify-between" aria-labelledby="website-build-title">
@@ -41,12 +69,15 @@
         </section>
     @endif
 
-    <div class="website-tabs" role="tablist" aria-label="Website sections">
+    <div class="hidden" role="tablist" aria-label="Website sections">
         <button type="button" id="website-tab-health" class="website-tab" role="tab" aria-selected="true" aria-controls="website-panel-health" tabindex="0" data-tab="health">Health reports</button>
         <button type="button" id="website-tab-search" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-search" tabindex="-1" data-tab="search">Search</button>
         <button type="button" id="website-tab-seo" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-seo" tabindex="-1" data-tab="seo">SEO Intelligence</button>
         <button type="button" id="website-tab-content" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-content" tabindex="-1" data-tab="content">Content</button>
-        @if (config('forms.pixel_ui_enabled') && $canUseGrowthFeatures)
+        @if ($website->wordpress_enabled)
+            <button type="button" id="website-tab-wordpress" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-wordpress" tabindex="-1" data-tab="wordpress">WordPress</button>
+        @endif
+        @if (config('forms.pixel_ui_enabled') && $canUseGrowthFeatures && $website->pixel_enabled)
             <button type="button" id="website-tab-pixel" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-pixel" tabindex="-1" data-tab="pixel">Pixel</button>
         @endif
         <button type="button" id="website-tab-business-profile" class="website-tab" role="tab" aria-selected="false" aria-controls="website-panel-business-profile" tabindex="-1" data-tab="business-profile">Business Profile</button>
@@ -58,43 +89,51 @@
         @php
             $latestReport = $website->healthReports->first();
         @endphp
-        <section class="rounded-lg border border-slate-200 bg-white" aria-labelledby="health-title">
-        <div class="flex flex-col gap-4 border-b border-slate-200 p-4 sm:flex-row sm:items-start sm:justify-between">
+        <section class="@container rounded-xl border border-slate-950/10 bg-white" aria-labelledby="health-title">
+        <div class="flex flex-col gap-4 border-b border-slate-950/10 p-5 @2xl:flex-row @2xl:items-start @2xl:justify-between sm:p-6">
             <div>
-                <p class="text-xs font-medium uppercase tracking-widest text-slate-500">Website monitoring</p>
+                <p class="font-mono text-sm text-teal-700">Website monitoring</p>
                 <h2 id="health-title" class="mt-1 text-lg font-semibold text-slate-950">Health reports</h2>
-                <p class="mt-1 text-sm text-slate-600">Availability, on-page SEO, security headers, discoverability, and form delivery.</p>
+                <p class="mt-1 text-base text-slate-600 sm:text-sm">Availability, on-page SEO, security headers, discoverability, and form delivery.</p>
             </div>
-            <form method="POST" action="{{ route('admin.website-health-reports.store', $website) }}">
-                @csrf
-                <button type="submit" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900">Run report now</button>
-            </form>
+            @if ($canManageWebsite && $canRunHealthReports)
+                <form method="POST" action="{{ route('admin.website-health-reports.store', $website) }}">
+                    @csrf
+                    <button type="submit" @class(['rounded-lg px-3 py-2 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600', 'border border-slate-950/15 text-slate-700 hover:bg-slate-50' => $latestReport, 'bg-teal-600 text-white hover:bg-teal-700' => ! $latestReport])>Run report now</button>
+                </form>
+            @endif
         </div>
+        @unless ($canRunHealthReports)
+            <div class="border-b border-slate-950/10 p-5 sm:p-6">
+                <x-feature-upgrade-banner tier="Essential" title="Keep monitoring your website" description="An active Sitewell plan includes manual and scheduled website health reports." />
+            </div>
+        @endunless
         @if ($latestReport)
-            <dl class="grid grid-cols-2 gap-px bg-slate-200 @container sm:grid-cols-4">
+            <dl class="grid grid-cols-2 gap-px bg-slate-950/10 @2xl:grid-cols-4">
                 <div class="bg-white p-4"><dt class="truncate text-sm text-slate-500">Latest status</dt><dd class="mt-1 text-xl font-semibold capitalize">{{ str_replace('_', ' ', $latestReport->overall_status ?: $latestReport->status) }}</dd></div>
                 <div class="bg-white p-4"><dt class="truncate text-sm text-slate-500">Passed</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-emerald-700">{{ $latestReport->passed_checks }}</dd></div>
                 <div class="bg-white p-4"><dt class="truncate text-sm text-slate-500">Warnings</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-amber-700">{{ $latestReport->warning_checks }}</dd></div>
                 <div class="bg-white p-4"><dt class="truncate text-sm text-slate-500">Failed</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-red-700">{{ $latestReport->failed_checks }}</dd></div>
             </dl>
+            <div class="flex flex-col gap-4 p-5 @lg:flex-row @lg:items-end @lg:justify-between sm:p-6">
+                <label class="block min-w-0 @lg:min-w-80">
+                    <span class="block text-base font-medium text-slate-700 sm:text-sm">Previous reports</span>
+                    <select data-health-report-selector class="mt-1 block w-full rounded-lg border border-slate-950/15 bg-white px-3 py-2 text-base text-slate-900 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/20 sm:text-sm" aria-label="Select a website health report">
+                        @foreach ($website->healthReports as $historicalReport)
+                            <option value="{{ route('admin.website-health-reports.show', [$website, $historicalReport]) }}">{{ $historicalReport->created_at->format('j M Y, H:i') }} · {{ ucfirst(str_replace('_', ' ', $historicalReport->overall_status ?: $historicalReport->status)) }}{{ $loop->first ? ' · Latest' : '' }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <a href="{{ route('admin.website-health-reports.show', [$website, $latestReport]) }}" class="inline-flex shrink-0 items-center justify-center rounded-lg bg-teal-600 px-3 py-2 text-sm font-medium text-white hover:bg-teal-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600">View latest report</a>
+            </div>
+        @else
+            <p class="p-5 text-base text-slate-600 sm:p-6 sm:text-sm">No health reports have been generated yet.</p>
         @endif
-        <div class="overflow-x-auto p-4">
-            <table class="min-w-full divide-y divide-slate-200 text-sm">
-                <thead><tr class="text-left text-xs font-medium uppercase tracking-wide text-slate-500"><th class="px-3 py-2">Created</th><th class="px-3 py-2">Status</th><th class="px-3 py-2">Passed</th><th class="px-3 py-2">Warnings</th><th class="px-3 py-2">Failed</th></tr></thead>
-                <tbody class="divide-y divide-slate-100">
-                    @forelse ($website->healthReports as $report)
-                        <tr><td class="px-3 py-3"><a class="font-medium text-slate-950 hover:text-slate-600" href="{{ route('admin.website-health-reports.show', [$website, $report]) }}">{{ $report->created_at->toDayDateTimeString() }}</a></td><td class="px-3 py-3 capitalize text-slate-600">{{ str_replace('_', ' ', $report->overall_status ?: $report->status) }}</td><td class="px-3 py-3 tabular-nums text-emerald-700">{{ $report->passed_checks }}</td><td class="px-3 py-3 tabular-nums text-amber-700">{{ $report->warning_checks }}</td><td class="px-3 py-3 tabular-nums text-red-700">{{ $report->failed_checks }}</td></tr>
-                    @empty
-                        <tr><td colspan="5" class="px-3 py-6 text-center text-slate-500">No health reports have been generated.</td></tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
         </section>
 
     </div>
 
-    @if ($canUseGrowthFeatures)
+    @if ($canUseSearchConsole)
     <div id="website-panel-search" class="space-y-6" role="tabpanel" aria-labelledby="website-tab-search" data-tab-panel="search" hidden>
         <section class="rounded-lg border bg-white p-4 shadow-sm">
             <div class="flex flex-wrap items-start justify-between gap-4">
@@ -144,9 +183,23 @@
             @endif
         </section>
 
-        @include('admin.websites.partials.search-opportunities')
+        @if ($canUseGrowthFeatures)
+            @include('admin.websites.partials.search-opportunities')
+        @endif
     </div>
 
+    @else
+    <div id="website-panel-search" class="space-y-6" role="tabpanel" aria-labelledby="website-tab-search" data-tab-panel="search" hidden>
+        <x-feature-upgrade-banner tier="Essential" title="Connect Google Search Console" description="An active Sitewell plan lets you connect Google Search Console and see clicks, impressions, rankings, and the searches people use to find your website." />
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-label="Search performance preview">
+            @foreach (['Clicks and impressions', 'Average position', 'Top customer searches', 'Best-performing pages'] as $feature)
+                <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"><div class="h-2 w-16 rounded-full bg-violet-100"></div><h3 class="mt-4 font-semibold text-slate-900">{{ $feature }}</h3><p class="mt-1 text-sm text-slate-500">Available with an active Sitewell plan.</p></div>
+            @endforeach
+        </div>
+    </div>
+    @endif
+
+    @if ($canUseGrowthFeatures)
     @include('admin.websites.partials.seo-intelligence', [
         'website' => $website,
         'seoGeneration' => $seoGeneration,
@@ -164,15 +217,6 @@
     ])
 
     @else
-    <div id="website-panel-search" class="space-y-6" role="tabpanel" aria-labelledby="website-tab-search" data-tab-panel="search" hidden>
-        <x-feature-upgrade-banner tier="Growth" title="Unlock search performance" description="Upgrade to connect Google Search Console and turn clicks, impressions, rankings, and real customer searches into clear opportunities." />
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-label="Search performance preview">
-            @foreach (['Clicks and impressions', 'Average position', 'Top customer searches', 'Best-performing pages'] as $feature)
-                <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"><div class="h-2 w-16 rounded-full bg-violet-100"></div><h3 class="mt-4 font-semibold text-slate-900">{{ $feature }}</h3><p class="mt-1 text-sm text-slate-500">Available with Growth and Complete.</p></div>
-            @endforeach
-        </div>
-    </div>
-
     <div id="website-panel-seo" class="space-y-6" role="tabpanel" aria-labelledby="website-tab-seo" data-tab-panel="seo" hidden>
         <x-feature-upgrade-banner tier="Growth" title="See where your website can grow" description="SEO Intelligence tracks keyword visibility, competitors, backlinks, and prioritised recommendations so you know what to improve next." />
         <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -187,6 +231,42 @@
         @unless ($canUseGrowthFeatures)
             <x-feature-upgrade-banner tier="Growth" title="Plan and request new content" description="Upgrade to Growth to submit content requests, plan improvements, and prepare reviewable website changes." />
         @endunless
+
+        @if ($canUseGrowthFeatures && ! $hasContentDeliveryConnection)
+            <section class="overflow-hidden rounded-xl border border-violet-200 bg-white shadow-sm" aria-labelledby="content-connection-title">
+                <div class="bg-violet-50 px-5 py-6 sm:px-6">
+                    <p class="text-xs font-semibold uppercase tracking-widest text-violet-700">Connect your website</p>
+                    <h2 id="content-connection-title" class="mt-2 text-xl font-semibold tracking-tight text-slate-950">Choose how Sitewell prepares website changes</h2>
+                    <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Your Sitewell package includes three ways to connect your website. A Sitewell specialist will help you choose the safest option for your setup and get it connected.</p>
+                </div>
+                <div class="grid gap-4 p-5 sm:grid-cols-3 sm:p-6">
+                    <article class="rounded-lg border border-slate-200 p-4">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-teal-700">Option 1</p>
+                        <h3 class="mt-2 font-semibold text-slate-950">Sitewell Pixel</h3>
+                        <p class="mt-2 text-sm leading-6 text-slate-600">A lightweight connection for supported page updates without replacing your website platform.</p>
+                    </article>
+                    <article class="rounded-lg border border-slate-200 p-4">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-teal-700">Option 2</p>
+                        <h3 class="mt-2 font-semibold text-slate-950">WordPress</h3>
+                        <p class="mt-2 text-sm leading-6 text-slate-600">Connect your WordPress website so our specialists can prepare and manage compatible changes.</p>
+                    </article>
+                    <article class="rounded-lg border border-slate-200 p-4">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-teal-700">Option 3</p>
+                        <h3 class="mt-2 font-semibold text-slate-950">GitHub</h3>
+                        <p class="mt-2 text-sm leading-6 text-slate-600">Link the website repository for larger content and code changes delivered through a reviewable workflow.</p>
+                    </article>
+                </div>
+                <div class="flex flex-col gap-4 border-t border-slate-200 bg-slate-50 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                    <div>
+                        <h3 class="text-sm font-semibold text-slate-950">Not sure which connection suits your website?</h3>
+                        <p class="mt-1 text-sm text-slate-600">Book a free call with support to discuss the options and arrange the setup.</p>
+                    </div>
+                    <a href="{{ $contentSupportCallUrl }}" target="_blank" rel="noreferrer" class="inline-flex shrink-0 items-center justify-center rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900">Book a call with support <span class="ml-2" aria-hidden="true">→</span></a>
+                </div>
+            </section>
+        @endif
+
+        @if (Auth::user()?->isAdmin())
         <div class="rounded-lg border bg-white p-4 shadow-sm">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
@@ -217,24 +297,47 @@
                 </div>
             </div>
         </div>
+        @endif
 
         @if ($website->repository || ($canUseGrowthFeatures && config('forms.pixel_ui_enabled') && $website->pixel_enabled))
-        @if ($website->repository && Auth::user()?->isAdmin())
+        @if ($canUseGrowthFeatures && $canManageWebsite)
         @php
             $contentPlan = $website->contentPlan;
         @endphp
         <div class="rounded-lg border bg-white p-4 shadow-sm">
             <div class="flex flex-wrap items-start justify-between gap-4">
-                <div><p class="text-xs font-medium uppercase tracking-wide text-slate-500">AI content</p><h2 class="mt-1 font-semibold">Weekly content generation</h2><p class="mt-1 text-sm text-slate-600">Sitewell chooses a blog post, landing page, or page improvement and opens a pull request for review.</p></div>
-                @if ($website->repository && $website->searchConsoleConnection?->property_url)
+                <div><p class="text-xs font-medium uppercase tracking-wide text-slate-500">AI content</p><h2 class="mt-1 font-semibold">Content schedule</h2><p class="mt-1 text-sm text-slate-600">Sitewell prioritises your queued requests, then eligible target keywords. Changes are prepared for review before publishing; runs with no useful work are skipped.</p></div>
+                @if ($website->repository && Auth::user()?->isAdmin())
                     <form method="POST" action="{{ route('admin.content-generations.store', $website) }}">@csrf<button class="rounded-md border px-3 py-2 text-sm font-medium text-slate-700">Generate now</button></form>
                 @endif
             </div>
             @if ($errors->has('enabled'))<p class="mt-3 text-sm text-red-700">{{ $errors->first('enabled') }}</p>@endif
+            @if ($nextContentRun)
+                <p class="mt-3 text-sm text-slate-600">Next scheduled run: {{ $nextContentRun->setTimezone($contentPlan->timezone)->format('l j F, H:i') }} ({{ $contentPlan->timezone }}).</p>
+            @elseif ($contentScheduleReason)
+                <p class="mt-3 text-sm text-amber-800">{{ $contentScheduleReason }}</p>
+            @endif
+            <p class="mt-2 text-sm text-slate-500">Growth includes one scheduled run per week. Complete includes up to three. Selected days share the same time and timezone. Automatic targets rest for at least 14 days between improvements.</p>
             <form method="POST" action="{{ route('admin.content-plans.update', $website) }}" class="mt-4 grid gap-4 md:grid-cols-2">
                 @csrf @method('PUT')
-                <label class="flex items-center gap-2 md:col-span-2"><input type="hidden" name="enabled" value="0"><input type="checkbox" name="enabled" value="1" @checked(old('enabled', $contentPlan?->enabled))><span class="text-sm font-medium">Generate one content PR each week</span></label>
-                <div><label class="block text-sm font-medium" for="weekday">Day</label><select id="weekday" name="weekday" class="mt-1 w-full rounded-md border px-3 py-2 text-sm">@foreach (['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'] as $value => $day)<option value="{{ $value }}" @selected((int) old('weekday', $contentPlan?->weekday ?? 1) === $value)>{{ $day }}</option>@endforeach</select></div>
+                <label class="flex items-center gap-2 md:col-span-2"><input type="hidden" name="enabled" value="0"><input type="checkbox" name="enabled" value="1" @checked(old('enabled', $contentPlan?->enabled))><span class="text-sm font-medium">Enable scheduled content improvements</span></label>
+                <div><label class="block text-sm font-medium" for="weekday">Primary day</label><select id="weekday" name="weekday" class="mt-1 w-full rounded-md border px-3 py-2 text-sm">@foreach (['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'] as $value => $day)<option value="{{ $value }}" @selected((int) old('weekday', $contentPlan?->weekday ?? 1) === $value)>{{ $day }}</option>@endforeach</select></div>
+                @if ($contentWeeklyLimit === 3)
+                    <fieldset class="md:col-span-2">
+                        <legend class="text-sm font-medium">Extra days (choose up to two, different from your primary day)</legend>
+                        <div class="mt-2 flex flex-wrap gap-3">
+                            @foreach (['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] as $value => $day)
+                                <label class="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" name="additional_weekdays[]" value="{{ $value }}" @checked(in_array($value, old('additional_weekdays', session()->hasOldInput() ? [] : ($contentPlan?->additional_weekdays ?? []))))>{{ $day }}</label>
+                            @endforeach
+                        </div>
+                        @error('additional_weekdays')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror
+                        @foreach ($errors->get('additional_weekdays.*') as $messages)
+                            @foreach ($messages as $message)<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@endforeach
+                        @endforeach
+                    </fieldset>
+                @elseif ($contentPlan?->additional_weekdays)
+                    <p class="text-sm text-amber-800 md:col-span-2">Your saved extra days are paused. They resume when this website has an active Complete subscription.</p>
+                @endif
                 <div><label class="block text-sm font-medium" for="hour">Hour</label><select id="hour" name="hour" class="mt-1 w-full rounded-md border px-3 py-2 text-sm">@for ($hour = 0; $hour < 24; $hour++)<option value="{{ $hour }}" @selected((int) old('hour', $contentPlan?->hour ?? 8) === $hour)>{{ str_pad($hour, 2, '0', STR_PAD_LEFT) }}:00</option>@endfor</select></div>
                 <div class="md:col-span-2"><label class="block text-sm font-medium" for="timezone">Timezone</label><input id="timezone" name="timezone" value="{{ old('timezone', $contentPlan?->timezone ?? 'Europe/London') }}" class="mt-1 w-full rounded-md border px-3 py-2 text-sm"></div>
                 <div>
@@ -252,7 +355,7 @@
                 <div class="md:col-span-2"><button class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white">Save content plan</button></div>
             </form>
             @if ($contentPlan?->generations->isNotEmpty())
-                <div class="mt-5 overflow-x-auto"><table class="min-w-full text-sm"><thead><tr class="border-b text-left text-xs uppercase text-slate-500"><th class="py-2">Date</th><th>Status</th><th>Pull request</th><th class="text-right">Actions</th></tr></thead><tbody>@foreach ($contentPlan->generations as $generation)<tr class="border-b"><td class="py-2">{{ $generation->scheduled_for->toFormattedDateString() }}</td><td>{{ str_replace('_', ' ', $generation->status) }}</td><td>@if ($generation->pull_request_url)<a class="font-medium underline" href="{{ $generation->pull_request_url }}">#{{ $generation->pull_request_number }}</a>@else — @endif</td><td><div class="flex justify-end gap-2">@if ($generation->pull_request_number && $generation->status === \App\Models\ContentGeneration::STATUS_PULL_REQUEST_OPEN)<form method="POST" action="{{ route('admin.content-generations.sync', [$website, $generation]) }}">@csrf<button class="rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">Check GitHub status</button></form><form method="POST" action="{{ route('admin.content-generations.destroy', [$website, $generation]) }}">@csrf @method('DELETE')<button class="rounded-md border border-red-200 bg-white px-2.5 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50">Cancel</button></form>@else — @endif</div></td></tr>@endforeach</tbody></table></div>
+                <div class="mt-5 overflow-x-auto"><table class="min-w-full text-sm"><thead><tr class="border-b text-left text-xs uppercase text-slate-500"><th class="py-2">Date</th><th>Status</th><th>Pull request</th><th class="text-right">Actions</th></tr></thead><tbody>@foreach ($contentPlan->generations as $generation)<tr class="border-b"><td class="py-2">{{ $generation->scheduled_for->toFormattedDateString() }}</td><td>{{ str_replace('_', ' ', $generation->status) }}@if ($generation->skip_reason)<p class="mt-1 max-w-sm text-xs text-slate-500">{{ $generation->skip_reason }}</p>@endif</td><td>@if ($generation->pull_request_url)<a class="font-medium underline" href="{{ $generation->pull_request_url }}">#{{ $generation->pull_request_number }}</a>@else — @endif</td><td><div class="flex justify-end gap-2">@if (Auth::user()?->isAdmin() && $generation->pull_request_number && $generation->status === \App\Models\ContentGeneration::STATUS_PULL_REQUEST_OPEN)<form method="POST" action="{{ route('admin.content-generations.sync', [$website, $generation]) }}">@csrf<button class="rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">Check GitHub status</button></form><form method="POST" action="{{ route('admin.content-generations.destroy', [$website, $generation]) }}">@csrf @method('DELETE')<button class="rounded-md border border-red-200 bg-white px-2.5 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50">Cancel</button></form>@else — @endif</div></td></tr>@endforeach</tbody></table></div>
             @endif
         </div>
         @endif
@@ -278,37 +381,56 @@
             </div>
         </form>
 
-        @php
-            $pendingContentRequests = $website->contentRequests->whereNull('picked_up_at');
-            $actionedContentRequests = $website->contentRequests->whereNotNull('picked_up_at');
-        @endphp
         <div class="mt-5 border-t border-slate-200 pt-4">
             <div class="flex items-center justify-between gap-3">
                 <h3 class="text-sm font-semibold text-slate-900">Pending todos</h3>
-                <span class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium tabular-nums text-amber-800">{{ $pendingContentRequests->count() }}</span>
+                <span class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium tabular-nums text-amber-800">{{ $pendingContentRequests->total() }}</span>
             </div>
             <div class="mt-3 space-y-3">
                 @forelse ($pendingContentRequests as $contentRequest)
+                    @php
+                        $queuePosition = $pendingContentRequests->firstItem() + $loop->index;
+                    @endphp
                     <article class="rounded-lg border border-slate-200 p-3">
                         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                             <div class="min-w-0">
                                 <div class="flex flex-wrap items-center gap-2">
-                                    <span class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800">Pending</span>
+                                    @if ($queuePosition === 1)
+                                        <span class="rounded-full bg-teal-100 px-2.5 py-1 text-xs font-medium text-teal-800">Up next</span>
+                                    @else
+                                        <span class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium tabular-nums text-amber-800">Queue #{{ $queuePosition }}</span>
+                                    @endif
+                                    @if ($contentRequest->bumped_at)
+                                        <span class="rounded-full bg-violet-100 px-2.5 py-1 text-xs font-medium text-violet-800">Bumped</span>
+                                    @endif
                                     <span class="text-xs text-slate-500">Added {{ $contentRequest->created_at->diffForHumans() }}{{ $contentRequest->creator ? ' by '.$contentRequest->creator->name : '' }}</span>
                                 </div>
                                 <p class="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700">{{ $contentRequest->instructions }}</p>
                             </div>
-                            <form method="POST" action="{{ route('admin.content-requests.destroy', [$website, $contentRequest]) }}" class="shrink-0">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="rounded-md border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50">Remove</button>
-                            </form>
+                            @if ($canManageWebsite)
+                                <div class="flex shrink-0 flex-col gap-2 sm:flex-row">
+                                    @if ($queuePosition !== 1)
+                                        <form method="POST" action="{{ route('admin.content-requests.bump', [$website, $contentRequest]) }}">
+                                            @csrf
+                                            <button type="submit" class="min-h-11 w-full rounded-md border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-medium text-violet-800 hover:bg-violet-100 sm:w-auto">Bump to top</button>
+                                        </form>
+                                    @endif
+                                    <form method="POST" action="{{ route('admin.content-requests.destroy', [$website, $contentRequest]) }}">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="min-h-11 w-full rounded-md border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 sm:w-auto">Remove</button>
+                                    </form>
+                                </div>
+                            @endif
                         </div>
                     </article>
                 @empty
                     <p class="rounded-lg bg-slate-50 p-3 text-sm text-slate-500">No pending content todos.</p>
                 @endforelse
             </div>
+            @if ($pendingContentRequests->hasPages())
+                <div class="mt-4">{{ $pendingContentRequests->links() }}</div>
+            @endif
         </div>
 
         @if ($actionedContentRequests->isNotEmpty())
@@ -360,7 +482,13 @@
         @endif
     </div>
 
-    @if (config('forms.pixel_ui_enabled') && $canUseGrowthFeatures)
+    @if ($website->wordpress_enabled)
+        <div id="website-panel-wordpress" class="space-y-6" role="tabpanel" aria-labelledby="website-tab-wordpress" data-tab-panel="wordpress" hidden>
+            @include('admin.websites.partials.wordpress-connection')
+        </div>
+    @endif
+
+    @if (config('forms.pixel_ui_enabled') && $canUseGrowthFeatures && $website->pixel_enabled)
         @include('admin.websites.partials.pixel', [
             'website' => $website,
             'pixelInstallationSnippet' => $pixelInstallationSnippet,
@@ -380,48 +508,61 @@
         </div>
     @endif
 
-    <div id="website-panel-settings" class="grid gap-6 lg:grid-cols-2" role="tabpanel" aria-labelledby="website-tab-settings" data-tab-panel="settings" hidden>
-        <div class="rounded-lg border bg-white p-4 shadow-sm">
-            <h2 class="font-semibold">Overview</h2>
-            <dl class="mt-3 space-y-2 text-sm">
-                <div class="flex justify-between"><dt class="text-slate-500">Status</dt><dd class="font-medium">{{ $website->is_active ? 'Active' : 'Disabled' }}</dd></div>
-                <div class="flex justify-between"><dt class="text-slate-500">Auto discovered</dt><dd class="font-medium">{{ $website->auto_discovered ? 'Yes' : 'No' }}</dd></div>
-                <div class="flex justify-between"><dt class="text-slate-500">Email notifications</dt><dd class="font-medium">{{ $website->email_enabled ? 'Enabled' : 'Disabled' }}</dd></div>
-                <div class="flex justify-between"><dt class="text-slate-500">Webhook notifications</dt><dd class="font-medium">{{ $website->webhook_enabled ? 'Enabled' : 'Disabled' }}</dd></div>
-                <div class="flex justify-between"><dt class="text-slate-500">Weekly health reports</dt><dd class="font-medium">{{ $website->health_reports_enabled ? 'Enabled' : 'Disabled' }}</dd></div>
-                <div class="flex justify-between"><dt class="text-slate-500">Owner</dt><dd class="font-medium">{{ $website->owner?->name ?: 'Unassigned' }}</dd></div>
-            </dl>
+    <div id="website-panel-settings" class="space-y-6" role="tabpanel" aria-labelledby="website-tab-settings" data-tab-panel="settings" hidden>
+        <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm" aria-labelledby="website-settings-title">
+            <div class="border-b border-slate-200 p-5 sm:p-6">
+                <p class="font-mono text-sm text-teal-700">Website settings</p>
+                <h2 id="website-settings-title" class="mt-1 text-xl font-semibold text-slate-950">Your website details</h2>
+                <p class="mt-1 text-base text-slate-600 sm:text-sm">Choose the name Sitewell uses for this website throughout your account.</p>
+            </div>
 
-            @if (Auth::user()?->isAdmin())
-                <form method="POST" action="{{ route('admin.websites.update', $website) }}" class="mt-4 space-y-3">
+            @if ($canManageWebsite)
+                <form method="POST" action="{{ route('admin.websites.update', $website) }}" class="flex flex-col gap-4 p-5 sm:p-6">
                     @csrf
                     @method('PUT')
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700" for="name">Website name</label>
-                        <input id="name" name="name" type="text" required value="{{ old('name', $website->name) }}" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                    <div class="max-w-xl">
+                        <label class="text-base font-medium text-slate-700 sm:text-sm" for="name">Website name</label>
+                        <input id="name" name="name" type="text" required value="{{ old('name', $website->name) }}" class="mt-1 w-full rounded-lg border border-slate-950/15 bg-white px-3 py-2 text-base text-slate-950 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/20 sm:text-sm">
                         @error('name')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700" for="domain">Website domain or URL</label>
-                        <input id="domain" name="domain" type="text" required value="{{ old('domain', $website->primaryDomain()?->domain) }}" placeholder="https://example.com" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" autocapitalize="none" autocomplete="url" spellcheck="false">
-                        <p class="mt-1 text-xs text-slate-500">Sitewell uses this domain for crawling and SEO intelligence. Connected Search Console properties and repositories are managed separately.</p>
-                        @error('domain')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700" for="user_id">Assign owner</label>
-                        <select id="user_id" name="user_id" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
-                            <option value="">Unassigned</option>
-                            @foreach ($users as $user)
-                                <option value="{{ $user->id }}" @selected($website->user_id === $user->id)>{{ $user->name }} ({{ $user->email }})</option>
-                            @endforeach
-                        </select>
-                    </div>
+                    <div><button type="submit" class="rounded-lg bg-teal-600 px-3 py-2 text-sm font-medium text-white hover:bg-teal-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600">Save name</button></div>
+                </form>
+            @endif
+
+            @if (Auth::user()?->isAdmin())
+                <details class="border-t border-slate-950/10">
+                    <summary class="cursor-pointer px-5 py-4 text-base font-medium text-slate-800 hover:bg-slate-50 sm:px-6 sm:text-sm">Advanced website settings</summary>
+                    <form method="POST" action="{{ route('admin.websites.update', $website) }}" class="space-y-6 border-t border-slate-950/10 p-5 sm:p-6">
+                        @csrf
+                        @method('PUT')
+                    <fieldset class="space-y-3 border-t border-slate-200 pt-6">
+                        <legend class="text-sm font-semibold text-slate-950">Connection workspaces</legend>
+                        <p class="text-sm text-slate-600">Choose which connection tabs are available for this website.</p>
+                        <label class="flex items-start gap-3 rounded-lg border border-slate-200 p-4">
+                            <input type="hidden" name="wordpress_enabled" value="0">
+                            <input type="checkbox" name="wordpress_enabled" value="1" class="mt-1 rounded border-slate-300" @checked(old('wordpress_enabled', $website->wordpress_enabled))>
+                            <span>
+                                <span class="block text-sm font-medium text-slate-900">Enable the WordPress connection</span>
+                                <span class="block text-xs leading-5 text-slate-500">Shows the WordPress tab for pairing the plugin and managing website releases.</span>
+                            </span>
+                        </label>
+                        @if (config('forms.pixel_ui_enabled'))
+                            <label class="flex items-start gap-3 rounded-lg border border-slate-200 p-4">
+                                <input type="hidden" name="pixel_enabled" value="0">
+                                <input type="checkbox" name="pixel_enabled" value="1" class="mt-1 rounded border-slate-300" @checked(old('pixel_enabled', $website->pixel_enabled))>
+                                <span>
+                                    <span class="block text-sm font-medium text-slate-900">Enable the Pixel connection</span>
+                                    <span class="block text-xs leading-5 text-slate-500">Shows the Pixel tab and allows approved Pixel changes to be delivered to the website.</span>
+                                </span>
+                            </label>
+                        @endif
+                    </fieldset>
                     <label class="flex items-start gap-3 rounded-lg border border-slate-200 p-3">
                         <input type="hidden" name="health_reports_enabled" value="0">
                         <input type="checkbox" name="health_reports_enabled" value="1" class="mt-1 rounded border-slate-300" @checked($website->health_reports_enabled)>
                         <span>
                             <span class="block text-sm font-medium text-slate-900">Send weekly website health reports</span>
-                            <span class="block text-xs text-slate-500">Reports are emailed to administrators and the assigned owner.</span>
+                            <span class="block text-xs text-slate-500">Reports are emailed to administrators and assigned website users.</span>
                         </span>
                     </label>
                     <div class="space-y-3 rounded-lg border border-slate-200 p-3">
@@ -445,10 +586,32 @@
                             @error('webhook_secret')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror
                         </div>
                     </div>
-                    <button type="submit" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">Save settings</button>
-                </form>
+                    <div class="space-y-3 rounded-lg border border-slate-200 p-3">
+                        <label class="flex items-start gap-3">
+                            <input type="hidden" name="turnstile_enabled" value="0">
+                            <input type="checkbox" name="turnstile_enabled" value="1" class="mt-1 rounded border-slate-300" @checked(old('turnstile_enabled', $website->turnstile_enabled))>
+                            <span>
+                                <span class="block text-sm font-medium text-slate-900">Protect submissions with Cloudflare Turnstile</span>
+                                <span class="block text-xs text-slate-500">Submissions that fail verification are silently quarantined as spam.</span>
+                            </span>
+                        </label>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700" for="turnstile_site_key">Turnstile site key</label>
+                            <input id="turnstile_site_key" name="turnstile_site_key" type="text" value="{{ old('turnstile_site_key', $website->turnstile_site_key) }}" autocomplete="off" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 font-mono text-sm">
+                            @error('turnstile_site_key')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700" for="turnstile_secret_key">Turnstile secret key</label>
+                            <input id="turnstile_secret_key" name="turnstile_secret_key" type="password" value="" placeholder="{{ $website->turnstile_secret_key ? 'Configured — leave blank to keep it' : '' }}" autocomplete="new-password" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 font-mono text-sm">
+                            <p class="mt-1 text-xs text-slate-500">Stored server-side and never included in the website form.</p>
+                            @error('turnstile_secret_key')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror
+                        </div>
+                    </div>
+                        <button type="submit" class="rounded-lg border border-slate-950/15 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600">Save advanced settings</button>
+                    </form>
+                </details>
 
-                <div class="mt-6 border-t border-red-200 pt-5">
+                <div class="border-t border-red-200 px-5 py-5 sm:px-6">
                     <h3 class="text-sm font-semibold text-red-900">Delete website</h3>
                     <p class="mt-1 text-sm text-red-700">This permanently deletes the website, its forms, submissions, reports, and content settings.</p>
                     <form method="POST" action="{{ route('admin.websites.destroy', $website) }}" class="mt-3" onsubmit="return confirm('Delete this website and all of its data? This cannot be undone.')">
@@ -458,60 +621,86 @@
                     </form>
                 </div>
             @endif
-        </div>
+        </section>
 
-        <div class="rounded-lg border bg-white p-4 shadow-sm">
-            <h2 class="font-semibold">Domains</h2>
-            <ul class="mt-3 space-y-2 text-sm">
-                @forelse ($website->domains as $domain)
-                    <li class="flex items-center justify-between">
-                        <span>{{ $domain->domain }}</span>
-                        <span class="text-slate-500">{{ $domain->is_primary ? 'Primary' : 'Alias' }}</span>
-                    </li>
-                @empty
-                    <li class="text-slate-500">No domains recorded.</li>
-                @endforelse
-            </ul>
-        </div>
-
-        <div class="rounded-lg border bg-white p-4 shadow-sm lg:col-span-2">
+        <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
             <div class="flex items-start justify-between gap-4">
                 <div>
                     <h2 class="font-semibold">Website users</h2>
                     <p class="mt-1 text-sm text-slate-600">Managers can make changes. Viewers have read-only access.</p>
                 </div>
-                <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">{{ $website->members->count() + ($website->owner ? 1 : 0) }} users</span>
+                <span class="rounded-full bg-slate-100 px-2.5 py-1 text-sm font-medium text-slate-700">{{ $websiteUsers->count() }} {{ Str::plural('user', $websiteUsers->count()) }}</span>
             </div>
 
+            @if (Auth::user()?->isAdmin())
+                <form method="POST" action="{{ route('admin.websites.update', $website) }}" class="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                    @csrf
+                    @method('PUT')
+                    <label for="subscription_user_id" class="block text-sm font-medium text-slate-700">Subscription account</label>
+                    <p class="mt-1 text-sm text-slate-600">This member’s package unlocks the website’s features. Their Viewer or Manager access stays unchanged. Your administrator access lets you manage the website for them.</p>
+                    <select id="subscription_user_id" name="subscription_user_id" class="mt-3 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm">
+                        <option value="">No subscription account</option>
+                        @foreach ($websiteUsers as $websiteUser)
+                            <option value="{{ $websiteUser['user']->id }}" @selected((string) old('subscription_user_id', $website->user_id) === (string) $websiteUser['user']->id)>{{ $websiteUser['user']->name }} — {{ $websiteUser['user']->email }}</option>
+                        @endforeach
+                    </select>
+                    @error('subscription_user_id')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror
+                    <button type="submit" class="mt-3 rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">Save subscription account</button>
+                </form>
+            @endif
+
+            @error('role')
+                <p class="mt-4 rounded-lg bg-red-50 p-3 text-base text-red-700 sm:text-sm" role="alert">{{ $message }}</p>
+            @enderror
+
             <div class="mt-4 divide-y divide-slate-100 rounded-lg border border-slate-200">
-                @if ($website->owner)
-                    <div class="flex items-center justify-between gap-4 p-3">
-                        <div class="min-w-0"><p class="truncate text-sm font-medium text-slate-900">{{ $website->owner->name }}</p><p class="truncate text-xs text-slate-500">{{ $website->owner->email }}</p></div>
-                        <span class="rounded-full bg-teal-50 px-2.5 py-1 text-xs font-medium text-teal-700">Owner</span>
-                    </div>
-                @endif
-                @foreach ($website->members as $member)
+                @foreach ($websiteUsers as $websiteUser)
+                    @php
+                        $member = $websiteUser['user'];
+                        $memberRole = $websiteUser['role'];
+                        $isOnlyManager = $member->id === $soleManagerId;
+                    @endphp
                     <div class="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div class="min-w-0"><p class="truncate text-sm font-medium text-slate-900">{{ $member->name }}</p><p class="truncate text-xs text-slate-500">{{ $member->email }}</p></div>
-                        @if ($canManageMembers)
-                            <div class="flex items-center gap-2">
+                        <div class="min-w-0 flex-1">
+                            <p class="truncate text-base font-medium text-slate-900 sm:text-sm">{{ $member->name }}</p>
+                            <p class="truncate text-base text-slate-500 sm:text-sm">{{ $member->email }}</p>
+                            @if (Auth::user()?->isAdmin())
+                                <details class="mt-2 rounded-lg border border-slate-200 p-3">
+                                    <summary class="cursor-pointer text-sm font-medium text-slate-700">Manage membership</summary>
+                                    <form method="POST" action="{{ route('admin.websites.members.update', [$website, $member]) }}" class="mt-3">
+                                        @csrf
+                                        @method('PUT')
+                                        @include('admin.websites.partials.member-membership-fields', [
+                                            'membershipFormKey' => 'member_'.$member->id,
+                                            'membershipTier' => $member->admin_membership_tier,
+                                            'membershipEndsOn' => $member->admin_membership_expires_at?->format('Y-m-d'),
+                                            'membershipRequired' => true,
+                                        ])
+                                        <button type="submit" class="mt-3 rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">Save membership</button>
+                                    </form>
+                                </details>
+                            @endif
+                        </div>
+                        @if ($canManageMembers && ! $isOnlyManager)
+                            <div class="flex flex-wrap items-center gap-2">
                                 <form method="POST" action="{{ route('admin.websites.members.update', [$website, $member]) }}" class="flex items-center gap-2">
                                     @csrf
                                     @method('PUT')
-                                    <select name="role" class="rounded-md border border-slate-300 px-2 py-1.5 text-sm">
-                                        <option value="manager" @selected($member->pivot->role === 'manager')>Manager</option>
-                                        <option value="viewer" @selected($member->pivot->role === 'viewer')>Viewer</option>
+                                    <label for="member_role_{{ $member->id }}" class="sr-only">Access for {{ $member->name }}</label>
+                                    <select id="member_role_{{ $member->id }}" name="role" class="rounded-lg border border-slate-950/15 bg-white px-2 py-1.5 text-base sm:text-sm">
+                                        <option value="manager" @selected($memberRole === 'manager')>Manager</option>
+                                        <option value="viewer" @selected($memberRole === 'viewer')>Viewer</option>
                                     </select>
-                                    <button class="rounded-md border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">Update</button>
+                                    <button type="submit" class="rounded-lg border border-slate-950/15 px-2.5 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">Update</button>
                                 </form>
                                 <form method="POST" action="{{ route('admin.websites.members.destroy', [$website, $member]) }}">
                                     @csrf
                                     @method('DELETE')
-                                    <button class="rounded-md border border-red-200 px-2.5 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50">Remove</button>
+                                    <button type="submit" class="rounded-lg border border-red-200 px-2.5 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50">Remove</button>
                                 </form>
                             </div>
                         @else
-                            <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium capitalize text-slate-700">{{ $member->pivot->role }}</span>
+                            <span class="rounded-full bg-slate-100 px-2.5 py-1 text-sm font-medium capitalize text-slate-700">{{ $memberRole }}</span>
                         @endif
                     </div>
                 @endforeach
@@ -521,21 +710,36 @@
                 <form method="POST" action="{{ route('admin.websites.members.store', $website) }}" class="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_10rem_auto] sm:items-end">
                     @csrf
                     <div><label for="member_email" class="text-sm font-medium text-slate-700">Invite by email</label><input id="member_email" name="email" type="email" required autocomplete="email" value="{{ old('email') }}" placeholder="colleague@example.com" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"><p class="mt-1 text-xs text-slate-500">We’ll email them a secure link to set up their account.</p>@error('email')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror</div>
-                    <div><label for="member_role" class="text-sm font-medium text-slate-700">Access</label><select id="member_role" name="role" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"><option value="manager">Manager</option><option value="viewer">Viewer</option></select></div>
-                    <button class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">Send invitation</button>
+                    <div><label for="member_role" class="text-sm font-medium text-slate-700">Access</label><select id="member_role" name="role" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"><option value="manager" @selected(old('role', 'viewer') === 'manager')>Manager</option><option value="viewer" @selected(old('role', 'viewer') === 'viewer')>Viewer</option></select></div>
+                    @if (Auth::user()?->isAdmin())
+                        <div class="rounded-lg border border-slate-200 bg-slate-50 p-4 sm:col-span-3">
+                            @include('admin.websites.partials.member-membership-fields', [
+                                'membershipFormKey' => 'invite',
+                                'membershipTier' => null,
+                                'membershipEndsOn' => now()->addMonthsNoOverflow(6)->format('Y-m-d'),
+                                'membershipRequired' => false,
+                            ])
+                        </div>
+                    @endif
+                    <button type="submit" class="rounded-md border border-slate-950/15 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Send invitation</button>
                 </form>
             @elseif ($canManageMembers)
                 <p class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">A Growth or Complete membership is required to invite additional website users.</p>
             @endif
-        </div>
+        </section>
     </div>
 
     <div id="website-panel-forms" class="grid gap-6 lg:grid-cols-2" role="tabpanel" aria-labelledby="website-tab-forms" data-tab-panel="forms" hidden>
-        <section class="@container rounded-lg border border-blue-200 bg-blue-50 p-4 lg:col-span-2" aria-labelledby="form-onboarding-title">
-            <div class="grid gap-5 @4xl:grid-cols-[2fr_3fr] @4xl:gap-6">
+        <section class="@container rounded-xl border border-slate-950/10 bg-white p-5 lg:col-span-2 sm:p-6" aria-labelledby="form-onboarding-title">
+            <h2 id="form-onboarding-title" class="text-xl font-semibold text-slate-950">Connect a website form</h2>
+            <p class="mt-1 text-base text-slate-600 sm:text-sm">Use the installation example when adding a new form to this website.</p>
+            <details class="group mt-4 rounded-lg bg-slate-50 open:ring-1 open:ring-slate-950/10">
+                <summary class="flex cursor-pointer list-none items-center justify-between gap-3 rounded-lg px-4 py-3 text-base font-medium text-slate-800 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600 sm:text-sm [&::-webkit-details-marker]:hidden">
+                    Show installation instructions
+                    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" class="size-5 shrink-0 group-open:rotate-180 sm:size-4" aria-hidden="true"><path d="m5 7.5 5 5 5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </summary>
+            <div class="grid gap-5 border-t border-slate-950/10 p-4 @4xl:grid-cols-[2fr_3fr] @4xl:gap-6">
                 <div class="min-w-0">
-                    <p class="font-mono text-sm font-medium uppercase tracking-wide text-blue-700">Form setup</p>
-                    <h2 id="form-onboarding-title" class="mt-1 text-xl font-semibold text-balance text-blue-950">Connect a website form</h2>
                     <p class="mt-2 text-base text-pretty text-blue-900 sm:text-sm">Paste the example into the website, then replace or add the fields you need. Submissions from {{ $website->domains->firstWhere('is_primary', true)?->domain ?? $website->domains->first()?->domain ?? 'this website' }} will be matched automatically.</p>
 
                     <dl class="mt-5 grid gap-4">
@@ -592,16 +796,32 @@
         &lt;textarea name="message" required&gt;&lt;/textarea&gt;
     &lt;/label&gt;
 
+    &lt;!-- Replace YOUR_TURNSTILE_SITE_KEY with your Cloudflare public site key.
+         Save the matching site and secret keys in Sitewell website settings
+         and enable Turnstile protection. Never put the secret key here.
+         The widget adds the cf-turnstile-response field automatically. --&gt;
+    &lt;div class="cf-turnstile" data-sitekey="{{ $website->turnstile_site_key ?: 'YOUR_TURNSTILE_SITE_KEY' }}"&gt;&lt;/div&gt;
+
     &lt;button type="submit"&gt;Send enquiry&lt;/button&gt;
-&lt;/form&gt;</textarea>
+&lt;/form&gt;
+
+&lt;!-- Include this script once per page. --&gt;
+&lt;script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer&gt;&lt;/script&gt;</textarea>
                 </div>
             </div>
+            </details>
         </section>
 
-        <div class="rounded-lg border border-blue-200 bg-blue-50 p-4 shadow-sm lg:col-span-2">
+        <div class="rounded-xl border border-slate-950/10 bg-white p-5 lg:col-span-2 sm:p-6">
             <h2 class="font-semibold text-blue-950">Automatic customer reply</h2>
-            <p class="mt-1 text-sm text-blue-800">Set the website-wide acknowledgement. Individual forms can inherit or override it.</p>
-            <form method="POST" action="{{ route('admin.websites.autoresponder.update', $website) }}" class="mt-4 space-y-4">
+            @if (! $canUseAutoresponders)
+                <p class="mt-1 text-base text-slate-600 sm:text-sm">Automatic customer replies require an active Sitewell plan.</p>
+                <a href="{{ route('admin.billing.index') }}" class="mt-4 inline-flex items-center justify-center rounded-lg border border-slate-950/15 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600">View plans</a>
+            @else
+            <p class="mt-1 text-base text-blue-800 sm:text-sm">Set the website-wide acknowledgement. Individual forms can inherit or override it.</p>
+            <details class="group mt-4 rounded-lg border border-slate-950/10">
+                <summary class="flex cursor-pointer list-none items-center justify-between gap-3 rounded-lg px-4 py-3 text-base font-medium text-slate-800 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600 sm:text-sm [&::-webkit-details-marker]:hidden">Edit automatic reply<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" class="size-5 shrink-0 group-open:rotate-180 sm:size-4" aria-hidden="true"><path d="m5 7.5 5 5 5-5" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+            <form method="POST" action="{{ route('admin.websites.autoresponder.update', $website) }}" class="space-y-4 border-t border-slate-950/10 p-4">
                 @csrf
                 @method('PUT')
                 <input type="hidden" name="autoresponder_enabled" value="0">
@@ -610,6 +830,12 @@
                     <span><span class="block text-sm font-medium text-slate-900">Automatically acknowledge new enquiries</span><span class="block text-xs text-slate-500">Only sends when a valid customer email is present and the submission passes spam checks.</span></span>
                 </label>
                 <div class="grid gap-4 lg:grid-cols-2">
+                    <div>
+                        <label class="text-sm font-medium text-slate-700" for="autoresponder_from_name">From name</label>
+                        <input id="autoresponder_from_name" name="autoresponder_from_name" value="{{ old('autoresponder_from_name', $website->autoresponder_from_name) }}" placeholder="{{ config('mail.from.name') }}" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                        @error('autoresponder_from_name')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                    </div>
+                    <div><p class="text-base font-medium text-slate-700 sm:text-sm">From email address</p><p class="mt-1 text-base text-slate-600 sm:text-sm">{{ config('forms.autoresponder_from_address') }}</p></div>
                     <div>
                         <label class="text-sm font-medium text-slate-700" for="autoresponder_subject">Email subject</label>
                         <input id="autoresponder_subject" name="autoresponder_subject" value="{{ old('autoresponder_subject', $website->autoresponder_subject) }}" placeholder="We've received your {form_name} enquiry" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
@@ -645,16 +871,18 @@
                     <div><button class="rounded-md bg-blue-900 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800">Save automatic reply</button></div>
                 </div>
             </form>
+            </details>
+            @endif
         </div>
 
-        <div class="overflow-hidden rounded-lg border bg-white shadow-sm lg:col-span-2">
-            <table class="min-w-full divide-y divide-slate-200">
-                <thead class="bg-slate-50"><tr><th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Name</th><th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Website</th><th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Status</th><th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Submissions</th><th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Seen</th></tr></thead>
-                <tbody class="divide-y divide-slate-100">
+        <div class="overflow-hidden rounded-xl border border-slate-950/10 bg-white lg:col-span-2">
+            <table class="min-w-full divide-y divide-slate-950/10">
+                <thead class="bg-slate-50"><tr><th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Form</th><th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Status</th><th class="px-4 py-3 text-right text-sm font-semibold text-slate-700">Submissions</th></tr></thead>
+                <tbody class="divide-y divide-slate-950/5">
                 @forelse ($website->forms as $form)
-                    <tr class="hover:bg-slate-50"><td class="px-4 py-3"><a href="{{ route('admin.forms.show', $form) }}" class="font-medium text-slate-900 hover:text-slate-700">{{ $form->name }}</a></td><td class="px-4 py-3 text-sm text-slate-600">{{ $website->name }}</td><td class="px-4 py-3 text-sm text-slate-600">{{ $form->is_active ? 'Active' : 'Disabled' }}</td><td class="px-4 py-3 text-sm tabular-nums text-slate-600">{{ $form->submissions_count }}</td><td class="px-4 py-3 text-sm text-slate-500">{{ $form->created_at?->diffForHumans() }}</td></tr>
+                    <tr class="hover:bg-slate-50"><td class="px-4 py-3"><a href="{{ route('admin.forms.show', $form) }}" class="font-medium text-slate-900 hover:text-teal-700">{{ $form->name }}</a></td><td class="px-4 py-3 text-sm text-slate-600">{{ $form->is_active ? 'Active' : 'Disabled' }}</td><td class="px-4 py-3 text-right text-sm tabular-nums text-slate-600">{{ $form->submissions_count }}</td></tr>
                 @empty
-                    <tr><td colspan="5" class="px-4 py-6 text-center text-sm text-slate-500">No forms registered for this website.</td></tr>
+                    <tr><td colspan="3" class="px-4 py-6 text-center text-base text-slate-500 sm:text-sm">No forms registered for this website.</td></tr>
                 @endforelse
                 </tbody>
             </table>

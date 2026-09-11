@@ -60,6 +60,9 @@ class WebsiteBuilder
                 'webhook_enabled' => false,
                 'health_reports_enabled' => false,
             ]);
+            if ($website->user_id) {
+                $website->members()->attach($website->user_id, ['role' => Website::MEMBER_ROLE_MANAGER]);
+            }
             $website->domains()->create(['domain' => $site['domain'], 'is_primary' => true]);
             $website->forms()->create(['name' => 'Contact form', 'slug' => 'contact-form', 'is_active' => true, 'auto_discovered' => false]);
             $website->repository()->create([

@@ -64,6 +64,21 @@ test('it maps and deduplicates the configured referring domain sample', function
     ]]);
 });
 
+test('it sends bounded detailed backlink page trend and gap requests', function (): void {
+    Http::fake(['api.dataforseo.test/*' => Http::response(backlinkTaskResponse([['items' => [], 'total_count' => 0]], 'detail-task'))]);
+    $service = app(BacklinksService::class);
+    $service->backlinks('example.com', 'lost', 5000);
+    $service->domainPages('example.com', 100);
+    $service->newLostTrend('example.com', 12);
+    $service->domainIntersection('example.com', ['one.example', 'two.example'], 500);
+
+    Http::assertSentCount(4);
+    Http::assertSent(fn (Request $request): bool => str_ends_with($request->url(), '/backlinks/backlinks/live') && $request->data()[0]['limit'] === 1000 && $request->data()[0]['backlinks_status_type'] === 'lost' && isset($request->data()[0]['filters']));
+    Http::assertSent(fn (Request $request): bool => str_ends_with($request->url(), '/backlinks/domain_pages/live') && $request->data()[0]['limit'] === 100);
+    Http::assertSent(fn (Request $request): bool => str_ends_with($request->url(), '/backlinks/timeseries_new_lost_summary/live') && $request->data()[0]['group_range'] === 'month');
+    Http::assertSent(fn (Request $request): bool => str_ends_with($request->url(), '/backlinks/domain_intersection/live') && $request->data()[0]['exclude_targets'] === ['example.com'] && $request->data()[0]['targets'] === ['1' => 'one.example', '2' => 'two.example']);
+});
+
 /** @param array<int, array<string, mixed>> $result @return array<string, mixed> */
 function backlinkTaskResponse(array $result, string $taskId): array
 {

@@ -14,6 +14,7 @@ use App\Services\CopilotAgentClient;
 use App\Services\GithubAppClient;
 use App\Services\GithubOAuthClient;
 use App\Services\RemediationPromptGenerator;
+use App\Support\MembershipPlan;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
@@ -70,6 +71,43 @@ it('retrieves every page of repositories available to an installation', function
         ->and($repositories[100]['full_name'])->toBe('rosstopping/digizu');
     Http::assertSentCount(2);
     Http::assertSent(fn ($request): bool => $request->url() === 'https://api.github.test/installation/repositories?per_page=100&page=2');
+});
+
+it('opens existing installation repositories from the content connection link', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $website = Website::factory()->create();
+    $installation = GithubInstallation::factory()->create(['installation_id' => 9876]);
+
+    mock(GithubAppClient::class)
+        ->shouldReceive('repositories')
+        ->once()
+        ->with(9876)
+        ->andReturn([[
+            'id' => 456,
+            'full_name' => 'acme/marketing',
+            'default_branch' => 'main',
+            'private' => true,
+        ]]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.websites.show', ['website' => $website, 'tab' => 'content']))
+        ->assertOk()
+        ->assertSee('href="'.route('admin.website-repositories.create', $website).'"', false)
+        ->assertDontSee('href="'.route('admin.github.connect', $website).'"', false);
+
+    $this->get(route('admin.website-repositories.create', $website))
+        ->assertOk()
+        ->assertSee('acme/marketing')
+        ->assertSee('value="'.$installation->id.':456"', false);
+});
+
+it('starts installation from the repository selector when no installation exists', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $website = Website::factory()->create();
+
+    $this->actingAs($admin)
+        ->get(route('admin.website-repositories.create', $website))
+        ->assertRedirect(route('admin.github.connect', $website));
 });
 
 it('starts a GitHub App installation for an administrator', function (): void {
@@ -332,6 +370,24 @@ it('snapshots selected audit findings into one remediation request', function ()
     Queue::assertPushed(StartCopilotRemediation::class, fn ($job) => $job->run->is($run));
 });
 
+it('keeps GitHub remediation unavailable to Essential trial users', function (): void {
+    $owner = User::factory()->create([
+        'membership_tier' => MembershipPlan::ESSENTIAL,
+        'membership_status' => 'trialing',
+        'membership_current_period_end' => now()->addDays(14),
+    ]);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $report = WebsiteHealthReport::factory()->for($website)->create();
+
+    $this->actingAs($owner)
+        ->post(route('admin.remediation-runs.store', [$website, $report]), [
+            'findings' => ['site:seo:page_title'],
+        ])
+        ->assertForbidden();
+
+    expect(RemediationRun::query()->exists())->toBeFalse();
+});
+
 it('starts an automated task with an audit prompt and schedules synchronization', function (): void {
     Queue::fake([SyncCopilotRemediation::class]);
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
@@ -457,6 +513,67 @@ it('allows website owners to connect a repository from their GitHub installation
         ->assertRedirect(route('admin.websites.show', $website));
 
     expect($website->repository()->sole()->full_name)->toBe('client/website');
+});
+
+it('skips and retires inaccessible GitHub installations while listing repositories', function (): void {
+    $owner = User::factory()->create();
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $unavailableInstallation = GithubInstallation::factory()->for($owner, 'installer')->create([
+        'account_login' => 'old-organisation',
+        'installation_id' => 111,
+    ]);
+    $availableInstallation = GithubInstallation::factory()->for($owner, 'installer')->create([
+        'account_login' => 'new-organisation',
+        'installation_id' => 222,
+    ]);
+
+    $github = mock(GithubAppClient::class);
+    $github->shouldReceive('repositories')
+        ->once()
+        ->with($unavailableInstallation->installation_id)
+        ->andThrow(Http::failedRequest(['message' => 'Not Found'], 404));
+    $github->shouldReceive('repositories')
+        ->once()
+        ->with($availableInstallation->installation_id)
+        ->andReturn([[
+            'id' => 456,
+            'full_name' => 'new-organisation/website',
+            'default_branch' => 'main',
+            'private' => true,
+        ]]);
+
+    $this->actingAs($owner)
+        ->get(route('admin.website-repositories.create', $website))
+        ->assertSuccessful()
+        ->assertSee('A GitHub connection needs reconnecting')
+        ->assertSee('old-organisation')
+        ->assertSee('new-organisation/website');
+
+    expect($unavailableInstallation->fresh()->status)->toBe(GithubInstallation::STATUS_DELETED)
+        ->and($availableInstallation->fresh()->status)->toBe(GithubInstallation::STATUS_ACTIVE);
+});
+
+it('turns a stale installation during repository selection into a reconnect message', function (): void {
+    $owner = User::factory()->create();
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $installation = GithubInstallation::factory()->for($owner, 'installer')->create([
+        'account_login' => 'old-organisation',
+    ]);
+
+    mock(GithubAppClient::class)
+        ->shouldReceive('repositories')
+        ->once()
+        ->with($installation->installation_id)
+        ->andThrow(Http::failedRequest(['message' => 'Not Found'], 404));
+
+    $this->actingAs($owner)
+        ->post(route('admin.website-repositories.store', $website), [
+            'repository' => $installation->id.':456',
+        ])
+        ->assertRedirect(route('admin.websites.show', $website))
+        ->assertSessionHas('error', 'The GitHub installation for old-organisation is no longer available. Reconnect the Sitewell GitHub App and try again.');
+
+    expect($installation->fresh()->status)->toBe(GithubInstallation::STATUS_DELETED);
 });
 
 it('prevents website owners from changing another clients GitHub repository connection', function (): void {

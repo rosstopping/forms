@@ -2,18 +2,22 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Actions\VerifyWebsiteDomainFromSearchConsole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreSearchConsolePropertyRequest;
 use App\Models\Website;
 use App\Services\GoogleOAuthClient;
 use App\Services\SearchConsoleClient;
 use App\Services\SearchConsoleHistoryStore;
+use App\Services\SearchConsolePropertyMatcher;
+use App\Support\MembershipPlan;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Throwable;
 
@@ -27,6 +31,7 @@ class SearchConsoleController extends Controller
         protected GoogleOAuthClient $oauth,
         protected SearchConsoleClient $searchConsole,
         protected SearchConsoleHistoryStore $historyStore,
+        protected SearchConsolePropertyMatcher $propertyMatcher,
     ) {}
 
     public function connect(Request $request, Website $website): RedirectResponse
@@ -59,7 +64,10 @@ class SearchConsoleController extends Controller
     {
         $this->authorizeWebsite($request, $website);
         $connection = $website->searchConsoleConnection()->firstOrFail();
-        $properties = $this->searchConsole->sites($connection);
+        $properties = collect($this->searchConsole->sites($connection))
+            ->filter(fn (array $property): bool => $this->propertyMatcher->matches($website, (string) ($property['siteUrl'] ?? '')))
+            ->values()
+            ->all();
 
         return view('admin.websites.search-console-property', compact('website', 'properties'));
     }
@@ -134,11 +142,21 @@ class SearchConsoleController extends Controller
             ->all();
     }
 
-    public function storeProperty(StoreSearchConsolePropertyRequest $request, Website $website): RedirectResponse
-    {
+    public function storeProperty(
+        StoreSearchConsolePropertyRequest $request,
+        Website $website,
+        VerifyWebsiteDomainFromSearchConsole $verifyDomain,
+    ): RedirectResponse {
         $connection = $website->searchConsoleConnection()->firstOrFail();
         $property = collect($this->searchConsole->sites($connection))->firstWhere('siteUrl', $request->validated('property_url'));
         abort_unless($property, 422, 'That Search Console property is not available to this Google account.');
+
+        if (! $this->propertyMatcher->matches($website, (string) $property['siteUrl'])) {
+            throw ValidationException::withMessages([
+                'property_url' => 'The Search Console property must match this website’s configured domain.',
+            ]);
+        }
+
         $connection->update([
             'property_url' => $property['siteUrl'],
             'permission_level' => $property['permissionLevel'] ?? null,
@@ -146,20 +164,33 @@ class SearchConsoleController extends Controller
             'opportunities_error' => null,
         ]);
 
-        return Redirect::route('admin.websites.show', $website)->with('status', 'Google Search Console connected.');
+        $domainVerified = $verifyDomain->handle(
+            $website,
+            $property['siteUrl'],
+            $property['permissionLevel'] ?? null,
+        );
+
+        $status = $domainVerified
+            ? 'Google Search Console connected and website ownership verified.'
+            : 'Google Search Console connected.';
+
+        return Redirect::route('admin.websites.show', $website)->with('status', $status);
     }
 
     public function destroy(Request $request, Website $website): RedirectResponse
     {
         $this->authorizeWebsite($request, $website);
         $website->searchConsoleConnection()->delete();
-        $website->contentPlan()->update(['enabled' => false]);
 
-        return Redirect::route('admin.websites.show', $website)->with('status', 'Google Search Console disconnected and content generation paused.');
+        return Redirect::route('admin.websites.show', $website)->with('status', 'Google Search Console disconnected.');
     }
 
     protected function authorizeWebsite(Request $request, Website $website): void
     {
         abort_unless($website->isManageableBy($request->user()), 403);
+        abort_unless(
+            $request->user()?->isAdmin() || $website->owner?->hasMembershipFeature(MembershipPlan::FEATURE_SEARCH_CONSOLE),
+            403,
+        );
     }
 }
