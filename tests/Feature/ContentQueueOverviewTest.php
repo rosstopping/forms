@@ -28,6 +28,7 @@ it('shows queue totals with blocked websites first and a scheduled run', functio
     $this->actingAs($this->admin)->get(route('admin.overview'))->assertSuccessful()
         ->assertSee('href="#content-queue"', false)
         ->assertSee('Requests awaiting preparation')
+        ->assertSeeInOrder(['id="approvals-heading"', 'id="content-queue-heading"', 'id="schedule-heading"'], false)
         ->assertViewHas('contentQueue', function ($rows) use ($blocked): bool {
             return $rows->count() === 2 && $rows->sum('count') === 3
                 && $rows[0]['website']->is($blocked) && $rows[0]['state'] === 'Needs setup'
