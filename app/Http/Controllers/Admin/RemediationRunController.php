@@ -9,12 +9,32 @@ use App\Models\RemediationRun;
 use App\Models\Website;
 use App\Models\WebsiteHealthReport;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\ValidationException;
 
 class RemediationRunController extends Controller
 {
+    public function complete(Request $request, Website $website, WebsiteHealthReport $websiteHealthReport, RemediationRun $remediationRun): RedirectResponse
+    {
+        abort_unless($request->user()?->isAdmin(), 403);
+        abort_unless($websiteHealthReport->website_id === $website->id, 404);
+        abort_unless($remediationRun->website_health_report_id === $websiteHealthReport->id, 404);
+        abort_unless(in_array($remediationRun->status, [RemediationRun::STATUS_PULL_REQUEST_OPEN, RemediationRun::STATUS_COMPLETED], true), 422);
+
+        if ($remediationRun->status !== RemediationRun::STATUS_COMPLETED) {
+            $remediationRun->update([
+                'status' => RemediationRun::STATUS_COMPLETED,
+                'completed_at' => now(),
+                'error' => null,
+            ]);
+        }
+
+        return Redirect::route('admin.website-health-reports.show', [$website, $websiteHealthReport])
+            ->with('status', 'Remediation marked as complete. GitHub has not been changed.');
+    }
+
     public function store(StoreRemediationRunRequest $request, Website $website, WebsiteHealthReport $websiteHealthReport): RedirectResponse
     {
         abort_unless($websiteHealthReport->website_id === $website->id, 404);

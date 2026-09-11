@@ -111,7 +111,7 @@
             </section>
         @endif
         @if ($aiPrompt)
-        @if ($remediationRun)
+        @if ($remediationRun && $remediationRun->status !== \App\Models\RemediationRun::STATUS_COMPLETED)
             <section class="rounded-lg border border-blue-200 bg-blue-50 p-4 text-blue-900">
                 <p class="text-xs font-medium uppercase tracking-wide text-blue-700">GitHub remediation</p>
                 <h2 class="mt-1 font-semibold">{{ str_replace('_', ' ', ucfirst($remediationRun->status)) }}</h2>
@@ -125,6 +125,14 @@
                             <a href="{{ $remediationRun->pull_request_url }}" class="inline-flex rounded-md bg-blue-700 px-3 py-2 text-sm font-medium text-white hover:bg-blue-800" target="_blank" rel="noreferrer">View pull request</a>
                         @endif
                     </div>
+                @endif
+                @if (Auth::user()?->isAdmin() && $remediationRun->status === \App\Models\RemediationRun::STATUS_PULL_REQUEST_OPEN)
+                    <form method="POST" action="{{ route('admin.remediation-runs.complete', [$report->website, $report, $remediationRun]) }}" class="mt-3">
+                        @csrf
+                        @method('PATCH')
+                        <button type="submit" class="inline-flex rounded-md border border-blue-300 bg-white px-3 py-2 text-sm font-medium text-blue-800 hover:bg-blue-100">Mark as complete</button>
+                        <p class="mt-2 text-xs text-blue-800">Dismiss this remediation if the work is already finished. This does not change GitHub.</p>
+                    </form>
                 @endif
                 @if ($remediationRun->error)
                     <p class="mt-3 text-sm text-red-700">{{ $remediationRun->error }}</p>

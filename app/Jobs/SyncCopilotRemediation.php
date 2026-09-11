@@ -33,6 +33,12 @@ class SyncCopilotRemediation implements ShouldBeEncrypted, ShouldBeUniqueUntilPr
 
     public function handle(CopilotAgentClient $copilot, GithubAppClient $github): void
     {
+        $this->run->refresh();
+
+        if ($this->run->status === RemediationRun::STATUS_COMPLETED) {
+            return;
+        }
+
         $this->run->loadMissing('repository');
         $authorization = $this->run->requester?->githubAuthorization;
 

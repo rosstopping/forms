@@ -260,6 +260,7 @@ Route::middleware(['web', 'auth', ResolveCurrentWebsite::class])->prefix('admin'
     Route::post('websites/{website}/health-reports/{websiteHealthReport}/pages/{websiteHealthReportPage}/optimisations/{optimisation}/deploy', [OptimisationDeploymentController::class, 'deploy'])->middleware('membership:growth')->name('optimisations.deploy');
     Route::post('websites/{website}/health-reports/{websiteHealthReport}/pages/{websiteHealthReportPage}/optimisations/{optimisation}/rollback', [OptimisationDeploymentController::class, 'rollback'])->middleware('membership:growth')->name('optimisations.rollback');
     Route::post('websites/{website}/health-reports/{websiteHealthReport}/pages/{websiteHealthReportPage}/optimisations/rollback-all', PageOptimisationRollbackController::class)->middleware('membership:growth')->name('optimisations.rollback-page');
+    Route::patch('websites/{website}/health-reports/{websiteHealthReport}/remediations/{remediationRun}/complete', [RemediationRunController::class, 'complete'])->middleware(EnsureAdmin::class)->name('remediation-runs.complete');
     Route::post('websites/{website}/health-reports/{websiteHealthReport}/remediations', [RemediationRunController::class, 'store'])->name('remediation-runs.store');
     Route::post('websites/{website}/pixel/content-requests', ContentRequestPixelController::class)->middleware('membership:growth')->name('websites.pixel.content-requests.store');
     Route::get('websites/{website}/github/connect', [GithubConnectionController::class, 'create'])->name('github.connect');
