@@ -76,6 +76,11 @@ final class Plugin {
 			return;
 		}
 
+		if ( ! $this->router->shouldBypassCurrentRequest() && ! defined( 'DONOTCACHEPAGE' ) ) {
+			define( 'DONOTCACHEPAGE', true );
+		}
+
+		add_action( 'parse_request', [ $this->router, 'serve' ], PHP_INT_MIN );
 		add_filter( 'template_include', [ $this->router, 'template' ], PHP_INT_MAX );
 		add_filter( 'redirect_canonical', [ $this->router, 'disableCanonicalRedirect' ], PHP_INT_MAX );
 	}

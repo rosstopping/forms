@@ -47,13 +47,20 @@ final class FrontendRouter {
 		status_header( $this->preparedStatus );
 		header( 'Content-Type: ' . $this->preparedFile->contentType );
 
-		if ( $this->preparedFile->isHtml ) {
-			nocache_headers();
-		} else {
-			header( 'Cache-Control: public, max-age=3600' );
-		}
+		nocache_headers();
+		header( 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0' );
+		header( 'X-Content-Type-Options: nosniff' );
 
 		return $this->routerTemplate;
+	}
+
+	public function serve(): void {
+		if ( $this->template( '' ) !== $this->routerTemplate ) {
+			return;
+		}
+
+		$this->render();
+		exit;
 	}
 
 	public function disableCanonicalRedirect( mixed $redirectUrl ): mixed {

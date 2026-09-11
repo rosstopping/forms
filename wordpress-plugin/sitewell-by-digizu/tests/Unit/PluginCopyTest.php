@@ -15,7 +15,7 @@ final class PluginCopyTest extends TestCase {
 		self::assertIsString( $plugin );
 		self::assertIsString( $settings );
 		self::assertStringContainsString( 'Plugin Name: Sitewell by Digizu', $plugin );
-		self::assertStringContainsString( 'Version: 1.0.0', $plugin );
+		self::assertStringContainsString( 'Version: 1.0.1', $plugin );
 		self::assertStringContainsString( 'License: GPLv2 or later', $plugin );
 		self::assertStringContainsString( "__( 'Check for updates', 'sitewell-static-frontend' )", $settings );
 		self::assertStringContainsString( "submit_button( __( 'Save', 'sitewell-static-frontend' ) )", $settings );
@@ -27,7 +27,7 @@ final class PluginCopyTest extends TestCase {
 
 		self::assertIsString( $readme );
 		self::assertStringContainsString( 'Contributors: digizu', $readme );
-		self::assertStringContainsString( 'Stable tag: 1.0.0', $readme );
+		self::assertStringContainsString( 'Stable tag: 1.0.1', $readme );
 		self::assertStringContainsString( '== External service ==', $readme );
 		self::assertStringContainsString( 'https://sitewell.digizu.co.uk/privacy-policy', $readme );
 		self::assertStringContainsString( 'https://sitewell.digizu.co.uk/terms-of-service', $readme );

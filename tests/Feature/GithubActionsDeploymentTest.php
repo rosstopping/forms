@@ -129,7 +129,17 @@ it('ignores unsuitable build events', function (string $field, mixed $value): vo
 ]);
 
 it('packages a verified artifact at its root and not the source project path', function (): void {
-    fakeActionsDeploymentDownload();
+    $files = [
+        'index.html' => '<h1>Built Eleventy site</h1>',
+        'assets/app.css' => 'body{}',
+        'sitemap.xml' => '<?xml version="1.0"?><urlset><url><loc>https://rowglo.co.uk/plumbing/</loc></url></urlset>',
+        'robots.txt' => "User-agent: *\nSitemap: https://rowglo.co.uk/sitemap.xml\n",
+        'backdoor.php' => '<?php evil();',
+    ];
+    foreach (['plumbing', 'heating', 'boilers', 'bathrooms', 'drainage', 'repairs', 'emergencies'] as $service) {
+        $files[$service.'/index.html'] = '<html><body><section class="hero"><h1>'.ucfirst($service).'</h1></section></body></html>';
+    }
+    fakeActionsDeploymentDownload(zip: actionsDeploymentZip($files));
     $release = WordpressStaticRelease::factory()->for($this->repository->website)->create([
         'status' => 'queued', 'commit_sha' => $this->sha, 'github_workflow_run_id' => 123,
     ]);
@@ -143,6 +153,11 @@ it('packages a verified artifact at its root and not the source project path', f
     expect($zip->getFromName('index.html'))->toBe('<h1>Built Eleventy site</h1>')
         ->and($zip->getFromName('assets/app.css'))->toBe('body{}')
         ->and($zip->locateName('backdoor.php'))->toBeFalse();
+    foreach ($files as $path => $contents) {
+        if ($path !== 'backdoor.php') {
+            expect($zip->getFromName($path))->toBe($contents);
+        }
+    }
     $zip->close();
     Http::assertSent(fn ($request): bool => str_starts_with($request->url(), 'https://production.blob.core.windows.net/') && ! $request->hasHeader('Authorization'));
     Http::assertNotSent(fn ($request): bool => str_contains($request->url(), '/zipball/'));
@@ -205,7 +220,17 @@ it('rejects unsafe or incorrectly nested artifact files', function (array $files
 })->with([
     'traversal' => [['index.html' => 'home', '../outside.html' => 'bad']],
     'nested output' => [['_site/index.html' => 'home']],
+    'unbuilt artifact' => [['index.html' => 'home', 'plumbing/index.html' => "---\nhero:\n  title: Plumbing\n---\n{% include 'hero.njk' %}"]],
 ]);
+
+it('never downloads source with incomplete artifact settings', function (string $missing): void {
+    $this->repository->update([$missing => null]);
+    $release = WordpressStaticRelease::factory()->for($this->repository->website)->create(['status' => 'queued']);
+
+    expect(fn () => app(WordPressStaticReleaseBuilder::class)->build($release, $this->repository))
+        ->toThrow(RuntimeException::class, 'Configure both');
+    Http::assertNothingSent();
+})->with(['wordpress_workflow_path', 'wordpress_artifact_name']);
 
 it('saves and displays separate source and artifact settings', function (): void {
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);

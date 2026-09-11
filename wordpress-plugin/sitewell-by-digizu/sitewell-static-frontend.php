@@ -4,7 +4,7 @@
  * Plugin Name: Sitewell by Digizu
  * Plugin URI: https://sitewell.digizu.co.uk
  * Description: Keep your website updated through Sitewell while retaining WordPress administration.
- * Version: 1.0.0
+ * Version: 1.0.1
  * Requires at least: 6.6
  * Requires PHP: 8.2
  * Author: Digizu
@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'SITEWELL_STATIC_FRONTEND_VERSION', '1.0.0' );
+define( 'SITEWELL_STATIC_FRONTEND_VERSION', '1.0.1' );
 define( 'SITEWELL_STATIC_FRONTEND_FILE', __FILE__ );
 define( 'SITEWELL_STATIC_FRONTEND_PATH', plugin_dir_path( __FILE__ ) );
 

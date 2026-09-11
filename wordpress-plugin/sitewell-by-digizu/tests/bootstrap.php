@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 if ( ! defined( 'SITEWELL_STATIC_FRONTEND_VERSION' ) ) {
-	define( 'SITEWELL_STATIC_FRONTEND_VERSION', '1.0.0' );
+	define( 'SITEWELL_STATIC_FRONTEND_VERSION', '1.0.1' );
 }
 
 if ( ! class_exists( 'WP_Error' ) ) {

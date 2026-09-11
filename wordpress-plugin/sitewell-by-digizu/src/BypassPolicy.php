@@ -42,6 +42,13 @@ final class BypassPolicy {
 			return true;
 		}
 
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- Preserve REST requests when WordPress uses plain permalinks.
+		parse_str( (string) parse_url( $requestUri, PHP_URL_QUERY ), $query );
+
+		if ( isset( $query['rest_route'] ) ) {
+			return true;
+		}
+
 		foreach ( self::INTERNAL_PATH_PREFIXES as $prefix ) {
 			if ( $path === $prefix || str_starts_with( $path, $prefix . '/' ) || str_starts_with( $path, $prefix . '?' ) ) {
 				return true;

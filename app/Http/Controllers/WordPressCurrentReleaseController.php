@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\WordpressStaticRelease;
 use App\Services\WordPressConnectionManager;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -13,8 +14,13 @@ class WordPressCurrentReleaseController extends Controller
     public function __invoke(Request $request, string $connectionId, WordPressConnectionManager $connections): JsonResponse|Response
     {
         $connection = $connections->authenticate($connectionId, $request->bearerToken());
+        $repository = $connection->website->repository;
         $release = WordpressStaticRelease::query()
             ->where('website_id', $connection->website_id)
+            ->when(
+                filled($repository?->wordpress_workflow_path) || filled($repository?->wordpress_artifact_name),
+                fn (Builder $query): Builder => $query->whereNotNull('github_workflow_run_id'),
+            )
             ->where('status', WordpressStaticRelease::STATUS_READY)
             ->whereNotNull('storage_path')
             ->whereNotNull('checksum')

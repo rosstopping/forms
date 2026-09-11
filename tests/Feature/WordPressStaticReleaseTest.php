@@ -156,6 +156,26 @@ it('exposes and records a ready release only for its authenticated plugin', func
         ->assertNoContent();
 });
 
+it('rejects unbuilt service pages instead of silently publishing repository source', function (string $contents): void {
+    Storage::fake('local');
+    [, $website, $repository] = connectedWordpressReleaseWebsite();
+    $release = WordpressStaticRelease::factory()->for($website)->create(['status' => 'queued']);
+    mock(GithubAppClient::class)->shouldReceive('repositoryArchive')->once()->andReturn([
+        'commit_sha' => str_repeat('a', 40),
+        'archive' => githubArchive(['index.html' => '<h1>Home</h1>', 'plumbing.html' => $contents]),
+    ]);
+    $notifier = mock(WordPressDeploymentNotifier::class);
+    $notifier->shouldNotReceive('notify');
+
+    expect(fn () => (new BuildWordPressStaticRelease($release->id))->handle(app(WordPressStaticReleaseBuilder::class), $notifier))
+        ->toThrow(RuntimeException::class, 'Unbuilt template found in plumbing.html');
+    expect($release->fresh()->status)->toBe('failed')
+        ->and(Storage::disk('local')->allFiles())->toBe([]);
+})->with([
+    'front matter' => "---\nhero:\n  eyebrow: Plumbing Services\n  title: Plumbing Work in Doncaster\n---\n<h1>Plumbing</h1>",
+    'Nunjucks include' => '<html>{% include "hero.njk" %}</html>',
+]);
+
 it('queues an immediate release when GitHub pushes the connected branch', function (): void {
     Queue::fake();
     config(['services.github.webhook_secret' => 'webhook-secret']);
@@ -176,6 +196,33 @@ it('queues an immediate release when GitHub pushes the connected branch', functi
     expect($release->commit_sha)->toBe(str_repeat('d', 40))
         ->and($release->status)->toBe(WordpressStaticRelease::STATUS_QUEUED);
     Queue::assertPushed(BuildWordPressStaticRelease::class, fn (BuildWordPressStaticRelease $job): bool => $job->releaseId === $release->id);
+});
+
+it('does not offer an old source release after switching to Actions artifacts', function (): void {
+    Storage::fake('local');
+    [, $website, $repository, $connection, $credential] = connectedWordpressReleaseWebsite();
+    $repository->update([
+        'wordpress_workflow_path' => '.github/workflows/build-site.yml',
+        'wordpress_artifact_name' => 'wordpress-site',
+    ]);
+    Storage::disk('local')->put('old-source.zip', githubArchive(['index.html' => 'old source']));
+    $sourceRelease = WordpressStaticRelease::factory()->for($website)->create([
+        'storage_path' => 'old-source.zip',
+        'github_workflow_run_id' => null,
+    ]);
+
+    $this->withToken($credential)
+        ->getJson(route('wordpress-connections.releases.current', $connection->public_id))
+        ->assertNoContent();
+    $this->withToken($credential)
+        ->get(route('wordpress-connections.releases.download', [$connection->public_id, $sourceRelease->public_id]))
+        ->assertNotFound();
+
+    $builtRelease = WordpressStaticRelease::factory()->for($website)->create(['github_workflow_run_id' => 123]);
+    $this->withToken($credential)
+        ->getJson(route('wordpress-connections.releases.current', $connection->public_id))
+        ->assertSuccessful()
+        ->assertJsonPath('data.release_id', $builtRelease->public_id);
 });
 
 it('notifies the connected WordPress site when a release is ready', function (): void {

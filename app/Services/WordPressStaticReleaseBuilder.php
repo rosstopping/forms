@@ -30,6 +30,10 @@ class WordPressStaticReleaseBuilder
         $release->update(['status' => WordpressStaticRelease::STATUS_BUILDING, 'error' => null]);
         $fromArtifact = $repository->usesActionsArtifact();
 
+        if (! $fromArtifact && (filled($repository->wordpress_workflow_path) || filled($repository->wordpress_artifact_name))) {
+            throw new RuntimeException('Configure both the WordPress workflow path and artifact name. Incomplete build settings cannot deploy repository source.');
+        }
+
         if ($release->github_workflow_run_id !== null && ! $fromArtifact) {
             throw new RuntimeException('GitHub Actions deployment was disabled after this build was queued.');
         }
@@ -140,6 +144,12 @@ class WordPressStaticReleaseBuilder
 
                 if (! is_string($contents)) {
                     throw new RuntimeException("Sitewell could not read {$relativeName} from the repository archive.");
+                }
+
+                if (in_array(strtolower(pathinfo($relativeName, PATHINFO_EXTENSION)), ['html', 'htm', 'xml', 'txt'], true)
+                    && (preg_match('/\A(?:\xEF\xBB\xBF)?\s*---\R.*?\R---(?:\R|$)/s', $contents)
+                        || preg_match('/\{%[-+]?\s*(?:include|extends|block|macro|import|from|set|if|for)\b.*?%\}/s', $contents))) {
+                    throw new RuntimeException("Unbuilt template found in {$relativeName}. Configure the WordPress workflow path and artifact name, and upload the contents of the completed build output folder.");
                 }
 
                 $files++;

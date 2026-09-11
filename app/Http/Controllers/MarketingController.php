@@ -117,7 +117,7 @@ class MarketingController extends Controller
         abort_unless(is_file($pluginPath), 404);
 
         return view('marketing.wordpress', [
-            'pluginVersion' => '1.0.0',
+            'pluginVersion' => '1.0.1',
             'pluginSize' => Number::fileSize(filesize($pluginPath)),
             'pluginChecksum' => hash_file('sha256', $pluginPath),
         ]);

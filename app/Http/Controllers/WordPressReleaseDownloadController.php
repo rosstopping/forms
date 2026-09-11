@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\WordpressStaticRelease;
 use App\Services\WordPressConnectionManager;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -17,8 +18,13 @@ class WordPressReleaseDownloadController extends Controller
         WordPressConnectionManager $connections,
     ): StreamedResponse {
         $connection = $connections->authenticate($connectionId, $request->bearerToken());
+        $repository = $connection->website->repository;
         $release = WordpressStaticRelease::query()
             ->where('website_id', $connection->website_id)
+            ->when(
+                filled($repository?->wordpress_workflow_path) || filled($repository?->wordpress_artifact_name),
+                fn (Builder $query): Builder => $query->whereNotNull('github_workflow_run_id'),
+            )
             ->where('public_id', $releaseId)
             ->where('status', WordpressStaticRelease::STATUS_READY)
             ->firstOrFail();
