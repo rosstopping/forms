@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\ContentGeneration;
+use App\Models\ContentPlan;
 use App\Models\ContentRequest;
 use App\Models\SeoTargetKeyword;
 use Illuminate\Support\Collection;
@@ -37,6 +38,23 @@ class ContentWorkSelector
         });
 
         return ['requests' => $requests, 'target' => $requests->isEmpty() ? $this->targets->select($eligible) : null, 'snapshot' => $snapshot];
+    }
+
+    public function pendingRequestsBlockedByReview(ContentPlan $plan): bool
+    {
+        $openKeys = $plan->generations()
+            ->where('status', ContentGeneration::STATUS_PULL_REQUEST_OPEN)
+            ->where(fn ($query) => $query->whereNull('pull_request_state')->orWhere('pull_request_state', '!=', 'closed'))
+            ->with('contentRequests')->get()
+            ->flatMap(fn (ContentGeneration $generation): array => $this->generationKeys($generation))->unique();
+
+        if ($openKeys->isEmpty()) {
+            return false;
+        }
+
+        $requests = $plan->website->contentRequests()->pendingInQueueOrder()->get();
+
+        return $requests->isNotEmpty() && $requests->every(fn (ContentRequest $request): bool => $openKeys->intersect($this->requestKeys($request))->isNotEmpty());
     }
 
     /** @return list<string> */

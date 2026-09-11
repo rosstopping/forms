@@ -9,10 +9,35 @@
         </header>
 
         <dl class="grid gap-4 sm:grid-cols-3">
-            @foreach (['Websites' => $websites->count(), 'Awaiting review' => $approvalCount, 'Content requests waiting' => $websites->sum('pending_content_requests_count')] as $label => $count)
-                <div class="rounded-xl border border-slate-200 bg-white p-5"><dt class="text-sm text-slate-500">{{ $label }}</dt><dd class="mt-2 text-3xl font-semibold tabular-nums text-slate-950">{{ number_format($count) }}</dd></div>
+            @foreach (['Websites' => $websites->count(), 'Awaiting review' => $approvalCount, 'Requests awaiting preparation' => $websites->sum('pending_content_requests_count')] as $label => $count)
+                <div class="rounded-xl border border-slate-200 bg-white p-5"><dt class="text-sm text-slate-500">{{ $label }}</dt><dd class="mt-2 text-3xl font-semibold tabular-nums text-slate-950">@if ($label === 'Requests awaiting preparation')<a href="#content-queue" class="text-teal-700 underline decoration-teal-700/30 underline-offset-4 hover:text-teal-900" aria-label="View {{ $count }} requests awaiting preparation">{{ number_format($count) }}</a>@else{{ number_format($count) }}@endif</dd></div>
             @endforeach
         </dl>
+
+        <section id="content-queue" class="scroll-mt-20 rounded-xl border border-slate-200 bg-white p-5 sm:p-6" aria-labelledby="content-queue-heading">
+            <h2 id="content-queue-heading" class="text-xl font-semibold text-slate-950">Content queue</h2>
+            <p class="mt-1 text-sm text-slate-600">Requests awaiting preparation across websites. Sites needing attention appear first. Each run selects eligible work; it may not clear the whole queue.</p>
+            <div class="mt-5 divide-y divide-slate-100">
+                @forelse ($contentQueue as $item)
+                    <div class="grid gap-3 py-4 first:pt-0 last:pb-0 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)_auto] sm:items-center">
+                        <div class="min-w-0">
+                            <a href="{{ \App\Support\WebsiteNavigation::routeFor($item['website'], 'content') }}" class="font-semibold text-slate-950 hover:text-teal-700">{{ $item['website']->name }}</a>
+                            <p class="mt-1 text-sm text-slate-500">{{ number_format($item['count']) }} {{ Str::plural('request', $item['count']) }} waiting</p>
+                        </div>
+                        <div>
+                            <span @class(['inline-flex rounded-full px-2.5 py-1 text-xs font-semibold', 'bg-amber-50 text-amber-800' => $item['state'] === 'Needs setup', 'bg-slate-100 text-slate-700' => $item['state'] === 'Paused', 'bg-teal-50 text-teal-800' => $item['state'] === 'Scheduled'])>{{ $item['state'] }}</span>
+                            @if ($item['next_run_at'])
+                                <p class="mt-2 text-sm font-medium text-slate-900"><time datetime="{{ $item['next_run_at']->toIso8601String() }}">{{ $item['next_run_at']->format('D j M, H:i') }}</time> · {{ config('app.timezone') }}</p>
+                            @endif
+                            <p class="mt-1 text-sm text-slate-600">{{ $item['reason'] }}</p>
+                        </div>
+                        <a href="{{ $item['url'] }}" class="inline-flex items-center py-2 text-sm font-semibold text-teal-700 hover:text-teal-900">{{ $item['action'] }} →</a>
+                    </div>
+                @empty
+                    <p class="text-sm text-slate-500">No content requests awaiting preparation.</p>
+                @endforelse
+            </div>
+        </section>
 
         <section class="rounded-xl border border-slate-200 bg-white p-5 sm:p-6" aria-labelledby="approvals-heading">
             <h2 id="approvals-heading" class="text-xl font-semibold text-slate-950">Actions to review</h2>
