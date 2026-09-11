@@ -1,7 +1,7 @@
 @extends('layouts.marketing')
 
 @section('title', 'Managed business websites')
-@section('meta_description', 'Sitewell specialists manage your website, SEO, enquiries, content, and ongoing improvements as one dependable service.')
+@section('meta_description', 'Ongoing website management and SEO for UK small businesses, with dependable website care, lead handling, and a free website audit to show what needs attention.')
 @section('structured_data')
     @php
         $structuredData = [
@@ -21,15 +21,16 @@
         <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
             <div class="grid gap-10 lg:grid-cols-[7fr_5fr] lg:items-end">
                 <div>
-                    <p class="font-mono text-sm uppercase tracking-wide text-garden">Managed websites for growing businesses</p>
-                    <h1 class="mt-5 max-w-[18ch] font-display text-5xl font-semibold tracking-tight text-balance sm:text-6xl lg:text-7xl">A website that keeps working after launch</h1>
+                    <p class="font-mono text-sm uppercase tracking-wide text-garden">Website management for UK small businesses</p>
+                    <h1 class="mt-5 max-w-[18ch] font-display text-5xl font-semibold tracking-tight text-balance sm:text-6xl lg:text-7xl">Ongoing website management and SEO for UK small businesses</h1>
                 </div>
                 <div>
-                    <p class="max-w-[52ch] text-pretty text-lg text-ink/65 sm:text-base">Our website and SEO specialists build or take over your website, manage every enquiry, monitor its health and search performance, and carry out the improvements it needs to grow.</p>
+                    <p class="max-w-[52ch] text-pretty text-lg text-ink/65 sm:text-base">If your website helps bring in enquiries, it needs more than hosting and the occasional update. Sitewell gives you one specialist team to look after the website, improve its visibility, and keep it working for the business over time.</p>
                     <div class="mt-8 flex flex-wrap items-center gap-5">
-                        <a href="{{ route('marketing.free-site-audit') }}" class="rounded-md bg-garden px-4 py-3 text-base font-medium text-white ring-1 ring-garden hover:bg-moss focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden sm:text-sm">Get started</a>
-                        <a href="{{ route('marketing.features') }}" class="text-base font-medium text-ink underline decoration-ink/20 underline-offset-4 hover:decoration-ink sm:text-sm">See how it works →</a>
+                        <a href="{{ route('marketing.free-site-audit') }}" class="rounded-md bg-garden px-4 py-3 text-base font-medium text-white ring-1 ring-garden hover:bg-moss focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden sm:text-sm">Start your free website audit</a>
+                        <a href="{{ route('marketing.landing', 'website-management-services') }}" class="text-base font-medium text-ink underline decoration-ink/20 underline-offset-4 hover:decoration-ink sm:text-sm">Explore website management services →</a>
                     </div>
+                    <p class="mt-4 max-w-[48ch] text-pretty text-sm text-ink/55">Start with a free website audit to see what needs attention first, then decide whether improving the existing site or handing over the ongoing management is the better next step.</p>
                 </div>
             </div>
             <div class="mt-12 lg:mt-16"><x-marketing.product-preview /></div>
@@ -131,7 +132,7 @@
             <div>
                 <p class="font-mono text-sm uppercase tracking-wide text-garden">One dependable rhythm</p>
                 <h2 class="mt-4 max-w-[24ch] font-display text-4xl font-semibold tracking-tight text-balance sm:text-5xl">Capture, care for, improve</h2>
-                <p class="mt-5 max-w-[48ch] text-pretty text-lg text-ink/60 sm:text-base">Everything your business needs to make its website a more dependable part of how you grow.</p>
+                <p class="mt-5 max-w-[48ch] text-pretty text-lg text-ink/60 sm:text-base">A website that keeps working after launch captures every enquiry, stays healthy, and keeps improving in search over time.</p>
             </div>
             <dl class="mt-14 grid gap-10 lg:grid-cols-3">
                 @foreach ([['01', 'Capture every enquiry', 'We manage your forms, customer acknowledgements, spam protection, and lead inbox so every potential customer gets the attention they deserve.'], ['02', 'Keep the website healthy', 'Our specialists monitor website health and SEO, resolve routine issues, and keep you informed with a clear weekly report.'], ['03', 'Grow search visibility', 'We interpret search performance, identify commercially useful opportunities, and improve the pages most likely to make a difference.']] as [$number, $title, $copy])
