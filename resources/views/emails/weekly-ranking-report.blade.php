@@ -12,7 +12,10 @@
 <h2 style="margin-top:24px;font-size:18px;">Target keyword checks</h2>
 <p style="color:#59685f;">Exact DataForSEO desktop positions for the configured market. These are separate from Search Console and broader visibility estimates.</p>
 @foreach ($report['targetKeywords'] as $item)
-<div style="margin-top:10px;padding:12px;border:1px solid #dce3dd;border-radius:8px;"><strong>{{ $item['target']->term }}</strong><p style="margin:5px 0 0;color:#59685f;">{{ $item['latest'] ? ($item['latest']->position ? 'Position '.$item['latest']->position : 'Not found in the top 100') : 'Awaiting first check' }} · {{ str($item['movement'])->replace('_', ' ')->headline() }}@if ($item['latest_failed']) · latest check failed; previous result retained @endif</p></div>
+<div style="margin-top:10px;padding:12px;border:1px solid #dce3dd;border-radius:8px;"><strong>{{ $item['target']->term }}</strong><p style="margin:5px 0 0;color:#59685f;">{{ $item['latest'] ? ($item['latest']->position ? 'Position '.$item['latest']->position : 'Not found in the top 100') : 'Awaiting first check' }} · {{ str($item['movement'])->replace('_', ' ')->headline() }}@if ($item['latest_failed']) · latest check failed; previous result retained @endif
+@if ($item['latest']) · Last checked: {{ $item['latest']->observed_at->format('j M Y H:i') }} UTC @endif
+@if ($item['is_stale'] ?? (! $item['latest'] || $item['latest']->observed_at->lessThan(now()->startOfWeek()))) · No fresh result for this week; showing the latest available information. @endif
+</p></div>
 @endforeach
 @endif
 @if ($report['latestSeo'])

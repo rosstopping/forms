@@ -13,31 +13,40 @@ class ContentWorkSelector
     public function __construct(private SeoTargetKeywordSelector $targets) {}
 
     /** @return array{requests: Collection, target: ?SeoTargetKeyword, snapshot: array} */
-    public function select(ContentGeneration $generation, bool $applyCooldown = true): array
+    public function select(ContentGeneration $generation): array
     {
         $website = $generation->plan->website;
         $active = $this->targets->active($website);
         $snapshot = $this->targets->snapshot($active);
-        $history = $generation->plan->generations()->whereKeyNot($generation->id)
-            ->where(function ($query): void {
-                $query->where('status', ContentGeneration::STATUS_PULL_REQUEST_OPEN)
-                    ->orWhere('started_at', '>', now()->subDays(14));
-            })->with('contentRequests')->get();
+        $history = $this->history($generation);
         $openKeys = $history->filter(fn (ContentGeneration $previous): bool => $previous->status === ContentGeneration::STATUS_PULL_REQUEST_OPEN
             && $previous->pull_request_state !== 'closed')->flatMap(fn (ContentGeneration $previous): array => $this->generationKeys($previous))->unique();
-        $recentKeys = $history->filter(fn (ContentGeneration $previous): bool => $previous->copilot_task_id && $previous->started_at?->greaterThan(now()->subDays(14)) === true)
+        $recentKeys = $history->filter(fn (ContentGeneration $previous): bool => ($previous->merged_at ?? ($previous->copilot_task_id ? $previous->started_at : null))?->greaterThan(now()->subDays(14)) === true)
             ->flatMap(fn (ContentGeneration $previous): array => $this->generationKeys($previous))->unique();
         $requests = $website->contentRequests()->pendingInQueueOrder()->get()
-            ->reject(fn (ContentRequest $request): bool => $openKeys->intersect($this->requestKeys($request))->isNotEmpty())->take(2);
-        $eligible = $active->filter(function (SeoTargetKeyword $keyword) use ($snapshot, $openKeys, $recentKeys, $applyCooldown): bool {
+            ->reject(fn (ContentRequest $request): bool => $openKeys->intersect($this->requestKeys($request))->isNotEmpty()
+                || $recentKeys->intersect($this->requestKeys($request))->isNotEmpty())->take(2);
+        $eligible = $active->filter(function (SeoTargetKeyword $keyword) use ($snapshot, $openKeys, $recentKeys): bool {
             $row = collect($snapshot)->firstWhere('id', $keyword->id);
             $keys = $this->targetKeys($keyword->id, $keyword->term, $row['ranking_url'] ?? null);
 
             return $openKeys->intersect($keys)->isEmpty()
-                && (! $applyCooldown || (($keyword->last_selected_at === null || $keyword->last_selected_at->lessThanOrEqualTo(now()->subDays(14))) && $recentKeys->intersect($keys)->isEmpty()));
+                && ($keyword->last_selected_at === null || $keyword->last_selected_at->lessThanOrEqualTo(now()->subDays(14)))
+                && $recentKeys->intersect($keys)->isEmpty();
         });
 
         return ['requests' => $requests, 'target' => $requests->isEmpty() ? $this->targets->select($eligible) : null, 'snapshot' => $snapshot];
+    }
+
+    /** @return Collection<int, ContentGeneration> */
+    public function history(ContentGeneration $generation): Collection
+    {
+        return $generation->plan->generations()->whereKeyNot($generation->id)
+            ->where(function ($query): void {
+                $query->where('status', ContentGeneration::STATUS_PULL_REQUEST_OPEN)
+                    ->orWhere('started_at', '>', now()->subDays(14))
+                    ->orWhere('merged_at', '>', now()->subDays(14));
+            })->with('contentRequests')->latest('id')->get();
     }
 
     public function pendingRequestsBlockedByReview(ContentPlan $plan): bool
@@ -78,6 +87,7 @@ class ContentWorkSelector
     {
         preg_match_all('~https?://[^\s<>"\)]+~i', $request->instructions, $matches);
         $keys = array_map(fn (string $url): string => $this->urlKey(rtrim($url, '.,;')), $matches[0]);
+        $keys[] = 'request:'.hash('sha256', SeoTargetKeyword::normalize($request->instructions));
         $term = data_get($request->competitor_context, 'primary_keyword');
         if (is_string($term) && $term !== '') {
             $keys[] = 'term:'.mb_strtolower(trim($term));

@@ -283,7 +283,8 @@ test('known pages rest after accepted changes even when a different keyword targ
     $generation = ContentGeneration::factory()->for($this->plan, 'plan')->create();
     expect(app(ContentWorkSelector::class)->select($generation)['target'])->toBeNull();
     $request = ContentRequest::factory()->for($this->website)->create(['instructions' => 'Urgent correction to https://example.com/service']);
-    expect(app(ContentWorkSelector::class)->select($generation)['requests']->sole()->id)->toBe($request->id);
+    expect(app(ContentWorkSelector::class)->select($generation)['requests'])->toBeEmpty()
+        ->and($request->fresh()->picked_up_at)->toBeNull();
 });
 
 test('manual support runs are outside the weekly allowance but still limited to one local date', function () {
@@ -323,4 +324,74 @@ test('non whole hour timezones dispatch at the chosen local time', function () {
     $this->artisan('content:dispatch')->assertSuccessful();
     Queue::assertPushed(StartContentGeneration::class, 1);
     expect($this->schedule->occursAt($this->plan->fresh(), CarbonImmutable::parse('2026-09-07 02:16 UTC')))->toBeFalse();
+});
+
+test('recent merges protect queued requests and targets until the cooldown expires', function () {
+    $target = SeoTargetKeyword::factory()->for($this->website)->create(['last_selected_at' => now()->subDays(30)]);
+    $previous = ContentGeneration::factory()->for($this->plan, 'plan')->create([
+        'scheduled_for' => now()->subDays(30), 'started_at' => now()->subDays(30),
+        'merged_at' => now()->subDays(13), 'status' => ContentGeneration::STATUS_COMPLETED,
+        'seo_target_keyword_id' => $target->id,
+        'target_keyword_context' => [['id' => $target->id, 'term' => $target->term, 'ranking_url' => 'https://example.com/service']],
+    ]);
+    $generation = ContentGeneration::factory()->for($this->plan, 'plan')->create();
+    $request = ContentRequest::factory()->for($this->website)->create(['instructions' => 'Improve https://example.com/service/']);
+    $selector = app(ContentWorkSelector::class);
+
+    expect($selector->select($generation)['requests'])->toBeEmpty()
+        ->and($selector->select($generation)['target'])->toBeNull()
+        ->and($request->fresh()->picked_up_at)->toBeNull();
+
+    $previous->update(['merged_at' => now()->subDays(14)]);
+    expect($selector->select($generation)['requests']->sole()->id)->toBe($request->id);
+    $request->update(['picked_up_at' => now()]);
+    expect($selector->select($generation)['target']->id)->toBe($target->id);
+});
+
+test('recent identical requests are held while unrelated requests remain eligible', function () {
+    $previous = ContentGeneration::factory()->for($this->plan, 'plan')->create([
+        'scheduled_for' => now()->subWeek(), 'started_at' => now()->subWeek(), 'copilot_task_id' => 'previous-task',
+        'status' => ContentGeneration::STATUS_COMPLETED,
+    ]);
+    ContentRequest::factory()->for($this->website)->create([
+        'content_generation_id' => $previous->id, 'picked_up_at' => now()->subWeek(),
+        'instructions' => 'Improve the boiler servicing page',
+    ]);
+    $duplicate = ContentRequest::factory()->for($this->website)->create(['instructions' => 'Improve the boiler servicing page']);
+    $unrelated = ContentRequest::factory()->for($this->website)->create(['instructions' => 'Explain bathroom installations']);
+    $generation = ContentGeneration::factory()->for($this->plan, 'plan')->create();
+
+    expect(app(ContentWorkSelector::class)->select($generation)['requests']->sole()->id)->toBe($unrelated->id)
+        ->and($duplicate->fresh()->picked_up_at)->toBeNull();
+});
+
+test('content briefs include scoped recent merge history and require new page discovery checks', function () {
+    $previous = ContentGeneration::factory()->for($this->plan, 'plan')->create([
+        'scheduled_for' => now()->subDays(30), 'started_at' => now()->subDays(30),
+        'merged_at' => now()->subDay(), 'status' => ContentGeneration::STATUS_COMPLETED, 'pull_request_number' => 123,
+    ]);
+    ContentRequest::factory()->for($this->website)->create([
+        'content_generation_id' => $previous->id, 'picked_up_at' => now()->subDays(30),
+        'instructions' => 'Preserve the new boiler servicing qualifications',
+    ]);
+    $other = ContentGeneration::factory()->create(['started_at' => now(), 'copilot_task_id' => 'other-site']);
+    ContentRequest::factory()->create(['content_generation_id' => $other->id, 'instructions' => 'Other website private content']);
+    $generation = ContentGeneration::factory()->for($this->plan, 'plan')->for($this->repository, 'repository')->create();
+    $prompt = app(ContentGenerationPromptGenerator::class)->generate($generation);
+
+    expect($prompt)->toContain('Preserve the new boiler servicing qualifications', '"pull_request_number": 123', '"merged_at"',
+        'do not repeat, reverse, or contradict', 'last 14 days', 'For every new public, indexable page',
+        'verify its canonical URL is included', 'Assess navigation placement', 'confirm sitemap inclusion')
+        ->not->toContain('Other website private content');
+});
+
+test('manual runs retain recent change protection', function () {
+    $target = SeoTargetKeyword::factory()->for($this->website)->create(['last_selected_at' => now()->subDay()]);
+    $generation = ContentGeneration::factory()->for($this->plan, 'plan')->for($this->admin, 'requester')->for($this->repository, 'repository')->create(['trigger' => 'manual']);
+    $copilot = $this->mock(CopilotAgentClient::class)->shouldNotReceive('startTask')->getMock();
+
+    (new StartContentGeneration($generation))->handle(app(SearchConsoleClient::class), app(ContentGenerationPromptGenerator::class), $copilot);
+
+    expect($generation->fresh()->status)->toBe(ContentGeneration::STATUS_SKIPPED)
+        ->and($generation->fresh()->skip_reason)->toContain('recently changed');
 });

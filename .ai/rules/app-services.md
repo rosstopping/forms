@@ -2,6 +2,7 @@
 paths:
   - 'app/{Services/Github*,Models/GithubUserAuthorization.php,Jobs/{StartCopilotRemediation,SyncCopilotRemediation}.php}'
   - 'app/{Services/SearchConsoleHistoryStore.php,Services/WebsiteAiContext.php,Jobs/SyncSearchConsoleHistory.php}'
+  - 'app/{Services/Content*,Jobs/StartContentGeneration.php}'
 ---
 
 # App Services
@@ -17,3 +18,6 @@ The website assistant analyzes stored Search Console data only and never makes l
 
 ## Monthly samples supersede tracked-query refresh
 This supersedes the earlier top-current/previously-tracked query strategy. Do not reintroduce per-query weekly API calls; use the bounded per-month sample so comparisons cover a materially broader and date-aligned query set.
+
+## Preserve recent content across all generation triggers
+Queued requests and manual staff runs retain the 14-day target/known-page cooldown; merged_at restarts protection, with accepted task start as fallback. Match duplicate request text as well as known URLs and terms. Briefs include bounded site-specific history and require inspecting recent repository changes. Every new public indexable page requires verified sitemap inclusion, inbound links, and an explicit navigation decision in the PR; merge is not proof of deployment.

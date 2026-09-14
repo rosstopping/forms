@@ -157,3 +157,95 @@ test('weekly ranking report preference migration preserves existing delivery', f
         }
     }
 });
+
+test('weekly email waits for current market results then sends when they arrive', function () {
+    Mail::fake();
+    Queue::fake();
+    $this->travelTo(Carbon::parse('2026-09-14 08:00:00'));
+    $website = Website::factory()->create(['seo_weekly_snapshots_enabled' => true]);
+    $target = SeoTargetKeyword::factory()->for($website)->create();
+    SeoTargetKeywordRanking::factory()->for($target, 'targetKeyword')->create([
+        'website_id' => $website->id, 'observed_at' => now()->subWeek(),
+    ]);
+    SeoTargetKeywordRanking::factory()->for($target, 'targetKeyword')->create([
+        'website_id' => $website->id, 'observed_at' => now(), 'device' => 'mobile',
+    ]);
+    $job = (new SendWeeklyRankingReport($website))->withFakeQueueInteractions();
+    $job->handle(app(RankingReportBuilder::class), app(WebsiteMailRecipients::class));
+
+    $job->assertReleased(300);
+    Mail::assertNothingQueued();
+    Queue::assertNothingPushed();
+
+    $this->travel(5)->minutes();
+    SeoTargetKeywordRanking::factory()->for($target, 'targetKeyword')->create([
+        'website_id' => $website->id, 'observed_at' => now(), 'position' => 7,
+    ]);
+    $job->handle(app(RankingReportBuilder::class), app(WebsiteMailRecipients::class));
+
+    Mail::assertQueued(WeeklyRankingReport::class, fn (WeeklyRankingReport $mail): bool => $mail->report['targetKeywords']->sole()['latest']->position === 7
+        && $mail->report['targetKeywords']->sole()['is_stale'] === false);
+});
+
+test('weekly email sends dated older results after its fixed waiting deadline', function () {
+    Mail::fake();
+    $this->travelTo(Carbon::parse('2026-09-14 08:00:00'));
+    $website = Website::factory()->create(['seo_weekly_snapshots_enabled' => true]);
+    $target = SeoTargetKeyword::factory()->for($website)->create();
+    SeoTargetKeywordRanking::factory()->for($target, 'targetKeyword')->create([
+        'website_id' => $website->id, 'observed_at' => now()->subWeek(),
+    ]);
+    SeoTargetKeywordRanking::factory()->for($target, 'targetKeyword')->create([
+        'website_id' => $website->id, 'observed_at' => now(), 'status' => SeoTargetKeywordRanking::STATUS_FAILED, 'position' => null,
+    ]);
+    $job = unserialize(serialize(new SendWeeklyRankingReport($website)))->withFakeQueueInteractions();
+    $job->handle(app(RankingReportBuilder::class), app(WebsiteMailRecipients::class));
+    $job->assertReleased(300);
+    Mail::assertNothingQueued();
+
+    $this->travel(1)->hours();
+    $job->handle(app(RankingReportBuilder::class), app(WebsiteMailRecipients::class));
+    Mail::assertQueued(WeeklyRankingReport::class, fn (WeeklyRankingReport $mail): bool => $mail->report['targetKeywords']->sole()['is_stale'] === true);
+});
+
+test('weekly email identifies the observation date and missing fresh results', function () {
+    $this->travelTo(Carbon::parse('2026-09-14 08:00:00'));
+    $website = Website::factory()->create();
+    $target = SeoTargetKeyword::factory()->for($website)->create();
+    SeoTargetKeywordRanking::factory()->for($target, 'targetKeyword')->create([
+        'website_id' => $website->id, 'observed_at' => now()->subWeek(),
+    ]);
+
+    (new WeeklyRankingReport($website, app(RankingReportBuilder::class)->build($website)))
+        ->assertSeeInHtml('Last checked: 7 Sep 2026 08:00')
+        ->assertSeeInHtml('No fresh result for this week');
+});
+
+test('weekly email does not wait when automatic checks are disabled or targets are archived', function (bool $enabled) {
+    Mail::fake();
+    Queue::fake();
+    $website = Website::factory()->create(['seo_weekly_snapshots_enabled' => $enabled]);
+    SeoTargetKeyword::factory()->for($website)->create(['archived_at' => $enabled ? now() : null]);
+    $job = (new SendWeeklyRankingReport($website))->withFakeQueueInteractions();
+
+    $job->handle(app(RankingReportBuilder::class), app(WebsiteMailRecipients::class));
+
+    $job->assertNotReleased();
+    Mail::assertQueued(WeeklyRankingReport::class);
+    Queue::assertNothingPushed();
+})->with([false, true]);
+
+test('a current not found result is fresh enough for the weekly email', function () {
+    Mail::fake();
+    $website = Website::factory()->create(['seo_weekly_snapshots_enabled' => true]);
+    $target = SeoTargetKeyword::factory()->for($website)->create();
+    SeoTargetKeywordRanking::factory()->for($target, 'targetKeyword')->create([
+        'website_id' => $website->id, 'observed_at' => now(), 'status' => SeoTargetKeywordRanking::STATUS_NOT_FOUND, 'position' => null,
+    ]);
+    $job = (new SendWeeklyRankingReport($website))->withFakeQueueInteractions();
+
+    $job->handle(app(RankingReportBuilder::class), app(WebsiteMailRecipients::class));
+
+    $job->assertNotReleased();
+    Mail::assertQueued(WeeklyRankingReport::class);
+});

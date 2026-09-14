@@ -102,11 +102,11 @@ class StartContentGeneration implements ShouldBeEncrypted, ShouldBeUnique, Shoul
             }
             $this->generation->update(['seo_target_keyword_id' => $work['target']?->id, 'target_keyword_context' => $work['snapshot']]);
         } elseif ($this->generation->trigger === 'manual') {
-            $work = app(ContentWorkSelector::class)->select($this->generation, applyCooldown: false);
+            $work = app(ContentWorkSelector::class)->select($this->generation);
             $contentRequests = $work['requests'];
             if ($contentRequests->isEmpty() && ! $work['target']
                 && ($work['snapshot'] !== [] || $this->generation->plan->website->contentRequests()->whereNull('picked_up_at')->exists())) {
-                $this->skipGeneration('The available work is already awaiting pull request review.');
+                $this->skipGeneration('The available work was recently changed or is already awaiting pull request review.');
 
                 return;
             }
