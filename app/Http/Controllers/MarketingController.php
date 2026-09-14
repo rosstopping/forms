@@ -277,6 +277,12 @@ class MarketingController extends Controller
                         ],
                         'links' => [
                             [
+                                'route' => 'marketing.landing',
+                                'parameters' => ['website-maintenance-packages'],
+                                'label' => 'Explore our website maintenance packages',
+                                'description' => 'See how Sitewell approaches ongoing website care for small businesses.',
+                            ],
+                            [
                                 'route' => 'marketing.article',
                                 'parameters' => ['a-clean-website-handover'],
                                 'label' => 'Read why a clean handover matters',
@@ -346,7 +352,23 @@ class MarketingController extends Controller
                 'sections' => [
                     ['heading' => 'Start with the page behind the query', 'body' => 'A ranking number becomes actionable when it is paired with the page Google is showing. That relationship reveals mismatched intent, competing pages, and opportunities to strengthen an existing answer.'],
                     ['heading' => 'Prioritise useful movement', 'body' => 'Queries sitting just outside the strongest positions often offer a clearer next step than broad traffic targets. Combine impressions, position, and business relevance before deciding what deserves attention.'],
-                    ['heading' => 'Turn analysis into managed improvement', 'body' => 'A useful SEO specialist does more than report an opportunity. The recommendation should become a considered website improvement, with a clear record of what changed and why it mattered.'],
+                    [
+                        'heading' => 'Turn analysis into managed improvement',
+                        'body' => 'A useful SEO specialist does more than report an opportunity. The recommendation should become a considered website improvement, with a clear record of what changed and why it mattered.',
+                        'links' => [
+                            [
+                                'route' => 'marketing.landing',
+                                'parameters' => ['seo-for-small-businesses'],
+                                'label' => 'See how Sitewell handles SEO for small businesses',
+                                'description' => 'A practical view of ongoing SEO work, measurable movement, and commercially useful priorities.',
+                            ],
+                            [
+                                'route' => 'marketing.landing',
+                                'parameters' => ['managed-seo-services'],
+                                'label' => 'Explore managed SEO services',
+                            ],
+                        ],
+                    ],
                 ],
             ],
         ];

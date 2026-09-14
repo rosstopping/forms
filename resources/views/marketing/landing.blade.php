@@ -14,7 +14,7 @@
             <h1 class="mt-5 max-w-[20ch] font-display text-5xl font-semibold tracking-tight text-balance sm:text-6xl">{{ $landing['title'] }}</h1>
             <p class="mt-6 max-w-[48ch] text-pretty text-lg text-ink/65">{{ $landing['description'] }}</p>
             <div class="mt-8 flex flex-wrap items-center gap-5">
-                <a href="{{ route('marketing.free-site-audit') }}" class="rounded-md bg-garden px-4 py-3 text-base font-medium text-white ring-1 ring-garden hover:bg-moss focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden sm:text-sm">Get started</a>
+                <a href="{{ route('marketing.free-site-audit') }}" class="rounded-md bg-garden px-4 py-3 text-base font-medium text-white ring-1 ring-garden hover:bg-moss focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden sm:text-sm">Start your free website audit</a>
                 <a href="{{ route('marketing.contact') }}" class="text-base font-medium underline decoration-ink/20 underline-offset-4 hover:decoration-ink sm:text-sm">Talk to a website specialist →</a>
             </div>
         </div>
