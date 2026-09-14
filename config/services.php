@@ -90,6 +90,7 @@ return [
         'business_profile_account_url' => env('GOOGLE_BUSINESS_PROFILE_ACCOUNT_URL', 'https://mybusinessaccountmanagement.googleapis.com/v1'),
         'business_profile_information_url' => env('GOOGLE_BUSINESS_PROFILE_INFORMATION_URL', 'https://mybusinessbusinessinformation.googleapis.com/v1'),
         'business_profile_v4_url' => env('GOOGLE_BUSINESS_PROFILE_V4_URL', 'https://mybusiness.googleapis.com/v4'),
+        'business_profile_performance_url' => env('GOOGLE_BUSINESS_PROFILE_PERFORMANCE_URL', 'https://businessprofileperformance.googleapis.com/v1'),
     ],
 
     'dataforseo' => [

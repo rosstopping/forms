@@ -1,5 +1,6 @@
 <?php
 
+use App\Ai\Agents\WeeklyOverviewWriter;
 use App\Jobs\SendWeeklyRankingReport;
 use App\Mail\WeeklyRankingReport;
 use App\Models\SearchConsoleConnection;
@@ -14,11 +15,17 @@ use App\Services\RankingReportBuilder;
 use App\Services\WebsiteMailRecipients;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Schema;
 
 uses(RefreshDatabase::class);
+
+beforeEach(function (): void {
+    WeeklyOverviewWriter::fake(['Your saved weekly overview.']);
+    Http::preventStrayRequests();
+});
 
 test('weekly ranking report compares stored search and seo performance', function () {
     $this->travelTo(Carbon::parse('2026-09-14'));

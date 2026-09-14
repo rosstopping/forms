@@ -220,6 +220,7 @@ Route::middleware(['web', 'signed', 'throttle:20,1'])->group(function () {
 
 Route::middleware(['web', 'auth', ResolveCurrentWebsite::class])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/websites/{website}/weekly-overview', [DashboardController::class, 'weeklyOverview'])->name('weekly-overviews.show');
     Route::post('current-website', CurrentWebsiteController::class)->name('current-website.update');
     Route::get('account/billing', [BillingController::class, 'index'])->name('billing.index');
     Route::get('account/profile', [ProfileController::class, 'edit'])->name('profile.edit');

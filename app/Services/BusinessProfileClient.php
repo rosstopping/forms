@@ -67,6 +67,33 @@ class BusinessProfileClient
         $this->request($connection, 'v4')->put($reviewName.'/reply', ['comment' => $comment])->throw();
     }
 
+    /** @return array<string, mixed> */
+    public function weeklyPerformance(BusinessProfileConnection $connection, Carbon $start, Carbon $end): array
+    {
+        $this->ensureLocation($connection);
+        $metrics = ['BUSINESS_IMPRESSIONS_DESKTOP_MAPS', 'BUSINESS_IMPRESSIONS_DESKTOP_SEARCH', 'BUSINESS_IMPRESSIONS_MOBILE_MAPS', 'BUSINESS_IMPRESSIONS_MOBILE_SEARCH', 'WEBSITE_CLICKS', 'CALL_CLICKS', 'BUSINESS_DIRECTION_REQUESTS'];
+        $query = collect($metrics)->map(fn (string $metric): string => 'dailyMetrics='.$metric)->implode('&');
+        foreach (['startDate' => $start, 'endDate' => $end] as $key => $date) {
+            foreach (['year', 'month', 'day'] as $part) {
+                $query .= '&dailyRange.'.$key.'.'.$part.'='.$date->$part;
+            }
+        }
+        $location = 'locations/'.basename($connection->location_name);
+
+        return $this->request($connection, 'performance')->timeout(10)->retry(1)
+            ->get($location.':fetchMultiDailyMetricsTimeSeries?'.$query)->throw()->json();
+    }
+
+    /** @return array{count: ?int, rating: ?float} */
+    public function reviewSummary(BusinessProfileConnection $connection): array
+    {
+        $response = $this->request($connection, 'v4')->timeout(10)->retry(1)
+            ->get($this->v4LocationName($connection).'/reviews', ['pageSize' => 1])->throw()->json();
+
+        return ['count' => isset($response['totalReviewCount']) ? (int) $response['totalReviewCount'] : null,
+            'rating' => isset($response['averageRating']) ? (float) $response['averageRating'] : null];
+    }
+
     public function syncReviews(BusinessProfileConnection $connection): void
     {
         foreach ($this->reviews($connection) as $review) {
@@ -86,7 +113,7 @@ class BusinessProfileClient
     protected function request(BusinessProfileConnection $connection, string $api): PendingRequest
     {
         $url = match ($api) {
-            'account' => config('services.google.business_profile_account_url'), 'information' => config('services.google.business_profile_information_url'), default => config('services.google.business_profile_v4_url')
+            'performance' => config('services.google.business_profile_performance_url'), 'account' => config('services.google.business_profile_account_url'), 'information' => config('services.google.business_profile_information_url'), default => config('services.google.business_profile_v4_url')
         };
 
         return Http::baseUrl((string) $url)

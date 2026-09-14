@@ -19,7 +19,7 @@ class DispatchWeeklyRankingReports extends Command
             ->where('is_active', true)
             ->where('weekly_ranking_reports_enabled', true)
             ->where(function ($query): void {
-                $query->whereHas('seoSnapshots')->orWhereHas('searchConsoleConnection')->orWhereHas('seoTargetKeywords', fn ($query) => $query->whereNull('archived_at'));
+                $query->whereHas('seoSnapshots')->orWhereHas('searchConsoleConnection')->orWhereHas('healthReports')->orWhereHas('businessProfileConnection', fn ($query) => $query->whereNotNull('location_name'))->orWhereHas('optimisations')->orWhereHas('contentPlan')->orWhereHas('seoTargetKeywords', fn ($query) => $query->whereNull('archived_at'));
             })
             ->each(function (Website $website) use (&$queued): void {
                 SendWeeklyRankingReport::dispatch($website);

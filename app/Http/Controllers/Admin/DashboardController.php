@@ -11,6 +11,7 @@ use App\Models\RemediationRun;
 use App\Models\SearchConsoleMetric;
 use App\Models\Website;
 use App\Models\WebsiteDomain;
+use App\Models\WeeklyReport;
 use App\Services\ContentQueueOverview;
 use App\Services\DashboardSchedule;
 use App\Services\DashboardWorkActivity;
@@ -66,6 +67,14 @@ class DashboardController extends Controller
         ]);
     }
 
+    public function weeklyOverview(Request $request, Website $website, DashboardSchedule $schedule): View
+    {
+        abort_unless($website->isAccessibleBy($request->user()), 403);
+        $request->attributes->set('currentWebsite', $website);
+
+        return $this->index($request, $schedule);
+    }
+
     public function index(Request $request, DashboardSchedule $schedule): View
     {
         $user = $request->user();
@@ -103,11 +112,19 @@ class DashboardController extends Controller
                 ->keyBy(fn (SearchConsoleMetric $metric): string => $metric->month->toDateString())
             : collect();
 
+        $weeklyReports = WeeklyReport::query()->where('website_id', $website->id)->whereNotNull('generated_at');
+        $weeklyOverview = $request->filled('weekly_report')
+            ? (clone $weeklyReports)->whereKey($request->integer('weekly_report'))->firstOrFail()
+            : (clone $weeklyReports)->latest('period_end')->first();
+        $weeklyHistory = (clone $weeklyReports)->latest('period_end')->paginate(12, ['id', 'period_start', 'period_end'], 'reports_page')->withQueryString();
+
         $automationSchedule = $schedule->forWebsites(collect([$website]));
         $isTrialActive = $user?->onboarding_status === 'trial_active' && $user->onboarding_trial_ends_at?->isFuture();
 
         return view('admin.dashboard', [
             'website' => $website,
+            'weeklyOverview' => $weeklyOverview,
+            'weeklyHistory' => $weeklyHistory,
             'report' => $website->latestHealthReport,
             'topFindings' => $this->topFindings($website),
             'searchMonths' => $searchMonths,

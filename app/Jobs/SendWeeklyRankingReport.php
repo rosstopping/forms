@@ -6,6 +6,7 @@ use App\Mail\WeeklyRankingReport;
 use App\Models\Website;
 use App\Services\RankingReportBuilder;
 use App\Services\WebsiteMailRecipients;
+use App\Services\WeeklyReportGenerator;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -17,6 +18,10 @@ class SendWeeklyRankingReport implements ShouldBeUnique, ShouldQueue
     use Queueable;
 
     public int $tries = 15;
+
+    public int $timeout = 280;
+
+    public Carbon $overviewDispatchDate;
 
     public int $maxExceptions = 3;
 
@@ -31,6 +36,7 @@ class SendWeeklyRankingReport implements ShouldBeUnique, ShouldQueue
 
     public function __construct(public Website $website)
     {
+        $this->overviewDispatchDate = today();
         $this->freshnessDeadline = now()->addHour();
         $this->rankingPeriodStart = now()->startOfWeek();
     }
@@ -58,8 +64,10 @@ class SendWeeklyRankingReport implements ShouldBeUnique, ShouldQueue
             return;
         }
 
+        $overview = app(WeeklyReportGenerator::class)->generate($this->website, $this->overviewDispatchDate ?? $this->rankingPeriodStart);
+
         foreach ($recipients->forReports($this->website) as $recipient) {
-            Mail::to($recipient)->send(new WeeklyRankingReport($this->website, $report));
+            Mail::to($recipient)->send(new WeeklyRankingReport($this->website, $report, $overview));
         }
     }
 }

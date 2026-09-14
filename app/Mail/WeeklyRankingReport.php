@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Models\Website;
+use App\Models\WeeklyReport;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -15,7 +16,7 @@ class WeeklyRankingReport extends Mailable implements ShouldQueue
     use Queueable, SerializesModels;
 
     /** @param array<string, mixed> $report */
-    public function __construct(public Website $website, public array $report)
+    public function __construct(public Website $website, public array $report, public ?WeeklyReport $weeklyOverview = null)
     {
         $this->afterCommit();
     }

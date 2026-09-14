@@ -30,6 +30,8 @@
             @endif
         </header>
 
+        <x-weekly-overview :report="$weeklyOverview" :history="$weeklyHistory" />
+
         @if ($isTrialActive)
             <section class="overflow-hidden rounded-2xl bg-slate-950 text-white shadow-lg shadow-slate-950/10" aria-labelledby="onboarding-heading">
                 <div class="grid gap-8 p-6 sm:p-8 lg:grid-cols-[minmax(0,1.25fr)_minmax(20rem,0.75fr)] lg:items-center">

@@ -1,6 +1,25 @@
-<x-email-layout>
+<x-email-layout :markdown="false">
 <p style="font-family:Courier New,monospace;font-size:14px;color:#315a46;">Weekly ranking report</p>
 <h1 style="margin:4px 0 8px;font-size:24px;">{{ $website->name }}</h1>
+@if ($weeklyOverview)
+<h2 style="margin-top:24px;font-size:20px;">Your week with Sitewell</h2>
+<p style="color:#59685f;">Weekly Overview · {{ $weeklyOverview->period_start->format('j M') }}–{{ $weeklyOverview->period_end->format('j M Y') }}</p>
+@foreach (preg_split('/\n\s*\n/', $weeklyOverview->overview) as $paragraph)
+<p>{{ $paragraph }}</p>
+@endforeach
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+@foreach (array_slice($weeklyOverview->snapshot['metric_cards'] ?? [], 0, 6) as $metric)
+<tr><td style="padding:6px 0;">{{ $metric['label'] }}</td><td style="padding:6px 0;text-align:right;">{{ $metric['current'] === null ? 'Unavailable' : number_format($metric['current'], 1) }}@if ($metric['change'] !== null) ({{ $metric['change'] > 0 ? '+' : '' }}{{ $metric['change'] }})@endif</td></tr>
+@endforeach
+</table>
+@if (data_get($weeklyOverview->snapshot, 'search_console.period'))
+<p style="color:#59685f;font-size:12px;">Search data: {{ data_get($weeklyOverview->snapshot, 'search_console.period.start') }}–{{ data_get($weeklyOverview->snapshot, 'search_console.period.end') }}, compared with {{ data_get($weeklyOverview->snapshot, 'search_console.period.comparison_start') }}–{{ data_get($weeklyOverview->snapshot, 'search_console.period.comparison_end') }}. This allows for Google’s reporting delay.</p>
+@endif
+<p style="color:#59685f;font-size:12px;">Tracked keywords and Google Business performance cover the reporting week. Health uses the latest available audit. Missing comparisons are omitted.</p>
+<p><a href="{{ route('admin.weekly-overviews.show', ['website' => $website, 'weekly_report' => $weeklyOverview->id]) }}" class="button button-primary">View Weekly Overview</a></p>
+<hr style="margin:24px 0;border:0;border-top:1px solid #dce3dd;">
+<h2 style="font-size:18px;">Detailed reporting</h2>
+@endif
 @if ($report['latestSearch'])
 <h2 style="margin-top:24px;font-size:18px;">Google Search performance</h2>
 <p style="color:#59685f;">Month beginning {{ $report['latestSearch']->month->format('j M Y') }}</p>
@@ -34,7 +53,7 @@
 @else
 <p style="margin-top:24px;color:#59685f;">More comparable observations are needed before Sitewell can identify ranking trends.</p>
 @endif
-@if ($report['opportunities']->isNotEmpty())
+@if (! $weeklyOverview && $report['opportunities']->isNotEmpty())
 <h2 style="margin-top:24px;font-size:18px;">Worth working on</h2>
 @foreach ($report['opportunities'] as $opportunity)
 <div style="margin-top:10px;padding:12px;border:1px solid #dce3dd;border-radius:8px;"><strong>{{ $opportunity->title }}</strong><p style="margin:5px 0 0;color:#59685f;">{{ $opportunity->summary }}</p></div>

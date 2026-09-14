@@ -101,6 +101,35 @@ class SearchConsoleClient
         ];
     }
 
+    /** @return array{totals: ?array, queries: array, pages: array, sampled: bool} */
+    public function weeklyPerformance(SearchConsoleConnection $connection, Carbon $start, Carbon $end): array
+    {
+        $fetch = function (array $dimensions, int $limit) use ($connection, $start, $end): array {
+            return $this->request($connection)->timeout(10)->retry(1)
+                ->post('sites/'.rawurlencode((string) $connection->property_url).'/searchAnalytics/query', [
+                    'startDate' => $start->toDateString(), 'endDate' => $end->toDateString(),
+                    'dimensions' => $dimensions, 'type' => 'web', 'dataState' => 'final', 'rowLimit' => $limit,
+                ])->throw()->json('rows', []);
+        };
+        $coverage = $this->request($connection)->timeout(10)->retry(1)
+            ->post('sites/'.rawurlencode((string) $connection->property_url).'/searchAnalytics/query', [
+                'startDate' => $start->toDateString(), 'endDate' => $end->toDateString(),
+                'dimensions' => ['date'], 'type' => 'web', 'dataState' => 'all', 'rowLimit' => 7,
+            ])->throw()->json();
+        $incompleteFrom = data_get($coverage, 'metadata.first_incomplete_date');
+        if ($incompleteFrom !== null && $incompleteFrom <= $end->toDateString()) {
+            return ['totals' => null, 'queries' => [], 'pages' => [], 'sampled' => true];
+        }
+        $totals = $fetch([], 1);
+
+        return [
+            'totals' => isset($totals[0]) ? $this->formatRow($totals[0]) : null,
+            'queries' => collect($fetch(['query'], 250))->map(fn (array $row): array => ['key' => (string) data_get($row, 'keys.0'), ...$this->formatRow($row)])->all(),
+            'pages' => collect($fetch(['page'], 250))->map(fn (array $row): array => ['key' => (string) data_get($row, 'keys.0'), ...$this->formatRow($row)])->all(),
+            'sampled' => true,
+        ];
+    }
+
     /** @return array<int, array{month: string, clicks: float, impressions: float, ctr: float, position: float}> */
     public function monthlyPerformance(SearchConsoleConnection $connection): array
     {
