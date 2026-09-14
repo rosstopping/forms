@@ -48,121 +48,135 @@
         </div>
     </section>
 
-    <section class="bg-ink py-16 text-paper sm:py-20">
-        <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
+    <section class="bg-paper py-14 sm:py-20">
+        <div class="mx-auto grid max-w-7xl gap-10 px-5 sm:px-8 lg:grid-cols-[4fr_7fr] lg:items-center lg:px-10">
             <div>
-                <p class="font-mono text-sm uppercase tracking-wide text-apricot">See Sitewell in action</p>
-                <h2 class="mt-4 max-w-[24ch] font-display text-4xl font-semibold tracking-tight text-balance sm:text-5xl">A closer look at calmer website care</h2>
-                <p class="mt-5 max-w-[48ch] text-pretty text-lg text-paper/65 sm:text-base">See how our specialists manage your website health, enquiries, search performance, and next growth opportunities as one service.</p>
+                <p class="font-mono text-base text-garden sm:text-sm">A look inside Sitewell</p>
+                <h2 class="mt-4 max-w-[19ch] font-display text-4xl font-semibold tracking-tight text-balance sm:text-5xl">See the work.<br>Not just a report.</h2>
+                <p class="mt-5 max-w-[38ch] text-pretty text-lg leading-8 text-ink/75">See what we’ve found, what we’re working on and what’s changed. This walkthrough shows how we keep your website care, SEO and enquiries in view.</p>
+                <p class="mt-4 max-w-[38ch] text-pretty text-base leading-7 text-ink/75">We manage the work. You can see what’s happening without learning another system.</p>
+                <p class="mt-6 font-medium"><a href="{{ route('marketing.contact') }}" class="inline-flex min-h-12 items-center gap-5 underline decoration-ink/30 underline-offset-4 hover:decoration-ink">Talk to us about your website <span aria-hidden="true">→</span></a></p>
             </div>
-
-            <div class="mt-10 overflow-hidden rounded-[min(1vw,var(--radius-xl))] bg-paper shadow-2xl shadow-black/30 ring-1 ring-white/15 sm:mt-12">
+            <figure class="min-w-0">
                 <iframe
                     src="https://www.loom.com/embed/d406218f4a2843f7a7d8abbf804f2ba6"
                     title="See how Sitewell looks after your website"
-                    class="aspect-[2000/1299] w-full bg-black"
+                    class="aspect-[2000/1299] w-full rounded-[min(1vw,8px)] bg-black outline-1 -outline-offset-1 outline-black/10"
                     loading="lazy"
                     allow="fullscreen"
                     allowfullscreen
                 ></iframe>
+                <figcaption class="mt-4 flex flex-wrap justify-between gap-2 text-base text-ink/70 sm:text-sm"><span>The Sitewell walkthrough</span><span>Website care, search &amp; enquiries</span></figcaption>
+            </figure>
+        </div>
+    </section>
 
-                <a href="{{ route('marketing.contact') }}" class="group flex flex-col gap-6 border-t border-ink/10 bg-paper p-6 text-ink hover:bg-lichen focus-visible:outline-offset-4 sm:flex-row sm:items-center sm:justify-between sm:p-8">
-                    <div class="min-w-0">
-                        <p class="font-mono text-sm uppercase tracking-wide text-garden">Your website could be next</p>
-                        <p class="mt-3 max-w-[40ch] font-display text-2xl font-semibold tracking-tight text-balance sm:text-3xl">Let’s make your website work harder for your business</p>
-                        <p class="mt-3 max-w-[56ch] text-pretty text-base text-ink/65 sm:text-sm">Tell us what you need and we will help you find the right next step.</p>
-                    </div>
-                    <div class="flex shrink-0 items-center gap-3 font-medium">
-                        <p class="text-base underline decoration-ink/20 underline-offset-4 group-hover:decoration-ink sm:text-sm">Talk to us</p>
-                        <span class="grid size-12 shrink-0 place-items-center rounded-full bg-garden text-paper group-hover:bg-moss" aria-hidden="true">→</span>
-                    </div>
-                </a>
+    <section class="border-y border-ink/10 bg-lichen/45 py-12 sm:py-16">
+        <div class="mx-auto grid max-w-7xl gap-10 px-5 sm:px-8 lg:grid-cols-[4fr_7fr] lg:px-10">
+            <div>
+                <h2 class="max-w-[20ch] font-display text-3xl font-semibold tracking-tight text-balance sm:text-4xl">We don’t build your website and disappear.</h2>
+                <p class="mt-5 max-w-[36ch] text-pretty text-lg leading-8 text-ink/75">We keep checking, fixing and improving it. Here’s how the work moves forward each week.</p>
+                <p class="mt-5 font-medium"><a href="{{ route('marketing.features') }}" class="inline-flex min-h-12 items-center underline decoration-ink/30 underline-offset-4 hover:decoration-ink">What the service covers →</a></p>
             </div>
-        </div>
-    </section>
-
-    <section class="bg-apricot py-12 text-ink sm:py-16">
-        <div class="mx-auto flex max-w-7xl flex-col gap-8 px-5 sm:px-8 lg:flex-row lg:items-end lg:justify-between lg:px-10">
-            <div class="min-w-0">
-                <p class="font-mono text-sm uppercase tracking-wide text-ink/60">Local people, straightforward support</p>
-                <h2 class="mt-4 max-w-[24ch] font-display text-4xl font-semibold tracking-tight text-balance sm:text-5xl">We’re a local, UK-based company</h2>
-                <p class="mt-4 max-w-[56ch] text-pretty text-lg text-ink/65 sm:text-base">Have a question about your website? Call us and speak directly with our team.</p>
-            </div>
-            <a href="tel:+441302985828" class="group shrink-0 border-t border-ink/20 pt-5 focus-visible:outline-offset-4 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-10">
-                <p class="font-mono text-sm uppercase tracking-wide text-ink/60">Call us</p>
-                <p class="mt-3 font-display text-4xl font-semibold tracking-tight tabular-nums underline decoration-ink/20 underline-offset-8 group-hover:decoration-ink sm:text-5xl">01302 985 828</p>
-            </a>
-        </div>
-    </section>
-
-    <section class="border-y border-ink/10">
-        <div class="mx-auto grid max-w-7xl px-5 sm:grid-cols-2 sm:px-8 lg:grid-cols-4 lg:px-10">
-            @foreach ([['Build or bring your site', 'Start fresh or let our specialists take over the website you already use.'], ['Healthier website', 'Our team resolves health and SEO issues before they cost you business.'], ['Every lead captured', 'We make sure genuine enquiries stay visible from submission to follow-up.'], ['Managed search growth', 'Our SEO specialists turn search activity into stronger pages and useful new content.']] as [$title, $copy])
-                <div class="border-t border-ink/10 py-7 first:border-t-0 sm:border-t-0 sm:px-6 sm:[&:nth-child(2n)]:border-l sm:[&:nth-child(2n)]:border-ink/10 sm:[&:nth-child(odd)]:pl-0 lg:[&:not(:first-child)]:border-l lg:[&:not(:first-child)]:border-ink/10 lg:[&:nth-child(odd)]:pl-6 lg:first:pr-6 lg:last:pr-0">
-                    <p class="text-base font-medium sm:text-sm">{{ $title }}</p>
-                    <p class="mt-2 text-base text-ink/55 sm:text-sm">{{ $copy }}</p>
-                </div>
-            @endforeach
-        </div>
-    </section>
-
-    <section class="border-t border-ink/10 bg-[#fffefa] py-20 sm:py-28">
-        <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
-            <p class="font-mono text-sm uppercase tracking-wide text-garden">What this looks like in practice</p>
-            <h2 class="mt-4 max-w-[23ch] font-display text-4xl font-semibold tracking-tight text-balance sm:text-5xl">Every feature has a job to do for your business</h2>
-            <div class="mt-12 grid gap-5 md:grid-cols-2">
+            <ol role="list" class="divide-y divide-ink/15">
                 @foreach ([
-                    ['An enquiry arrives after hours', 'The customer receives an acknowledgement, the message stays safely in Sitewell, and your team sees the follow-up waiting for them.', 'forms-and-lead-management'],
-                    ['A key page develops a problem', 'Our specialists identify the affected page, explain the business impact, and manage the work needed to put it right.', 'website-health-monitoring'],
-                    ['A service page is close to page one', 'Our SEO specialist finds what is holding it back and strengthens the page around the opportunity.', 'seo-and-search-growth'],
-                    ['Your website no longer fits', 'Build a new one with Sitewell or bring the one you already value. If you leave later, the website can come with you.', 'website-design-and-management'],
-                ] as [$title, $copy, $slug])
-                    <a href="{{ route('marketing.feature', $slug) }}" class="group rounded-xl bg-paper p-6 ring-1 ring-ink/10 hover:bg-lichen/35 sm:p-8"><p class="font-display text-2xl font-semibold tracking-tight">{{ $title }}</p><p class="mt-4 max-w-[52ch] text-pretty text-base leading-7 text-ink/60 sm:text-sm sm:leading-6">{{ $copy }}</p><p class="mt-6 text-sm font-medium text-garden underline decoration-garden/25 underline-offset-4 group-hover:decoration-garden">See how we manage it →</p></a>
+                    ['Check', 'Website health, broken links and enquiry delivery.'],
+                    ['Prioritise', 'The problems that matter, and the pages worth improving.'],
+                    ['Improve', 'Practical fixes and agreed updates, handled for you.'],
+                    ['Measure', 'A clear weekly report. Search progress tracked on managed SEO plans.'],
+                ] as [$heading, $copy])
+                    <li class="grid grid-cols-[2rem_1fr] gap-x-4 gap-y-2 py-4 first:pt-0 last:pb-0 sm:grid-cols-[2rem_6rem_1fr]">
+                        <p class="font-mono text-base text-garden sm:text-sm">0{{ $loop->iteration }}</p>
+                        <h3 class="font-medium">{{ $heading }}</h3>
+                        <p class="col-start-2 text-pretty text-base text-ink/75 sm:col-start-auto">{{ $copy }}</p>
+                    </li>
                 @endforeach
+            </ol>
+        </div>
+    </section>
+
+    @if (config('marketing.clients'))
+        <section class="py-10 sm:py-12">
+            <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
+                <h2 class="text-base font-medium text-ink/75">Some of the businesses we look after</h2>
+                <ul role="list" class="mt-5 grid gap-x-10 gap-y-5 sm:grid-cols-2 lg:grid-cols-4">
+                    @foreach (config('marketing.clients') as $client)
+                        <li>
+                            <p class="font-display text-xl font-semibold tracking-tight"><a href="{{ $client['url'] }}" class="inline-flex min-h-12 items-center hover:text-garden">{{ $client['name'] }}</a></p>
+                            <p class="text-base text-ink/70 sm:text-sm">{{ $client['sector'] }}</p>
+                        </li>
+                    @endforeach
+                </ul>
+                {{-- TODO: Expand with an approved client screenshot and verified results when available. Do not infer performance claims from the client list. --}}
             </div>
-        </div>
-    </section>
+        </section>
+    @endif
 
-    <section class="border-t border-ink/10 py-20 sm:py-28">
-        <div class="mx-auto grid max-w-7xl gap-12 px-5 sm:px-8 lg:grid-cols-[2fr_3fr] lg:px-10">
-            <div><p class="font-mono text-sm uppercase tracking-wide text-garden">Built around choice</p><h2 class="mt-4 max-w-[20ch] font-display text-4xl font-semibold tracking-tight text-balance sm:text-5xl">Stay for the care, not because your website is trapped</h2></div>
-            <div><p class="max-w-[58ch] text-pretty text-lg leading-8 text-ink/65">Many monthly website packages only work while the subscription continues. Sitewell gives you another option: bring an existing site into the service, or have us create one, with the freedom to take your website with you later.</p><p class="mt-5 max-w-[58ch] text-pretty text-base leading-7 text-ink/55">We will confirm the practical handover details before you get started. Your domain and connected business accounts remain yours.</p><a href="{{ route('marketing.feature', 'website-design-and-management') }}" class="mt-7 inline-flex text-base font-medium text-garden underline decoration-garden/30 underline-offset-4 hover:decoration-garden sm:text-sm">Read about website ownership and care →</a></div>
-        </div>
-    </section>
-
-    <section class="py-20 sm:py-28">
+    <section class="border-t border-ink/10 py-12 sm:py-16">
         <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
-            <div>
-                <p class="font-mono text-sm uppercase tracking-wide text-garden">One dependable rhythm</p>
-                <h2 class="mt-4 max-w-[24ch] font-display text-4xl font-semibold tracking-tight text-balance sm:text-5xl">Capture, care for, improve</h2>
-                <p class="mt-5 max-w-[48ch] text-pretty text-lg text-ink/60 sm:text-base">A website that keeps working after launch captures every enquiry, stays healthy, and keeps improving in search over time.</p>
+            <div class="grid gap-10 lg:grid-cols-[4fr_7fr] lg:items-end">
+                <div>
+                    <h2 class="max-w-[20ch] font-display text-3xl font-semibold tracking-tight text-balance sm:text-4xl">The website.<br>The care.<br>One monthly price.</h2>
+                </div>
+                <p class="max-w-[52ch] text-pretty text-lg leading-8 text-ink/75">A website is included if you need one. £0 upfront, with the build scope agreed before we start. Already have a site? We’ll review it and agree the right setup, including hosting.</p>
             </div>
-            <dl class="mt-14 grid gap-10 lg:grid-cols-3">
-                @foreach ([['01', 'Capture every enquiry', 'We manage your forms, customer acknowledgements, spam protection, and lead inbox so every potential customer gets the attention they deserve.'], ['02', 'Keep the website healthy', 'Our specialists monitor website health and SEO, resolve routine issues, and keep you informed with a clear weekly report.'], ['03', 'Grow search visibility', 'We interpret search performance, identify commercially useful opportunities, and improve the pages most likely to make a difference.']] as [$number, $title, $copy])
-                    <div class="border-t border-ink/15 pt-6">
-                        <dt><p class="font-mono text-base text-garden sm:text-sm">{{ $number }}</p><p class="mt-6 font-display text-2xl font-semibold tracking-tight">{{ $title }}</p></dt>
-                        <dd class="mt-4 max-w-[56ch] text-pretty text-base text-ink/60 sm:text-sm">{{ $copy }}</dd>
+            <div class="mt-8 border-t border-ink/20">
+                @foreach (\App\Support\MembershipPlan::all() as $tier => $plan)
+                    @php
+                        $offer = $tier === 'growth' ? \App\Support\MembershipPlan::activeGrowthOffer() : null;
+                        $summary = match ($tier) {
+                            'essential' => 'Website care, practical fixes and managed enquiries.',
+                            'growth' => 'Essential, plus managed SEO and up to one content improvement a week.',
+                            'complete' => 'Growth, plus up to three content improvements a week and Google Business Profile management.',
+                        };
+                    @endphp
+                    <div class="grid gap-4 border-b border-ink/20 py-6 sm:grid-cols-[1fr_2fr_1fr] sm:gap-10">
+                        <h3 class="font-display text-2xl font-semibold tracking-tight">{{ $plan['name'] }}</h3>
+                        <div>
+                            <p class="max-w-[44ch] text-pretty text-base leading-7 text-ink/75">{{ $summary }}</p>
+                            <p class="mt-2 font-medium"><a href="{{ route('marketing.contact', ['plan' => $tier]) }}" class="inline-flex min-h-12 items-center text-garden underline decoration-garden/30 underline-offset-4 hover:decoration-garden">Discuss {{ $plan['name'] }} →</a></p>
+                        </div>
+                        <div class="sm:text-right">
+                            <p class="font-display text-3xl font-semibold tracking-tight tabular-nums">£{{ $offer['price'] ?? $plan['price'] }}</p>
+                            <p class="mt-1 text-base text-ink/75 sm:text-sm">/month, excl. VAT</p>
+                            @if ($offer)
+                                <p class="mt-2 text-base text-garden sm:text-sm">{{ $offer['discount_percentage'] }}% off £{{ $plan['price'] }} until {{ \Illuminate\Support\Carbon::parse($offer['ends_at'])->format('j F Y') }}</p>
+                            @endif
+                        </div>
                     </div>
                 @endforeach
-            </dl>
+            </div>
+            <div class="mt-6 grid gap-6 text-base leading-7 text-ink/75 lg:grid-cols-2 lg:gap-10">
+                <p class="max-w-[56ch]">Your domain and connected accounts remain yours. Take your website with you if you leave; we confirm handover details before you start.</p>
+                <p class="max-w-[56ch]">One business website per plan. Cancel to stop future renewal, normally at the end of your paid billing period.</p>
+            </div>
+            <p class="mt-3 flex flex-wrap gap-6 font-medium"><a href="{{ route('marketing.pricing') }}" class="inline-flex min-h-12 items-center underline decoration-ink/30 underline-offset-4 hover:decoration-ink">Compare everything included →</a><a href="{{ route('marketing.terms') }}" class="inline-flex min-h-12 items-center underline decoration-ink/30 underline-offset-4 hover:decoration-ink">Read the terms</a></p>
         </div>
     </section>
 
-    <section class="bg-lichen/55 py-20 sm:py-28">
-        <div class="mx-auto grid max-w-7xl gap-12 px-5 sm:px-8 lg:grid-cols-2 lg:items-center lg:px-10">
+    <section class="bg-apricot/35 py-12 sm:py-16">
+        <div class="mx-auto grid max-w-7xl gap-10 px-5 sm:px-8 lg:grid-cols-[4fr_7fr] lg:px-10">
             <div>
-                <p class="font-mono text-sm uppercase tracking-wide text-garden">Everything in one place</p>
-                <h2 class="mt-4 max-w-[24ch] font-display text-4xl font-semibold tracking-tight text-balance sm:text-5xl">A calm control room for your business website</h2>
-                <p class="mt-5 max-w-[48ch] text-pretty text-lg text-ink/60 sm:text-base">You do not need to become a website or SEO expert. Our specialists manage the checks, enquiries, reporting, and improvement work for you.</p>
-                <a href="{{ route('marketing.features') }}" class="mt-7 inline-flex text-base font-medium underline decoration-ink/20 underline-offset-4 hover:decoration-ink sm:text-sm">Explore every feature →</a>
+                <h2 class="font-display text-3xl font-semibold tracking-tight sm:text-4xl">Hi, I’m Ross.</h2>
+                <p class="mt-3 text-base text-ink/75">The person behind Sitewell. UK based.</p>
+                {{-- TODO: Add a genuine photograph of Ross when supplied. Confirm years of experience and exact business location before publishing those details. --}}
             </div>
-            <div class="grid gap-4">
-                @foreach ([['Forms & CRM', 'Managed submissions, spam review, customer replies, and follow-ups.'], ['Website & SEO care', 'Specialist monitoring, clear reporting, and practical fixes.'], ['Search growth', 'Commercial keyword opportunities and page improvements managed for you.'], ['Local presence', 'Specialist Google Business Profile management on the Complete plan.']] as [$title, $copy])
-                    <div class="grid grid-cols-[7rem_1fr] gap-4 border-t border-ink/15 pt-4"><p class="font-mono text-base text-garden sm:text-sm">{{ $title }}</p><p class="text-pretty text-base text-ink/65 sm:text-sm">{{ $copy }}</p></div>
-                @endforeach
+            <div>
+                <p class="max-w-[44ch] font-display text-2xl font-semibold tracking-tight text-pretty">I started Sitewell because launching a website should be the start of looking after it.</p>
+                <p class="mt-4 max-w-[52ch] text-pretty text-base leading-7 text-ink/75">The software helps us keep track. The service is about doing the work, keeping you informed and being there when you need to talk.</p>
+                <div class="mt-6 flex flex-wrap items-center gap-6 font-medium">
+                    <a href="{{ config('marketing.booking_url') }}" class="inline-flex min-h-12 items-center rounded-md border border-ink/30 px-4 py-3 hover:bg-paper/50">Book a call with Ross →</a>
+                    <a href="tel:+441302985828" class="inline-flex min-h-12 items-center tabular-nums underline decoration-ink/30 underline-offset-4 hover:decoration-ink">01302 985 828</a>
+                </div>
             </div>
         </div>
     </section>
 
-    <x-marketing.cta />
+    {{-- TODO: Add a genuine, approved customer quote when available; no testimonial or ranking results have been invented. --}}
+    <section class="py-10 sm:py-12">
+        <div class="mx-auto flex max-w-7xl flex-col gap-5 px-5 sm:px-8 md:flex-row md:items-center md:justify-between lg:px-10">
+            <h2 class="max-w-[30ch] font-display text-2xl font-semibold tracking-tight text-balance sm:text-3xl">Start with a look at your website.</h2>
+            <p class="font-medium"><a href="{{ route('marketing.free-site-audit') }}" class="inline-flex min-h-12 items-center underline decoration-ink/30 underline-offset-4 hover:decoration-ink">Get your free website audit →</a></p>
+        </div>
+    </section>
 @endsection

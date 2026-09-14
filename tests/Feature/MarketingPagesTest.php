@@ -195,8 +195,8 @@ it('features the product video and contact call to action on the home page', fun
     $this->get(route('marketing.home'))
         ->assertSuccessful()
         ->assertSee('https://www.loom.com/embed/d406218f4a2843f7a7d8abbf804f2ba6')
-        ->assertSee('A closer look at calmer website care')
-        ->assertSee('Let’s make your website work harder for your business')
+        ->assertSee('See the work.')
+        ->assertSee('Talk to us about your website')
         ->assertSee('href="'.route('marketing.contact').'"', false);
 });
 
@@ -212,7 +212,7 @@ it('shows the selected service hero without illustrative dashboard data', functi
         ->assertDontSee('/commercial-electrician');
 });
 
-it('keeps one hero and removes comparison scaffolding after selection', function (): void {
+it('keeps one selected hero without comparison scaffolding', function (): void {
     $response = $this->get(route('marketing.home'))
         ->assertSuccessful()
         ->assertDontSee('data-uidotsh-pick', false)
@@ -225,7 +225,8 @@ it('keeps one hero and removes comparison scaffolding after selection', function
 it('features the local UK phone call to action on the home page', function (): void {
     $this->get(route('marketing.home'))
         ->assertSuccessful()
-        ->assertSee('We’re a local, UK-based company')
+        ->assertSee('Hi, I’m Ross.')
+        ->assertSee('The person behind Sitewell. UK based.')
         ->assertSee('01302 985 828')
         ->assertSee('href="tel:+441302985828"', false);
 });
@@ -350,7 +351,7 @@ it('makes website portability a core marketing promise', function (): void {
         ->assertSuccessful()
         ->assertSee('Bring your website')
         ->assertSee('Take it with you')
-        ->assertSee('Stay for the care, not because your website is trapped');
+        ->assertSee('we confirm handover details before you start.');
 
     $this->get(route('marketing.feature', 'website-design-and-management'))
         ->assertSuccessful()
@@ -472,4 +473,53 @@ it('rejects incomplete and automated get started enquiries', function (): void {
         ->assertSessionHasErrors(['name', 'email', 'website', 'goals', '_sitewell_check']);
 
     Mail::assertNothingOutgoing();
+});
+
+it('keeps the selected light video layout with one accessible player', function (): void {
+    $response = $this->get(route('marketing.home'))
+        ->assertSuccessful()
+        ->assertSee('A look inside Sitewell')
+        ->assertSee('The Sitewell walkthrough')
+        ->assertSee('title="See how Sitewell looks after your website"', false)
+        ->assertSee('loading="lazy"', false)
+        ->assertSee('allowfullscreen', false)
+        ->assertSee('href="'.route('marketing.contact').'"', false)
+        ->assertDontSee('Your website.<br>The work behind it.', false)
+        ->assertDontSee('https://ui.sh/ui-picker.js');
+
+    expect(substr_count($response->getContent(), 'src="https://www.loom.com/embed/d406218f4a2843f7a7d8abbf804f2ba6"'))->toBe(1);
+});
+
+it('shows real clients and current plan prices on the focused homepage', function (): void {
+    $this->travelTo('2026-09-14 12:00:00 Europe/London');
+    config(['memberships.plans.essential.price' => 159, 'memberships.growth_offer.price' => 320]);
+
+    $response = $this->get(route('marketing.home'))
+        ->assertSuccessful()
+        ->assertSee('£159')
+        ->assertSee('£320')
+        ->assertSee('20% off £395 until 31 December 2026')
+        ->assertSee('href="'.config('marketing.booking_url').'"', false)
+        ->assertSee('href="'.route('marketing.free-site-audit').'"', false)
+        ->assertSee('href="'.route('marketing.terms').'"', false)
+        ->assertDontSee('Every feature has a job to do for your business')
+        ->assertDontSee('A calm control room for your business website');
+
+    foreach (config('marketing.clients') as $client) {
+        $response->assertSee($client['name'])->assertSee('href="'.$client['url'].'"', false);
+    }
+
+    foreach (config('memberships.plans') as $tier => $plan) {
+        $response->assertSee($plan['name'])->assertSee('href="'.route('marketing.contact', ['plan' => $tier]).'"', false);
+    }
+});
+
+it('returns to standard homepage pricing after the growth offer expires', function (): void {
+    $this->travelTo('2027-01-01 12:00:00 Europe/London');
+
+    $this->get(route('marketing.home'))
+        ->assertSuccessful()
+        ->assertSee('£'.config('memberships.plans.growth.price'))
+        ->assertDontSee('20% off')
+        ->assertDontSee('£'.config('memberships.growth_offer.price'));
 });
