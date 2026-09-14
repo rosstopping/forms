@@ -35,6 +35,7 @@ it('shows journal articles and returns not found for unknown slugs', function ()
         ->assertSee('Website maintenance is more than hosting and renewals')
         ->assertSee('Run a free website audit')
         ->assertSee('href="'.route('marketing.free-site-audit').'"', false)
+        ->assertSee('href="'.route('marketing.landing', 'website-maintenance-packages').'"', false)
         ->assertSee('href="'.route('marketing.pricing').'"', false)
         ->assertSee('href="'.route('marketing.article', 'forms-that-never-lose-a-lead').'"', false)
         ->assertSee('href="'.route('marketing.article', 'search-data-to-content-decisions').'"', false);
@@ -43,6 +44,12 @@ it('shows journal articles and returns not found for unknown slugs', function ()
         ->assertSuccessful()
         ->assertSee('A clean website handover is the start of good care')
         ->assertSee('Give one team the complete picture');
+
+    $this->get(route('marketing.article', 'search-data-to-content-decisions'))
+        ->assertSuccessful()
+        ->assertSee('Turn search data into the next useful improvement')
+        ->assertSee('href="'.route('marketing.landing', 'seo-for-small-businesses').'"', false)
+        ->assertSee('href="'.route('marketing.landing', 'managed-seo-services').'"', false);
 
     $this->get(route('marketing.article', 'missing-article'))->assertNotFound();
 });
@@ -68,6 +75,8 @@ it('outputs canonical URLs for key marketing pages', function (string $routeName
     'terms of service' => ['marketing.terms'],
     'journal article' => ['marketing.article', ['a-clean-website-handover']],
     'website management landing page' => ['marketing.landing', ['website-management-services']],
+    'website maintenance landing page' => ['marketing.landing', ['website-maintenance-packages']],
+    'small business SEO landing page' => ['marketing.landing', ['seo-for-small-businesses']],
 ]);
 
 it('uses shorter SEO page titles for flagged marketing pages', function (string $routeName, array $parameters, string $title): void {
@@ -114,8 +123,10 @@ it('publishes an XML sitemap for the marketing site', function (): void {
         ->assertSee('<loc>'.route('marketing.feature', 'website-design-and-management').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.feature', 'forms-and-lead-management').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.landing', 'website-management-services').'</loc>', false)
+        ->assertSee('<loc>'.route('marketing.landing', 'website-maintenance-packages').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.landing', 'small-business-website-support').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.landing', 'managed-seo-services').'</loc>', false)
+        ->assertSee('<loc>'.route('marketing.landing', 'seo-for-small-businesses').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.landing', 'website-lead-generation').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.landing', 'improve-my-website').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.pricing').'</loc>', false)
@@ -283,15 +294,17 @@ it('publishes search-led service landing pages with unique metadata and FAQ sche
         ->assertSee($heading)
         ->assertSee('application/ld+json')
         ->assertSee('FAQPage')
-        ->assertSee('Get started')
+        ->assertSee('Start your free website audit')
         ->assertSee('Related help');
 
     expect(strlen($title.' · Your website, well looked after'))->toBeLessThanOrEqual(65)
         ->and(strlen($landing['meta_description']))->toBeLessThanOrEqual(160);
 })->with([
     'website management' => ['website-management-services', 'Website management services UK', 'Your business website, managed by specialists'],
+    'website maintenance' => ['website-maintenance-packages', 'Website maintenance packages', 'Ongoing website maintenance for small businesses'],
     'small business support' => ['small-business-website-support', 'Small business website support', 'Website support without chasing three different suppliers'],
     'managed SEO' => ['managed-seo-services', 'Managed SEO services UK', 'SEO analysis that becomes useful website work'],
+    'small business SEO' => ['seo-for-small-businesses', 'SEO for small businesses UK', 'Affordable small business SEO that keeps moving'],
     'website leads' => ['website-lead-generation', 'Get more website leads', 'Help more of the right visitors become genuine enquiries'],
     'website improvement' => ['improve-my-website', 'Improve my business website', 'Make the website you already have work harder'],
 ]);
