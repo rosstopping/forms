@@ -17,23 +17,26 @@
 @endsection
 
 @section('content')
-    <section class="overflow-hidden py-16 sm:py-24">
+    <section class="bg-moss py-14 text-paper sm:py-20">
         <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
-            <div class="grid gap-10 lg:grid-cols-[7fr_5fr] lg:items-end">
+            <p class="font-mono text-base text-paper/80 sm:text-sm">UK website management &amp; SEO</p>
+            <div class="mt-6 grid gap-12 lg:grid-cols-[7fr_4fr] lg:items-end">
                 <div>
-                    <p class="font-mono text-sm uppercase tracking-wide text-garden">Website management for UK small businesses</p>
-                    <h1 class="mt-5 max-w-[18ch] font-display text-5xl font-semibold tracking-tight text-balance sm:text-6xl lg:text-7xl">Ongoing website management and SEO for UK small businesses</h1>
+                    <h1 class="max-w-[17ch] font-display text-5xl font-semibold tracking-tight text-balance sm:text-6xl lg:text-7xl">Your website,<br>properly looked after.</h1>
+                    <p class="mt-6 max-w-[32ch] font-display text-2xl tracking-tight text-apricot sm:text-3xl">We do the work. You get on with business.</p>
                 </div>
                 <div>
-                    <p class="max-w-[52ch] text-pretty text-lg text-ink/65 sm:text-base">If your website helps bring in enquiries, it needs more than hosting and the occasional update. Sitewell gives you one specialist team to look after the website, improve its visibility, and keep it working for the business over time.</p>
-                    <div class="mt-8 flex flex-wrap items-center gap-5">
-                        <a href="{{ route('marketing.free-site-audit') }}" class="rounded-md bg-garden px-4 py-3 text-base font-medium text-white ring-1 ring-garden hover:bg-moss focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden sm:text-sm">Start your free website audit</a>
-                        <a href="{{ route('marketing.landing', 'website-management-services') }}" class="text-base font-medium text-ink underline decoration-ink/20 underline-offset-4 hover:decoration-ink sm:text-sm">Explore website management services →</a>
+                    <p class="max-w-[40ch] text-pretty text-lg leading-8 text-paper/90">We manage your website, SEO and enquiries every week — fixing problems, improving pages and making sure your website keeps doing its job.</p>
+                    <div class="mt-7 flex flex-wrap items-center gap-6 font-medium">
+                        <a href="{{ route('marketing.how-it-works') }}" class="inline-flex min-h-12 items-center gap-5 rounded-md bg-paper px-4 py-3 text-ink hover:bg-lichen focus-visible:outline-paper">See how it works <span aria-hidden="true">→</span></a>
+                        <a href="{{ route('marketing.contact') }}" class="inline-flex min-h-12 items-center underline decoration-paper/40 underline-offset-4 hover:decoration-paper">Talk to us</a>
                     </div>
-                    <p class="mt-4 max-w-[48ch] text-pretty text-sm text-ink/55">Start with a free website audit to see what needs attention first, then decide whether improving the existing site or handing over the ongoing management is the better next step.</p>
                 </div>
             </div>
-            <div class="mt-12 lg:mt-16"><x-marketing.product-preview /></div>
+            <div class="mt-10 flex flex-col gap-3 border-t border-paper/25 pt-6 sm:mt-12 sm:flex-row sm:items-baseline sm:justify-between">
+                <p class="font-medium">Website included. £0 upfront.</p>
+                <p class="max-w-[52ch] text-pretty text-base text-paper/80 sm:text-right sm:text-sm">Care from £{{ config('memberships.plans.essential.price') }}/month, excl. VAT. Managed SEO on Growth and Complete.</p>
+            </div>
         </div>
     </section>
 

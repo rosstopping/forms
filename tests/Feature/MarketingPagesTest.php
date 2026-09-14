@@ -10,7 +10,7 @@ it('shows each public marketing page', function (string $route, string $copy): v
         ->assertSee('Sitewell')
         ->assertSee($copy);
 })->with([
-    'home' => ['marketing.home', 'A website that keeps working after launch'],
+    'home' => ['marketing.home', 'properly looked after.'],
     'how it works' => ['marketing.how-it-works', 'Your website and SEO, managed by specialists'],
     'features' => ['marketing.features', 'Specialist website and SEO management, all in one place'],
     'pricing' => ['marketing.pricing', 'Everything your website needs to work harder'],
@@ -189,25 +189,26 @@ it('features the product video and contact call to action on the home page', fun
         ->assertSee('href="'.route('marketing.contact').'"', false);
 });
 
-it('shows an illustrative search trend and completed SEO improvement in the hero', function (): void {
+it('shows the selected service hero without illustrative dashboard data', function (): void {
     $this->get(route('marketing.home'))
         ->assertSuccessful()
-        ->assertSee('Search performance')
-        ->assertSee('Last 30 days · Illustrative data')
-        ->assertSee('Clicks')
-        ->assertSee('Impressions')
-        ->assertSee('SEO amendment actioned')
-        ->assertSee('/commercial-electrician')
-        ->assertSee('Managed and published by your Sitewell specialist');
+        ->assertSee('properly looked after.')
+        ->assertSee('We do the work. You get on with business.')
+        ->assertSee('Website included. £0 upfront.')
+        ->assertSee('href="'.route('marketing.how-it-works').'"', false)
+        ->assertSee('href="'.route('marketing.contact').'"', false)
+        ->assertDontSee('Last 30 days · Illustrative data')
+        ->assertDontSee('/commercial-electrician');
 });
 
-it('uses the wide editorial hero layout without picker scaffolding', function (): void {
-    $this->get(route('marketing.home'))
+it('keeps one hero and removes comparison scaffolding after selection', function (): void {
+    $response = $this->get(route('marketing.home'))
         ->assertSuccessful()
-        ->assertSee('lg:grid-cols-[7fr_5fr]', false)
         ->assertDontSee('data-uidotsh-pick', false)
         ->assertDontSee('data-uidotsh-option', false)
         ->assertDontSee('https://ui.sh/ui-picker.js');
+
+    expect(substr_count($response->getContent(), '<h1'))->toBe(1);
 });
 
 it('features the local UK phone call to action on the home page', function (): void {
