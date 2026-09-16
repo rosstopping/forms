@@ -48,6 +48,7 @@
                         ['small-business-website-support', 'Small business website support', 'Get dependable help with updates, problems and ongoing website decisions.'],
                         ['managed-seo-services', 'Managed SEO services', 'Turn search performance into stronger pages and useful new content.'],
                         ['seo-for-small-businesses', 'SEO for small businesses', 'Focus affordable ongoing SEO work on the pages and searches most likely to matter.'],
+                        ['local-seo-services', 'Local SEO services', 'Improve visibility with local page optimisation, stronger Google signals and practical content updates.'],
                         ['website-lead-generation', 'Get more website leads', 'Improve the path from relevant visitor to visible, followed-up enquiry.'],
                         ['improve-my-website', 'Improve my website', 'Find and prioritise the changes most likely to make your existing website work harder.'],
                     ] as [$slug, $title, $description])
