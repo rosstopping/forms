@@ -3,6 +3,7 @@ paths:
   - app/Services/WebsiteCrawler.php
   - 'app/Services/Pixel*.php'
   - 'app/Services/{SitemapFetcher,ProspectWebsiteAnalyzer,WebsiteHealthAuditor}.php'
+  - 'app/Services/WeeklyReport*.php'
 ---
 
 # Services
@@ -15,3 +16,6 @@ Cache Pixel payload changes by website id, monotonic pixel_payload_version, and 
 
 ## Follow bounded same-host sitemap redirects
 Public and website-health sitemap availability checks use SitemapFetcher and evaluate the final HTTP response. Follow at most five HTTP(S) redirects on the original host/port; resolve relative Location values, stop loops, and reject credential-bearing or cross-host targets. Keep homepage/page redirect reporting unchanged; do not globally enable redirects on audit requests.
+
+## Append verified AI Visibility facts to the shared Weekly Overview
+WeeklyReportBuilder includes AI Visibility only from persisted observations. WeeklyReportGenerator appends its computed AI summary verbatim and excludes that topic from the narrative writer, rejecting generated AI-platform claims. Reuse the frozen overview in the existing weekly email; do not generate visibility checks while building or rendering reports.

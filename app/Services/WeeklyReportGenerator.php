@@ -31,21 +31,24 @@ class WeeklyReportGenerator
                 $report = WeeklyReport::query()->create([...$key, 'snapshot' => $snapshot, 'recommended_priority' => $priority]);
             }
             $snapshot = $report->snapshot;
-            $facts = collect($snapshot['sections'])->pluck('summary')->all();
+            $facts = collect($snapshot['sections'])->except('ai_visibility')->pluck('summary')->all();
             $workCount = count($snapshot['completed_work']);
             $work = $workCount === 0 ? 'No completed Sitewell work was recorded during this period.' : 'Sitewell recorded '.$workCount.' completed work items: '.collect($snapshot['completed_work'])->take(3)->pluck('title')->implode('; ').'.';
             $next = $report->recommended_priority ? 'Priority for next week: '.$report->recommended_priority['title'].'. '.$report->recommended_priority['reason'] : 'There is not enough evidence to recommend a specific next priority yet.';
             $overview = implode("\n\n", [...$facts, $work]);
             $source = 'deterministic';
             try {
-                $response = $this->writer->prompt(json_encode(['reporting_period' => $snapshot['reporting_period'], 'facts' => $facts, 'completed_work' => $work, 'recommended_priority' => $next], JSON_THROW_ON_ERROR), provider: Lab::OpenAI, timeout: 30);
+                $response = $this->writer->prompt(json_encode(['reporting_period' => $snapshot['reporting_period'], 'facts' => $facts, 'completed_work' => $work, 'recommended_priority' => ($report->recommended_priority['source'] ?? null) === 'ai_visibility' ? 'Sitewell will append the next priority separately.' : $next, 'excluded_topic' => 'Do not discuss AI Visibility or AI platforms. Sitewell appends its verified visibility summary separately.'], JSON_THROW_ON_ERROR), provider: Lab::OpenAI, timeout: 30);
                 $text = trim($response->text);
-                if ($text !== '' && mb_strlen($text) <= 2500 && ! preg_match('/https?:\/\//i', $text)) {
+                if ($text !== '' && mb_strlen($text) <= 2500 && ! preg_match('/https?:\/\//i', $text) && ! preg_match('/\b(?:ai|artificial intelligence|openai|chatgpt|gemini|perplexity)\b/iu', $text)) {
                     $overview = $text;
                     $source = 'ai';
                 }
             } catch (Throwable $exception) {
                 report($exception);
+            }
+            if (isset($snapshot['ai_visibility'])) {
+                $overview .= "\n\nAI Visibility: ".$snapshot['ai_visibility']['summary'];
             }
             $report->update(['overview' => $overview."\n\n".$next, 'narrative_source' => $source, 'generated_at' => now()]);
 

@@ -6,6 +6,7 @@ use App\Models\WebsiteRepository;
 use App\Models\WordpressStaticRelease;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
+use Sitewell\StaticFrontend\StaticArtifactValidator;
 use Throwable;
 use ZipArchive;
 
@@ -18,9 +19,9 @@ class WordPressStaticReleaseBuilder
     private const MAX_FILES = 10000;
 
     private const ALLOWED_EXTENSIONS = [
-        'avif', 'css', 'gif', 'htm', 'html', 'ico', 'jpeg', 'jpg', 'js', 'json', 'map',
-        'mp3', 'mp4', 'ogg', 'pdf', 'png', 'svg', 'ttf', 'txt', 'webm', 'webmanifest',
-        'webp', 'woff', 'woff2', 'xml',
+        'avif', 'css', 'eot', 'gif', 'htm', 'html', 'ico', 'jpeg', 'jpg', 'js', 'json', 'map',
+        'mp3', 'mp4', 'ogg', 'otf', 'pdf', 'png', 'svg', 'ttf', 'txt', 'webm', 'webmanifest',
+        'webp', 'woff', 'woff2', 'xml', 'xsl',
     ];
 
     public function __construct(private GithubAppClient $github) {}
@@ -113,6 +114,7 @@ class WordPressStaticReleaseBuilder
         $files = 0;
         $bytes = 0;
         $hasIndex = false;
+        $paths = [];
 
         try {
             for ($index = 0; $index < $source->numFiles; $index++) {
@@ -134,6 +136,10 @@ class WordPressStaticReleaseBuilder
                     continue;
                 }
 
+                if (isset($paths[strtolower($relativeName)])) {
+                    throw new RuntimeException('The static artifact contains duplicate paths.');
+                }
+                $paths[strtolower($relativeName)] = $relativeName;
                 $stat = $source->statIndex($index);
 
                 if (! is_array($stat) || $bytes + $stat['size'] > self::MAX_EXTRACTED_BYTES) {
@@ -172,6 +178,15 @@ class WordPressStaticReleaseBuilder
         } finally {
             $source->close();
             $destination->close();
+        }
+
+        require_once base_path('wordpress-plugin/sitewell-by-digizu/src/StaticArtifactValidator.php');
+        $packaged = new ZipArchive;
+        $packaged->open($releasePath);
+        try {
+            (new StaticArtifactValidator)->validate(array_values($paths), fn (string $path): string|false => $packaged->getFromName($path));
+        } finally {
+            $packaged->close();
         }
     }
 
@@ -224,6 +239,6 @@ class WordPressStaticReleaseBuilder
             return false;
         }
 
-        return in_array(strtolower(pathinfo($path, PATHINFO_EXTENSION)), self::ALLOWED_EXTENSIONS, true);
+        return $path === '_headers' || in_array(strtolower(pathinfo($path, PATHINFO_EXTENSION)), self::ALLOWED_EXTENSIONS, true);
     }
 }

@@ -32,6 +32,11 @@
 
         <x-weekly-overview :report="$weeklyOverview" :history="$weeklyHistory" />
 
+        <section class="flex flex-col justify-between gap-4 rounded-xl border border-slate-200 bg-white p-6 sm:flex-row sm:items-center" aria-labelledby="ai-visibility-summary">
+            <div><h2 id="ai-visibility-summary" class="text-sm font-semibold text-slate-950">AI Visibility</h2><p class="mt-2 text-3xl font-semibold tabular-nums text-slate-950">{{ $aiVisibility['score'] === null ? '—' : $aiVisibility['score'].'%' }}</p><p class="mt-2 text-sm text-slate-600">@if ($aiVisibility['completed_checks']){{ $aiVisibility['brand_appearances'] }} of {{ $aiVisibility['completed_checks'] }} tracked AI checks mentioned your business in the last 7 days.@else Start tracking how AI platforms recommend your business.@endif</p>@if ($aiVisibility['comparable'])<p class="mt-1 text-xs text-slate-500">Previously {{ $aiVisibility['previous_score'] }}% in the preceding 7 days.</p>@endif</div>
+            <a href="{{ route('admin.ai-visibility.index', $website) }}" class="text-sm font-semibold text-teal-700 hover:text-teal-900">View AI Visibility →</a>
+        </section>
+
         @if ($isTrialActive)
             <section class="overflow-hidden rounded-2xl bg-slate-950 text-white shadow-lg shadow-slate-950/10" aria-labelledby="onboarding-heading">
                 <div class="grid gap-8 p-6 sm:p-8 lg:grid-cols-[minmax(0,1.25fr)_minmax(20rem,0.75fr)] lg:items-center">

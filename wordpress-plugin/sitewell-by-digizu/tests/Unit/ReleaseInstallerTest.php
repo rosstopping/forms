@@ -113,6 +113,16 @@ final class ReleaseInstallerTest extends TestCase {
 	 * @param  array<string, string>  $files
 	 */
 	private function archive( array $files ): string {
+		$files  += [
+			'static-build-manifest.json' => json_encode(
+				[
+					'version' => 1,
+					'pages'   => 1,
+					'assets'  => [],
+				]
+			),
+			'_headers'                   => '/',
+		];
 		$path    = $this->directory . '/release-' . count( glob( $this->directory . '/*.zip' ) ) . '.zip';
 		$archive = new ZipArchive();
 		$archive->open( $path, ZipArchive::CREATE | ZipArchive::OVERWRITE );

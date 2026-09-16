@@ -4,7 +4,7 @@ use Illuminate\Filesystem\Filesystem;
 use Symfony\Component\Process\Process;
 
 /** @return array{body: string, headers: array<string, string>, status: int, cache_disabled: bool} */
-function wordpressStaticResponse(string $uri, string $method = 'GET', bool $enabled = true): array
+function wordpressStaticResponse(string $uri, string $method = 'GET', bool $enabled = true, bool $has404 = true): array
 {
     $directory = sys_get_temp_dir().'/sitewell-routing-'.bin2hex(random_bytes(8));
     mkdir($directory);
@@ -43,6 +43,8 @@ namespace {
     $zip = new \ZipArchive;
     $zip->open($archivePath, \ZipArchive::CREATE);
     foreach ([
+        'static-build-manifest.json' => json_encode(['version' => 1, 'pages' => 1, 'assets' => []]),
+        '_headers' => '/',
         'index.html' => '<h1>Home</h1>',
         'plumbing/index.html' => '<section class="hero"><h1>Plumbing Work in Doncaster</h1></section>',
         'assets/site.css' => 'body{color:teal}',
@@ -50,7 +52,7 @@ namespace {
         'robots.txt' => "User-agent: *\nSitemap: https://rowglo.co.uk/sitemap.xml\n",
         '404.html' => '<h1>Not found</h1>',
     ] as $name => $contents) {
-        $zip->addFromString($name, $contents);
+        if ($name !== '404.html' || $argv[6] === '1') { $zip->addFromString($name, $contents); }
     }
     $zip->close();
     (new \Sitewell\StaticFrontend\ReleaseInstaller($argv[2].'/releases'))->install([
@@ -79,7 +81,7 @@ namespace {
 }
 SCRIPT;
     try {
-        $process = new Process([PHP_BINARY, '-r', $script, $pluginPath, $directory, $uri, $method, $enabled ? '1' : '0']);
+        $process = new Process([PHP_BINARY, '-r', $script, $pluginPath, $directory, $uri, $method, $enabled ? '1' : '0', $has404 ? '1' : '0']);
         $process->mustRun();
 
         return json_decode($process->getOutput(), true, flags: JSON_THROW_ON_ERROR);
@@ -129,3 +131,9 @@ it('preserves WordPress operational requests and disabled sites', function (stri
     'POST' => ['/contact/', 'POST', true],
     'disabled' => ['/sitemap.xml', 'GET', false],
 ]);
+
+it('returns a genuine static 404 even without a custom error page', function (): void {
+    $response = wordpressStaticResponse('/wp-content/fonts/google/missing.ttf', has404: false);
+    expect($response['status'])->toBe(404)->and($response['body'])->toBe('')
+        ->and($response['headers']['Cache-Control'])->toContain('no-store');
+});

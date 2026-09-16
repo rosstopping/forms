@@ -8,10 +8,13 @@
 <p>{{ $paragraph }}</p>
 @endforeach
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
-@foreach (array_slice($weeklyOverview->snapshot['metric_cards'] ?? [], 0, 6) as $metric)
+@foreach (array_slice($weeklyOverview->snapshot['metric_cards'] ?? [], 0, 7) as $metric)
 <tr><td style="padding:6px 0;">{{ $metric['label'] }}</td><td style="padding:6px 0;text-align:right;">{{ $metric['current'] === null ? 'Unavailable' : number_format($metric['current'], 1) }}@if ($metric['change'] !== null) ({{ $metric['change'] > 0 ? '+' : '' }}{{ $metric['change'] }})@endif</td></tr>
 @endforeach
 </table>
+@if (data_get($weeklyOverview->snapshot, 'ai_visibility'))
+<p><a href="{{ route('admin.ai-visibility.index', $website) }}">Explore AI Visibility</a></p>
+@endif
 @if (data_get($weeklyOverview->snapshot, 'search_console.period'))
 <p style="color:#59685f;font-size:12px;">Search data: {{ data_get($weeklyOverview->snapshot, 'search_console.period.start') }}–{{ data_get($weeklyOverview->snapshot, 'search_console.period.end') }}, compared with {{ data_get($weeklyOverview->snapshot, 'search_console.period.comparison_start') }}–{{ data_get($weeklyOverview->snapshot, 'search_console.period.comparison_end') }}. This allows for Google’s reporting delay.</p>
 @endif

@@ -28,6 +28,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        RateLimiter::for('ai-visibility', fn ($job) => Limit::perMinute(max(1, (int) config('ai_visibility.checks_per_minute')))->by('ai-visibility:'.$job->result->provider));
+
         Gate::define('access-outreach', fn ($user): bool => $user->isAdmin());
         RateLimiter::for('website-audits', function (Request $request): array {
             $websiteUrl = Str::lower(trim((string) $request->input('website_url')));

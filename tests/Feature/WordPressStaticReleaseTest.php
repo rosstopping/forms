@@ -82,6 +82,8 @@ it('packages the configured repository path as a flat verified static release', 
     ]);
     $sourceArchive = githubArchive([
         'README.md' => 'Ignored',
+        'dist/static-build-manifest.json' => json_encode(['version' => 1, 'pages' => 1, 'assets' => []]),
+        'dist/_headers' => '/\n  Cache-Control: public, max-age=0, must-revalidate',
         'dist/index.html' => '<h1>Live website</h1>',
         'dist/assets/site.css' => 'body { color: navy; }',
         'dist/.htaccess' => 'Deny from all',
@@ -237,4 +239,17 @@ it('notifies the connected WordPress site when a release is ready', function ():
     Http::assertSent(fn (Request $request): bool => $request->url() === 'https://93.184.216.34/wp-json/sitewell-static-frontend/v1/deploy'
         && $request->hasHeader('Authorization', 'Bearer '.$connection->webhook_secret)
         && $request['release_id'] === $release->public_id);
+});
+
+it('rejects source exports when build selection was left unconfigured', function (): void {
+    Storage::fake('local');
+    [, $website, $repository] = connectedWordpressReleaseWebsite();
+    $release = WordpressStaticRelease::factory()->for($website)->create(['status' => 'queued']);
+    mock(GithubAppClient::class)->shouldReceive('repositoryArchive')->once()->andReturn([
+        'commit_sha' => str_repeat('a', 40),
+        'archive' => githubArchive(['index.html' => '<h1>Unoptimized source</h1>']),
+    ]);
+    expect(fn () => app(WordPressStaticReleaseBuilder::class)->build($release, $repository))
+        ->toThrow(RuntimeException::class, 'repository source is not deployable');
+    expect(Storage::disk('local')->allFiles())->toBe([]);
 });

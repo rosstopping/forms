@@ -36,7 +36,7 @@ final class Plugin {
 		$releasesPath             = defined( 'SITEWELL_STATIC_FRONTEND_RELEASES_PATH' )
 			? (string) SITEWELL_STATIC_FRONTEND_RELEASES_PATH
 			: rtrim( (string) ( $uploads['basedir'] ?? '' ), '/\\' ) . '/sitewell-static-frontend/releases';
-		$this->deployments        = new DeploymentManager( $client, new ReleaseInstaller( $releasesPath ) );
+		$this->deployments        = new DeploymentManager( $client, new ReleaseInstaller( $releasesPath, defined( 'SITEWELL_STATIC_FRONTEND_PUBLIC_PATH' ) ? (string) SITEWELL_STATIC_FRONTEND_PUBLIC_PATH : null ) );
 		$this->deploymentEndpoint = new DeploymentEndpoint( $this->deployments );
 		$this->connectionActions  = new ConnectionActions( $client, $this->deployments );
 	}

@@ -13,6 +13,7 @@ class WebsiteNavigation
         'health',
         'search',
         'seo',
+        'ai-visibility',
         'content',
         'wordpress',
         'pixel',
@@ -39,6 +40,7 @@ class WebsiteNavigation
         return match (true) {
             $request->routeIs('admin.website-health-reports.*', 'admin.website-health-report-pages.*') => 'health',
             $request->routeIs('admin.search-console.*', 'admin.search-opportunities.*') => 'search',
+            $request->routeIs('admin.ai-visibility.*') => 'ai-visibility',
             $request->routeIs('admin.seo-*') => 'seo',
             $request->routeIs('admin.forms.*') => 'forms',
             $request->routeIs('admin.form-submissions.*') => 'leads',

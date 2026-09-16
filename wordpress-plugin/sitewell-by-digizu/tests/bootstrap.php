@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 if ( ! defined( 'SITEWELL_STATIC_FRONTEND_VERSION' ) ) {
-	define( 'SITEWELL_STATIC_FRONTEND_VERSION', '1.0.1' );
+	define( 'SITEWELL_STATIC_FRONTEND_VERSION', '1.0.2' );
 }
 
 if ( ! class_exists( 'WP_Error' ) ) {
@@ -88,6 +88,8 @@ function wp_remote_retrieve_body( array $response ): string {
 
 require_once dirname( __DIR__ ) . '/src/Contracts/StaticRootProvider.php';
 require_once dirname( __DIR__ ) . '/src/Admin/SettingsPage.php';
+require_once dirname( __DIR__ ) . '/src/StaticArtifactValidator.php';
+require_once dirname( __DIR__ ) . '/src/StaticPublisher.php';
 require_once dirname( __DIR__ ) . '/src/ReleaseInstaller.php';
 require_once dirname( __DIR__ ) . '/src/ActiveStaticRootProvider.php';
 require_once dirname( __DIR__ ) . '/src/ResolvedStaticFile.php';

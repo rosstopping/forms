@@ -4,7 +4,7 @@ it('shows the Sitewell WordPress plugin download page', function (): void {
     $this->get(route('marketing.wordpress'))
         ->assertSuccessful()
         ->assertSee('Sitewell by Digizu')
-        ->assertSee('Version 1.0.1')
+        ->assertSee('Version 1.0.2')
         ->assertSee('SHA-256')
         ->assertSee(route('marketing.wordpress.download'))
         ->assertSee('sitewell@digizu.co.uk');

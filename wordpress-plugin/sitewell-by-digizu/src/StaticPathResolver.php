@@ -10,6 +10,9 @@ final class StaticPathResolver {
 	 * @var array<string, string>
 	 */
 	private const CONTENT_TYPES = [
+		'eot'         => 'application/vnd.ms-fontobject',
+		'otf'         => 'font/otf',
+		'xsl'         => 'application/xml; charset=UTF-8',
 		'avif'        => 'image/avif',
 		'css'         => 'text/css; charset=UTF-8',
 		'gif'         => 'image/gif',

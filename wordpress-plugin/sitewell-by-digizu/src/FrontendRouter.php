@@ -40,12 +40,8 @@ final class FrontendRouter {
 		$this->preparedStatus = $this->preparedFile === null ? 404 : 200;
 		$this->preparedFile ??= $this->resolver->fallback404();
 
-		if ( $this->preparedFile === null ) {
-			return $template;
-		}
-
 		status_header( $this->preparedStatus );
-		header( 'Content-Type: ' . $this->preparedFile->contentType );
+		header( 'Content-Type: ' . ( $this->preparedFile?->contentType ?? 'text/plain; charset=UTF-8' ) );
 
 		nocache_headers();
 		header( 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0' );

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Account\BillingController;
 use App\Http\Controllers\Account\ProfileController;
+use App\Http\Controllers\Admin\AiVisibilityController;
 use App\Http\Controllers\Admin\BacklinkAuditController;
 use App\Http\Controllers\Admin\BulkFormSubmissionController;
 use App\Http\Controllers\Admin\BulkProspectActionController;
@@ -228,6 +229,17 @@ Route::middleware(['web', 'auth', ResolveCurrentWebsite::class])->prefix('admin'
     Route::post('account/billing/checkout', [BillingController::class, 'checkout'])->middleware(['impersonate.protect', 'throttle:10,1'])->name('billing.checkout');
     Route::post('account/billing/portal', [BillingController::class, 'portal'])->middleware(['impersonate.protect', 'throttle:10,1'])->name('billing.portal');
     Route::resource('websites', WebsiteController::class);
+    Route::get('websites/{website}/section/ai-visibility', [AiVisibilityController::class, 'index'])->name('ai-visibility.index');
+    Route::prefix('websites/{website}/ai-visibility')->name('ai-visibility.')->group(function () {
+        Route::put('settings', [AiVisibilityController::class, 'settings'])->name('settings');
+        Route::post('suggestions', [AiVisibilityController::class, 'suggestions'])->name('suggestions');
+        Route::post('checks', [AiVisibilityController::class, 'check'])->middleware('throttle:6,1')->name('check');
+        Route::post('prompts', [AiVisibilityController::class, 'store'])->name('store');
+        Route::get('prompts/{prompt}', [AiVisibilityController::class, 'show'])->withTrashed()->name('show');
+        Route::put('prompts/{prompt}', [AiVisibilityController::class, 'update'])->name('update');
+        Route::delete('prompts/{prompt}', [AiVisibilityController::class, 'destroy'])->name('destroy');
+        Route::post('prompts/{prompt}/checks', [AiVisibilityController::class, 'check'])->middleware('throttle:6,1')->name('prompt-check');
+    });
     Route::get('websites/{website}/section/{section}', [WebsiteController::class, 'show'])
         ->whereIn('section', WebsiteNavigation::SECTIONS)
         ->name('websites.section');

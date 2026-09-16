@@ -12,6 +12,7 @@ use App\Models\SearchConsoleMetric;
 use App\Models\Website;
 use App\Models\WebsiteDomain;
 use App\Models\WeeklyReport;
+use App\Services\AiVisibilityReport;
 use App\Services\ContentQueueOverview;
 use App\Services\DashboardSchedule;
 use App\Services\DashboardWorkActivity;
@@ -124,6 +125,7 @@ class DashboardController extends Controller
         return view('admin.dashboard', [
             'website' => $website,
             'weeklyOverview' => $weeklyOverview,
+            'aiVisibility' => app(AiVisibilityReport::class)->forPeriod($website, today()->subDays(6), now()->endOfDay()),
             'weeklyHistory' => $weeklyHistory,
             'report' => $website->latestHealthReport,
             'topFindings' => $this->topFindings($website),

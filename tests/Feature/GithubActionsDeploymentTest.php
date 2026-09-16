@@ -42,6 +42,7 @@ beforeEach(function (): void {
 /** @param array<string, string> $files */
 function actionsDeploymentZip(array $files): string
 {
+    $files += ['static-build-manifest.json' => json_encode(['version' => 1, 'pages' => 1, 'assets' => []]), '_headers' => '/\n  Cache-Control: public, max-age=0, must-revalidate'];
     $path = tempnam(sys_get_temp_dir(), 'actions-artifact-');
     $zip = new ZipArchive;
     $zip->open($path, ZipArchive::CREATE | ZipArchive::OVERWRITE);
@@ -132,6 +133,9 @@ it('packages a verified artifact at its root and not the source project path', f
     $files = [
         'index.html' => '<h1>Built Eleventy site</h1>',
         'assets/app.css' => 'body{}',
+        'fontawesome/webfonts/icons.eot' => 'legacy-font',
+        'sitemap.xsl' => '<xsl:stylesheet/>',
+        '_headers' => '/\n  Cache-Control: public, max-age=0, must-revalidate',
         'sitemap.xml' => '<?xml version="1.0"?><urlset><url><loc>https://rowglo.co.uk/plumbing/</loc></url></urlset>',
         'robots.txt' => "User-agent: *\nSitemap: https://rowglo.co.uk/sitemap.xml\n",
         'backdoor.php' => '<?php evil();',
@@ -289,4 +293,19 @@ it('does not queue a build from a different app installation', function (): void
         'installation' => ['id' => 0],
     ]);
     Queue::assertNothingPushed();
+});
+
+it('does not publish or notify for an artifact without the optimized build contract', function (): void {
+    fakeActionsDeploymentDownload(zip: actionsDeploymentZip([
+        'index.html' => '<h1>Unoptimized source</h1>',
+        'static-build-manifest.json' => '{}',
+    ]));
+    $release = WordpressStaticRelease::factory()->for($this->repository->website)->create([
+        'status' => 'queued', 'commit_sha' => $this->sha, 'github_workflow_run_id' => 123,
+    ]);
+    $notifier = mock(WordPressDeploymentNotifier::class);
+    $notifier->shouldNotReceive('notify');
+    expect(fn () => (new BuildWordPressStaticRelease($release->id))->handle(app(WordPressStaticReleaseBuilder::class), $notifier))
+        ->toThrow(RuntimeException::class, 'validated optimized artifact');
+    expect($release->fresh()->status)->toBe('failed')->and(Storage::disk('local')->allFiles())->toBe([]);
 });

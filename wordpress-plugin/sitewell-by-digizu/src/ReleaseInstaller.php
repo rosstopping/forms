@@ -19,6 +19,7 @@ final class ReleaseInstaller {
 	private const ALLOWED_EXTENSIONS = [
 		'avif',
 		'css',
+		'eot',
 		'gif',
 		'htm',
 		'html',
@@ -31,6 +32,7 @@ final class ReleaseInstaller {
 		'mp3',
 		'mp4',
 		'ogg',
+		'otf',
 		'pdf',
 		'png',
 		'svg',
@@ -42,14 +44,37 @@ final class ReleaseInstaller {
 		'woff',
 		'woff2',
 		'xml',
+		'xsl',
 	];
 
-	public function __construct( private readonly string $releasesPath ) {}
+	public function __construct( private readonly string $releasesPath, private readonly ?string $publicPath = null ) {}
 
 	/**
 	 * @param  array{release_id: string, checksum: string, size: int}  $release
 	 */
 	public function install( array $release, string $archivePath ): void {
+		if ( ! wp_mkdir_p( $this->releasesPath ) ) {
+			throw new RuntimeException( 'Could not create the release directory.' );
+		}
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- A filesystem lock serializes local release installation and publication.
+		$lock = fopen( $this->releasesPath . '/.install.lock', 'c' );
+		if ( $lock === false ) {
+			throw new RuntimeException( 'Could not open the deployment lock.' );
+		}
+		try {
+			if ( ! flock( $lock, LOCK_EX ) ) {
+				throw new RuntimeException( 'Could not lock deployment.' );
+			}
+			$this->installLocked( $release, $archivePath );
+		} finally {
+			flock( $lock, LOCK_UN );
+            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Close the deployment lock handle.
+			fclose( $lock );
+		}
+	}
+
+	/** @param array{release_id: string, checksum: string, size: int} $release */
+	private function installLocked( array $release, string $archivePath ): void {
 		$this->validateRelease( $release, $archivePath );
 		$this->protectReleaseDirectory();
 
@@ -62,9 +87,19 @@ final class ReleaseInstaller {
 
 		try {
 			$this->extract( $archivePath, $temporaryPath );
+			$this->validateArtifact( $temporaryPath );
 
 			if ( is_dir( $releasePath ) ) {
-				$this->removeDirectory( $releasePath );
+				$active = get_option( SettingsPage::OPTION_ACTIVE_RELEASE );
+				if ( is_array( $active ) && ( $active['release_id'] ?? null ) === $release['release_id'] && ( $active['checksum'] ?? null ) === $release['checksum'] ) {
+					$this->removeDirectory( $temporaryPath );
+					if ( $this->publicPath !== null ) {
+						( new StaticPublisher( $this->publicPath ) )->publish( $releasePath );
+					}
+
+					return;
+				}
+				throw new RuntimeException( 'Release directories are immutable; use a new release identifier.' );
 			}
 
             // phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename -- A same-filesystem rename provides the atomic release switch required here.
@@ -75,6 +110,15 @@ final class ReleaseInstaller {
 			$this->removeDirectory( $temporaryPath );
 
 			throw $exception;
+		}
+
+		if ( $this->publicPath !== null ) {
+			try {
+				( new StaticPublisher( $this->publicPath ) )->publish( $releasePath );
+			} catch ( RuntimeException $exception ) {
+				$this->removeDirectory( $releasePath );
+				throw $exception;
+			}
 		}
 
 		$current  = get_option( SettingsPage::OPTION_ACTIVE_RELEASE );
@@ -103,6 +147,16 @@ final class ReleaseInstaller {
 		) {
 			$this->removeDirectory( $previous['path'] );
 		}
+	}
+
+	private function validateArtifact( string $directory ): void {
+		$paths    = [];
+		$iterator = new \RecursiveIteratorIterator( new \RecursiveDirectoryIterator( $directory, \FilesystemIterator::SKIP_DOTS ) );
+		foreach ( $iterator as $file ) {
+			$paths[] = substr( $file->getPathname(), strlen( $directory ) + 1 );
+		}
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Validate local release files without network access.
+		( new StaticArtifactValidator() )->validate( $paths, static fn ( string $path ): string|false => is_file( $directory . '/' . $path ) ? file_get_contents( $directory . '/' . $path ) : false );
 	}
 
 	private function isManagedReleasePath( string $path ): bool {
@@ -196,7 +250,7 @@ final class ReleaseInstaller {
 			|| in_array( '..', $segments, true )
 			|| array_filter( $segments, static fn ( string $segment ): bool => str_starts_with( $segment, '.' ) ) !== []
 			|| str_contains( $normalized, "\0" )
-			|| ( ! $isDirectory && ! in_array( $extension, self::ALLOWED_EXTENSIONS, true ) )
+			|| ( ! $isDirectory && $path !== '_headers' && ! in_array( $extension, self::ALLOWED_EXTENSIONS, true ) )
 		) {
 			throw new RuntimeException( esc_html__( 'The website update contains an unsafe file path.', 'sitewell-static-frontend' ) );
 		}

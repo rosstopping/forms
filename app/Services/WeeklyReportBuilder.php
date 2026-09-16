@@ -18,7 +18,7 @@ use Throwable;
 
 class WeeklyReportBuilder
 {
-    public function __construct(private SearchConsoleClient $search, private BusinessProfileClient $business) {}
+    public function __construct(private SearchConsoleClient $search, private BusinessProfileClient $business, private AiVisibilityReport $aiVisibility) {}
 
     /** @return array<string, mixed> */
     public function build(Website $website, Carbon $start, Carbon $end): array
@@ -27,20 +27,28 @@ class WeeklyReportBuilder
         $business = $this->googleBusiness($website, $start, $end);
         $rankings = $this->rankings($website, $start, $end);
         $audit = $this->siteAudit($website, $start, $end);
+        $ai = $this->aiVisibility->forPeriod($website, $start, $end);
+        $hasAi = $ai['completed_checks'] > 0 || $ai['previous_completed_checks'] > 0;
         $work = $this->completedWork($website, $start, $end);
-        $opportunities = collect([...($audit['opportunities'] ?? []), ...($rankings['opportunities'] ?? []), ...($search['opportunities'] ?? [])])->sortByDesc('score')->take(5)->values()->all();
+        $opportunities = collect([...($audit['opportunities'] ?? []), ...($rankings['opportunities'] ?? []), ...($search['opportunities'] ?? []), ...($hasAi ? $ai['opportunities'] : [])])->sortByDesc('score')->take(5)->values()->all();
         $sections = [];
         foreach (['search_console' => ['Search visibility', $search, 'search'], 'rankings' => ['Keyword movements', $rankings, 'seo'], 'google_business' => ['Google Business', $business, 'business-profile'], 'site_audit' => ['Website health', $audit, 'health']] as $key => [$title, $source, $section]) {
             $sections[$key] = ['title' => $title, 'summary' => $source['summary'], 'url' => route('admin.websites.section', [$website, $section])];
         }
 
+        if ($hasAi) {
+            $sections['ai_visibility'] = ['title' => 'AI Visibility', 'summary' => $ai['summary'], 'url' => route('admin.ai-visibility.index', $website)];
+        }
+
         return [
+            ...($hasAi ? ['ai_visibility' => $ai] : []),
             'schema_version' => 1,
             'reporting_period' => ['start' => $start->toDateString(), 'end' => $end->toDateString(), 'comparison_start' => $start->copy()->subWeek()->toDateString(), 'comparison_end' => $end->copy()->subWeek()->toDateString(), 'timezone' => config('app.timezone')],
             'search_console' => $search, 'google_business' => $business, 'rankings' => $rankings, 'site_audit' => $audit,
             'completed_work' => $work, 'opportunities' => $opportunities, 'sections' => $sections,
             'metric_cards' => array_values(array_filter([
                 $search['metrics']['impressions'] ?? $this->metric('Search impressions', null, null), $search['metrics']['clicks'] ?? $this->metric('Search clicks', null, null),
+                $hasAi ? [...$this->metric('AI Visibility (%)', $ai['score'], $ai['comparable'] ? $ai['previous_score'] : null), 'percent' => null] : null,
                 $rankings['average_position'] ?? null, $rankings['improved_metric'] ?? null,
                 $business['metrics']['impressions'] ?? $this->metric('Google Business impressions', null, null), $audit['health_metric'] ?? $this->metric('Site checks passing (%)', null, null),
             ])),

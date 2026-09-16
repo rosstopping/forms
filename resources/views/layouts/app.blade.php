@@ -51,6 +51,7 @@
                                     'health' => 'Website health',
                                     'search' => 'Search performance',
                                     'seo' => 'SEO Intelligence',
+                                    'ai-visibility' => 'AI Visibility',
                                     'content' => 'Content',
                                     'forms' => 'Forms',
                                 ] as $section => $label)
@@ -176,6 +177,7 @@
                                     'health' => 'Website health',
                                     'search' => 'Search performance',
                                     'seo' => 'SEO Intelligence',
+                                    'ai-visibility' => 'AI Visibility',
                                     'content' => 'Content',
                                     'forms' => 'Forms',
                                 ] as $section => $label)
