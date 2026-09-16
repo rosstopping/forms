@@ -58,7 +58,7 @@ class CheckAiVisibility implements ShouldBeUnique, ShouldQueue
             }
             $settings = AiVisibilitySetting::query()->where('website_id', $result->website_id)->first();
             $provider = $providers->get($result->provider);
-            if (! $settings?->enabled || ! in_array($result->provider, $settings->providers ?? [], true) || ! $provider->available() || ! $result->website->is_active || ! $result->website->owner?->hasActiveMembership() || ! $result->prompt || $result->prompt->trashed() || ! $result->prompt->active || $result->prompt->fingerprint !== $result->prompt_fingerprint) {
+            if ($result->provider !== 'openai' || ! $settings?->enabled || ! in_array($result->provider, $settings->providers ?? [], true) || ! $provider->available() || ! $result->website->is_active || ! $result->website->owner?->hasActiveMembership() || ! $result->prompt || $result->prompt->trashed() || ! $result->prompt->active || $result->prompt->fingerprint !== $result->prompt_fingerprint) {
                 $result->update(['status' => 'cancelled', 'error' => 'Tracking, prompt, provider or website eligibility changed before this check ran.']);
 
                 return;

@@ -14,6 +14,7 @@ use App\Services\AiVisibilityPromptSuggestions;
 use App\Services\AiVisibilityProviderRegistry;
 use App\Services\AiVisibilityReport;
 use App\Services\AiVisibilityScheduler;
+use App\Services\AiVisibilitySetup;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -23,13 +24,11 @@ use Illuminate\View\View;
 
 class AiVisibilityController extends Controller
 {
-    public function index(Request $request, Website $website, AiVisibilityReport $reports, AiVisibilityProviderRegistry $providers, AiVisibilityAnalyzer $analyzer): View
+    public function index(Request $request, Website $website, AiVisibilityReport $reports, AiVisibilityProviderRegistry $providers, AiVisibilityAnalyzer $analyzer, AiVisibilitySetup $setup, AiVisibilityPromptSuggestions $suggestions): View
     {
         abort_unless($website->isAccessibleBy($request->user()), 403);
         $results = AiVisibilityResult::query()->where('website_id', $website->id)->where('status', 'completed');
-        $queriedProviders = (clone $results)->distinct()->pluck('provider')->all();
-        $provider = $request->query('provider');
-        abort_if($provider !== null && ! in_array($provider, $queriedProviders, true), 404);
+        $provider = 'openai';
         $first = (clone $results)->when($provider, fn ($query) => $query->where('provider', $provider))->min('checked_at');
         $age = $first ? (int) Carbon::parse($first)->startOfDay()->diffInDays(today()) + 1 : 0;
         $ranges = $age < 30 ? ['all' => 'Since first check'] : [];
@@ -42,11 +41,14 @@ class AiVisibilityController extends Controller
         abort_unless(is_scalar($range), 404);
         $range = array_key_exists($range, $ranges) ? $range : array_key_first($ranges);
         $start = $range === 'all' ? ($first ? Carbon::parse($first)->startOfDay() : today()->subDays(6)) : today()->subDays((int) $range - 1);
-        $settings = AiVisibilitySetting::query()->where('website_id', $website->id)->first() ?? new AiVisibilitySetting(['website_id' => $website->id, 'frequency_days' => 7, 'brand_name' => $website->businessProfileConnection?->location_title ?: $website->name]);
-        $prompts = AiVisibilityPrompt::query()->where('website_id', $website->id)->with(['results' => fn ($query) => $query->whereIn('id', AiVisibilityResult::query()->selectRaw('MAX(id)')->where('website_id', $website->id)->groupBy('ai_visibility_prompt_id', 'provider'))->latest('id')])->orderByDesc('active')->orderByDesc('id')->paginate(20)->withQueryString();
+        $settings = $setup->settings($website);
+        $prompts = AiVisibilityPrompt::query()->where('website_id', $website->id)->with(['results' => fn ($query) => $query->where('provider', 'openai')->whereIn('id', AiVisibilityResult::query()->selectRaw('MAX(id)')->where('website_id', $website->id)->groupBy('ai_visibility_prompt_id', 'provider'))->latest('id')])->orderByDesc('active')->orderByDesc('id')->paginate(20)->withQueryString();
+        $ideas = $suggestions->forWebsite($website, $settings);
+        $activeCount = AiVisibilityPrompt::query()->where('website_id', $website->id)->where('active', true)->count();
 
         return view('admin.ai-visibility.index', [
-            'website' => $website, 'settings' => $settings, 'identity' => $analyzer->identity($website, $settings), 'availability' => $providers->availability(), 'queriedProviders' => $queriedProviders,
+            'website' => $website, 'settings' => $settings, 'identity' => $analyzer->identity($website, $settings), 'openaiAvailable' => $providers->availability()['openai'],
+            'suggestions' => array_slice($ideas, 0, max(0, (int) config('ai_visibility.max_active_prompts') - $activeCount)), 'activePromptCount' => $activeCount,
             'report' => $reports->forPeriod($website, $start, now()->endOfDay(), $provider), 'trend' => $reports->trend($website, $start, now()->endOfDay(), $provider),
             'prompts' => $prompts, 'ranges' => $ranges, 'range' => $range, 'provider' => $provider, 'canManage' => $website->isManageableBy($request->user()),
             'keywords' => $website->seoTargetKeywords()->whereNull('archived_at')->orderBy('term')->get(['id', 'term']),
@@ -57,10 +59,10 @@ class AiVisibilityController extends Controller
     {
         abort_unless($website->isAccessibleBy($request->user()), 403);
         $this->assertNested($website, $prompt);
-        $results = $prompt->results()->latest('id')->paginate(20);
-        $latest = $prompt->results()->whereIn('id', $prompt->results()->selectRaw('MAX(id)')->groupBy('provider'))->get();
+        $results = $prompt->results()->where('provider', 'openai')->latest('id')->paginate(20);
+        $latest = $prompt->results()->where('provider', 'openai')->latest('id')->limit(1)->get();
 
-        return view('admin.ai-visibility.show', ['website' => $website, 'prompt' => $prompt, 'results' => $results, 'latest' => $latest, 'trend' => $reports->trend($website, today()->subDays(364), now()->endOfDay(), promptId: $prompt->id), 'canManage' => $website->isManageableBy($request->user()), 'keywords' => $website->seoTargetKeywords()->whereNull('archived_at')->orderBy('term')->get(['id', 'term'])]);
+        return view('admin.ai-visibility.show', ['website' => $website, 'prompt' => $prompt, 'results' => $results, 'latest' => $latest, 'trend' => $reports->trend($website, today()->subDays(364), now()->endOfDay(), provider: 'openai', promptId: $prompt->id), 'canManage' => $website->isManageableBy($request->user()), 'keywords' => $website->seoTargetKeywords()->whereNull('archived_at')->orderBy('term')->get(['id', 'term'])]);
     }
 
     public function store(SaveAiVisibilityPromptRequest $request, Website $website): RedirectResponse
@@ -91,18 +93,41 @@ class AiVisibilityController extends Controller
         return $this->redirect($website, 'Prompt deleted. Historical evidence is retained.');
     }
 
-    public function settings(UpdateAiVisibilitySettingsRequest $request, Website $website): RedirectResponse
+    public function settings(UpdateAiVisibilitySettingsRequest $request, Website $website, AiVisibilityPromptSuggestions $suggestions, AiVisibilityScheduler $scheduler): RedirectResponse
     {
-        AiVisibilitySetting::query()->updateOrCreate(['website_id' => $website->id], $request->validated());
+        $started = DB::transaction(function () use ($request, $website, $suggestions): bool {
+            Website::query()->whereKey($website)->lockForUpdate()->firstOrFail();
+            $previous = AiVisibilitySetting::query()->where('website_id', $website->id)->first();
+            $started = $request->boolean('enabled') && ! $previous?->enabled;
+            $settings = AiVisibilitySetting::query()->updateOrCreate(['website_id' => $website->id], $request->validated());
+            if ($settings->enabled && ! AiVisibilityPrompt::query()->where('website_id', $website->id)->where('active', true)->exists()) {
+                $ideas = array_slice($suggestions->forWebsite($website, $settings), 0, max(0, (int) config('ai_visibility.max_active_prompts')));
+                if ($ideas === []) {
+                    throw ValidationException::withMessages(['services' => 'We need one service or customer question to get started. Add a service below, add a tracked keyword, or reactivate an existing question.']);
+                }
+                foreach ($ideas as $idea) {
+                    $this->savePrompt($website, new AiVisibilityPrompt(['website_id' => $website->id]), [...$idea, 'active' => true, 'priority' => 'normal']);
+                }
+                $started = true;
+            }
 
-        return $this->redirect($website, 'AI Visibility settings saved. Checks follow the existing weekly automation schedule.');
+            return $started;
+        });
+
+        if ($started) {
+            $count = $scheduler->queue($website);
+
+            return $this->redirect($website, $count > 0 ? 'AI tracking is on. '.$count.' first checks queued; results will appear here when ready.' : 'AI tracking is on. No checks are due or this website is not currently eligible for checks.');
+        }
+
+        return $this->redirect($website, $request->boolean('enabled') ? 'Tracking settings saved.' : 'AI tracking is paused. Your questions and results have been kept.');
     }
 
     public function suggestions(Request $request, Website $website, AiVisibilityPromptSuggestions $suggestions): RedirectResponse
     {
         abort_unless($website->isManageableBy($request->user()), 403);
 
-        return $this->redirect($website, 'Review the suggested prompts before adding them.')->with('aiPromptSuggestions', $suggestions->forWebsite($website));
+        return $this->redirect($website, 'Suggested questions are ready below. You can use them when turning on tracking.')->with('aiPromptSuggestions', $suggestions->forWebsite($website));
     }
 
     public function check(Request $request, Website $website, AiVisibilityScheduler $scheduler, ?AiVisibilityPrompt $prompt = null): RedirectResponse
@@ -113,7 +138,7 @@ class AiVisibilityController extends Controller
         }
         $count = $scheduler->queue($website, $prompt);
 
-        return $this->redirect($website, $count > 0 ? $count.' AI checks queued.' : 'No checks are due. Check tracking settings, active prompts and provider availability.');
+        return $this->redirect($website, $count > 0 ? $count.' AI checks queued.' : 'No checks are due. Turn on tracking and make sure you have an active question.');
     }
 
     /** @param array<string, mixed> $data */

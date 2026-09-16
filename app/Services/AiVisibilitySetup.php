@@ -18,17 +18,18 @@ class AiVisibilitySetup
         if (blank($settings->brand_name)) {
             $settings->brand_name = Str::limit($connection?->location_title ?: $website->name, 150, '');
         }
-        if ($settings->services === null) {
+        if (empty($settings->services)) {
             $settings->services = collect([
                 data_get($snapshot, 'categories.primaryCategory.displayName'),
-                ...data_get($snapshot, 'categories.additionalCategories.*.displayName', []),
+                ...(array) data_get($snapshot, 'categories.additionalCategories.*.displayName', []),
             ])->filter(fn ($value) => is_string($value) && filled($value))->map(fn ($value) => Str::limit($value, 180, ''))->unique()->take(15)->values()->all();
         }
-        if ($settings->locations === null) {
+        if (empty($settings->locations)) {
             $locality = data_get($snapshot, 'storefrontAddress.locality');
             $settings->locations = is_string($locality) && filled($locality) ? [Str::limit($locality, 180, '')] : [];
         }
         $settings->aliases ??= [];
+        $settings->frequency_days = in_array($settings->frequency_days, [7, 14, 28], true) ? $settings->frequency_days : 7;
         $settings->providers = ['openai'];
 
         return $settings;

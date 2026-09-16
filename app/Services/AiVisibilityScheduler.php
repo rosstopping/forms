@@ -37,7 +37,7 @@ class AiVisibilityScheduler
             $identity = $this->analyzer->identity($website, $settings);
             $queued = 0;
             foreach ($prompts as $prompt) {
-                foreach ($settings->providers ?? [] as $key) {
+                foreach (array_intersect($settings->providers ?? [], ['openai']) as $key) {
                     $provider = $this->providers->get($key);
                     if (! $provider->available()) {
                         continue;

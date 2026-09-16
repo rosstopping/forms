@@ -15,3 +15,6 @@ Competitor audits are explicitly requested per website/domain/market and reuse s
 
 ## AI Visibility uses genuine opt-in provider observations
 AI Visibility is a first-class website section. Dashboard/report reads never invoke providers. Queue opt-in checks through the existing weekly ranking dispatcher; no separate AI email or scheduler. Label OpenAI API observations OpenAI, never ChatGPT; unavailable providers stay disabled. Only completed checks enter appearance/citation percentages. Preserve prompt, identity, model and methodology evidence, suppress comparisons when successful coverage changes, and never infer list positions or citation domains.
+
+## AI tracking starts with inferred setup and OpenAI only
+AI Visibility activation is one click: infer missing setup from saved website/business-profile data and prepare questions from tracked keywords, with stored SEO/Search Console fallbacks. Reads never persist setup or call providers; activation saves bounded deduplicated questions and queues first checks. Preserve custom settings and disabled/deleted prompts, request only missing essentials, and show action feedback. Only OpenAI is selectable, queued or executed for now; retain historical evidence.

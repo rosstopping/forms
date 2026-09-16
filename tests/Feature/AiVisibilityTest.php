@@ -8,7 +8,12 @@ use App\Mail\WeeklyRankingReport;
 use App\Models\AiVisibilityPrompt;
 use App\Models\AiVisibilityResult;
 use App\Models\AiVisibilitySetting;
+use App\Models\BusinessProfileAudit;
+use App\Models\BusinessProfileConnection;
 use App\Models\ExternalApiUsage;
+use App\Models\SearchConsoleMetric;
+use App\Models\SeoKeyword;
+use App\Models\SeoSnapshot;
 use App\Models\SeoTargetKeyword;
 use App\Models\SeoTargetKeywordRanking;
 use App\Models\User;
@@ -76,12 +81,14 @@ test('outsiders cannot read and viewers cannot mutate ai visibility', function (
     $this->put(route('admin.ai-visibility.settings', $website), [])->assertForbidden();
 });
 
-test('settings require genuine providers and suggestions are reviewable without overwriting prompts', function (): void {
+test('settings require configured openai and suggestions are reviewable without overwriting prompts', function (): void {
     $website = Website::factory()->create();
     $this->actingAs($website->owner);
     $settings = ['enabled' => true, 'brand_name' => 'Rowglo', 'frequency_days' => 7, 'providers' => ['gemini']];
-    $this->put(route('admin.ai-visibility.settings', $website), $settings)->assertSessionHasErrors('providers');
-    $this->put(route('admin.ai-visibility.settings', $website), [...$settings, 'providers' => ['openai'], 'services' => "Boiler repair\nPlumbing", 'locations' => 'Doncaster'])->assertRedirect();
+    config(['ai_visibility.providers.openai.enabled' => false]);
+    $this->put(route('admin.ai-visibility.settings', $website), $settings)->assertSessionHasErrors('enabled');
+    config(['ai_visibility.providers.openai.enabled' => true]);
+    $this->put(route('admin.ai-visibility.settings', $website), [...$settings, 'enabled' => false, 'providers' => ['openai'], 'services' => "Boiler repair\nPlumbing", 'locations' => 'Doncaster'])->assertRedirect();
     expect(AiVisibilitySetting::sole()->services)->toBe(['Boiler repair', 'Plumbing']);
     foreach (['heating repairs Doncaster', 'boiler installation Doncaster', 'leaking taps Doncaster', 'bathroom plumbing Doncaster', 'radiator repairs Doncaster'] as $term) {
         SeoTargetKeyword::factory()->for($website)->create(['term' => $term]);
@@ -282,7 +289,7 @@ test('provider changes new appearances citation gains and competing lists produc
     expect($report['providers']['openai']['change'])->toBe(100.0);
 });
 
-test('supported history ranges provider filters and website switching preserve the ai section', function (): void {
+test('history ranges use openai only and website switching preserves the ai section', function (): void {
     $user = User::factory()->create();
     $website = Website::factory()->for($user, 'owner')->create();
     $other = Website::factory()->for($user, 'owner')->create();
@@ -290,7 +297,7 @@ test('supported history ranges provider filters and website switching preserve t
     AiVisibilityResult::factory()->for($prompt, 'prompt')->completed()->create(['checked_at' => now()->subDays(400), 'period_start' => today()->subDays(400)->startOfWeek()]);
     AiVisibilityResult::factory()->for($prompt, 'prompt')->completed()->create(['provider' => 'gemini', 'brand_mentioned' => true]);
     $this->actingAs($user)->get(route('admin.ai-visibility.index', [$website, 'provider' => 'openai', 'range' => 365]))->assertOk()->assertSee('12 months')->assertViewHas('report', fn ($report) => $report['completed_checks'] === 0);
-    $this->get(route('admin.ai-visibility.index', [$website, 'provider' => 'gemini']))->assertOk()->assertSee('Since first check')->assertDontSee('12 months');
+    $this->get(route('admin.ai-visibility.index', [$website, 'provider' => 'gemini']))->assertOk()->assertSee('12 months')->assertDontSee('Gemini')->assertViewHas('report', fn ($report) => $report['completed_checks'] === 0);
     $this->post(route('admin.current-website.update'), ['website_id' => $other->id, 'section' => 'ai-visibility'])->assertRedirect(route('admin.websites.section', [$other, 'ai-visibility']));
     $this->get(route('admin.websites.section', [$other, 'ai-visibility']))->assertOk()->assertSee('Your first visibility baseline');
 });
@@ -327,4 +334,133 @@ test('explicitly readding a deleted prompt restores its history without bypassin
     $other->update(['active' => false]);
     $this->post(route('admin.ai-visibility.store', $website), $data)->assertRedirect();
     expect($prompt->fresh()->trashed())->toBeFalse()->and($prompt->fresh()->results()->count())->toBe(1)->and($prompt->fresh()->priority)->toBe('high');
+});
+
+test('one click enables digizu tracking from keywords and queues only openai once', function (): void {
+    Queue::fake();
+    config(['ai_visibility.max_active_prompts' => 2, 'ai_visibility.providers.gemini.enabled' => true, 'ai.providers.gemini.key' => 'fake']);
+    $website = Website::factory()->create(['name' => 'Digizu']);
+    $website->domains()->create(['domain' => 'digizu.co.uk', 'is_primary' => true]);
+    foreach (['web design Doncaster', 'SEO services Yorkshire', 'website maintenance'] as $term) {
+        SeoTargetKeyword::factory()->for($website)->create(['term' => $term]);
+    }
+    SeoTargetKeyword::factory()->for($website)->create(['term' => 'archived service', 'archived_at' => now()]);
+    SeoTargetKeyword::factory()->create(['term' => 'other website service']);
+    AiVisibilitySetting::factory()->for($website)->create(['brand_name' => '', 'providers' => [], 'services' => [], 'locations' => []]);
+    $this->actingAs($website->owner)->get(route('admin.ai-visibility.index', $website))
+        ->assertOk()->assertSee('Turn on AI tracking')->assertSee('web design Doncaster')->assertSee('value="Digizu"', false)
+        ->assertDontSee('name="providers[]"', false)->assertDontSee('Visibility by provider')->assertDontSee('Gemini')->assertDontSee('Tracking is paused.');
+    expect(AiVisibilityPrompt::count())->toBe(0);
+    Queue::assertNothingPushed();
+    AiVisibilityObserver::assertNeverPrompted();
+    $this->put(route('admin.ai-visibility.settings', $website), ['enabled' => true, 'providers' => ['gemini']])->assertSessionHasNoErrors()->assertRedirect();
+    expect(AiVisibilitySetting::sole())->toMatchArray(['enabled' => true, 'brand_name' => 'Digizu', 'frequency_days' => 7, 'providers' => ['openai']]);
+    expect(AiVisibilityPrompt::count())->toBe(2)->and(AiVisibilityPrompt::whereNotNull('seo_target_keyword_id')->count())->toBe(2);
+    expect(AiVisibilityResult::pluck('provider')->unique()->all())->toBe(['openai']);
+    Queue::assertPushed(CheckAiVisibility::class, 2);
+    $this->put(route('admin.ai-visibility.settings', $website), ['enabled' => true])->assertSessionHasNoErrors();
+    expect(AiVisibilityPrompt::count())->toBe(2)->and(AiVisibilityResult::count())->toBe(2);
+    Queue::assertPushed(CheckAiVisibility::class, 2);
+    $this->get(route('admin.ai-visibility.index', $website))->assertSee('Tracking settings saved.')->assertSee('Tracking is on');
+});
+
+test('saved business profile fills blank setup and prepares local questions without network calls', function (): void {
+    Queue::fake();
+    $website = Website::factory()->create(['name' => 'Digizu website']);
+    $connection = BusinessProfileConnection::factory()->for($website)->create(['location_title' => 'Digizu']);
+    BusinessProfileAudit::factory()->for($connection, 'connection')->create(['snapshot' => [
+        'categories' => ['primaryCategory' => ['displayName' => 'Website designer']],
+        'storefrontAddress' => ['locality' => 'Doncaster'],
+    ]]);
+    AiVisibilitySetting::factory()->for($website)->create(['brand_name' => '', 'services' => [], 'locations' => []]);
+    $this->actingAs($website->owner)->get(route('admin.ai-visibility.index', $website))->assertOk()
+        ->assertSee('Website designer in Doncaster')->assertViewHas('settings', fn ($settings) => $settings->brand_name === 'Digizu' && $settings->locations === ['Doncaster']);
+    $this->put(route('admin.ai-visibility.settings', $website), ['enabled' => true])->assertSessionHasNoErrors();
+    expect(AiVisibilityPrompt::sole()->prompt)->toBe('Which businesses would you recommend for Website designer in Doncaster?');
+    expect(AiVisibilitySetting::sole()->services)->toBe(['Website designer']);
+    AiVisibilityObserver::assertNeverPrompted();
+    Http::assertNothingSent();
+});
+
+test('setup falls back to stored search data and excludes branded archived and foreign queries', function (): void {
+    Queue::fake();
+    $website = Website::factory()->create(['name' => 'Digizu']);
+    $snapshot = SeoSnapshot::factory()->for($website)->create(['status' => 'completed']);
+    SeoKeyword::factory()->for($snapshot, 'snapshot')->create(['keyword' => 'web design Sheffield']);
+    SeoTargetKeyword::factory()->for($website)->create(['term' => 'old service', 'archived_at' => now()]);
+    foreach (['digital marketing agency', 'Digizu reviews', 'old service'] as $term) {
+        SearchConsoleMetric::factory()->for($website)->create(['query' => $term, 'dimension_key' => hash('sha256', $term)]);
+    }
+    SearchConsoleMetric::factory()->create(['query' => 'foreign query']);
+    $ideas = app(AiVisibilityPromptSuggestions::class)->forWebsite($website);
+    expect(array_column($ideas, 'topic'))->toBe(['web design Sheffield', 'digital marketing agency']);
+    $this->actingAs($website->owner)->put(route('admin.ai-visibility.settings', $website), ['enabled' => true])->assertSessionHasNoErrors();
+    expect(AiVisibilityPrompt::count())->toBe(2);
+    Http::assertNothingSent();
+});
+
+test('missing data asks for one service and failed setup leaves tracking off', function (): void {
+    Queue::fake();
+    $website = Website::factory()->create(['name' => 'Digizu']);
+    $this->actingAs($website->owner)->get(route('admin.ai-visibility.index', $website))->assertOk()->assertSee('What service should we track?');
+    $this->put(route('admin.ai-visibility.settings', $website), ['enabled' => true])->assertSessionHasErrors('services');
+    expect(AiVisibilitySetting::count())->toBe(0)->and(AiVisibilityPrompt::count())->toBe(0);
+    Queue::assertNothingPushed();
+    $this->put(route('admin.ai-visibility.settings', $website), ['enabled' => true, 'services' => 'Website design in Doncaster'])->assertSessionHasNoErrors();
+    expect(AiVisibilitySetting::sole()->brand_name)->toBe('Digizu')->and(AiVisibilityPrompt::count())->toBe(1);
+    Queue::assertPushed(CheckAiVisibility::class, 1);
+});
+
+test('one click preserves custom settings disabled questions and deleted questions', function (): void {
+    Queue::fake();
+    $website = Website::factory()->create();
+    $settings = AiVisibilitySetting::factory()->for($website)->create(['brand_name' => 'Custom brand', 'frequency_days' => 14, 'aliases' => ['Custom alias'], 'services' => ['custom service'], 'locations' => ['York']]);
+    $active = AiVisibilityPrompt::factory()->for($website)->create(['prompt' => 'Who provides custom help?']);
+    $disabled = AiVisibilityPrompt::factory()->for($website)->create(['active' => false]);
+    $deleted = AiVisibilityPrompt::factory()->for($website)->create();
+    $deleted->delete();
+    $this->actingAs($website->owner)->put(route('admin.ai-visibility.settings', $website), ['enabled' => true])->assertSessionHasNoErrors();
+    expect($settings->fresh())->toMatchArray(['brand_name' => 'Custom brand', 'frequency_days' => 14, 'aliases' => ['Custom alias'], 'services' => ['custom service'], 'locations' => ['York']]);
+    expect($active->fresh()->prompt)->toBe('Who provides custom help?')->and($disabled->fresh()->active)->toBeFalse()->and($deleted->fresh()->trashed())->toBeTrue();
+    expect(AiVisibilityPrompt::withTrashed()->count())->toBe(3);
+    Queue::assertPushed(CheckAiVisibility::class, 1);
+});
+
+test('legacy non openai jobs are cancelled even when configured and selected', function (): void {
+    config(['ai_visibility.providers.gemini.enabled' => true, 'ai.providers.gemini.key' => 'fake']);
+    $website = Website::factory()->create();
+    AiVisibilitySetting::factory()->for($website)->create(['enabled' => true, 'providers' => ['openai', 'gemini']]);
+    $prompt = AiVisibilityPrompt::factory()->for($website)->create();
+    $result = AiVisibilityResult::factory()->for($prompt, 'prompt')->create(['provider' => 'gemini']);
+    (new CheckAiVisibility($result))->handle(app(AiVisibilityProviderRegistry::class), app(AiVisibilityAnalyzer::class));
+    expect($result->fresh()->status)->toBe('cancelled');
+    Http::assertNothingSent();
+    AiVisibilityObserver::assertNeverPrompted();
+});
+
+test('suggesting questions while paused displays feedback without enabling or charging', function (): void {
+    Queue::fake();
+    $website = Website::factory()->create(['name' => 'Digizu']);
+    SeoTargetKeyword::factory()->for($website)->create(['term' => 'website design Doncaster']);
+    $this->actingAs($website->owner)->followingRedirects()->post(route('admin.ai-visibility.suggestions', $website))
+        ->assertOk()->assertSee('Suggested questions are ready below.')->assertSee('website design Doncaster')
+        ->assertSee('Turn on AI tracking')->assertDontSee('Tracking is paused.');
+    expect(AiVisibilitySetting::count())->toBe(0)->and(AiVisibilityPrompt::count())->toBe(0);
+    AiVisibilityObserver::assertNeverPrompted();
+    Queue::assertNothingPushed();
+});
+
+test('automatic setup never recreates disabled or deleted suggested questions', function (): void {
+    Queue::fake();
+    $website = Website::factory()->create(['name' => 'Digizu']);
+    foreach (['web design', 'SEO help', 'website maintenance'] as $term) {
+        SeoTargetKeyword::factory()->for($website)->create(['term' => $term]);
+    }
+    $disabled = AiVisibilityPrompt::factory()->for($website)->create(['prompt' => 'Which businesses would you recommend for web design?', 'active' => false]);
+    $deleted = AiVisibilityPrompt::factory()->for($website)->create(['prompt' => 'Which businesses would you recommend for SEO help?']);
+    $deleted->delete();
+    $this->actingAs($website->owner)->put(route('admin.ai-visibility.settings', $website), ['enabled' => true])->assertSessionHasNoErrors();
+    expect($disabled->fresh()->active)->toBeFalse()->and($deleted->fresh()->trashed())->toBeTrue();
+    expect(AiVisibilityPrompt::where('active', true)->sole()->topic)->toBe('website maintenance');
+    Queue::assertPushed(CheckAiVisibility::class, 1);
 });

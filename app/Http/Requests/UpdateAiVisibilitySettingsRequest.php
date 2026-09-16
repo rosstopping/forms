@@ -4,9 +4,6 @@ namespace App\Http\Requests;
 
 use App\Services\AiVisibilityProviderRegistry;
 use App\Services\AiVisibilitySetup;
-use App\Services\AiVisibilityPromptSuggestions;
-use App\Models\AiVisibilityPrompt;
-use App\Models\AiVisibilitySetting;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -43,7 +40,6 @@ class UpdateAiVisibilitySettingsRequest extends FormRequest
             'enabled' => ['required', 'boolean'], 'brand_name' => ['required', 'string', 'min:2', 'max:150'],
             'frequency_days' => ['required', Rule::in([7, 14, 28])],
             'providers' => ['required', 'array', 'size:1'], 'providers.*' => [Rule::in(['openai'])],
-            'use_suggestions' => ['sometimes', 'boolean'],
             'aliases' => ['nullable', 'array', 'max:20'], 'aliases.*' => ['string', 'min:2', 'max:150'],
             'services' => ['nullable', 'array', 'max:15'], 'services.*' => ['string', 'max:180'],
             'locations' => ['nullable', 'array', 'max:15'], 'locations.*' => ['string', 'max:180'],
@@ -60,10 +56,6 @@ class UpdateAiVisibilitySettingsRequest extends FormRequest
             $available = app(AiVisibilityProviderRegistry::class)->availability();
             if (! ($available['openai'] ?? false)) {
                 $validator->errors()->add('enabled', 'AI checks are temporarily unavailable. Please contact support to enable tracking.');
-            }
-            if ($this->boolean('use_suggestions') && ! AiVisibilityPrompt::query()->where('website_id', $this->route('website')->id)->where('active', true)->exists()
-                && app(AiVisibilityPromptSuggestions::class)->forWebsite($this->route('website'), new AiVisibilitySetting($this->validated())) === []) {
-                $validator->errors()->add('services', 'Add a service below or a tracked keyword so we can prepare your first customer questions.');
             }
         }];
     }
