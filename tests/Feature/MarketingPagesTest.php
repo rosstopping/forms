@@ -48,7 +48,8 @@ it('shows journal articles and returns not found for unknown slugs', function ()
         ->assertSee('href="'.route('marketing.landing', 'website-maintenance-packages').'"', false)
         ->assertSee('href="'.route('marketing.pricing').'"', false)
         ->assertSee('href="'.route('marketing.article', 'forms-that-never-lose-a-lead').'"', false)
-        ->assertSee('href="'.route('marketing.article', 'search-data-to-content-decisions').'"', false);
+        ->assertSee('href="'.route('marketing.article', 'search-data-to-content-decisions').'"', false)
+        ->assertSee('href="'.route('marketing.article', 'why-isnt-my-website-ranking-on-google').'"', false);
 
     $this->get(route('marketing.article', 'a-clean-website-handover'))
         ->assertSuccessful()
@@ -59,8 +60,7 @@ it('shows journal articles and returns not found for unknown slugs', function ()
         ->assertSuccessful()
         ->assertSee('Turn search data into the next useful improvement')
         ->assertSee('href="'.route('marketing.landing', 'seo-for-small-businesses').'"', false)
-        ->assertSee('href="'.route('marketing.landing', 'managed-seo-services').'"', false)
-        ->assertSee('href="'.route('marketing.article', 'why-isnt-my-website-ranking-on-google').'"', false);
+        ->assertSee('href="'.route('marketing.landing', 'managed-seo-services').'"', false);
 
     $this->get(route('marketing.article', 'missing-article'))->assertNotFound();
 });

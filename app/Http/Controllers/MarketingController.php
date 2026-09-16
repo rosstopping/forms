@@ -290,11 +290,6 @@ class MarketingController extends Controller
                                 'parameters' => ['managed-seo-services'],
                                 'label' => 'Explore managed SEO services',
                             ],
-                            [
-                                'route' => 'marketing.article',
-                                'parameters' => ['why-isnt-my-website-ranking-on-google'],
-                                'label' => 'Diagnose why a website may not be ranking on Google',
-                            ],
                         ],
                     ],
                 ],
@@ -367,6 +362,11 @@ class MarketingController extends Controller
                             [
                                 'route' => 'marketing.features',
                                 'label' => 'Explore how Sitewell handles health checks and search opportunities',
+                            ],
+                            [
+                                'route' => 'marketing.article',
+                                'parameters' => ['why-isnt-my-website-ranking-on-google'],
+                                'label' => 'Read our guide to diagnosing ranking problems',
                             ],
                         ],
                     ],
