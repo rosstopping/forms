@@ -464,3 +464,65 @@ test('automatic setup never recreates disabled or deleted suggested questions', 
     expect(AiVisibilityPrompt::where('active', true)->sole()->topic)->toBe('website maintenance');
     Queue::assertPushed(CheckAiVisibility::class, 1);
 });
+
+test('keyword resync adds missing questions while preserving edited disabled and deleted prompts', function (): void {
+    Queue::fake();
+    $website = Website::factory()->create(['name' => 'Digizu']);
+    $settings = AiVisibilitySetting::factory()->for($website)->create(['enabled' => true, 'services' => ['Unrelated service']]);
+    foreach (range(1, 16) as $index) {
+        $keyword = SeoTargetKeyword::factory()->for($website)->create(['term' => 'service '.$index]);
+        $prompt = AiVisibilityPrompt::factory()->for($website)->create(['seo_target_keyword_id' => $keyword->id, 'prompt' => 'Custom question '.$index.'?', 'active' => $index !== 2]);
+        if ($index === 3) {
+            $prompt->delete();
+        }
+    }
+    $result = AiVisibilityResult::factory()->for($prompt, 'prompt')->completed()->create();
+    $before = AiVisibilityPrompt::withTrashed()->get()->toArray();
+    $settings->refresh();
+    $result->refresh();
+    $keyword = SeoTargetKeyword::factory()->for($website)->create(['term' => 'website maintenance']);
+    SeoTargetKeyword::factory()->for($website)->create(['term' => 'archived service', 'archived_at' => now()]);
+    SeoTargetKeyword::factory()->create(['term' => 'foreign service']);
+    config(['ai_visibility.max_active_prompts' => 30]);
+    $this->actingAs($website->owner)->get(route('admin.ai-visibility.index', $website))->assertOk()->assertSee('Re-sync target keywords');
+    $this->post(route('admin.ai-visibility.sync-keywords', $website))->assertSessionHasNoErrors()->assertSessionHas('status', fn ($status) => str_starts_with($status, '1 new questions added'));
+    $added = AiVisibilityPrompt::where('seo_target_keyword_id', $keyword->id)->sole();
+    expect($added->prompt)->toBe('Which businesses would you recommend for website maintenance?');
+    expect(AiVisibilityPrompt::withTrashed()->whereKey(array_column($before, 'id'))->get()->toArray())->toBe($before);
+    expect($settings->fresh()->getAttributes())->toBe($settings->getAttributes());
+    expect($result->fresh()->getAttributes())->toBe($result->getAttributes());
+    $this->post(route('admin.ai-visibility.sync-keywords', $website))->assertSessionHas('status', fn ($status) => str_starts_with($status, 'No new questions'));
+    expect(AiVisibilityPrompt::withTrashed()->count())->toBe(17);
+    Queue::assertNothingPushed();
+    AiVisibilityObserver::assertNeverPrompted();
+    Http::assertNothingSent();
+});
+
+test('keyword resync respects remaining capacity and does not substitute services for keywords', function (): void {
+    $website = Website::factory()->create();
+    AiVisibilitySetting::factory()->for($website)->create(['enabled' => true, 'services' => ['boiler repairs']]);
+    $this->actingAs($website->owner)->post(route('admin.ai-visibility.sync-keywords', $website))->assertSessionHas('status', fn ($status) => str_starts_with($status, 'No new questions'));
+    expect(AiVisibilityPrompt::count())->toBe(0);
+    config(['ai_visibility.max_active_prompts' => 2]);
+    AiVisibilityPrompt::factory()->for($website)->create();
+    SeoTargetKeyword::factory()->for($website)->create(['term' => 'plumbing', 'priority' => 'normal']);
+    $high = SeoTargetKeyword::factory()->for($website)->create(['term' => 'heating', 'priority' => 'high']);
+    $this->post(route('admin.ai-visibility.sync-keywords', $website))->assertSessionHasNoErrors();
+    expect(AiVisibilityPrompt::count())->toBe(2)->and(AiVisibilityPrompt::where('seo_target_keyword_id', $high->id)->exists())->toBeTrue();
+    $this->post(route('admin.ai-visibility.sync-keywords', $website))->assertSessionHasErrors('prompt');
+    expect(AiVisibilityPrompt::count())->toBe(2);
+});
+
+test('keyword resync requires a manager and enabled tracking', function (): void {
+    $website = Website::factory()->create();
+    $viewer = User::factory()->create();
+    $this->actingAs($viewer)->post(route('admin.ai-visibility.sync-keywords', $website))->assertForbidden();
+    $website->members()->attach($viewer, ['role' => 'viewer']);
+    AiVisibilitySetting::factory()->for($website)->create(['enabled' => true]);
+    $this->get(route('admin.ai-visibility.index', $website))->assertOk()->assertDontSee('Re-sync target keywords');
+    $this->post(route('admin.ai-visibility.sync-keywords', $website))->assertForbidden();
+    AiVisibilitySetting::query()->update(['enabled' => false]);
+    $this->actingAs($website->owner)->get(route('admin.ai-visibility.index', $website))->assertOk()->assertDontSee('Re-sync target keywords');
+    $this->post(route('admin.ai-visibility.sync-keywords', $website))->assertSessionHasErrors('enabled');
+    expect(AiVisibilityPrompt::count())->toBe(0)->and(AiVisibilitySetting::sole()->enabled)->toBeFalse();
+});

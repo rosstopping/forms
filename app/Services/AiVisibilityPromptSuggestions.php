@@ -13,13 +13,16 @@ class AiVisibilityPromptSuggestions
     public function __construct(private AiVisibilitySetup $setup, private AiVisibilityAnalyzer $analyzer) {}
 
     /** @return array<int, array{prompt: string, topic: string, location: ?string, seo_target_keyword_id: ?int}> */
-    public function forWebsite(Website $website, ?AiVisibilitySetting $settings = null): array
+    public function forWebsite(Website $website, ?AiVisibilitySetting $settings = null, bool $targetKeywordsOnly = false): array
     {
         $settings ??= $this->setup->settings($website);
-        $terms = $website->seoTargetKeywords()->whereNull('archived_at')->orderByRaw("CASE WHEN priority = 'high' THEN 0 ELSE 1 END")->orderBy('id')->limit(15)->get();
+        $terms = $website->seoTargetKeywords()->whereNull('archived_at')
+            ->when($targetKeywordsOnly, fn ($query) => $query->whereNotIn('id', AiVisibilityPrompt::withTrashed()->where('website_id', $website->id)->whereNotNull('seo_target_keyword_id')->select('seo_target_keyword_id')))
+            ->orderByRaw("CASE WHEN priority = 'high' THEN 0 ELSE 1 END")->orderBy('id')
+            ->when(! $targetKeywordsOnly, fn ($query) => $query->limit(15))->get();
         $locations = $settings?->locations ?? [];
         $ideas = $terms->map(fn ($term) => ['topic' => $term->term, 'location' => null, 'seo_target_keyword_id' => $term->id]);
-        foreach ($settings?->services ?? [] as $service) {
+        foreach ($targetKeywordsOnly ? [] : ($settings?->services ?? []) as $service) {
             foreach ($locations ?: [null] as $location) {
                 $ideas->push(['topic' => $service, 'location' => $location, 'seo_target_keyword_id' => null]);
             }
@@ -28,7 +31,7 @@ class AiVisibilityPromptSuggestions
         $usable = fn (string $topic): bool => filled($topic) && ! $this->analyzer->mentionsBrand($topic, $identity['names'])
             && ! collect($identity['domains'])->contains(fn ($domain) => Str::contains(Str::lower($topic), $domain));
         $ideas = $ideas->filter(fn ($idea) => $usable($idea['topic']));
-        if ($ideas->isEmpty()) {
+        if ($ideas->isEmpty() && ! $targetKeywordsOnly) {
             $snapshot = $website->seoSnapshots()->whereIn('status', ['completed', 'completed_with_errors'])->latest('snapshot_date')->first();
             $topics = $snapshot?->keywords()->orderByDesc('estimated_traffic')->limit(50)->pluck('keyword') ?? collect();
             $queries = SearchConsoleMetric::query()->where('website_id', $website->id)->whereNotNull('query')->where('month', '>=', today()->subMonths(3)->startOfMonth());
@@ -47,7 +50,7 @@ class AiVisibilityPromptSuggestions
             $subject = $topic.($idea['location'] ? ' in '.$idea['location'] : '');
 
             return [...$idea, 'prompt' => 'Which businesses would you recommend for '.$subject.'?'];
-        })->unique(fn ($idea) => $this->suggestionKey($idea['prompt']))->reject(fn ($idea) => $existing->contains($this->suggestionKey($idea['prompt'])))->take(15)->values()->all();
+        })->unique(fn ($idea) => $this->suggestionKey($idea['prompt']))->reject(fn ($idea) => $existing->contains($this->suggestionKey($idea['prompt'])))->take($targetKeywordsOnly ? max(0, (int) config('ai_visibility.max_active_prompts')) : 15)->values()->all();
     }
 
     private function suggestionKey(string $prompt): string

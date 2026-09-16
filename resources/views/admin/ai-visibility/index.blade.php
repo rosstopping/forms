@@ -3,7 +3,12 @@
 <div class="space-y-6">
     <header class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div><p class="font-mono text-xs text-teal-700">{{ $website->name }}</p><h1 class="mt-1 text-3xl font-semibold text-slate-950">AI Visibility</h1><p class="mt-2 text-sm text-slate-600">When customers ask AI for businesses like yours, are you being recommended?</p></div>
-        @if ($canManage && $settings->enabled)<form method="POST" action="{{ route('admin.ai-visibility.check', $website) }}">@csrf<button class="rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-800">Check now</button></form>@endif
+        @if ($canManage && $settings->enabled)
+            <div class="flex flex-wrap gap-3">
+                <form method="POST" action="{{ route('admin.ai-visibility.sync-keywords', $website) }}">@csrf<button class="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Re-sync target keywords</button></form>
+                <form method="POST" action="{{ route('admin.ai-visibility.check', $website) }}">@csrf<button class="rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-800">Check now</button></form>
+            </div>
+        @endif
     </header>
     @if (session('status'))<div role="status" class="rounded-xl border border-teal-200 bg-teal-50 p-4 text-sm text-teal-900">{{ session('status') }}</div>@endif
     @if ($errors->any())<div role="alert" class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">@foreach ($errors->all() as $error)<p>{{ $error }}</p>@endforeach</div>@endif

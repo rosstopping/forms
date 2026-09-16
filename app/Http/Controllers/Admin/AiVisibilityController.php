@@ -130,6 +130,34 @@ class AiVisibilityController extends Controller
         return $this->redirect($website, 'Suggested questions are ready below. You can use them when turning on tracking.')->with('aiPromptSuggestions', $suggestions->forWebsite($website));
     }
 
+    public function syncKeywords(Request $request, Website $website, AiVisibilityPromptSuggestions $suggestions): RedirectResponse
+    {
+        abort_unless($website->isManageableBy($request->user()), 403);
+
+        $count = DB::transaction(function () use ($website, $suggestions): int {
+            Website::query()->whereKey($website)->lockForUpdate()->firstOrFail();
+            $settings = AiVisibilitySetting::query()->where('website_id', $website->id)->first();
+            if (! $settings?->enabled) {
+                throw ValidationException::withMessages(['enabled' => 'Turn on AI tracking before syncing target keywords.']);
+            }
+            $activeCount = AiVisibilityPrompt::query()->where('website_id', $website->id)->where('active', true)->count();
+            $remaining = max(0, (int) config('ai_visibility.max_active_prompts') - $activeCount);
+            if ($remaining === 0) {
+                throw ValidationException::withMessages(['prompt' => 'The active prompt limit has been reached. Disable a prompt before syncing target keywords.']);
+            }
+            $ideas = array_slice($suggestions->forWebsite($website, $settings, targetKeywordsOnly: true), 0, $remaining);
+            foreach ($ideas as $idea) {
+                $this->savePrompt($website, new AiVisibilityPrompt(['website_id' => $website->id]), [...$idea, 'active' => true, 'priority' => 'normal']);
+            }
+
+            return count($ideas);
+        });
+
+        return $this->redirect($website, $count > 0
+            ? $count.' new questions added from target keywords. Use Check now to run eligible checks, or wait for the next scheduled check.'
+            : 'No new questions to add from target keywords. Existing, disabled and deleted questions are preserved.');
+    }
+
     public function check(Request $request, Website $website, AiVisibilityScheduler $scheduler, ?AiVisibilityPrompt $prompt = null): RedirectResponse
     {
         abort_unless($website->isManageableBy($request->user()), 403);

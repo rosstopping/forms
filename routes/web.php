@@ -233,6 +233,7 @@ Route::middleware(['web', 'auth', ResolveCurrentWebsite::class])->prefix('admin'
     Route::prefix('websites/{website}/ai-visibility')->name('ai-visibility.')->group(function () {
         Route::put('settings', [AiVisibilityController::class, 'settings'])->name('settings');
         Route::post('suggestions', [AiVisibilityController::class, 'suggestions'])->name('suggestions');
+        Route::post('sync-keywords', [AiVisibilityController::class, 'syncKeywords'])->name('sync-keywords');
         Route::post('checks', [AiVisibilityController::class, 'check'])->middleware('throttle:6,1')->name('check');
         Route::post('prompts', [AiVisibilityController::class, 'store'])->name('store');
         Route::get('prompts/{prompt}', [AiVisibilityController::class, 'show'])->withTrashed()->name('show');
