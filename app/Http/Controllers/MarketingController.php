@@ -192,6 +192,114 @@ class MarketingController extends Controller
     {
         return [
             [
+                'slug' => 'why-isnt-my-website-ranking-on-google',
+                'category' => 'Search',
+                'title' => 'Why isn\'t my website ranking on Google?',
+                'seo_title' => 'Why your website is not ranking',
+                'excerpt' => 'A practical guide for small businesses on why pages struggle in Google, what to check first, and what to fix before spending more on marketing.',
+                'date' => '16 September 2026',
+                'date_iso' => '2026-09-16',
+                'read_time' => '9 min read',
+                'sections' => [
+                    [
+                        'heading' => 'Ranking problems are usually a combination, not one single issue',
+                        'paragraphs' => [
+                            'Most small-business websites do not fail in Google because of one technical mistake. More often, a page underperforms because several smaller problems add up: unclear service messaging, weak local relevance, outdated content, and a website that is not reviewed often enough.',
+                            'The good news is that this can be diagnosed. You do not need to guess or rebuild everything straight away. Start by finding where the mismatch sits between what people search for and what your key pages currently show.',
+                        ],
+                    ],
+                    [
+                        'heading' => 'Reason 1: The page does not clearly answer the search',
+                        'paragraphs' => [
+                            'If someone searches for a specific service, Google wants to show a page that clearly explains that exact service, who it is for, and what the next step is. A broad homepage often cannot do that job on its own.',
+                            'Pages that rank better usually provide direct answers, practical detail, and a clear next action instead of vague sales language.',
+                        ],
+                        'points' => [
+                            'Make sure each core service has its own dedicated page.',
+                            'Use headings that match what customers actually ask.',
+                            'Add specific proof and practical detail, not only general claims.',
+                        ],
+                    ],
+                    [
+                        'heading' => 'Reason 2: Local relevance is too weak',
+                        'paragraphs' => [
+                            'For businesses that rely on local customers, Google needs clear local signals. If your website and profile details are inconsistent, or your pages never mention the areas you genuinely serve, competitors with stronger local context can outrank you.',
+                            'Local SEO is not only a Google Business Profile task. It also depends on whether your website pages support the same locations and services.',
+                        ],
+                        'links' => [
+                            [
+                                'route' => 'marketing.landing',
+                                'parameters' => ['local-seo-services'],
+                                'label' => 'See how local SEO services connect page content, Google visibility and local search',
+                            ],
+                        ],
+                    ],
+                    [
+                        'heading' => 'Reason 3: The website has hidden quality or trust issues',
+                        'paragraphs' => [
+                            'Pages can struggle when contact routes are unreliable, content is outdated, or important trust information is missing. These issues affect both customer confidence and search performance over time.',
+                            'You do not need every metric to be perfect, but your key pages should be accurate, usable on mobile, and easy for a potential customer to act on.',
+                        ],
+                        'points' => [
+                            'Check that your contact form actually delivers submissions.',
+                            'Update outdated service details, opening hours, and pricing context where relevant.',
+                            'Remove or fix broken pages and links on core customer journeys.',
+                        ],
+                    ],
+                    [
+                        'heading' => 'Reason 4: No ongoing content or optimisation process',
+                        'paragraphs' => [
+                            'Google results change constantly. If your website has not been improved for months, it can slowly lose ground to competitors who keep refining their pages.',
+                            'Ongoing SEO usually means improving existing pages first, then adding focused new content only where a real search gap exists.',
+                        ],
+                        'links' => [
+                            [
+                                'route' => 'marketing.landing',
+                                'parameters' => ['seo-for-small-businesses'],
+                                'label' => 'Read how ongoing SEO for small businesses is prioritised',
+                            ],
+                        ],
+                    ],
+                    [
+                        'heading' => 'A practical diagnosis checklist before you spend more',
+                        'paragraphs' => [
+                            'Before investing in more ads or commissioning a full redesign, run a basic diagnosis on the pages that matter most.',
+                        ],
+                        'points' => [
+                            'Search for your main service + location and note which page Google currently shows (if any).',
+                            'Check whether that page clearly explains the service, location and next step.',
+                            'Confirm your contact route works and enquiries are visible after submission.',
+                            'Review whether your Google profile details and website details match.',
+                            'List the pages that have not been updated in the last six months.',
+                        ],
+                    ],
+                    [
+                        'heading' => 'When to use a professional website audit',
+                        'paragraphs' => [
+                            'If you can see something is wrong but cannot confidently prioritise what to fix first, a structured audit is usually the quickest way to avoid wasted effort.',
+                            'Sitewell’s free website audit highlights practical issues across visibility, page quality and enquiry handling so you can make an informed next decision.',
+                        ],
+                        'links' => [
+                            [
+                                'route' => 'marketing.free-site-audit',
+                                'label' => 'Start a free website audit',
+                                'description' => 'Get a practical starting point before committing to wider SEO or website changes.',
+                            ],
+                            [
+                                'route' => 'marketing.landing',
+                                'parameters' => ['managed-seo-services'],
+                                'label' => 'Explore managed SEO services',
+                            ],
+                            [
+                                'route' => 'marketing.article',
+                                'parameters' => ['why-isnt-my-website-ranking-on-google'],
+                                'label' => 'Diagnose why a website may not be ranking on Google',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            [
                 'slug' => 'what-website-maintenance-actually-includes',
                 'category' => 'Website care',
                 'title' => 'What does website maintenance actually include?',

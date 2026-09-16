@@ -28,7 +28,17 @@ it('shows each public marketing page', function (string $route, string $copy): v
 it('shows journal articles and returns not found for unknown slugs', function (): void {
     $this->get(route('marketing.journal'))
         ->assertSuccessful()
+        ->assertSee('Why isn\'t my website ranking on Google?')
         ->assertSee('What does website maintenance actually include?');
+
+    $this->get(route('marketing.article', 'why-isnt-my-website-ranking-on-google'))
+        ->assertSuccessful()
+        ->assertSee('Reason 2: Local relevance is too weak')
+        ->assertSee('A practical diagnosis checklist before you spend more')
+        ->assertSee('Start a free website audit')
+        ->assertSee('href="'.route('marketing.landing', 'local-seo-services').'"', false)
+        ->assertSee('href="'.route('marketing.free-site-audit').'"', false)
+        ->assertSee('href="'.route('marketing.landing', 'managed-seo-services').'"', false);
 
     $this->get(route('marketing.article', 'what-website-maintenance-actually-includes'))
         ->assertSuccessful()
@@ -49,7 +59,8 @@ it('shows journal articles and returns not found for unknown slugs', function ()
         ->assertSuccessful()
         ->assertSee('Turn search data into the next useful improvement')
         ->assertSee('href="'.route('marketing.landing', 'seo-for-small-businesses').'"', false)
-        ->assertSee('href="'.route('marketing.landing', 'managed-seo-services').'"', false);
+        ->assertSee('href="'.route('marketing.landing', 'managed-seo-services').'"', false)
+        ->assertSee('href="'.route('marketing.article', 'why-isnt-my-website-ranking-on-google').'"', false);
 
     $this->get(route('marketing.article', 'missing-article'))->assertNotFound();
 });
@@ -74,8 +85,10 @@ it('outputs canonical URLs for key marketing pages', function (string $routeName
     'privacy policy' => ['marketing.privacy'],
     'terms of service' => ['marketing.terms'],
     'journal article' => ['marketing.article', ['a-clean-website-handover']],
+    'ranking article' => ['marketing.article', ['why-isnt-my-website-ranking-on-google']],
     'website management landing page' => ['marketing.landing', ['website-management-services']],
     'website maintenance landing page' => ['marketing.landing', ['website-maintenance-packages']],
+    'local seo landing page' => ['marketing.landing', ['local-seo-services']],
     'small business SEO landing page' => ['marketing.landing', ['seo-for-small-businesses']],
 ]);
 
@@ -90,6 +103,7 @@ it('uses shorter SEO page titles for flagged marketing pages', function (string 
 })->with([
     'home' => ['marketing.home', [], 'Managed business websites'],
     'clean handover article' => ['marketing.article', ['a-clean-website-handover'], 'A clean website handover'],
+    'ranking article' => ['marketing.article', ['why-isnt-my-website-ranking-on-google'], 'Why your website is not ranking'],
     'website maintenance article' => ['marketing.article', ['what-website-maintenance-actually-includes'], 'Website maintenance explained'],
     'forms article' => ['marketing.article', ['forms-that-never-lose-a-lead'], 'Build forms that capture leads'],
     'search article' => ['marketing.article', ['search-data-to-content-decisions'], 'Turn search data into action'],
@@ -127,6 +141,7 @@ it('publishes an XML sitemap for the marketing site', function (): void {
         ->assertSee('<loc>'.route('marketing.landing', 'small-business-website-support').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.landing', 'managed-seo-services').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.landing', 'seo-for-small-businesses').'</loc>', false)
+        ->assertSee('<loc>'.route('marketing.landing', 'local-seo-services').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.landing', 'website-lead-generation').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.landing', 'improve-my-website').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.pricing').'</loc>', false)
@@ -140,6 +155,7 @@ it('publishes an XML sitemap for the marketing site', function (): void {
         ->assertSee('<loc>'.route('marketing.free-site-audit').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.journal').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.contact').'</loc>', false)
+        ->assertSee('<loc>'.route('marketing.article', 'why-isnt-my-website-ranking-on-google').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.article', 'what-website-maintenance-actually-includes').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.privacy').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.terms').'</loc>', false)
@@ -307,6 +323,7 @@ it('publishes search-led service landing pages with unique metadata and FAQ sche
     'small business support' => ['small-business-website-support', 'Small business website support', 'Website support without chasing three different suppliers'],
     'managed SEO' => ['managed-seo-services', 'Managed SEO services UK', 'SEO analysis that becomes useful website work'],
     'small business SEO' => ['seo-for-small-businesses', 'SEO for small businesses UK', 'Affordable small business SEO that keeps moving'],
+    'local SEO' => ['local-seo-services', 'Local SEO services UK', 'Local SEO services for businesses that depend on nearby customers'],
     'website leads' => ['website-lead-generation', 'Get more website leads', 'Help more of the right visitors become genuine enquiries'],
     'website improvement' => ['improve-my-website', 'Improve my business website', 'Make the website you already have work harder'],
 ]);
