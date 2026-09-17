@@ -6,6 +6,7 @@ namespace Sitewell\StaticFrontend\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
 use Sitewell\StaticFrontend\Admin\SettingsPage;
+use Sitewell\StaticFrontend\DirectDelivery;
 use Sitewell\StaticFrontend\ReleaseInstaller;
 use Sitewell\StaticFrontend\UploadsDelivery;
 use ZipArchive;
@@ -66,6 +67,24 @@ final class UploadsDeliveryTest extends TestCase {
 		self::assertSame( $pages, $this->delivery()->prepare( $release['path'] ) );
 	}
 
+	public function test_it_installs_plain_compiled_assets_without_optimizer_metadata(): void {
+		$this->install(
+			[
+				'index.html'              => '<link rel="stylesheet" href="/assets/static/site.css"><h1>Plain site</h1>',
+				'assets/static/site.css'  => '@font-face{src:url(../fonts/site.woff2)}',
+				'assets/fonts/site.woff2' => 'wOF2font',
+			],
+			null
+		);
+		$release = get_option( SettingsPage::OPTION_ACTIVE_RELEASE );
+		$public  = glob( $this->root . '/wp-content/uploads/sitewell-assets/wsr_*' )[0];
+		self::assertFileDoesNotExist( $release['path'] . '/static-build-manifest.json' );
+		self::assertFileDoesNotExist( $release['path'] . '/_headers' );
+		self::assertStringContainsString( self::URL, file_get_contents( $release['rendered_path'] . '/index.html' ) );
+		self::assertStringContainsString( self::URL, file_get_contents( $public . '/assets/static/site.css' ) );
+		self::assertSame( 'wOF2font', file_get_contents( $public . '/assets/fonts/site.woff2' ) );
+	}
+
 	public function test_enabling_an_existing_release_needs_no_host_configuration(): void {
 		$this->install(
 			[
@@ -87,17 +106,39 @@ final class UploadsDeliveryTest extends TestCase {
 		file_put_contents( $this->root . '/sitewell-static/.enabled', '1' );
 		file_put_contents( $this->root . '/sitewell-static/.nginx.conf', 'existing configuration' );
 		update_option( 'sitewell_static_frontend_direct', true );
-		$this->delivery()->enable( new \Sitewell\StaticFrontend\DirectDelivery( $this->root, 'nginx' ) );
+		$this->delivery()->enable( new DirectDelivery( $this->root, 'nginx' ) );
 		self::assertFileDoesNotExist( $this->root . '/sitewell-static/.enabled' );
 		self::assertSame( 'existing configuration', file_get_contents( $this->root . '/sitewell-static/.nginx.conf' ) );
 		self::assertFalse( get_option( 'sitewell_static_frontend_direct' ) );
 	}
 
 	public function test_old_upload_assets_survive_later_deployments_and_private_release_pruning(): void {
-		$this->install( [ 'index.html' => '<img src="/image.png">', 'image.png' => 'first' ], [] );
+		$this->install(
+			[
+				'index.html' => '<img src="/image.png">',
+				'image.png'  => 'first',
+			],
+			[]
+		);
 		$old = glob( $this->root . '/wp-content/uploads/sitewell-assets/wsr_*' )[0];
-		$this->install( [ 'index.html' => '<img src="/image.png">', 'image.png' => 'second' ], [], true, 'wsr_1234567890abcdefghijklmnopqr' );
-		$this->install( [ 'index.html' => '<img src="/image.png">', 'image.png' => 'third' ], [], true, 'wsr_abcdefghijklmnopqrstuvwxyz34' );
+		$this->install(
+			[
+				'index.html' => '<img src="/image.png">',
+				'image.png'  => 'second',
+			],
+			[],
+			true,
+			'wsr_1234567890abcdefghijklmnopqr'
+		);
+		$this->install(
+			[
+				'index.html' => '<img src="/image.png">',
+				'image.png'  => 'third',
+			],
+			[],
+			true,
+			'wsr_abcdefghijklmnopqrstuvwxyz34'
+		);
 		self::assertSame( 'first', file_get_contents( $old . '/image.png' ) );
 		self::assertDirectoryDoesNotExist( $this->root . '/releases/wsr_abcdefghijklmnopqrstuvwxyz12' );
 		self::assertStringContainsString( 'wsr_abcdefghijklmnopqrstuvwxyz34', file_get_contents( get_option( SettingsPage::OPTION_ACTIVE_RELEASE )['rendered_path'] . '/index.html' ) );
@@ -176,8 +217,8 @@ final class UploadsDeliveryTest extends TestCase {
 		return new UploadsDelivery( $this->root . '/wp-content/uploads/sitewell-assets', self::URL );
 	}
 
-	private function install( array $files, array $assets, bool $prepare = true, string $id = 'wsr_abcdefghijklmnopqrstuvwxyz12' ): void {
-		$files  += [
+	private function install( array $files, ?array $assets, bool $prepare = true, string $id = 'wsr_abcdefghijklmnopqrstuvwxyz12' ): void {
+		$files  += $assets === null ? [] : [
 			'_headers'                   => '/',
 			'static-build-manifest.json' => json_encode(
 				[

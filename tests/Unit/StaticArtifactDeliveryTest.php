@@ -31,7 +31,7 @@ it('rejects incomplete optimized releases and unresolved dependencies', function
     $files = optimizedDeliveryFiles();
     $manifest = json_decode($files['static-build-manifest.json'], true);
     match ($mutation) {
-        'source' => $files = ['index.html' => '<h1>Source</h1>'],
+        'source' => $files = ['index.html' => '{% include source %}'],
         'missing font' => $files = array_diff_key($files, [ltrim($manifest['assets']['/font.ttf'], '/') => true]),
         'wrong bytes' => $files[ltrim($manifest['assets']['/site.css'], '/')] = 'corrupt',
         'missing image' => $files['index.html'] .= '<img src="/missing.png">',
@@ -45,6 +45,30 @@ it('rejects incomplete optimized releases and unresolved dependencies', function
     expect(fn () => (new StaticArtifactValidator)->validate(array_keys($files), fn (string $path): string|false => $files[$path] ?? false))
         ->toThrow(RuntimeException::class);
 })->with(['source', 'missing font', 'wrong bytes', 'missing image', 'remote font', 'missing css import', 'unbuilt page']);
+
+it('accepts compiled releases with either or both metadata files absent', function (array $missing): void {
+    $files = array_diff_key(optimizedDeliveryFiles(), array_fill_keys($missing, true));
+    (new StaticArtifactValidator)->validate(array_keys($files), fn (string $path): string|false => $files[$path] ?? false);
+    expect(true)->toBeTrue();
+})->with([
+    'no headers' => [['_headers']],
+    'no manifest' => [['static-build-manifest.json']],
+    'neither' => [['_headers', 'static-build-manifest.json']],
+]);
+
+it('rejects invalid supplied metadata and corrupt fingerprints even without metadata', function (string $mutation): void {
+    $files = optimizedDeliveryFiles();
+    unset($files['_headers']);
+    if ($mutation === 'invalid manifest') {
+        $files['static-build-manifest.json'] = '{invalid';
+    } else {
+        $manifest = json_decode($files['static-build-manifest.json'], true);
+        unset($files['static-build-manifest.json']);
+        $files[ltrim($manifest['assets']['/site.css'], '/')] = 'corrupt';
+    }
+    expect(fn () => (new StaticArtifactValidator)->validate(array_keys($files), fn (string $path): string|false => $files[$path] ?? false))
+        ->toThrow(RuntimeException::class);
+})->with(['invalid manifest', 'corrupt fingerprint']);
 
 /** @param array<string, string> $files */
 function installDeliveryFixture(string $directory, array $files, string $releaseId): void
@@ -80,7 +104,7 @@ it('serves cold and cached assets without WordPress and switches complete releas
     $server = null;
     try {
         $files = optimizedDeliveryFiles();
-        installDeliveryFixture($directory, $files, 'wsr_abcdefghijklmnopqrstuvwxyz12');
+        installDeliveryFixture($directory, array_diff_key($files, ['static-build-manifest.json' => true, '_headers' => true]), 'wsr_abcdefghijklmnopqrstuvwxyz12');
         $routing = str_replace(['__PUBLIC_PATH__', '__WORDPRESS_ORIGIN__'], [$directory.'/public', 'http://127.0.0.1:'.$wordpressPort], file_get_contents(dirname(__DIR__, 2).'/wordpress-plugin/sitewell-by-digizu/templates/static-nginx.conf'));
         $configuration = <<<CONF
 pid $directory/nginx.pid;
@@ -173,7 +197,7 @@ CONF;
         $revalidated = $request('/', $originPort, ['If-Modified-Since: '.$oldHtml['responseHeaders']['last-modified']]);
         expect($revalidated['status'])->toBe(200)->and($revalidated['body'])->toBe($newFiles['index.html']);
         $broken = optimizedDeliveryFiles('red');
-        unset($broken['static-build-manifest.json']);
+        $broken['static-build-manifest.json'] = '{invalid';
         expect(fn () => installDeliveryFixture($directory, $broken, 'wsr_abcdefghijklmnopqrstuvwxyz56'))->toThrow(ProcessFailedException::class);
         expect($request('/', $originPort)['body'])->toBe($newFiles['index.html']);
         $rowglo = getenv('ROWGLO_STATIC_FIXTURE');

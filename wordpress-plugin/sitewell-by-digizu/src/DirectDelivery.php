@@ -229,9 +229,8 @@ final class DirectDelivery {
 	}
 
 	private function verify( string $releasePath, ?string $token ): void {
-		$manifest = json_decode( $this->read( $releasePath . '/static-build-manifest.json' ), true, 512, JSON_THROW_ON_ERROR );
-		$checks   = [ '/' => '/index.html' ];
-		foreach ( array_slice( array_values( $manifest['assets'] ), 0, 1 ) as $asset ) {
+		$checks = [ '/' => '/index.html' ];
+		foreach ( array_slice( StaticPublisher::assetUrls( $releasePath ), 0, 1 ) as $asset ) {
 			$checks[ $asset ] = $asset;
 		}
 		$checks[ '/sitewell-missing-' . bin2hex( random_bytes( 8 ) ) . '.css' ] = null;

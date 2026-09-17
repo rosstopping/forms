@@ -15,9 +15,7 @@ final class StaticPublisher {
 		if ( ! wp_mkdir_p( $this->publicPath ) ) {
 			throw new RuntimeException( 'Could not create the static publishing directory.' );
 		}
-        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Read the validated local build manifest without any network dependency.
-		$manifest = json_decode( (string) file_get_contents( $releasePath . '/static-build-manifest.json' ), true, 512, JSON_THROW_ON_ERROR );
-		foreach ( array_unique( array_values( $manifest['assets'] ) ) as $url ) {
+		foreach ( self::assetUrls( $releasePath ) as $url ) {
 			$destination = $this->publicPath . $url;
 			$source      = $releasePath . $url;
 			if ( ! wp_mkdir_p( dirname( $destination ) ) ) {
@@ -49,5 +47,20 @@ final class StaticPublisher {
 			throw new RuntimeException( 'Could not atomically switch the static publishing target.' );
 		}
 		clearstatcache( true );
+	}
+
+	/** @return list<string> Validated fingerprinted assets safe to retain across releases. */
+	public static function assetUrls( string $releasePath ): array {
+		$assets = [];
+		foreach ( [ 'assets/fonts', 'assets/static' ] as $directory ) {
+			$paths = glob( $releasePath . '/' . $directory . '/*' );
+			foreach ( $paths === false ? [] : $paths as $path ) {
+				if ( is_file( $path ) && preg_match( '/^[\w-]+\.[a-f0-9]{16}\.[a-z0-9]+$/D', basename( $path ) ) ) {
+					$assets[] = '/' . $directory . '/' . basename( $path );
+				}
+			}
+		}
+
+		return $assets;
 	}
 }

@@ -33,7 +33,7 @@ final class ReleaseInstallerTest extends TestCase {
 		);
 		$releaseId   = 'wsr_abcdefghijklmnopqrstuvwxyz12';
 
-		( new ReleaseInstaller( $this->directory . '/releases' ) )->install(
+		( new ReleaseInstaller( $this->directory . '/releases', $this->directory . '/public' ) )->install(
 			[
 				'release_id' => $releaseId,
 				'checksum'   => hash_file( 'sha256', $archivePath ),
@@ -46,6 +46,8 @@ final class ReleaseInstallerTest extends TestCase {
 		self::assertSame( $releaseId, $active['release_id'] );
 		self::assertSame( '<h1>Sitewell release</h1>', file_get_contents( $active['path'] . '/index.html' ) );
 		self::assertSame( 'body { color: teal; }', file_get_contents( $active['path'] . '/assets/site.css' ) );
+		self::assertFileDoesNotExist( $active['path'] . '/static-build-manifest.json' );
+		self::assertSame( $active['path'], readlink( $this->directory . '/public/current' ) );
 		self::assertFileExists( $this->directory . '/releases/.htaccess' );
 		self::assertFileExists( $this->directory . '/releases/web.config' );
 		self::assertFileExists( $this->directory . '/releases/index.php' );
@@ -113,16 +115,6 @@ final class ReleaseInstallerTest extends TestCase {
 	 * @param  array<string, string>  $files
 	 */
 	private function archive( array $files ): string {
-		$files  += [
-			'static-build-manifest.json' => json_encode(
-				[
-					'version' => 1,
-					'pages'   => 1,
-					'assets'  => [],
-				]
-			),
-			'_headers'                   => '/',
-		];
 		$path    = $this->directory . '/release-' . count( glob( $this->directory . '/*.zip' ) ) . '.zip';
 		$archive = new ZipArchive();
 		$archive->open( $path, ZipArchive::CREATE | ZipArchive::OVERWRITE );
@@ -143,7 +135,7 @@ final class ReleaseInstallerTest extends TestCase {
 
 		foreach ( array_diff( scandir( $path ) ?: [], [ '.', '..' ] ) as $item ) {
 			$itemPath = $path . DIRECTORY_SEPARATOR . $item;
-			is_dir( $itemPath ) ? $this->removeDirectory( $itemPath ) : unlink( $itemPath );
+			is_dir( $itemPath ) && ! is_link( $itemPath ) ? $this->removeDirectory( $itemPath ) : unlink( $itemPath );
 		}
 
 		rmdir( $path );

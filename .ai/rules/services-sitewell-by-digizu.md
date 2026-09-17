@@ -13,3 +13,6 @@ Managed DirectDelivery supersedes the old checkbox-independent behavior; that ru
 
 ## Default to uploads assets without host configuration
 UploadsDelivery supersedes mandatory managed direct setup: normal enable prepares private rewritten HTML and publishes physical versioned asset URLs under WordPress uploads, while pages and operational requests stay in WordPress. Do not require Nginx edits, symlinks or DNS changes for the default mode. Retain original validated artifacts and old public asset directories; publish complete assets before switching rendered_path. Existing direct hosts migrate only on explicit save by removing their .enabled switch; legacy custom virtual hosts require separate migration. Test rewritten HTML/CSS dependencies and actual Rowglo upload URLs on a plain Nginx root.
+
+## Accept compiled sites without optimizer metadata
+Supersedes the mandatory optimized-artifact rule: static-build-manifest.json and _headers are optional. Validate supplied manifests, fingerprinted bytes, unbuilt templates and local dependencies as before; allow ordinary asset filenames without a manifest. Both Laravel packaging and plugin installation use the shared validator. Direct publication discovers fingerprinted assets from files without needing metadata; never treat ordinary filenames as immutable.

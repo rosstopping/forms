@@ -241,15 +241,20 @@ it('notifies the connected WordPress site when a release is ready', function ():
         && $request['release_id'] === $release->public_id);
 });
 
-it('rejects source exports when build selection was left unconfigured', function (): void {
+it('packages compiled repository output without optimizer metadata or build configuration', function (): void {
     Storage::fake('local');
     [, $website, $repository] = connectedWordpressReleaseWebsite();
     $release = WordpressStaticRelease::factory()->for($website)->create(['status' => 'queued']);
     mock(GithubAppClient::class)->shouldReceive('repositoryArchive')->once()->andReturn([
         'commit_sha' => str_repeat('a', 40),
-        'archive' => githubArchive(['index.html' => '<h1>Unoptimized source</h1>']),
+        'archive' => githubArchive(['index.html' => '<link rel="stylesheet" href="/assets/static/site.css"><h1>Compiled website</h1>', 'assets/static/site.css' => 'body{color:teal}']),
     ]);
-    expect(fn () => app(WordPressStaticReleaseBuilder::class)->build($release, $repository))
-        ->toThrow(RuntimeException::class, 'repository source is not deployable');
-    expect(Storage::disk('local')->allFiles())->toBe([]);
+    $built = app(WordPressStaticReleaseBuilder::class)->build($release, $repository);
+    expect($built->status)->toBe(WordpressStaticRelease::STATUS_READY);
+    $zip = new ZipArchive;
+    $zip->open(Storage::disk('local')->path($built->storage_path));
+    expect($zip->getFromName('assets/static/site.css'))->toBe('body{color:teal}')
+        ->and($zip->locateName('static-build-manifest.json'))->toBeFalse()
+        ->and($zip->locateName('_headers'))->toBeFalse();
+    $zip->close();
 });

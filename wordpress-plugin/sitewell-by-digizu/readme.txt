@@ -4,7 +4,7 @@ Tags: website management, maintenance, seo, site audit
 Requires at least: 6.6
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 1.0.5
+Stable tag: 1.0.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -85,7 +85,9 @@ asset publication completes. Public asset directories have release-specific URLs
 and are retained across deployments for cached pages and open browser tabs.
 Local script/style integrity attributes are removed only when the corresponding
 resource has been rewritten; external resources retain their integrity attributes.
-All releases still require static-build-manifest.json v1 and _headers.
+Compiled HTML, CSS, JavaScript and assets can be deployed without
+static-build-manifest.json or _headers. If a manifest is supplied, it must be valid.
+Unsafe files, unbuilt templates and missing local dependencies remain rejected.
 
 For an existing installation, save the enable setting once to prepare its current
 release. Future releases are prepared automatically. Clearing the checkbox restores
@@ -143,6 +145,10 @@ Updates are downloaded directly from Sitewell over verified HTTPS. The plugin ve
 The plugin does not add visitor tracking. Connection and deployment requests are limited to the operational data described in the External service section. See https://sitewell.digizu.co.uk/privacy-policy for details.
 
 == Changelog ==
+
+= 1.0.6 =
+* Allow compiled static sites without static-build-manifest.json or _headers.
+* Preserve artifact safety checks and support ordinary asset filenames.
 
 = 1.0.5 =
 * Add self-hosted updates through the native WordPress updater, with optional automatic updates.

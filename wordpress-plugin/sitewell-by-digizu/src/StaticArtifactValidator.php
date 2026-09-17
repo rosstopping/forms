@@ -7,23 +7,28 @@ namespace Sitewell\StaticFrontend;
 use DOMDocument;
 use RuntimeException;
 
-/** Validates the optimizer contract without WordPress or network access. */
+/** Validates compiled static output without WordPress or network access. */
 // phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Shared offline validator; callers escape errors when rendering them in Laravel or WordPress.
 final class StaticArtifactValidator {
 
 	/** @param list<string> $paths @param callable(string): string|false $read */
 	public function validate( array $paths, callable $read ): void {
-		$manifest = json_decode( (string) $read( 'static-build-manifest.json' ), true );
-		if ( ! is_array( $manifest ) || ( $manifest['version'] ?? null ) !== 1
+		$hasManifest = in_array( 'static-build-manifest.json', $paths, true );
+		$manifest    = $hasManifest ? json_decode( (string) $read( 'static-build-manifest.json' ), true ) : null;
+		if ( $hasManifest && ( ! is_array( $manifest ) || ( $manifest['version'] ?? null ) !== 1
 			|| ! is_int( $manifest['pages'] ?? null ) || $manifest['pages'] < 1
-			|| ! is_array( $manifest['assets'] ?? null ) || $read( '_headers' ) === false ) {
-			throw new RuntimeException( 'A validated optimized artifact with static-build-manifest.json and _headers is required. Configure the completed build workflow and artifact; repository source is not deployable.' );
+			|| ! is_array( $manifest['assets'] ?? null ) ) ) {
+			throw new RuntimeException( 'The supplied static-build-manifest.json is invalid. Expected version 1 with a positive page count and an assets map.' );
 		}
 		$available = array_fill_keys( $paths, true );
 		$generated = [];
 		foreach ( $paths as $path ) {
 			if ( str_starts_with( $path, 'assets/fonts/' ) || str_starts_with( $path, 'assets/static/' ) ) {
-				if ( ! preg_match( '~^assets/(?:fonts|static)/[\w-]+\.([a-f0-9]{16})\.[a-z0-9]+$~D', $path, $match )
+				$fingerprinted = preg_match( '~^assets/(?:fonts|static)/[\w-]+\.([a-f0-9]{16})\.[a-z0-9]+$~D', $path, $match );
+				if ( ! $hasManifest && ! $fingerprinted ) {
+					continue;
+				}
+				if ( ! $fingerprinted
 					|| substr( hash( 'sha256', (string) $read( $path ) ), 0, 16 ) !== $match[1] ) {
 					throw new RuntimeException( "Invalid asset fingerprint: {$path}" );
 				}
@@ -33,12 +38,12 @@ final class StaticArtifactValidator {
 				}
 			}
 		}
-		foreach ( $manifest['assets'] as $url ) {
+		foreach ( $manifest['assets'] ?? [] as $url ) {
 			if ( ! is_string( $url ) || ! isset( $generated[ $url ] ) ) {
 				throw new RuntimeException( 'The optimized artifact is missing a manifest asset.' );
 			}
 		}
-		if ( array_diff( array_keys( $generated ), array_values( $manifest['assets'] ) ) !== [] ) {
+		if ( $hasManifest && array_diff( array_keys( $generated ), array_values( $manifest['assets'] ) ) !== [] ) {
 			throw new RuntimeException( 'Every generated asset must be listed in the manifest.' );
 		}
 		$visited = [];
