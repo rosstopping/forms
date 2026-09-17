@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Number;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use ZipArchive;
 
 class MarketingController extends Controller
 {
@@ -117,23 +120,58 @@ class MarketingController extends Controller
         abort_unless(is_file($pluginPath), 404);
 
         return view('marketing.wordpress', [
-            'pluginVersion' => '1.0.4',
+            'pluginVersion' => $this->wordPressPluginMetadata()['version'],
             'pluginSize' => Number::fileSize(filesize($pluginPath)),
             'pluginChecksum' => hash_file('sha256', $pluginPath),
         ]);
     }
 
-    public function downloadWordPressPlugin(): BinaryFileResponse
+    public function downloadWordPressPlugin(Request $request): BinaryFileResponse
     {
         $pluginPath = $this->wordPressPluginPath();
 
         abort_unless(is_file($pluginPath), 404);
+
+        if ($request->has('version')) {
+            abort_unless($request->query('version') === $this->wordPressPluginMetadata()['version'], 409, 'This release is no longer current. Check for updates again.');
+        }
 
         return response()->download($pluginPath, 'sitewell-by-digizu.zip', [
             'Cache-Control' => 'no-store, private',
             'Content-Type' => 'application/zip',
             'X-Content-Type-Options' => 'nosniff',
         ]);
+    }
+
+    public function wordPressPluginUpdate(): JsonResponse
+    {
+        $metadata = $this->wordPressPluginMetadata();
+
+        return response()->json($metadata + [
+            'package' => route('marketing.wordpress.download', ['version' => $metadata['version']]),
+            'sha256' => hash_file('sha256', $this->wordPressPluginPath()),
+        ])->header('Cache-Control', 'no-store');
+    }
+
+    /** @return array{version: string, requires: string, requires_php: string, tested: string} */
+    private function wordPressPluginMetadata(): array
+    {
+        $archive = new ZipArchive;
+        abort_unless(is_file($this->wordPressPluginPath()) && $archive->open($this->wordPressPluginPath()) === true, 503);
+        try {
+            $header = $archive->getFromName('sitewell-by-digizu/sitewell-static-frontend.php');
+            $readme = $archive->getFromName('sitewell-by-digizu/readme.txt');
+        } finally {
+            $archive->close();
+        }
+        abort_unless(is_string($header) && is_string($readme), 503);
+        $metadata = [];
+        foreach (['version' => 'Version', 'requires' => 'Requires at least', 'requires_php' => 'Requires PHP', 'tested' => 'Tested up to'] as $key => $label) {
+            abort_unless(preg_match('/^\s*(?:\*\s*)?'.preg_quote($label, '/').':\s*([0-9]+\.[0-9]+(?:\.[0-9]+)?)/m', $key === 'tested' ? $readme : $header, $matches) === 1, 503);
+            $metadata[$key] = $matches[1];
+        }
+
+        return $metadata;
     }
 
     public function privacy(): View

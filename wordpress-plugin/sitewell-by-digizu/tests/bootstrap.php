@@ -3,16 +3,16 @@
 declare(strict_types=1);
 
 if ( ! defined( 'SITEWELL_STATIC_FRONTEND_VERSION' ) ) {
-	define( 'SITEWELL_STATIC_FRONTEND_VERSION', '1.0.4' );
+	define( 'SITEWELL_STATIC_FRONTEND_VERSION', '1.0.5' );
 }
 
 if ( ! class_exists( 'WP_Error' ) ) {
 	class WP_Error {
 
-		public function __construct( private readonly string $message ) {}
+		public function __construct( private readonly string $message, private readonly ?string $description = null ) {}
 
 		public function get_error_message(): string {
-			return $this->message;
+			return $this->description ?? $this->message;
 		}
 	}
 }
@@ -126,4 +126,24 @@ if ( ! function_exists( 'wp_delete_file' ) ) {
 
 function wp_cache_delete( string $key, string $group = '' ): bool {
 	return true;
+}
+
+require_once dirname( __DIR__ ) . '/src/PluginUpdater.php';
+function get_site_transient( string $key ): mixed {
+	return $GLOBALS['sitewell_test_transients'][ $key ] ?? false;
+}
+function set_site_transient( string $key, mixed $value, int $expiration = 0 ): bool {
+	$GLOBALS['sitewell_test_transients'][ $key ] = $value;
+
+	return true;
+}
+function delete_site_transient( string $key ): bool {
+	unset( $GLOBALS['sitewell_test_transients'][ $key ] );
+
+	return true;
+}
+function download_url( string $url, int $timeout = 300 ): mixed {
+	$GLOBALS['sitewell_test_download_url'] = $url;
+
+	return $GLOBALS['sitewell_test_download'];
 }

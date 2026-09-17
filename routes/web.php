@@ -122,6 +122,7 @@ Route::controller(MarketingController::class)->group(function () {
     Route::get('/journal/{slug}', 'article')->name('marketing.article');
     Route::get('/contact', 'contact')->name('marketing.contact');
     Route::get('/wordpress', 'wordpress')->name('marketing.wordpress');
+    Route::get('/wordpress/update.json', 'wordPressPluginUpdate')->name('marketing.wordpress.update');
     Route::get('/wordpress/download', 'downloadWordPressPlugin')->name('marketing.wordpress.download');
     Route::get('/privacy-policy', 'privacy')->name('marketing.privacy');
     Route::get('/terms-of-service', 'terms')->name('marketing.terms');

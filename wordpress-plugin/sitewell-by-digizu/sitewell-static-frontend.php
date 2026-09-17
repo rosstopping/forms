@@ -2,9 +2,10 @@
 
 /**
  * Plugin Name: Sitewell by Digizu
+ * Update URI: https://sitewell.digizu.co.uk/wordpress
  * Plugin URI: https://sitewell.digizu.co.uk
  * Description: Keep your website updated through Sitewell while retaining WordPress administration.
- * Version: 1.0.4
+ * Version: 1.0.5
  * Requires at least: 6.6
  * Requires PHP: 8.2
  * Author: Digizu
@@ -16,12 +17,13 @@
 
 declare(strict_types=1);
 use Sitewell\StaticFrontend\Plugin;
+use Sitewell\StaticFrontend\PluginUpdater;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'SITEWELL_STATIC_FRONTEND_VERSION', '1.0.4' );
+define( 'SITEWELL_STATIC_FRONTEND_VERSION', '1.0.5' );
 define( 'SITEWELL_STATIC_FRONTEND_FILE', __FILE__ );
 define( 'SITEWELL_STATIC_FRONTEND_PATH', plugin_dir_path( __FILE__ ) );
 
@@ -47,8 +49,10 @@ require_once SITEWELL_STATIC_FRONTEND_PATH . 'src/DeploymentEndpoint.php';
 require_once SITEWELL_STATIC_FRONTEND_PATH . 'src/Admin/ConnectionActions.php';
 require_once SITEWELL_STATIC_FRONTEND_PATH . 'src/Admin/SettingsPage.php';
 require_once SITEWELL_STATIC_FRONTEND_PATH . 'src/Plugin.php';
+require_once SITEWELL_STATIC_FRONTEND_PATH . 'src/PluginUpdater.php';
 
 register_activation_hook( __FILE__, [ Plugin::class, 'activate' ] );
 register_deactivation_hook( __FILE__, [ Plugin::class, 'deactivate' ] );
 
+( new PluginUpdater( plugin_basename( __FILE__ ) ) )->boot();
 Plugin::instance()->boot();

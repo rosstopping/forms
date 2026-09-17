@@ -4,7 +4,7 @@ Tags: website management, maintenance, seo, site audit
 Requires at least: 6.6
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 1.0.4
+Stable tag: 1.0.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -42,6 +42,29 @@ Terms of service: https://sitewell.digizu.co.uk/terms-of-service
 6. Enable the Sitewell website and select Save.
 
 The plugin will not replace the public WordPress website until a verified Sitewell release has been downloaded and the administrator enables it.
+
+== Plugin updates ==
+
+From version 1.0.5, this manually installed plugin receives updates through the
+normal WordPress Plugins and Updates screens, using Sitewell's own update service.
+After installing this version, select Enable auto-updates beside Sitewell by
+Digizu on the Plugins screen if you want future plugin versions installed
+automatically. WordPress scheduling, filesystem permissions and host policy apply.
+The plugin must remain active for its self-hosted update integration to run.
+
+Update checks fetch public version metadata from
+https://sitewell.digizu.co.uk/wordpress/update.json and download the ZIP from
+https://sitewell.digizu.co.uk/wordpress/download over HTTPS. No Sitewell pairing
+credentials are sent. The downloaded ZIP is verified against the advertised
+SHA-256 checksum before installation. An unavailable update service does not
+interrupt the website. Updating does not enable the Sitewell frontend or opt you
+into automatic updates; existing connection and delivery settings are retained.
+
+Release maintainers: bump the plugin version and rebuild the tracked ZIP for each
+release. Deploy the Sitewell endpoint and ZIP together before distributing the
+updater-enabled plugin. The endpoint reads the version and requirements from the
+ZIP and refuses downloads pinned to an obsolete version; old update notifications
+may need a fresh WordPress update check.
 
 == Delivery without server configuration ==
 
@@ -120,6 +143,11 @@ Updates are downloaded directly from Sitewell over verified HTTPS. The plugin ve
 The plugin does not add visitor tracking. Connection and deployment requests are limited to the operational data described in the External service section. See https://sitewell.digizu.co.uk/privacy-policy for details.
 
 == Changelog ==
+
+= 1.0.5 =
+* Add self-hosted updates through the native WordPress updater, with optional automatic updates.
+* Validate HTTPS release metadata and verify downloaded ZIP checksums before installation.
+
 
 = 1.0.4 =
 * Make normal WordPress uploads the default asset delivery path, without mandatory server configuration.
