@@ -10,6 +10,7 @@ use App\Models\ContentRequest;
 use App\Models\SearchOpportunity;
 use App\Models\SeoOpportunity;
 use App\Models\Website;
+use App\Services\SeoImpactTracker;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -24,6 +25,8 @@ class ContentRequestController extends Controller
             'created_by' => $request->user()->id,
         ]);
 
+        app(SeoImpactTracker::class)->forRequest($contentRequest);
+
         if (config('forms.pixel_ui_enabled') && $website->pixel_enabled) {
             GenerateContentRequestPixelOptimisations::dispatch($contentRequest, $request->user());
         }
@@ -36,8 +39,10 @@ class ContentRequestController extends Controller
         abort_unless($website->isManageableBy($request->user()), 403);
         abort_unless($contentRequest->website_id === $website->id, 404);
         abort_if($contentRequest->picked_up_at, 422, 'A content request cannot be removed after generation has started.');
+        abort_if(in_array($contentRequest->seoImpact?->status, ['measuring', 'review_required'], true), 422, 'Review this change’s SEO impact before removing its content request.');
 
         DB::transaction(function () use ($contentRequest): void {
+            $contentRequest->seoImpact?->update(['status' => 'cancelled', 'next_measurement_at' => null]);
             $contentRequest->searchOpportunity?->update([
                 'status' => SearchOpportunity::STATUS_OPEN,
                 'content_request_id' => null,

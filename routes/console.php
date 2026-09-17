@@ -53,6 +53,11 @@ Schedule::command('search-console:sync-history')
     ->weeklyOn(1, '04:00')
     ->withoutOverlapping();
 
+Schedule::command('seo:measure-impacts')
+    ->dailyAt('07:00')
+    ->onOneServer()
+    ->withoutOverlapping();
+
 Schedule::command('ranking-reports:dispatch')
     ->weeklyOn(1, '08:00')
     ->withoutOverlapping();

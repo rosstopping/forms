@@ -12,6 +12,8 @@ class BusinessProfilePost extends Model
     /** @use HasFactory<BusinessProfilePostFactory> */
     use HasFactory;
 
+    public const STATUS_QUEUED = 'queued';
+
     public const STATUS_GENERATING = 'generating';
 
     public const STATUS_PENDING_APPROVAL = 'pending_approval';

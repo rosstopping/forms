@@ -210,4 +210,35 @@ class SearchConsoleClient
             ->acceptJson()->withToken($this->oauth->accessToken($connection))
             ->connectTimeout(5)->timeout(30)->retry([500, 1500], throw: false);
     }
+
+    /** @return array{complete: bool, finalized: bool, rows: array, totals: ?array} */
+    public function impactPerformance(SearchConsoleConnection $connection, Carbon $start, Carbon $end, array $urls, array $queries = [], ?string $country = null, ?string $device = null): array
+    {
+        $payload = ['startDate' => $start->toDateString(), 'endDate' => $end->toDateString(), 'dimensions' => ['date'], 'type' => 'web', 'rowLimit' => 25000];
+        $coverage = $this->request($connection)->timeout(10)->retry(1)->post('sites/'.rawurlencode($connection->property_url).'/searchAnalytics/query', [...$payload, 'dataState' => 'all'])->throw()->json();
+        $incomplete = data_get($coverage, 'metadata.first_incomplete_date');
+        $complete = ($incomplete === null || $incomplete > $end->toDateString())
+            && count($coverage['rows'] ?? []) === (int) $start->diffInDays($end) + 1;
+        $filters = [['dimension' => 'page', 'operator' => 'includingRegex', 'expression' => '^('.implode('|', array_map(fn (string $url): string => preg_quote($url), $urls)).')$']];
+        if ($queries !== []) {
+            $filters[] = ['dimension' => 'query', 'operator' => 'includingRegex', 'expression' => '^('.implode('|', array_map(fn (string $query): string => preg_quote($query), $queries)).')$'];
+        }
+        foreach (['country' => $country, 'device' => $device] as $dimension => $value) {
+            if ($value) {
+                $filters[] = ['dimension' => $dimension, 'operator' => 'equals', 'expression' => $value];
+            }
+        }
+        $rows = $this->request($connection)->timeout(10)->retry(1)->post('sites/'.rawurlencode($connection->property_url).'/searchAnalytics/query', [
+            ...$payload, 'dataState' => 'final', 'dimensionFilterGroups' => [['groupType' => 'and', 'filters' => $filters]],
+        ])->throw()->json('rows', []);
+        $daily = collect($rows)->map(fn (array $row): array => ['date' => (string) data_get($row, 'keys.0'), ...$this->formatRow($row)])->sortBy('date')->values();
+        $clicks = (float) $daily->sum('clicks');
+        $impressions = (float) $daily->sum('impressions');
+
+        return ['complete' => $complete, 'finalized' => $incomplete === null || $incomplete > $end->toDateString(), 'rows' => $daily->all(), 'totals' => $daily->isEmpty() ? null : [
+            'clicks' => $clicks, 'impressions' => $impressions, 'ctr' => $impressions > 0 ? $clicks / $impressions : 0,
+            'position' => $impressions > 0 ? $daily->sum(fn (array $row): float => $row['position'] * $row['impressions']) / $impressions : 0,
+            'reported_days' => $daily->count(),
+        ]];
+    }
 }

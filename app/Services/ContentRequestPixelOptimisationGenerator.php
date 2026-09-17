@@ -31,6 +31,12 @@ class ContentRequestPixelOptimisationGenerator
             return 0;
         }
 
+        if (app(SeoImpactTracker::class)->requestIsProtected($contentRequest)) {
+            $contentRequest->update(['pixel_error' => 'These pages or search terms are being measured. Review their SEO impact before preparing more changes.']);
+
+            return 0;
+        }
+
         $pages = $this->candidatePages($contentRequest);
 
         if ($pages->isEmpty()) {
@@ -100,8 +106,12 @@ class ContentRequestPixelOptimisationGenerator
             return collect();
         }
 
+        $tracker = app(SeoImpactTracker::class);
+        $protected = $tracker->protectedKeys($website);
+
         return $report->pages()->get()->filter(
-            fn (WebsiteHealthReportPage $page): bool => $detectedHashes->contains($this->urls->hash($page->url)),
+            fn (WebsiteHealthReportPage $page): bool => $detectedHashes->contains($this->urls->hash($page->url))
+                && ! $protected->contains($tracker->urlKey($page->url)),
         )->keyBy(fn (WebsiteHealthReportPage $page): string => $this->urls->hash($page->url));
     }
 

@@ -4,11 +4,12 @@ namespace App\Jobs;
 
 use App\Ai\Agents\BusinessProfileReviewResponder;
 use App\Models\BusinessProfileReview;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Throwable;
 
-class GenerateBusinessProfileReviewReply implements ShouldQueue
+class GenerateBusinessProfileReviewReply implements ShouldBeUnique, ShouldQueue
 {
     use Queueable;
 
@@ -17,6 +18,15 @@ class GenerateBusinessProfileReviewReply implements ShouldQueue
      */
     public int $tries = 3;
 
+    public int $uniqueFor = 600;
+
+    public bool $deleteWhenMissingModels = true;
+
+    public function uniqueId(): string
+    {
+        return (string) $this->review->id;
+    }
+
     public function __construct(public BusinessProfileReview $review) {}
 
     /**
@@ -24,12 +34,16 @@ class GenerateBusinessProfileReviewReply implements ShouldQueue
      */
     public function handle(BusinessProfileReviewResponder $responder): void
     {
+        $this->review->refresh();
+        if (! in_array($this->review->reply_status, [BusinessProfileReview::STATUS_GENERATING, BusinessProfileReview::STATUS_FAILED], true)) {
+            return;
+        }
         try {
             $connection = $this->review->connection;
             $response = $responder->prompt(json_encode(['business' => $connection->location_title ?: $connection->website->name, 'reviewer' => $this->review->reviewer_name, 'rating' => $this->review->star_rating, 'review' => $this->review->comment, 'brand_guidance' => $connection->brand_guidance], JSON_THROW_ON_ERROR));
-            $this->review->update(['suggested_reply' => $response['reply'], 'reply_status' => BusinessProfileReview::STATUS_PENDING_APPROVAL, 'error' => null]);
+            BusinessProfileReview::query()->whereKey($this->review->id)->whereIn('reply_status', [BusinessProfileReview::STATUS_GENERATING, BusinessProfileReview::STATUS_FAILED])->update(['suggested_reply' => $response['reply'], 'reply_status' => BusinessProfileReview::STATUS_PENDING_APPROVAL, 'error' => null]);
         } catch (Throwable $exception) {
-            $this->review->update(['reply_status' => BusinessProfileReview::STATUS_FAILED, 'error' => $exception->getMessage()]);
+            BusinessProfileReview::query()->whereKey($this->review->id)->whereIn('reply_status', [BusinessProfileReview::STATUS_GENERATING, BusinessProfileReview::STATUS_FAILED])->update(['reply_status' => BusinessProfileReview::STATUS_FAILED, 'error' => $exception->getMessage()]);
             throw $exception;
         }
     }

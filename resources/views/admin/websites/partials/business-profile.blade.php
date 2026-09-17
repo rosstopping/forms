@@ -1,34 +1,144 @@
 <div id="website-panel-business-profile" class="space-y-6" role="region" aria-labelledby="website-tab-business-profile" data-tab-panel="business-profile" @if ($currentWebsiteSection !== 'business-profile') hidden @endif>
-    @php($profile = $website->businessProfileConnection)
+    @php
+        $profile = $website->businessProfileConnection;
+        $profileButton = 'rounded-md border border-slate-950/15 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500';
+        $profileInput = 'w-full rounded-md border border-slate-950/20 bg-white px-3 py-2 text-base sm:text-sm focus-visible:outline-2 focus-visible:-outline-offset-1 focus-visible:outline-blue-500';
+    @endphp
     @if (! $profile)
-        <section class="rounded-lg border border-slate-200 bg-white p-6"><h2 class="text-lg font-semibold text-slate-950">Google Business Profile</h2><p class="mt-2 max-w-2xl text-sm text-slate-600">Connect a managed location for weekly health checks, approval-first changes, generated post drafts, and approval-first review replies.</p>
-            <a href="{{ route('admin.business-profile.connect', $website) }}" class="mt-4 inline-flex rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">Connect Google Business Profile</a>
+        <section class="rounded-lg border border-slate-950/10 bg-white p-6">
+            <h2 class="text-lg font-semibold text-balance text-slate-950">Your local presence, in one place</h2>
+            <p class="mt-2 max-w-2xl text-base text-pretty text-slate-600 sm:text-sm">Connect Google Business Profile to plan posts, prepare review replies automatically, and keep your profile up to date. You approve every post, reply, and profile change before it goes live.</p>
+            @if ($canManageWebsite)
+                <div class="mt-4 text-sm"><a href="{{ route('admin.business-profile.connect', $website) }}" class="inline-flex rounded-md bg-slate-900 px-3 py-2 font-medium text-white hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500">Connect Google Business Profile</a></div>
+            @endif
+        </section>
+    @elseif (blank($profile->location_name))
+        <section class="rounded-lg border border-amber-950/15 bg-amber-50 p-6" aria-labelledby="business-profile-location-required">
+            <h2 id="business-profile-location-required" class="text-lg font-semibold text-balance text-amber-950">Choose the Google location to manage</h2>
+            <p class="mt-2 max-w-2xl text-base text-pretty text-amber-900 sm:text-sm">Google is authorised. Select a location to start planning posts, preparing replies, and checking your profile.</p>
+            @if ($canManageWebsite)
+                <div class="mt-4 flex flex-wrap gap-2 text-sm">
+                    <a href="{{ route('admin.business-profile.locations', $website) }}" class="rounded-md bg-slate-900 px-3 py-2 font-medium text-white hover:bg-slate-800">Select a location</a>
+                    <a href="{{ route('admin.business-profile.connect', $website) }}" class="{{ $profileButton }}">Reconnect Google</a>
+                </div>
+            @endif
         </section>
     @else
-        @if (blank($profile->location_name))
-            <section class="rounded-lg border border-amber-200 bg-amber-50 p-5" aria-labelledby="business-profile-location-required">
-                <p class="text-xs font-semibold uppercase tracking-widest text-amber-700">Action required</p>
-                <h2 id="business-profile-location-required" class="mt-1 font-semibold text-amber-950">Choose the Google location to manage</h2>
-                <p class="mt-2 max-w-2xl text-sm text-amber-800">Google is authorised, but no Business Profile location has been selected. Select a location before running health checks, syncing reviews, or generating posts.</p>
-                <div class="mt-4 flex flex-wrap gap-2">
-                    <a href="{{ route('admin.business-profile.locations', $website) }}" class="rounded-md bg-amber-900 px-3 py-2 text-sm font-semibold text-white hover:bg-amber-950">Select a location</a>
-                    <a href="{{ route('admin.business-profile.connect', $website) }}" class="rounded-md border border-amber-300 bg-white px-3 py-2 text-sm font-semibold text-amber-900 hover:bg-amber-100">Reconnect Google</a>
-                </div>
-            </section>
-        @endif
-        @if (filled($profile->location_name))
-        <section class="rounded-lg border border-slate-200 bg-white">
-            <div class="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 p-4"><div><p class="text-xs font-medium uppercase tracking-widest text-slate-500">Connected location</p><h2 class="mt-1 text-lg font-semibold text-slate-950">{{ $profile->location_title ?: 'No location selected' }}</h2><p class="mt-1 text-sm text-slate-600">All posts, replies, and profile edits require explicit approval.</p></div><div class="flex flex-wrap gap-2">@if (filled($profile->location_name))<form method="POST" action="{{ route('admin.business-profile.audits.store', $website) }}">@csrf<button class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white">Run health check</button></form><form method="POST" action="{{ route('admin.business-profile.reviews.sync', $website) }}">@csrf<button class="rounded-md border border-slate-200 px-3 py-2 text-sm font-medium">Sync reviews</button></form><a href="{{ route('admin.business-profile.locations', $website) }}" class="rounded-md border border-slate-200 px-3 py-2 text-sm font-medium">Change location</a>@endif<a href="{{ route('admin.business-profile.connect', $website) }}" class="rounded-md border border-slate-200 px-3 py-2 text-sm font-medium">Reconnect Google</a></div></div>
-            @php($latestAudit = $profile->audits->first())
-            <div class="p-4"><h3 class="font-medium text-slate-950">Latest recommendations</h3><div class="mt-3 space-y-3">@forelse ($latestAudit?->recommendations ?? [] as $recommendation)<article class="rounded-lg border border-slate-200 p-3"><div class="flex flex-wrap items-start justify-between gap-3"><div><p class="font-medium text-slate-900">{{ $recommendation->title }}</p><p class="mt-1 text-sm text-slate-600">{{ $recommendation->description }}</p><p class="mt-1 text-xs capitalize text-slate-500">{{ str_replace('_', ' ', $recommendation->status) }}</p></div>@if ($recommendation->status === 'pending')<div class="flex gap-2">@if ($recommendation->field_mask && $recommendation->proposed_value)<form method="POST" action="{{ route('admin.business-profile.recommendations.update', [$website, $recommendation]) }}">@csrf @method('PUT')<button class="rounded-md bg-slate-900 px-3 py-2 text-xs font-medium text-white">Approve & apply</button></form>@endif<form method="POST" action="{{ route('admin.business-profile.recommendations.destroy', [$website, $recommendation]) }}">@csrf @method('DELETE')<button class="rounded-md border px-3 py-2 text-xs font-medium">Dismiss</button></form></div>@endif</div></article>@empty<p class="rounded-lg bg-slate-50 p-3 text-sm text-slate-500">{{ $latestAudit ? 'No changes recommended.' : 'Run the first health check to create recommendations.' }}</p>@endforelse</div></div>
-        </section>
-
-        <div class="grid gap-6 lg:grid-cols-2">
-            <section class="rounded-lg border border-slate-200 bg-white p-4"><h3 class="font-semibold text-slate-950">Generated posts</h3><form method="POST" action="{{ route('admin.business-profile.posts.store', $website) }}" class="mt-3 space-y-2">@csrf<textarea name="topic" rows="2" maxlength="1000" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" placeholder="Optional topic or offer details"></textarea><button class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white">Generate draft</button></form><div class="mt-4 space-y-3">@foreach ($profile->posts as $post)<article class="rounded-lg border border-slate-200 p-3"><p class="text-xs capitalize text-slate-500">{{ str_replace('_', ' ', $post->status) }}</p>@if ($post->summary)<form method="POST" action="{{ route('admin.business-profile.posts.update', [$website, $post]) }}" class="mt-2 space-y-2">@csrf @method('PUT')<textarea name="summary" rows="5" maxlength="1500" class="w-full rounded-md border px-3 py-2 text-sm">{{ $post->summary }}</textarea><input type="hidden" name="call_to_action_type" value="{{ $post->call_to_action_type }}"><input type="hidden" name="call_to_action_url" value="{{ $post->call_to_action_url }}">@if ($post->status === 'pending_approval')<button class="rounded-md bg-emerald-700 px-3 py-2 text-xs font-medium text-white">Approve & publish</button>@endif</form>@endif</article>@endforeach</div></section>
-            <section class="rounded-lg border border-slate-200 bg-white p-4"><h3 class="font-semibold text-slate-950">Customer reviews</h3><p class="mt-1 text-sm text-slate-600">AI drafts are never posted until someone approves them.</p><div class="mt-4 space-y-3">@forelse ($profile->reviews as $review)<article class="rounded-lg border border-slate-200 p-3"><div class="flex justify-between gap-3"><p class="font-medium">{{ $review->reviewer_name ?: 'Customer' }}</p><p class="text-amber-600">{{ str_repeat('★', $review->star_rating) }}</p></div><p class="mt-2 text-sm text-slate-600">{{ $review->comment ?: 'Rating without a written comment.' }}</p>@if ($review->reply_status === 'pending_approval')<form method="POST" action="{{ route('admin.business-profile.reviews.update', [$website, $review]) }}" class="mt-3 space-y-2">@csrf @method('PUT')<textarea name="reply" rows="4" maxlength="1200" class="w-full rounded-md border px-3 py-2 text-sm">{{ $review->suggested_reply }}</textarea><button class="rounded-md bg-emerald-700 px-3 py-2 text-xs font-medium text-white">Approve & reply</button></form>@elseif (in_array($review->reply_status, ['unanswered', 'failed']))<form method="POST" action="{{ route('admin.business-profile.reviews.draft', [$website, $review]) }}" class="mt-3">@csrf<button class="rounded-md border px-3 py-2 text-xs font-medium">Generate reply draft</button></form>@else<p class="mt-2 text-xs capitalize text-slate-500">{{ str_replace('_', ' ', $review->reply_status) }}</p>@endif</article>@empty<p class="text-sm text-slate-500">No reviews synced yet.</p>@endforelse</div></section>
+        @php
+            $latestAudit = $profile->audits->first();
+            $postReadyCount = $businessPostCounts->get('pending_approval', 0);
+            $replyReadyCount = $businessReviewCounts->get('pending_approval', 0);
+            $reviewRetryCount = $businessReviewCounts->get('unanswered', 0) + $businessReviewCounts->get('failed', 0);
+        @endphp
+        <header class="flex flex-wrap items-start justify-between gap-4">
+            <div class="min-w-0">
+                <p class="text-base text-slate-500 sm:text-sm">Google Business Profile</p>
+                <h2 class="mt-1 text-xl font-semibold text-balance text-slate-950">{{ $profile->location_title ?: $website->name }}</h2>
+                <p class="mt-2 text-base text-pretty text-slate-600 sm:text-sm">Plan your posts. Stay on top of reviews. Approve what goes live.</p>
+            </div>
+            @if ($canManageWebsite)
+                <details class="relative text-sm">
+                    <summary class="{{ $profileButton }} cursor-pointer">Connection settings</summary>
+                    <div class="absolute right-0 z-10 mt-2 flex w-52 flex-col gap-2 rounded-lg border border-slate-950/10 bg-white p-3">
+                        <a href="{{ route('admin.business-profile.locations', $website) }}" class="rounded-md px-2 py-1.5 hover:bg-slate-50">Change location</a>
+                        <a href="{{ route('admin.business-profile.connect', $website) }}" class="rounded-md px-2 py-1.5 hover:bg-slate-50">Reconnect Google</a>
+                    </div>
+                </details>
+            @endif
+        </header>
+        <div class="@container border-y border-slate-950/10 py-4">
+            <dl class="grid grid-cols-2 gap-5 @2xl:grid-cols-4">
+                @foreach ([['Topics queued', $businessPostCounts->get('queued', 0)], ['Posts to approve', $postReadyCount], ['Replies to approve', $replyReadyCount], ['Replies published', $businessReviewCounts->get('replied', 0)]] as [$label, $count])
+                    <div class="min-w-0"><dt class="truncate text-base font-medium text-slate-600 sm:text-sm">{{ $label }}</dt><dd class="mt-1 text-2xl font-semibold text-slate-950 tabular-nums">{{ $count }}</dd></div>
+                @endforeach
+            </dl>
         </div>
 
-        <section class="rounded-lg border border-slate-200 bg-white p-4"><h3 class="font-semibold text-slate-950">Automation settings</h3><form method="POST" action="{{ route('admin.business-profile.update', $website) }}" class="mt-4 grid gap-4 md:grid-cols-2">@csrf @method('PUT')<label class="flex items-center gap-2"><input type="hidden" name="weekly_audits_enabled" value="0"><input type="checkbox" name="weekly_audits_enabled" value="1" @checked($profile->weekly_audits_enabled)><span class="text-sm">Run weekly health checks</span></label><label class="flex items-center gap-2"><input type="hidden" name="weekly_posts_enabled" value="0"><input type="checkbox" name="weekly_posts_enabled" value="1" @checked($profile->weekly_posts_enabled)><span class="text-sm">Generate one post draft weekly</span></label><select name="post_weekday" class="rounded-md border px-3 py-2 text-sm">@foreach (['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'] as $value => $day)<option value="{{ $value }}" @selected($profile->post_weekday === $value)>{{ $day }}</option>@endforeach</select><select name="post_hour" class="rounded-md border px-3 py-2 text-sm">@for ($hour=0;$hour<24;$hour++)<option value="{{ $hour }}" @selected($profile->post_hour === $hour)>{{ str_pad($hour, 2, '0', STR_PAD_LEFT) }}:00</option>@endfor</select><input name="timezone" value="{{ $profile->timezone }}" class="rounded-md border px-3 py-2 text-sm"><textarea name="brand_guidance" rows="5" maxlength="20000" class="rounded-md border px-3 py-2 text-sm" placeholder="Tone, claims, and topics to avoid">{{ $profile->brand_guidance }}</textarea><button class="w-fit rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white">Save settings</button></form></section>
-        @endif
+        <section class="overflow-hidden rounded-lg border border-slate-950/10 bg-white" aria-labelledby="business-posts-heading">
+            <div class="border-b border-slate-950/10 p-5">
+                <h3 id="business-posts-heading" class="text-lg font-semibold text-balance text-slate-950">Posts and automation</h3>
+                <p class="mt-1 text-base text-pretty text-slate-600 sm:text-sm">Choose an idea → add it to your queue → review the draft → publish to Google.</p>
+            </div>
+            <div class="grid lg:grid-cols-3">
+                <div class="min-w-0 space-y-6 p-5 lg:col-span-2">
+                    <div>
+                        <h4 class="font-semibold text-slate-950">Suggested posts</h4>
+                        <p class="mt-1 text-base text-pretty text-slate-500 sm:text-sm">Starting points from your connected profile and website. Add your own news or offer below.</p>
+                        <div class="mt-4 divide-y divide-slate-950/10">
+                            @foreach ($businessPostSuggestions as $key => $suggestion)
+                                <article class="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                                    <div class="min-w-0 flex-1"><h5 class="font-medium text-slate-900">{{ $suggestion['title'] }}</h5><p class="mt-1 text-base text-pretty text-slate-600 sm:text-sm">{{ $suggestion['description'] }}</p></div>
+                                    @if ($canManageWebsite)
+                                        <form method="POST" action="{{ route('admin.business-profile.posts.store', $website) }}" class="shrink-0">@csrf<input type="hidden" name="suggestion" value="{{ $key }}"><button type="submit" @disabled(in_array($suggestion['topic'], $businessQueuedTopics, true)) class="{{ $profileButton }} disabled:cursor-default disabled:opacity-50">{{ in_array($suggestion['topic'], $businessQueuedTopics, true) ? 'Already in queue' : 'Add to queue' }}</button></form>
+                                    @endif
+                                </article>
+                            @endforeach
+                        </div>
+                    </div>
+                    @if ($canManageWebsite)
+                        <form method="POST" action="{{ route('admin.business-profile.posts.store', $website) }}" class="rounded-lg bg-slate-50 p-4">
+                            @csrf
+                            <label for="business-post-topic" class="font-medium text-slate-900">Add your own post idea</label>
+                            <p id="business-post-topic-help" class="mt-1 text-base text-pretty text-slate-600 sm:text-sm">Tell us what is new, which service to feature, or the exact details and dates of an offer. These facts will shape the draft.</p>
+                            <textarea id="business-post-topic" name="topic" rows="3" required maxlength="1000" aria-describedby="business-post-topic-help" placeholder="For example: Introduce our new Saturday appointments, available from 10 October, 9am–1pm. Book through our website." class="{{ $profileInput }} mt-3">{{ old('topic') }}</textarea>
+                            <button type="submit" class="{{ $profileButton }} mt-3">Add idea to queue</button>
+                        </form>
+                    @endif
+                    @include('admin.websites.partials.business-profile-posts')
+                </div>
+                <aside class="min-w-0 border-t border-slate-950/10 bg-slate-50 p-5 lg:border-t-0 lg:border-l" aria-labelledby="business-automation-heading">
+                    <h4 id="business-automation-heading" class="font-semibold text-slate-950">Your automation</h4>
+                    <p class="mt-2 text-base text-pretty text-slate-600 sm:text-sm">One routine for posts, replies, and profile health. Nothing is published automatically.</p>
+                    <div class="mt-4 rounded-md border border-emerald-950/10 bg-emerald-50 p-3 text-base text-emerald-900 sm:text-sm">
+                        <p class="font-medium">Automatic review drafts are on</p>
+                        <p class="mt-1 text-pretty">We check for reviews hourly and draft replies to unanswered reviews of every rating. You edit and approve each reply.</p>
+                    </div>
+                    <form method="POST" action="{{ route('admin.business-profile.update', $website) }}" class="mt-5">
+                        @csrf @method('PUT')
+                        <fieldset @disabled(! $canManageWebsite) class="space-y-5 disabled:opacity-70">
+                            <div>
+                                <input type="hidden" name="weekly_posts_enabled" value="0">
+                                <label for="business-weekly-posts" class="flex items-center gap-2 text-base font-medium text-slate-900 sm:text-sm"><input id="business-weekly-posts" type="checkbox" name="weekly_posts_enabled" value="1" @checked(old('weekly_posts_enabled', $profile->weekly_posts_enabled)) class="size-4 rounded border-slate-300 accent-slate-900">Draft one queued post each week</label>
+                                <p class="mt-2 text-base text-pretty text-slate-600 sm:text-sm">Takes the oldest queued idea. An empty queue pauses drafting until you add more ideas.</p>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div><label for="business-post-day" class="text-base font-medium text-slate-900 sm:text-sm">Draft day</label><select id="business-post-day" name="post_weekday" class="{{ $profileInput }} mt-1">@foreach (['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] as $value => $day)<option value="{{ $value }}" @selected((int) old('post_weekday', $profile->post_weekday) === $value)>{{ $day }}</option>@endforeach</select></div>
+                                <div><label for="business-post-hour" class="text-base font-medium text-slate-900 sm:text-sm">Draft time</label><select id="business-post-hour" name="post_hour" class="{{ $profileInput }} mt-1">@for ($hour = 0; $hour < 24; $hour++)<option value="{{ $hour }}" @selected((int) old('post_hour', $profile->post_hour) === $hour)>{{ str_pad($hour, 2, '0', STR_PAD_LEFT) }}:00</option>@endfor</select></div>
+                            </div>
+                            <div><label for="business-timezone" class="text-base font-medium text-slate-900 sm:text-sm">Timezone</label><input id="business-timezone" name="timezone" required value="{{ old('timezone', $profile->timezone) }}" class="{{ $profileInput }} mt-1"></div>
+                            <div>
+                                <input type="hidden" name="weekly_audits_enabled" value="0">
+                                <label for="business-weekly-audits" class="flex items-center gap-2 text-base font-medium text-slate-900 sm:text-sm"><input id="business-weekly-audits" type="checkbox" name="weekly_audits_enabled" value="1" @checked(old('weekly_audits_enabled', $profile->weekly_audits_enabled)) class="size-4 rounded border-slate-300 accent-slate-900">Check profile health weekly</label>
+                            </div>
+                            <div><label for="business-brand-guidance" class="text-base font-medium text-slate-900 sm:text-sm">Voice and guidance</label><p id="business-brand-help" class="mt-1 text-base text-pretty text-slate-600 sm:text-sm">Used for both posts and review replies. Include your tone, useful business facts, and anything to avoid.</p><textarea id="business-brand-guidance" name="brand_guidance" rows="5" maxlength="20000" aria-describedby="business-brand-help" placeholder="Friendly and straightforward. Sign off review replies as ‘The team’. Avoid sales language when responding to complaints." class="{{ $profileInput }} mt-2">{{ old('brand_guidance', $profile->brand_guidance) }}</textarea></div>
+                            @if ($canManageWebsite)<button type="submit" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500">Save automation</button>@endif
+                        </fieldset>
+                    </form>
+                </aside>
+            </div>
+        </section>
+
+        @include('admin.websites.partials.business-profile-reviews')
+
+        <details class="rounded-lg border border-slate-950/10 bg-white p-5">
+            <summary class="cursor-pointer font-semibold text-slate-950">Profile health <span class="font-normal text-slate-500">· {{ $latestAudit ? ucfirst($latestAudit->status) : 'Not checked yet' }}</span></summary>
+            <div class="mt-4 flex flex-wrap items-center justify-between gap-3"><p class="text-base text-slate-600 sm:text-sm">{{ $latestAudit?->completed_at ? 'Last checked '.$latestAudit->completed_at->diffForHumans().'.' : 'Check for missing information and suggested profile improvements.' }}</p>@if ($canManageWebsite)<form method="POST" action="{{ route('admin.business-profile.audits.store', $website) }}">@csrf<button type="submit" class="{{ $profileButton }}">Run health check</button></form>@endif</div>
+            @if ($latestAudit?->status === 'failed')<p class="mt-3 text-base text-rose-700 sm:text-sm">The last health check failed. Try again or reconnect Google.</p>@endif
+            <div class="mt-4 divide-y divide-slate-950/10">
+                @forelse ($latestAudit?->recommendations ?? [] as $recommendation)
+                    <article class="flex flex-wrap items-start justify-between gap-3 py-4 first:pt-0 last:pb-0">
+                        <div class="min-w-0 flex-1"><h4 class="font-medium text-slate-900">{{ $recommendation->title }}</h4><p class="mt-1 text-base text-pretty text-slate-600 sm:text-sm">{{ $recommendation->description }}</p><p class="mt-1 text-sm capitalize text-slate-500">{{ str_replace('_', ' ', $recommendation->status) }}</p></div>
+                        @if ($canManageWebsite && $recommendation->status === 'pending')
+                            <div class="flex flex-wrap gap-2">
+                                @if ($recommendation->field_mask && $recommendation->proposed_value)<form method="POST" action="{{ route('admin.business-profile.recommendations.update', [$website, $recommendation]) }}">@csrf @method('PUT')<button type="submit" class="{{ $profileButton }}">Approve & apply</button></form>@endif
+                                <form method="POST" action="{{ route('admin.business-profile.recommendations.destroy', [$website, $recommendation]) }}">@csrf @method('DELETE')<button type="submit" class="{{ $profileButton }}">Dismiss</button></form>
+                            </div>
+                        @endif
+                    </article>
+                @empty
+                    <p class="text-base text-slate-500 sm:text-sm">{{ $latestAudit?->status === 'completed' ? 'No changes recommended.' : 'Recommendations will appear after a health check completes.' }}</p>
+                @endforelse
+            </div>
+        </details>
     @endif
 </div>

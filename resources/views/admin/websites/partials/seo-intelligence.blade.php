@@ -1,5 +1,5 @@
 @php
-    $availableSeoSections = $seoSnapshot ? ['overview', 'targets', 'actions', 'keywords', 'backlinks', 'competitors'] : ['overview', 'targets', 'competitors'];
+    $availableSeoSections = $seoSnapshot ? ['overview', 'targets', 'actions', 'impact', 'keywords', 'backlinks', 'competitors'] : ['overview', 'targets', 'impact', 'competitors'];
     $requestedSeoSection = request('seo_section', request()->has('seo_filter') ? 'keywords' : 'overview');
     $currentSeoSection = in_array($requestedSeoSection, $availableSeoSections, true) ? $requestedSeoSection : 'overview';
 @endphp
@@ -11,11 +11,24 @@
                 <a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'targets']) }}" id="seo-section-tab-targets" class="shrink-0 rounded-md px-3 py-2 text-base font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 aria-[current=page]:bg-slate-100 aria-[current=page]:text-slate-950 sm:text-sm" @if ($currentSeoSection === 'targets') aria-current="page" @endif data-tab="targets">Target keywords</a>
                 @if ($seoSnapshot)
                     <a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'actions']) }}" id="seo-section-tab-actions" class="shrink-0 rounded-md px-3 py-2 text-base font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 aria-[current=page]:bg-slate-100 aria-[current=page]:text-slate-950 sm:text-sm" @if ($currentSeoSection === 'actions') aria-current="page" @endif data-tab="actions">Recommended Actions</a>
+                @endif
+                <a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'impact']) }}" id="seo-section-tab-impact" class="shrink-0 rounded-md px-3 py-2 text-base font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 aria-[current=page]:bg-slate-100 aria-[current=page]:text-slate-950 sm:text-sm" @if ($currentSeoSection === 'impact') aria-current="page" @endif data-tab="impact">SEO impact</a>
+                @if ($seoSnapshot)
                     <a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'keywords']) }}" id="seo-section-tab-keywords" class="shrink-0 rounded-md px-3 py-2 text-base font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 aria-[current=page]:bg-slate-100 aria-[current=page]:text-slate-950 sm:text-sm" @if ($currentSeoSection === 'keywords') aria-current="page" @endif data-tab="keywords">Keywords</a>
                     <a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'backlinks']) }}" id="seo-section-tab-backlinks" class="shrink-0 rounded-md px-3 py-2 text-base font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 aria-[current=page]:bg-slate-100 aria-[current=page]:text-slate-950 sm:text-sm" @if ($currentSeoSection === 'backlinks') aria-current="page" @endif data-tab="backlinks">Backlinks</a>
                 @endif
                     <a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'competitors']) }}" id="seo-section-tab-competitors" class="shrink-0 rounded-md px-3 py-2 text-base font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 aria-[current=page]:bg-slate-100 aria-[current=page]:text-slate-950 sm:text-sm" @if ($currentSeoSection === 'competitors') aria-current="page" @endif data-tab="competitors">Competitors</a>
             </div>
+        </div>
+
+        <div id="seo-section-panel-impact" role="region" aria-labelledby="seo-section-tab-impact" data-tab-panel="impact" @if ($currentSeoSection !== 'impact') hidden @endif>
+            @if ($currentSeoSection === 'impact')
+                @if ($seoImpact)
+                    @include('admin.websites.seo-impact')
+                @else
+                    @include('admin.websites.seo-impacts')
+                @endif
+            @endif
         </div>
 
         <div id="seo-section-panel-competitors" role="region" aria-labelledby="seo-section-tab-competitors" data-tab-panel="competitors" @if ($currentSeoSection !== 'competitors') hidden @endif>

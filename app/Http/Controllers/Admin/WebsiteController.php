@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\SeoImpact;
 use App\Models\User;
 use App\Models\Website;
 use App\Models\WebsiteAiQuestion;
 use App\Models\WebsiteDomain;
+use App\Services\BusinessProfilePostSuggestions;
 use App\Services\ContentSchedule;
 use App\Services\PixelInstallationSnippet;
 use App\Services\SearchConsoleClient;
@@ -132,8 +134,6 @@ class WebsiteController extends Controller
             'mailConnection',
             'searchOpportunities' => fn ($query) => $query->whereIn('status', ['open', 'queued'])->orderByDesc('priority_score')->limit(20),
             'businessProfileConnection.audits' => fn ($query) => $query->with('recommendations')->latest()->limit(8),
-            'businessProfileConnection.posts' => fn ($query) => $query->latest()->limit(8),
-            'businessProfileConnection.reviews' => fn ($query) => $query->latest('reviewed_at')->limit(20),
             'contentPlan.creator.githubAuthorization',
             'contentPlan.generations' => fn ($query) => $query->latest('created_at')->limit(8),
             'contentRequests' => fn ($query) => $query->with(['creator', 'generation'])->latest('created_at')->limit(50),
@@ -148,11 +148,26 @@ class WebsiteController extends Controller
         $canRunHealthReports = $user?->isAdmin() === true || $website->owner?->hasMembershipFeature(MembershipPlan::FEATURE_HEALTH_REPORTS) === true;
         $canUseSearchConsole = $user?->isAdmin() === true || $website->owner?->hasMembershipFeature(MembershipPlan::FEATURE_SEARCH_CONSOLE) === true;
         $canUseGrowthFeatures = $user?->isAdmin() === true || $website->owner?->hasMembershipFeature(MembershipPlan::FEATURE_GROWTH) === true;
+        $impacts = null;
+        $seoImpact = null;
+        if ($canUseGrowthFeatures && $request->query('seo_section') === 'impact') {
+            if ($request->has('seo_impact')) {
+                abort_unless(is_string($request->query('seo_impact')) && ctype_digit($request->query('seo_impact')), 404);
+                $seoImpact = SeoImpact::where('website_id', $website->id)
+                    ->with(['reviews', 'generation', 'contentRequest.generation', 'contentRequest.optimisations'])
+                    ->findOrFail($request->query('seo_impact'));
+            } else {
+                $impacts = SeoImpact::where('website_id', $website->id)->with(['generation', 'contentRequest.generation'])
+                    ->orderByRaw("CASE WHEN status = 'review_required' THEN 0 WHEN status = 'measuring' THEN 1 WHEN status = 'planned' THEN 2 ELSE 3 END")
+                    ->orderByRaw('1.0 * business_value * confidence / effort DESC')->latest('id')
+                    ->paginate(20, pageName: 'impact_page')->withQueryString();
+            }
+        }
         $pendingContentRequests = null;
         $actionedContentRequests = collect();
         if ($canUseGrowthFeatures) {
             $pendingContentRequests = $website->contentRequests()
-                ->with('creator')
+                ->with(['creator', 'seoImpact'])
                 ->pendingInQueueOrder()
                 ->paginate(20, pageName: 'content_queue_page')
                 ->withQueryString()
@@ -313,6 +328,26 @@ class WebsiteController extends Controller
                 ->count();
         }
 
+        $businessPostSuggestions = [];
+        $businessQueuedTopics = [];
+        $businessPosts = $businessReviews = null;
+        $businessPostCounts = $businessReviewCounts = collect();
+        $businessPostFilter = in_array($request->query('bp_posts'), ['active', 'published'], true) ? $request->query('bp_posts') : 'active';
+        $businessReviewFilter = in_array($request->query('bp_reviews'), ['unreplied', 'replied', 'all'], true) ? $request->query('bp_reviews') : 'unreplied';
+        if ($canUseCompleteFeatures && ($profile = $website->businessProfileConnection) && filled($profile->location_name)) {
+            $businessPostSuggestions = app(BusinessProfilePostSuggestions::class)->forConnection($profile);
+            $businessQueuedTopics = $profile->posts()->where('status', '!=', 'published')->pluck('topic')->all();
+            $businessPostCounts = $profile->posts()->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
+            $businessReviewCounts = $profile->reviews()->selectRaw('reply_status, count(*) as total')->groupBy('reply_status')->pluck('total', 'reply_status');
+            $businessPosts = $profile->posts()->where('status', $businessPostFilter === 'published' ? '=' : '!=', 'published')
+                ->orderByRaw("CASE status WHEN 'pending_approval' THEN 0 WHEN 'generating' THEN 1 WHEN 'queued' THEN 2 ELSE 3 END")
+                ->orderBy('id')->paginate(10, ['*'], 'bp_posts_page')->withQueryString()->fragment('business-post-queue');
+            $businessReviews = $profile->reviews()
+                ->when($businessReviewFilter !== 'all', fn ($query) => $query->where('reply_status', $businessReviewFilter === 'replied' ? '=' : '!=', 'replied'))
+                ->orderByRaw("CASE reply_status WHEN 'pending_approval' THEN 0 WHEN 'failed' THEN 1 WHEN 'unanswered' THEN 2 WHEN 'generating' THEN 3 ELSE 4 END")
+                ->latest('reviewed_at')->latest('id')->paginate(10, ['*'], 'bp_reviews_page')->withQueryString()->fragment('business-reviews');
+        }
+
         $contentSchedule = app(ContentSchedule::class);
         $contentWeeklyLimit = $contentSchedule->weeklyLimit($website);
         $contentScheduleReason = $website->contentPlan ? $contentSchedule->pauseReason($website->contentPlan) : 'Ask the Sitewell team to connect content automation.';
@@ -326,7 +361,8 @@ class WebsiteController extends Controller
             'dataForSeoConfigured', 'outreachProspect', 'pixelInstallationSnippet', 'canUseGrowthFeatures', 'canUseCompleteFeatures', 'canUseAutoresponders',
             'websiteAiQuestions', 'websiteAiQuestionsUsed', 'websiteAiWeeklyLimit', 'pixelOptimisations', 'websiteUsers', 'soleManagerId',
             'hasContentDeliveryConnection', 'contentSupportCallUrl', 'contentWeeklyLimit', 'contentScheduleReason', 'nextContentRun',
-            'pendingContentRequests', 'actionedContentRequests',
+            'pendingContentRequests', 'actionedContentRequests', 'impacts', 'seoImpact',
+            'businessPostSuggestions', 'businessQueuedTopics', 'businessPosts', 'businessReviews', 'businessPostCounts', 'businessReviewCounts', 'businessPostFilter', 'businessReviewFilter',
         ));
     }
 

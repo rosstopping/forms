@@ -98,6 +98,8 @@ test('weekly dispatcher queues one audit and one post draft at most', function (
     $now = now('Europe/London');
     $connection = BusinessProfileConnection::factory()->create(['weekly_posts_enabled' => true, 'post_weekday' => $now->dayOfWeek, 'post_hour' => $now->hour, 'timezone' => 'Europe/London', 'last_synced_at' => now()]);
 
+    $connection->posts()->create(['status' => BusinessProfilePost::STATUS_QUEUED, 'topic' => 'Introduce the team']);
+
     $this->artisan('business-profiles:dispatch-audits')->assertSuccessful();
     $this->artisan('business-profiles:dispatch-audits')->assertSuccessful();
 

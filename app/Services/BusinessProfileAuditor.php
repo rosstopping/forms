@@ -23,9 +23,9 @@ class BusinessProfileAuditor
         $this->missing($recommendations, $location, 'regularHours.periods', 'hours', 'Add regular opening hours', 'Profiles with complete hours set clearer customer expectations.');
         $this->missing($recommendations, $location, 'profile.description', 'description', 'Add a business description', 'Explain what the business offers and who it serves.');
 
-        $unanswered = $connection->reviews()->where('reply_status', 'unanswered')->count();
+        $unanswered = $connection->reviews()->whereIn('reply_status', ['unanswered', 'generating', 'pending_approval', 'failed'])->count();
         if ($unanswered > 0) {
-            $recommendations->push(['key' => 'unanswered_reviews', 'severity' => 'warning', 'title' => "Reply to {$unanswered} customer review(s)", 'description' => 'Generate individual replies and approve each one before publishing.', 'field_mask' => null, 'current_value' => ['count' => $unanswered], 'proposed_value' => null]);
+            $recommendations->push(['key' => 'unanswered_reviews', 'severity' => 'warning', 'title' => "Reply to {$unanswered} customer review(s)", 'description' => 'Review the automatically prepared replies in the review inbox and approve each one before publishing.', 'field_mask' => null, 'current_value' => ['count' => $unanswered], 'proposed_value' => null]);
         }
 
         return ['snapshot' => $location, 'recommendations' => $recommendations->all()];

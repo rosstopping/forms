@@ -56,6 +56,7 @@ use App\Http\Controllers\Admin\RerunSeoProspectSearchController;
 use App\Http\Controllers\Admin\RunAutomatedProspectDiscoveryController;
 use App\Http\Controllers\Admin\SearchConsoleController;
 use App\Http\Controllers\Admin\SearchOpportunityController;
+use App\Http\Controllers\Admin\SeoImpactController;
 use App\Http\Controllers\Admin\SeoIntelligenceController;
 use App\Http\Controllers\Admin\SeoKeywordController;
 use App\Http\Controllers\Admin\SeoOpportunityController;
@@ -318,6 +319,13 @@ Route::middleware(['web', 'auth', ResolveCurrentWebsite::class])->prefix('admin'
         Route::post('websites/{website}/seo-target-keywords/{seoTargetKeyword}/restore', 'restore')->name('seo-target-keywords.restore');
         Route::post('websites/{website}/seo-target-keywords/{seoTargetKeyword}/check', 'check')->middleware('throttle:20,1')->name('seo-target-keywords.check');
     });
+    Route::middleware('membership:growth')->controller(SeoImpactController::class)->group(function (): void {
+        Route::get('websites/{website}/seo-impacts', 'index')->name('seo-impacts.index');
+        Route::get('websites/{website}/seo-impacts/{seoImpact}', 'show')->name('seo-impacts.show');
+        Route::put('websites/{website}/seo-impacts/{seoImpact}', 'update')->name('seo-impacts.update');
+        Route::post('websites/{website}/seo-impacts/{seoImpact}/live', 'confirmLive')->name('seo-impacts.live');
+        Route::post('websites/{website}/seo-impacts/{seoImpact}/review', 'review')->name('seo-impacts.review');
+    });
     Route::post('websites/{website}/seo-opportunities/{seoOpportunity}/queue', [SeoOpportunityController::class, 'queue'])->middleware('membership:growth')->name('seo-opportunities.queue');
     Route::post('websites/{website}/search-opportunities/{searchOpportunity}/queue', [SearchOpportunityController::class, 'queue'])->middleware('membership:growth')->name('search-opportunities.queue');
     Route::delete('websites/{website}/search-opportunities/{searchOpportunity}', [SearchOpportunityController::class, 'dismiss'])->middleware('membership:growth')->name('search-opportunities.dismiss');
@@ -332,6 +340,9 @@ Route::middleware(['web', 'auth', ResolveCurrentWebsite::class])->prefix('admin'
     Route::put('websites/{website}/business-profile/recommendations/{recommendation}', [BusinessProfileRecommendationController::class, 'update'])->middleware('membership:complete')->name('business-profile.recommendations.update');
     Route::delete('websites/{website}/business-profile/recommendations/{recommendation}', [BusinessProfileRecommendationController::class, 'destroy'])->middleware('membership:complete')->name('business-profile.recommendations.destroy');
     Route::post('websites/{website}/business-profile/posts', [BusinessProfilePostController::class, 'store'])->middleware('membership:complete')->name('business-profile.posts.store');
+    Route::post('websites/{website}/business-profile/posts/{post}/draft', [BusinessProfilePostController::class, 'draft'])->middleware('membership:complete')->name('business-profile.posts.draft');
+    Route::delete('websites/{website}/business-profile/posts/{post}', [BusinessProfilePostController::class, 'destroy'])->middleware('membership:complete')->name('business-profile.posts.destroy');
+    Route::post('websites/{website}/business-profile/reviews/drafts', [BusinessProfileReviewController::class, 'batch'])->middleware('membership:complete')->name('business-profile.reviews.drafts');
     Route::put('websites/{website}/business-profile/posts/{post}', [BusinessProfilePostController::class, 'update'])->middleware('membership:complete')->name('business-profile.posts.update');
     Route::post('websites/{website}/business-profile/reviews/{review}/draft', [BusinessProfileReviewController::class, 'store'])->middleware('membership:complete')->name('business-profile.reviews.draft');
     Route::put('websites/{website}/business-profile/reviews/{review}', [BusinessProfileReviewController::class, 'update'])->middleware('membership:complete')->name('business-profile.reviews.update');

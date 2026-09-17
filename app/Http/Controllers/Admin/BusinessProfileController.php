@@ -4,9 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Jobs\AuditBusinessProfile;
-use App\Jobs\GenerateBusinessProfileReviewReply;
 use App\Models\BusinessProfileAudit;
-use App\Models\BusinessProfileReview;
 use App\Models\Website;
 use App\Services\BusinessProfileClient;
 use App\Services\BusinessProfileOAuthClient;
@@ -86,7 +84,11 @@ class BusinessProfileController extends Controller
     {
         $this->authorizeWebsite($request, $website);
         $data = $request->validate(['weekly_audits_enabled' => ['required', 'boolean'], 'weekly_posts_enabled' => ['required', 'boolean'], 'post_weekday' => ['required', 'integer', 'between:0,6'], 'post_hour' => ['required', 'integer', 'between:0,23'], 'timezone' => ['required', 'timezone'], 'brand_guidance' => ['nullable', 'string', 'max:20000']]);
-        $website->businessProfileConnection()->firstOrFail()->update($data);
+        $connection = $website->businessProfileConnection()->firstOrFail();
+        if (blank($connection->location_name)) {
+            return Redirect::route('admin.business-profile.locations', $website)->with('error', 'Select a Google Business Profile location before configuring automation.');
+        }
+        $connection->update($data);
 
         return back()->with('status', 'Business Profile automation settings updated.');
     }
@@ -95,6 +97,9 @@ class BusinessProfileController extends Controller
     {
         $this->authorizeWebsite($request, $website);
         $connection = $website->businessProfileConnection()->firstOrFail();
+        if (blank($connection->location_name)) {
+            return Redirect::route('admin.business-profile.locations', $website)->with('error', 'Select a Google Business Profile location before running a health check.');
+        }
         $audit = $connection->audits()->whereIn('status', [BusinessProfileAudit::STATUS_PENDING, BusinessProfileAudit::STATUS_RUNNING])->first() ?: $connection->audits()->create(['status' => BusinessProfileAudit::STATUS_PENDING]);
         if ($audit->wasRecentlyCreated) {
             AuditBusinessProfile::dispatch($audit);
@@ -118,11 +123,6 @@ class BusinessProfileController extends Controller
         } catch (RuntimeException $exception) {
             return back()->with('error', $exception->getMessage());
         }
-
-        $connection->reviews()->where('reply_status', BusinessProfileReview::STATUS_UNANSWERED)->each(function (BusinessProfileReview $review): void {
-            $review->update(['reply_status' => BusinessProfileReview::STATUS_GENERATING]);
-            GenerateBusinessProfileReviewReply::dispatch($review);
-        });
 
         return back()->with('status', 'Reviews synced and unanswered review drafts queued.');
     }

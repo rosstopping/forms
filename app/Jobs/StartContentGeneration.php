@@ -11,6 +11,7 @@ use App\Services\ContentSchedule;
 use App\Services\ContentWorkSelector;
 use App\Services\CopilotAgentClient;
 use App\Services\SearchConsoleClient;
+use App\Services\SeoImpactTracker;
 use App\Services\SeoTargetKeywordSelector;
 use Carbon\Carbon;
 use Illuminate\Contracts\Queue\ShouldBeEncrypted;
@@ -122,6 +123,17 @@ class StartContentGeneration implements ShouldBeEncrypted, ShouldBeUnique, Shoul
                 ]);
             }
         }
+        $impactTracker = app(SeoImpactTracker::class);
+        $hadRequests = $contentRequests->isNotEmpty();
+        $contentRequests = $contentRequests->reject(fn ($request): bool => $impactTracker->requestIsProtected($request));
+        $selected = collect($this->generation->target_keyword_context ?? [])->firstWhere('id', $this->generation->seo_target_keyword_id);
+        $protected = $impactTracker->protectedKeys($this->generation->plan->website);
+        if (($hadRequests && $contentRequests->isEmpty()) || ($selected && ($protected->contains('term:'.mb_strtolower(trim($selected['term'])))
+            || (! empty($selected['ranking_url']) && $protected->contains($impactTracker->urlKey($selected['ranking_url'])))))) {
+            $this->skipGeneration('The selected pages or search terms are being measured. Review their SEO impact before making another change.');
+
+            return;
+        }
         $this->generation->setRelation('contentRequests', $contentRequests);
         $performance = $connection?->property_url ? $searchConsole->performance($connection) : [];
         $this->generation->update(['search_performance' => $performance]);
@@ -131,6 +143,7 @@ class StartContentGeneration implements ShouldBeEncrypted, ShouldBeUnique, Shoul
         if ($this->generation->backlink_context === null) {
             $this->generation->update(['backlink_context' => app(BacklinkContentContext::class)->forGeneration($contentRequests)]);
         }
+        app(SeoImpactTracker::class)->forGeneration($this->generation);
         $prompt = $prompts->generate($this->generation);
         $this->generation->update(['status' => ContentGeneration::STATUS_RUNNING, 'prompt' => $prompt, 'started_at' => now(), 'error' => null]);
         $task = $copilot->startTask($authorization, $this->generation->repository, $prompt);

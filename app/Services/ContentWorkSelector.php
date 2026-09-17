@@ -19,18 +19,21 @@ class ContentWorkSelector
         $active = $this->targets->active($website);
         $snapshot = $this->targets->snapshot($active);
         $history = $this->history($generation);
+        $protectedKeys = app(SeoImpactTracker::class)->protectedKeys($website);
         $openKeys = $history->filter(fn (ContentGeneration $previous): bool => $previous->status === ContentGeneration::STATUS_PULL_REQUEST_OPEN
             && $previous->pull_request_state !== 'closed')->flatMap(fn (ContentGeneration $previous): array => $this->generationKeys($previous))->unique();
         $recentKeys = $history->filter(fn (ContentGeneration $previous): bool => ($previous->merged_at ?? ($previous->copilot_task_id ? $previous->started_at : null))?->greaterThan(now()->subDays(14)) === true)
             ->flatMap(fn (ContentGeneration $previous): array => $this->generationKeys($previous))->unique();
-        $requests = $website->contentRequests()->pendingInQueueOrder()->get()
+        $requests = $website->contentRequests()->pendingInQueueOrder()->with('seoImpact')->get()
             ->reject(fn (ContentRequest $request): bool => $openKeys->intersect($this->requestKeys($request))->isNotEmpty()
-                || $recentKeys->intersect($this->requestKeys($request))->isNotEmpty())->take(2);
-        $eligible = $active->filter(function (SeoTargetKeyword $keyword) use ($snapshot, $openKeys, $recentKeys): bool {
+                || $recentKeys->intersect($this->requestKeys($request))->isNotEmpty()
+                || $protectedKeys->intersect($this->requestKeys($request))->isNotEmpty())->take(2);
+        $eligible = $active->filter(function (SeoTargetKeyword $keyword) use ($snapshot, $openKeys, $recentKeys, $protectedKeys): bool {
             $row = collect($snapshot)->firstWhere('id', $keyword->id);
             $keys = $this->targetKeys($keyword->id, $keyword->term, $row['ranking_url'] ?? null);
 
             return $openKeys->intersect($keys)->isEmpty()
+                && $protectedKeys->intersect($keys)->isEmpty()
                 && ($keyword->last_selected_at === null || $keyword->last_selected_at->lessThanOrEqualTo(now()->subDays(14)))
                 && $recentKeys->intersect($keys)->isEmpty();
         });
@@ -46,7 +49,7 @@ class ContentWorkSelector
                 $query->where('status', ContentGeneration::STATUS_PULL_REQUEST_OPEN)
                     ->orWhere('started_at', '>', now()->subDays(14))
                     ->orWhere('merged_at', '>', now()->subDays(14));
-            })->with('contentRequests')->latest('id')->get();
+            })->with('contentRequests.seoImpact')->latest('id')->get();
     }
 
     public function pendingRequestsBlockedByReview(ContentPlan $plan): bool
@@ -54,14 +57,14 @@ class ContentWorkSelector
         $openKeys = $plan->generations()
             ->where('status', ContentGeneration::STATUS_PULL_REQUEST_OPEN)
             ->where(fn ($query) => $query->whereNull('pull_request_state')->orWhere('pull_request_state', '!=', 'closed'))
-            ->with('contentRequests')->get()
+            ->with('contentRequests.seoImpact')->get()
             ->flatMap(fn (ContentGeneration $generation): array => $this->generationKeys($generation))->unique();
 
         if ($openKeys->isEmpty()) {
             return false;
         }
 
-        $requests = $plan->website->contentRequests()->pendingInQueueOrder()->get();
+        $requests = $plan->website->contentRequests()->pendingInQueueOrder()->with('seoImpact')->get();
 
         return $requests->isNotEmpty() && $requests->every(fn (ContentRequest $request): bool => $openKeys->intersect($this->requestKeys($request))->isNotEmpty());
     }
@@ -88,6 +91,10 @@ class ContentWorkSelector
         preg_match_all('~https?://[^\s<>"\)]+~i', $request->instructions, $matches);
         $keys = array_map(fn (string $url): string => $this->urlKey(rtrim($url, '.,;')), $matches[0]);
         $keys[] = 'request:'.hash('sha256', SeoTargetKeyword::normalize($request->instructions));
+        if ($request->seoImpact) {
+            $keys = [...$keys, ...array_map(fn (string $url): string => $this->urlKey($url), $request->seoImpact->target_urls),
+                ...array_map(fn (string $query): string => 'term:'.mb_strtolower(trim($query)), $request->seoImpact->target_queries)];
+        }
         $term = data_get($request->competitor_context, 'primary_keyword');
         if (is_string($term) && $term !== '') {
             $keys[] = 'term:'.mb_strtolower(trim($term));
@@ -98,6 +105,6 @@ class ContentWorkSelector
 
     private function urlKey(string $url): string
     {
-        return 'url:'.mb_strtolower((string) parse_url($url, PHP_URL_HOST)).rtrim((string) parse_url($url, PHP_URL_PATH), '/');
+        return app(SeoImpactTracker::class)->urlKey($url);
     }
 }

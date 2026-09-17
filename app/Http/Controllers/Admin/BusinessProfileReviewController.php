@@ -7,11 +7,24 @@ use App\Jobs\GenerateBusinessProfileReviewReply;
 use App\Models\BusinessProfileReview;
 use App\Models\Website;
 use App\Services\BusinessProfileClient;
+use App\Services\BusinessProfileReviewDraftQueuer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class BusinessProfileReviewController extends Controller
 {
+    public function batch(Request $request, Website $website, BusinessProfileReviewDraftQueuer $drafts): RedirectResponse
+    {
+        abort_unless($website->isManageableBy($request->user()), 403);
+        $connection = $website->businessProfileConnection()->firstOrFail();
+        if (blank($connection->location_name)) {
+            return to_route('admin.business-profile.locations', $website)->with('error', 'Select a Google Business Profile location before drafting replies.');
+        }
+        $count = $drafts->queue($connection, includeFailed: true);
+
+        return back()->with('status', $count.' review reply draft(s) queued for approval.');
+    }
+
     public function store(Request $request, Website $website, BusinessProfileReview $review): RedirectResponse
     {
         $this->authorizeReview($request, $website, $review);

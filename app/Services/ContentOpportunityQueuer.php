@@ -98,6 +98,7 @@ class ContentOpportunityQueuer
 
     private function dispatchPixelDraft(ContentRequest $request, User $user): void
     {
+        app(SeoImpactTracker::class)->forRequest($request);
         if (config('forms.pixel_ui_enabled') && $request->website->pixel_enabled) {
             GenerateContentRequestPixelOptimisations::dispatch($request, $user)->afterCommit();
         }

@@ -13,13 +13,13 @@ class BusinessProfileConnection extends Model
     /** @use HasFactory<BusinessProfileConnectionFactory> */
     use HasFactory;
 
-    protected $fillable = ['website_id', 'connected_by', 'account_name', 'location_name', 'location_title', 'access_token', 'refresh_token', 'access_token_expires_at', 'weekly_audits_enabled', 'weekly_posts_enabled', 'post_weekday', 'post_hour', 'timezone', 'brand_guidance', 'last_synced_at'];
+    protected $fillable = ['website_id', 'connected_by', 'account_name', 'location_name', 'location_title', 'access_token', 'refresh_token', 'access_token_expires_at', 'weekly_audits_enabled', 'weekly_posts_enabled', 'post_weekday', 'post_hour', 'timezone', 'brand_guidance', 'last_synced_at', 'last_post_scheduled_at'];
 
     protected $hidden = ['access_token', 'refresh_token'];
 
     protected function casts(): array
     {
-        return ['access_token' => 'encrypted', 'refresh_token' => 'encrypted', 'access_token_expires_at' => 'datetime', 'weekly_audits_enabled' => 'boolean', 'weekly_posts_enabled' => 'boolean', 'last_synced_at' => 'datetime'];
+        return ['access_token' => 'encrypted', 'refresh_token' => 'encrypted', 'access_token_expires_at' => 'datetime', 'weekly_audits_enabled' => 'boolean', 'weekly_posts_enabled' => 'boolean', 'last_synced_at' => 'datetime', 'last_post_scheduled_at' => 'datetime', 'post_weekday' => 'integer', 'post_hour' => 'integer'];
     }
 
     public function website(): BelongsTo

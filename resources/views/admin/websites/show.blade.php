@@ -228,6 +228,12 @@
     @endif
 
     <div id="website-panel-content" class="space-y-6" role="region" aria-labelledby="website-tab-content" data-tab-panel="content" @if ($currentWebsiteSection !== 'content') hidden @endif>
+        @if ($canUseGrowthFeatures)
+            <a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'impact']) }}" class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-4 hover:bg-slate-50">
+                <span><span class="block font-semibold text-slate-950">SEO impact</span><span class="mt-1 block text-sm text-slate-600">Measure delivered changes and review their results in SEO Intelligence.</span></span>
+                <span class="text-sm font-medium text-slate-700">Review results →</span>
+            </a>
+        @endif
         @unless ($canUseGrowthFeatures)
             <x-feature-upgrade-banner tier="Growth" title="Plan and request new content" description="Upgrade to Growth to submit content requests, plan improvements, and prepare reviewable website changes." />
         @endunless
@@ -406,6 +412,9 @@
                                     <span class="text-xs text-slate-500">Added {{ $contentRequest->created_at->diffForHumans() }}{{ $contentRequest->creator ? ' by '.$contentRequest->creator->name : '' }}</span>
                                 </div>
                                 <p class="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700">{{ $contentRequest->instructions }}</p>
+                                @if ($contentRequest->seoImpact)
+                                    <a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'impact', 'seo_impact' => $contentRequest->seoImpact->id]) }}" class="mt-2 inline-block text-sm font-medium text-slate-700 underline">View measurable brief</a>
+                                @endif
                             </div>
                             @if ($canManageWebsite)
                                 <div class="flex shrink-0 flex-col gap-2 sm:flex-row">

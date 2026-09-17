@@ -3,10 +3,12 @@
 namespace App\Services;
 
 use App\Models\BusinessProfileConnection;
+use App\Models\BusinessProfileReview;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 use Throwable;
@@ -40,7 +42,17 @@ class BusinessProfileClient
     {
         $this->ensureLocation($connection);
 
-        return $this->request($connection, 'v4')->get($this->v4LocationName($connection).'/reviews', ['pageSize' => 50, 'orderBy' => 'updateTime desc'])->throw()->json('reviews', []);
+        $reviews = [];
+        $pageToken = null;
+        do {
+            $response = $this->request($connection, 'v4')->get($this->v4LocationName($connection).'/reviews', array_filter([
+                'pageSize' => 50, 'orderBy' => 'updateTime desc', 'pageToken' => $pageToken,
+            ]))->throw()->json();
+            $reviews = [...$reviews, ...($response['reviews'] ?? [])];
+            $pageToken = $response['nextPageToken'] ?? null;
+        } while (filled($pageToken));
+
+        return $reviews;
     }
 
     /** @param array<string, mixed> $values */
@@ -97,17 +109,23 @@ class BusinessProfileClient
     public function syncReviews(BusinessProfileConnection $connection): void
     {
         foreach ($this->reviews($connection) as $review) {
-            $reply = data_get($review, 'reviewReply.comment');
-            $connection->reviews()->updateOrCreate(['google_review_name' => $review['name']], [
-                'reviewer_name' => data_get($review, 'reviewer.displayName'),
-                'star_rating' => $this->rating((string) ($review['starRating'] ?? 'ONE')),
-                'comment' => $review['comment'] ?? null,
-                'reviewed_at' => filled($review['createTime'] ?? null) ? Carbon::parse($review['createTime']) : null,
-                'google_reply' => $reply,
-                'reply_status' => $reply ? 'replied' : 'unanswered',
-            ]);
+            DB::transaction(function () use ($connection, $review): void {
+                $stored = $connection->reviews()->where('google_review_name', $review['name'])->lockForUpdate()->first()
+                    ?? $connection->reviews()->make(['google_review_name' => $review['name'], 'reply_status' => BusinessProfileReview::STATUS_UNANSWERED]);
+                $stored->fill([
+                    'reviewer_name' => data_get($review, 'reviewer.displayName'),
+                    'star_rating' => $this->rating((string) ($review['starRating'] ?? 'ONE')),
+                    'comment' => $review['comment'] ?? null,
+                    'reviewed_at' => filled($review['createTime'] ?? null) ? Carbon::parse($review['createTime']) : null,
+                ]);
+                if (filled($reply = data_get($review, 'reviewReply.comment'))) {
+                    $stored->fill(['google_reply' => $reply, 'reply_status' => BusinessProfileReview::STATUS_REPLIED, 'error' => null]);
+                }
+                $stored->save();
+            });
         }
         $connection->update(['last_synced_at' => now()]);
+        app(BusinessProfileReviewDraftQueuer::class)->queue($connection);
     }
 
     protected function request(BusinessProfileConnection $connection, string $api): PendingRequest

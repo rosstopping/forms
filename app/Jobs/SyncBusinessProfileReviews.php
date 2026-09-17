@@ -3,7 +3,6 @@
 namespace App\Jobs;
 
 use App\Models\BusinessProfileConnection;
-use App\Models\BusinessProfileReview;
 use App\Services\BusinessProfileClient;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -23,11 +22,11 @@ class SyncBusinessProfileReviews implements ShouldBeUnique, ShouldQueue
     /** @var array<int, int> */
     public array $backoff = [60, 300];
 
-    public function __construct(public BusinessProfileConnection $connection) {}
+    public function __construct(public BusinessProfileConnection $profile) {}
 
     public function uniqueId(): string
     {
-        return (string) $this->connection->id;
+        return (string) $this->profile->id;
     }
 
     /**
@@ -35,10 +34,6 @@ class SyncBusinessProfileReviews implements ShouldBeUnique, ShouldQueue
      */
     public function handle(BusinessProfileClient $client): void
     {
-        $client->syncReviews($this->connection);
-        $this->connection->reviews()->where('reply_status', BusinessProfileReview::STATUS_UNANSWERED)->each(function (BusinessProfileReview $review): void {
-            $review->update(['reply_status' => BusinessProfileReview::STATUS_GENERATING, 'error' => null]);
-            GenerateBusinessProfileReviewReply::dispatch($review);
-        });
+        $client->syncReviews($this->profile);
     }
 }
