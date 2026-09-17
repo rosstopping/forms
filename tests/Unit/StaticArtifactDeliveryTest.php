@@ -70,6 +70,31 @@ it('rejects invalid supplied metadata and corrupt fingerprints even without meta
         ->toThrow(RuntimeException::class);
 })->with(['invalid manifest', 'corrupt fingerprint']);
 
+it('accepts Google Fonts through HTML and CSS without fetching remote dependencies', function (string $url): void {
+    $files = [
+        'index.html' => '<link rel="stylesheet" href="'.htmlspecialchars($url).'"><link rel="stylesheet" href="/style.css">',
+        'style.css' => '@import "'.$url.'";',
+    ];
+    (new StaticArtifactValidator)->validate(array_keys($files), fn (string $path): string|false => $files[$path] ?? false);
+    expect(true)->toBeTrue();
+})->with([
+    'https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap',
+    'https://fonts.googleapis.com/css?family=Montserrat',
+    'https://fonts.gstatic.com/s/lato/v24/example.woff2',
+]);
+
+it('still rejects other remote fonts and misleading Google Fonts URLs', function (string $url): void {
+    $files = ['index.html' => '<style>@font-face{src:url('.$url.')}</style>'];
+    expect(fn () => (new StaticArtifactValidator)->validate(array_keys($files), fn (string $path): string|false => $files[$path] ?? false))
+        ->toThrow(RuntimeException::class);
+})->with([
+    'http://fonts.googleapis.com/css2?family=Lato',
+    'https://fonts.googleapis.com.example.com/css2?family=Lato',
+    'https://fonts.gstatic.com@example.com/s/font.woff2',
+    'https://example.com/font.woff2',
+    '/wp-content/fonts/google/missing.woff2',
+]);
+
 /** @param array<string, string> $files */
 function installDeliveryFixture(string $directory, array $files, string $releaseId): void
 {

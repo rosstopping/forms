@@ -16,3 +16,6 @@ UploadsDelivery supersedes mandatory managed direct setup: normal enable prepare
 
 ## Accept compiled sites without optimizer metadata
 Supersedes the mandatory optimized-artifact rule: static-build-manifest.json and _headers are optional. Validate supplied manifests, fingerprinted bytes, unbuilt templates and local dependencies as before; allow ordinary asset filenames without a manifest. Both Laravel packaging and plugin installation use the shared validator. Direct publication discovers fingerprinted assets from files without needing metadata; never treat ordinary filenames as immutable.
+
+## Allow Google Fonts for hosted text fonts
+Shared static validation permits HTTPS fonts.googleapis.com/css or /css2 query URLs and fonts.gstatic.com/s/ assets without fetching remote dependencies. This supersedes the blanket Google Fonts rejection. Keep rejecting other remote stylesheet/font dependencies, lookalike hosts and obsolete local WordPress Google font paths. Plugin 1.0.7 or later is required before deploying releases that use this exception.

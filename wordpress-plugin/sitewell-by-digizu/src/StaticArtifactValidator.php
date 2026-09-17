@@ -52,6 +52,9 @@ final class StaticArtifactValidator {
 			if ( $url === '' || preg_match( '~^(?:data:|blob:|#|mailto:|tel:)~i', $url ) ) {
 				return;
 			}
+			if ( preg_match( '~^https://(?:fonts\.googleapis\.com/css2?\?|fonts\.gstatic\.com/s/)~i', $url ) ) {
+				return;
+			}
 			if ( preg_match( '~fonts\.(?:googleapis|gstatic)\.com|/wp-content/fonts/google/|/litespeed/~i', $url ) ) {
 				throw new RuntimeException( "Unresolved origin dependency in {$from}: {$url}" );
 			}

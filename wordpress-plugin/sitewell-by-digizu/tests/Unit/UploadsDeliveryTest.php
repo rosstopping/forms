@@ -70,7 +70,7 @@ final class UploadsDeliveryTest extends TestCase {
 	public function test_it_installs_plain_compiled_assets_without_optimizer_metadata(): void {
 		$this->install(
 			[
-				'index.html'              => '<link rel="stylesheet" href="/assets/static/site.css"><h1>Plain site</h1>',
+				'index.html'              => '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lato&amp;display=swap"><link rel="stylesheet" href="/assets/static/site.css"><h1>Plain site</h1>',
 				'assets/static/site.css'  => '@font-face{src:url(../fonts/site.woff2)}',
 				'assets/fonts/site.woff2' => 'wOF2font',
 			],
@@ -83,6 +83,7 @@ final class UploadsDeliveryTest extends TestCase {
 		self::assertStringContainsString( self::URL, file_get_contents( $release['rendered_path'] . '/index.html' ) );
 		self::assertStringContainsString( self::URL, file_get_contents( $public . '/assets/static/site.css' ) );
 		self::assertSame( 'wOF2font', file_get_contents( $public . '/assets/fonts/site.woff2' ) );
+		self::assertStringContainsString( 'https://fonts.googleapis.com/css2?family=Lato&amp;display=swap', file_get_contents( $release['rendered_path'] . '/index.html' ) );
 	}
 
 	public function test_enabling_an_existing_release_needs_no_host_configuration(): void {
