@@ -156,6 +156,6 @@ final class StaticPathResolver {
 			return null;
 		}
 
-		return new ResolvedStaticFile( $candidate, $contentType, $extension === 'html' );
+		return new ResolvedStaticFile( $candidate, $contentType, in_array( $extension, [ 'html', 'htm' ], true ) );
 	}
 }

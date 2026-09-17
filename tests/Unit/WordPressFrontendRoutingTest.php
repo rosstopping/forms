@@ -4,7 +4,7 @@ use Illuminate\Filesystem\Filesystem;
 use Symfony\Component\Process\Process;
 
 /** @return array{body: string, headers: array<string, string>, status: int, cache_disabled: bool} */
-function wordpressStaticResponse(string $uri, string $method = 'GET', bool $enabled = true, bool $has404 = true): array
+function wordpressStaticResponse(string $uri, string $method = 'GET', bool $enabled = true, bool $has404 = true, bool $uploadsMode = false): array
 {
     $directory = sys_get_temp_dir().'/sitewell-routing-'.bin2hex(random_bytes(8));
     mkdir($directory);
@@ -26,7 +26,7 @@ namespace {
     define('MINUTE_IN_SECONDS', 60);
     define('ABSPATH', $argv[2].'/');
     function is_admin(): bool { return false; }
-    function wp_upload_dir(): array { return ['basedir' => $GLOBALS['argv'][2]]; }
+    function wp_upload_dir(): array { return ['basedir' => $GLOBALS['argv'][2], 'baseurl' => 'https://example.com/wp-content/uploads']; }
     function wp_next_scheduled(string $hook): int { return 1; }
     function add_action(string $hook, mixed $callback, int $priority = 10): void {
         $GLOBALS['hooks'][$hook][$priority][] = $callback;
@@ -46,7 +46,7 @@ namespace {
     foreach ([
         'static-build-manifest.json' => json_encode(['version' => 1, 'pages' => 1, 'assets' => []]),
         '_headers' => '/',
-        'index.html' => '<h1>Home</h1>',
+        'index.html' => '<h1>Home</h1><link rel="stylesheet" href="/assets/site.css">',
         'plumbing/index.html' => '<section class="hero"><h1>Plumbing Work in Doncaster</h1></section>',
         'assets/site.css' => 'body{color:teal}',
         'sitemap.xml' => '<?xml version="1.0"?><urlset><url><loc>https://rowglo.co.uk/plumbing/</loc></url></urlset>',
@@ -61,6 +61,9 @@ namespace {
         'checksum' => hash_file('sha256', $archivePath),
         'size' => filesize($archivePath),
     ], $archivePath);
+    if ($argv[7] === '1') {
+        \Sitewell\StaticFrontend\UploadsDelivery::forWordPress()->enable(null);
+    }
     update_option(\Sitewell\StaticFrontend\Admin\SettingsPage::OPTION_ENABLED, $argv[5] === '1');
     \Sitewell\StaticFrontend\Plugin::instance()->boot();
     ob_start();
@@ -82,7 +85,7 @@ namespace {
 }
 SCRIPT;
     try {
-        $process = new Process([PHP_BINARY, '-r', $script, $pluginPath, $directory, $uri, $method, $enabled ? '1' : '0', $has404 ? '1' : '0']);
+        $process = new Process([PHP_BINARY, '-r', $script, $pluginPath, $directory, $uri, $method, $enabled ? '1' : '0', $has404 ? '1' : '0', $uploadsMode ? '1' : '0']);
         $process->mustRun();
 
         return json_decode($process->getOutput(), true, flags: JSON_THROW_ON_ERROR);
@@ -137,4 +140,15 @@ it('returns a genuine static 404 even without a custom error page', function ():
     $response = wordpressStaticResponse('/wp-content/fonts/google/missing.ttf', has404: false);
     expect($response['status'])->toBe(404)->and($response['body'])->toBe('')
         ->and($response['headers']['Cache-Control'])->toContain('no-store');
+});
+
+it('serves prepared pages with physical upload asset URLs through the normal plugin router', function (): void {
+    $response = wordpressStaticResponse('/', uploadsMode: true);
+    expect($response['status'])->toBe(200)
+        ->and($response['body'])->toContain('https://example.com/wp-content/uploads/sitewell-assets/wsr_')
+        ->not->toContain('href="/assets/site.css"')
+        ->and($response['headers']['Cache-Control'])->toContain('no-store');
+    expect(wordpressStaticResponse('/contact/', 'POST', uploadsMode: true)['body'])->toBe('WordPress handler')
+        ->and(wordpressStaticResponse('/wp-admin/', uploadsMode: true)['body'])->toBe('WordPress handler')
+        ->and(wordpressStaticResponse('/', enabled: false, uploadsMode: true)['body'])->toBe('WordPress handler');
 });

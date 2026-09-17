@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 if ( ! defined( 'SITEWELL_STATIC_FRONTEND_VERSION' ) ) {
-	define( 'SITEWELL_STATIC_FRONTEND_VERSION', '1.0.3' );
+	define( 'SITEWELL_STATIC_FRONTEND_VERSION', '1.0.4' );
 }
 
 if ( ! class_exists( 'WP_Error' ) ) {
@@ -92,6 +92,7 @@ require_once dirname( __DIR__ ) . '/src/StaticArtifactValidator.php';
 require_once dirname( __DIR__ ) . '/src/StaticPublisher.php';
 require_once dirname( __DIR__ ) . '/src/DeliveryRules.php';
 require_once dirname( __DIR__ ) . '/src/DirectDelivery.php';
+require_once dirname( __DIR__ ) . '/src/UploadsDelivery.php';
 require_once dirname( __DIR__ ) . '/src/ReleaseInstaller.php';
 require_once dirname( __DIR__ ) . '/src/ActiveStaticRootProvider.php';
 require_once dirname( __DIR__ ) . '/src/ResolvedStaticFile.php';

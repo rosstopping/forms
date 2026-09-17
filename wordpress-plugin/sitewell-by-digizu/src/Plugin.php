@@ -29,14 +29,15 @@ final class Plugin {
 			new StaticPathResolver( $this->staticRoot->path() ),
 			new BypassPolicy(),
 			SITEWELL_STATIC_FRONTEND_PATH . 'templates/static-router.php',
+			is_string( SettingsPage::activeRelease()['rendered_path'] ?? null ) ? new StaticPathResolver( SettingsPage::activeRelease()['rendered_path'] ) : null,
 		);
-		$this->settingsPage       = new SettingsPage( $this->staticRoot, DirectDelivery::forWordPress() );
+		$this->settingsPage       = new SettingsPage( $this->staticRoot, DirectDelivery::forWordPress(), UploadsDelivery::forWordPress() );
 		$client                   = new SitewellClient( SITEWELL_STATIC_FRONTEND_API_URL );
 		$uploads                  = wp_upload_dir();
 		$releasesPath             = defined( 'SITEWELL_STATIC_FRONTEND_RELEASES_PATH' )
 			? (string) SITEWELL_STATIC_FRONTEND_RELEASES_PATH
 			: rtrim( (string) ( $uploads['basedir'] ?? '' ), '/\\' ) . '/sitewell-static-frontend/releases';
-		$this->deployments        = new DeploymentManager( $client, new ReleaseInstaller( $releasesPath, defined( 'SITEWELL_STATIC_FRONTEND_PUBLIC_PATH' ) ? (string) SITEWELL_STATIC_FRONTEND_PUBLIC_PATH : null, DirectDelivery::forWordPress() ) );
+		$this->deployments        = new DeploymentManager( $client, new ReleaseInstaller( $releasesPath, defined( 'SITEWELL_STATIC_FRONTEND_PUBLIC_PATH' ) ? (string) SITEWELL_STATIC_FRONTEND_PUBLIC_PATH : null, DirectDelivery::forWordPress(), UploadsDelivery::forWordPress() ) );
 		$this->deploymentEndpoint = new DeploymentEndpoint( $this->deployments );
 		$this->connectionActions  = new ConnectionActions( $client, $this->deployments );
 	}

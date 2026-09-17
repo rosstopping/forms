@@ -47,7 +47,7 @@ final class ReleaseInstaller {
 		'xsl',
 	];
 
-	public function __construct( private readonly string $releasesPath, private readonly ?string $publicPath = null, private readonly ?DirectDelivery $delivery = null ) {}
+	public function __construct( private readonly string $releasesPath, private readonly ?string $publicPath = null, private readonly ?DirectDelivery $delivery = null, private readonly ?UploadsDelivery $uploadsDelivery = null ) {}
 
 	/**
 	 * @param  array{release_id: string, checksum: string, size: int}  $release
@@ -137,6 +137,16 @@ final class ReleaseInstaller {
 			}
 		}
 
+		$renderedPath = null;
+		if ( $this->uploadsDelivery !== null && $this->publicPath === null && ! get_option( DirectDelivery::OPTION, false ) ) {
+			try {
+				$renderedPath = $this->uploadsDelivery->prepare( $releasePath );
+			} catch ( RuntimeException $exception ) {
+				$this->removeDirectory( $releasePath );
+				throw $exception;
+			}
+		}
+
 		$current  = get_option( SettingsPage::OPTION_ACTIVE_RELEASE );
 		$previous = get_option( SettingsPage::OPTION_PREVIOUS_RELEASE );
 
@@ -147,10 +157,11 @@ final class ReleaseInstaller {
 		update_option(
 			SettingsPage::OPTION_ACTIVE_RELEASE,
 			[
-				'release_id'   => $release['release_id'],
-				'path'         => $releasePath,
-				'checksum'     => $release['checksum'],
-				'activated_at' => gmdate( 'c' ),
+				'release_id'    => $release['release_id'],
+				'path'          => $releasePath,
+				'checksum'      => $release['checksum'],
+				'activated_at'  => gmdate( 'c' ),
+				'rendered_path' => $renderedPath,
 			],
 			false,
 		);

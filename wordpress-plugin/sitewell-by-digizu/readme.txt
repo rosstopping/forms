@@ -4,7 +4,7 @@ Tags: website management, maintenance, seo, site audit
 Requires at least: 6.6
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 1.0.3
+Stable tag: 1.0.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -39,58 +39,47 @@ Terms of service: https://sitewell.digizu.co.uk/terms-of-service
 3. In WordPress, go to Settings > Sitewell by Digizu.
 4. Review the service disclosure, enter the connection code and select Connect to Sitewell.
 5. Select Check for updates if an approved release is already available.
-6. Enable the Sitewell website and select Save and verify delivery.
+6. Enable the Sitewell website and select Save.
 
 The plugin will not replace the public WordPress website until a verified Sitewell release has been downloaded and the administrator enables it.
 
-== Fast delivery ==
+== Delivery without server configuration ==
 
-Version 1.0.3 adds managed direct delivery: public pages, CSS, fonts and images
-are served by the web server without loading WordPress, PHP or the database.
-Existing enabled installations retain compatibility mode until an administrator
-saves the enable setting to migrate. Installing the update does not switch traffic.
+Version 1.0.4 makes ordinary WordPress uploads the default asset delivery path.
+Enable the Sitewell website and select Save. No Nginx configuration, symlinks,
+.htaccess changes or DNS changes are needed for this mode on a standard WordPress
+host with publicly accessible uploads.
 
-On a single site installed at the domain root:
+The plugin prepares the installed release, publishes CSS, JavaScript, images and
+fonts under uploads/sitewell-assets, and rewrites the private HTML pages and
+asset dependencies to use those physical URLs. Public pages still pass through
+WordPress; asset requests can be served by the host as ordinary media files.
+This removes the many asset requests from PHP without claiming to eliminate the
+cost of the initial WordPress page request. Host caching headers remain in effect.
 
-1. Install a validated release. static-build-manifest.json v1 and _headers remain
-   required, including for repositories containing committed compiled files.
-2. Enable the Sitewell website and select Save and verify delivery.
-3. Apache and LiteSpeed installations attempt a marked .htaccess block before
-   existing WordPress rules. Other host rules are preserved. The host must permit
-   rewrite rules, headers, filesystem writes and symlinks. LiteSpeed deployments
-   still need staging validation on the target hosting configuration.
-4. Nginx requires a one-time host configuration. The plugin displays the exact
-   server-block configuration after the first attempt. The host must include it
-   before other server rewrites, preserve existing PHP/WordPress routes, run
-   nginx -t and reload, then retry activation. Preserve the site's MIME map, TLS
-   and security headers in the generated static locations.
-5. Activation checks the homepage, a hashed asset when present, and a missing
-   asset using a private probe, then checks normal public URLs. Byte hashes,
-   response status and static-delivery headers must match. Failed checks leave
-   the switch off and restore the previous Apache rewrite configuration.
-6. Test menus, cookie controls and forms on staging, then test concurrent cold
-   requests. Purge existing upstream HTML and negative cache entries at cutover.
+The original validated release is kept intact. Prepared pages activate only after
+asset publication completes. Public asset directories have release-specific URLs
+and are retained across deployments for cached pages and open browser tabs.
+Local script/style integrity attributes are removed only when the corresponding
+resource has been rewritten; external resources retain their integrity attributes.
+All releases still require static-build-manifest.json v1 and _headers.
 
-The switch is sitewell-static/.enabled in the WordPress root. Clearing the
-checkbox, deactivating or uninstalling removes it so the original WordPress
-routing resumes without reloading the web server. If WordPress administration
-is inaccessible, the host can remove this file directly. The plugin never
-silently falls back to PHP after managed direct delivery has been configured.
+For an existing installation, save the enable setting once to prepare its current
+release. Future releases are prepared automatically. Clearing the checkbox restores
+the original WordPress website. Admin, REST, login and form POSTs retain their
+existing WordPress routing. Custom dynamically constructed asset URLs can still
+use the compatibility router.
 
-Admin, login, REST (including rest_route), wp-content/wp-includes, cron,
-comments, XML-RPC, .well-known and non-GET/HEAD requests retain WordPress routing.
-Custom dynamic GET endpoints need a reviewed host configuration. Public static
-misses are genuine 404s. HTML and aliases revalidate; hashed assets are immutable.
+If version 1.0.3 stopped at the Nginx verification message, simply update and save;
+there is no need to install that generated configuration. If managed direct
+routing was already active, saving switches its filesystem flag off and uses
+uploads delivery instead. Existing configured direct hosts are not switched just
+by updating the plugin.
 
-The plugin copies validated releases into sitewell-static/versions outside the
-protected private release tree and atomically switches current. It retains the
-current and previous snapshots and keeps old hashed assets for cached HTML and
-open tabs. The public store remains after uninstall; the host may remove it after
-its cache/rollback retention period. Budget disk space for retained hashed assets.
-
-Multisite, subdirectory WordPress installations and unsupported web servers are
-not automatically configured. A failed setup displays the required host action
-instead of enabling slow PHP delivery. Test on staging before production cutover.
+Custom upload/CDN/offloading arrangements need testing to ensure newly published
+files are publicly reachable. Test the site and forms on staging before Rowglo.
+Uninstall removes private releases but retains public assets for old cached pages;
+the host can remove uploads/sitewell-assets after the chosen retention period.
 
 == Legacy custom static hosts ==
 
@@ -131,6 +120,12 @@ Updates are downloaded directly from Sitewell over verified HTTPS. The plugin ve
 The plugin does not add visitor tracking. Connection and deployment requests are limited to the operational data described in the External service section. See https://sitewell.digizu.co.uk/privacy-policy for details.
 
 == Changelog ==
+
+= 1.0.4 =
+* Make normal WordPress uploads the default asset delivery path, without mandatory server configuration.
+* Prepare rewritten pages and asset dependencies before activation; retain original releases and old asset URLs.
+* Keep page delivery and operational endpoints in WordPress and support migration from the 1.0.3 setup.
+
 
 = 1.0.3 =
 * Add verified direct delivery with managed Apache/LiteSpeed rules and generated Nginx configuration.

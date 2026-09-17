@@ -16,6 +16,7 @@ final class FrontendRouter {
 		private readonly StaticPathResolver $resolver,
 		private readonly BypassPolicy $bypassPolicy,
 		private readonly string $routerTemplate,
+		private readonly ?StaticPathResolver $htmlResolver = null,
 	) {}
 
 	public function shouldBypassCurrentRequest(): bool {
@@ -39,6 +40,9 @@ final class FrontendRouter {
 		$this->preparedFile   = $this->resolver->resolve( $this->requestUri() );
 		$this->preparedStatus = $this->preparedFile === null ? 404 : 200;
 		$this->preparedFile ??= $this->resolver->fallback404();
+		if ( $this->preparedFile?->isHtml && $this->htmlResolver !== null ) {
+			$this->preparedFile = ( $this->preparedStatus === 404 ? $this->htmlResolver->fallback404() : $this->htmlResolver->resolve( $this->requestUri() ) ) ?? $this->preparedFile;
+		}
 
 		status_header( $this->preparedStatus );
 		header( 'Content-Type: ' . ( $this->preparedFile?->contentType ?? 'text/plain; charset=UTF-8' ) );
