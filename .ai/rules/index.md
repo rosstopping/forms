@@ -25,6 +25,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Ai/Agents/CompetitorAnalyst.php,Services/CompetitorBriefGenerator.php} | .ai/rules/agents.md |
 | app/{Jobs/StartContentGeneration.php,Services/ContentGenerationPromptGenerator.php,Services/SeoTargetKeywordSelector.php,Models/ContentGeneration.php} | .ai/rules/app-jobs.md |
 | app/{Services/Github*,Models/GithubUserAuthorization.php,Jobs/{StartCopilotRemediation,SyncCopilotRemediation}.php}, app/{Services/SearchConsoleHistoryStore.php,Services/WebsiteAiContext.php,Jobs/SyncSearchConsoleHistory.php}, app/{Services/Content*,Jobs/StartContentGeneration.php} | .ai/rules/app-services.md |
+| app/** | .ai/rules/app.md |
 | app/{Actions/ActivateWebsiteAuditTrial.php,Models/User.php,Http/Controllers/WebsiteAuditOnboardingController.php},resources/views/{auth/complete-website-audit-onboarding.blade.php,admin/dashboard.blade.php},tests/Feature/{FreeSiteAuditTest.php,DashboardInformationArchitectureTest.php} | .ai/rules/auth-feature.md |
 | app/{Models/FormSubmissionFollowUpReminder.php,Jobs/SendLeadFollowUpReminder.php,Console/Commands/DispatchDueLeadFollowUpReminders.php,Http/Controllers/Admin/FormSubmissionController.php} | .ai/rules/commands-controllers-admin.md |
 | app/Services/Jev*.php,app/Console/Commands/*Jev.php,app/Models/Jev*.php | .ai/rules/commands-models.md |

@@ -23,6 +23,7 @@ class AutoresponderDeliveryService
         string $body,
         ?string $fromEmail,
         ?string $fromName,
+        ?string $replyToEmail = null,
     ): FormSubmissionEmailDelivery {
         $connection = $submission->website->mailConnection;
         $mode = $connection?->mode ?? WebsiteMailConnection::MODE_LEGACY;
@@ -37,6 +38,7 @@ class AutoresponderDeliveryService
                 'subject' => $subject,
                 'from_email' => $fromEmail,
                 'from_name' => $fromName,
+                'reply_to_email' => $replyToEmail,
             ],
         );
 
@@ -78,6 +80,7 @@ class AutoresponderDeliveryService
                     $this->htmlSanitizer->toPlainText($body),
                     $fromEmail,
                     $fromName,
+                    $delivery->reply_to_email,
                 ));
             }
         } catch (\Throwable $exception) {
@@ -100,6 +103,7 @@ class AutoresponderDeliveryService
         $response = $this->postmark->send($connection->postmark_server_token, [
             'From' => filled($delivery->from_name) ? $delivery->from_name.' <'.$delivery->from_email.'>' : $delivery->from_email,
             'To' => $delivery->recipient,
+            ...(filled($delivery->reply_to_email) ? ['ReplyTo' => $delivery->reply_to_email] : []),
             'Subject' => $delivery->subject,
             'HtmlBody' => view('emails.form-submission-acknowledgement', ['emailBody' => $body, 'submission' => $submission])->render(),
             'TextBody' => $this->htmlSanitizer->toPlainText($body),

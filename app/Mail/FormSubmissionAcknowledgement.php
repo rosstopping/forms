@@ -25,6 +25,7 @@ class FormSubmissionAcknowledgement extends Mailable
         public string $emailText,
         public ?string $fromEmail = null,
         public ?string $fromName = null,
+        public ?string $replyToEmail = null,
     ) {}
 
     /**
@@ -37,6 +38,7 @@ class FormSubmissionAcknowledgement extends Mailable
                 $this->fromEmail ?: config('mail.from.address'),
                 $this->fromName ?: config('mail.from.name'),
             ),
+            replyTo: filled($this->replyToEmail) ? [new Address($this->replyToEmail)] : [],
             subject: $this->emailSubject,
         );
     }

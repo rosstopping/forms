@@ -5,11 +5,11 @@
     <div class="flex items-center justify-between">
         <div>
             <h1 class="text-2xl font-semibold">Forms</h1>
-            <p class="text-sm text-slate-600">Browse the forms discovered for each website.</p>
+            <p class="text-sm text-slate-600">Choose a form to set up team notifications and customer replies. Website defaults are shared across forms on the same website.</p>
         </div>
     </div>
 
-    <div class="overflow-hidden rounded-lg border bg-white shadow-sm">
+    <div class="overflow-x-auto rounded-xl bg-white ring-1 ring-slate-200/70">
         <table class="min-w-full divide-y divide-slate-200">
             <thead class="bg-slate-50">
                 <tr>
@@ -17,7 +17,7 @@
                     <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Website</th>
                     <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Status</th>
                     <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Submissions</th>
-                    <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Seen</th>
+                    <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Setup</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
@@ -29,7 +29,7 @@
                         <td class="px-4 py-3 text-sm text-slate-600">{{ $form->website?->name ?: 'Unknown website' }}</td>
                         <td class="px-4 py-3 text-sm text-slate-600">{{ $form->is_active ? 'Active' : 'Disabled' }}</td>
                         <td class="px-4 py-3 text-sm text-slate-600">{{ $form->submissions_count }}</td>
-                        <td class="px-4 py-3 text-sm text-slate-500">{{ $form->created_at?->diffForHumans() }}</td>
+                        <td class="px-4 py-3 text-sm"><div class="flex flex-wrap gap-3"><a href="{{ route('admin.forms.show', $form) }}" class="font-medium text-teal-700 underline">Form settings</a>@if ($form->website)<a href="{{ route('admin.websites.section', [$form->website, 'forms', 'forms_section' => 'defaults']) }}" class="font-medium text-slate-600 underline">Website reply defaults</a>@endif</div></td>
                     </tr>
                 @empty
                     <tr>

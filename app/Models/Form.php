@@ -22,6 +22,7 @@ class Form extends Model
         'email_subject_override',
         'autoresponder_enabled_override',
         'autoresponder_subject_override',
+        'autoresponder_reply_to_email_override',
         'autoresponder_body_override',
         'autoresponder_content_type_override',
         'autoresponder_delay_minutes_override',

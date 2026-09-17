@@ -19,6 +19,6 @@ class FormSetupCheckController extends Controller
             'setup_checked_at' => now(),
         ])->save();
 
-        return redirect()->route('admin.forms.show', $form)->with('status', 'Form setup checked. No submission, email or webhook was sent.');
+        return redirect()->route('admin.forms.show', [$form, ...($request->input('form_section') === 'setup' ? ['form_section' => 'setup'] : [])])->with('status', 'Form setup checked. No submission, email or webhook was sent.');
     }
 }

@@ -10,15 +10,6 @@ use Illuminate\Validation\Validator;
 
 class UpdateWebsiteAutoresponderRequest extends FormRequest
 {
-    protected function prepareForValidation(): void
-    {
-        if (! $this->has('mail_delivery_mode')) {
-            $this->merge([
-                'mail_delivery_mode' => $this->route('website')?->mailConnection?->mode ?? WebsiteMailConnection::MODE_LEGACY,
-            ]);
-        }
-    }
-
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -40,11 +31,12 @@ class UpdateWebsiteAutoresponderRequest extends FormRequest
             'autoresponder_enabled' => ['required', 'boolean'],
             'autoresponder_from_name' => ['nullable', 'string', 'max:255'],
             'autoresponder_from_email' => ['nullable', 'email', 'max:255'],
+            'autoresponder_reply_to_email' => ['nullable', 'email:rfc', 'max:255'],
             'autoresponder_subject' => ['nullable', 'string', 'max:255'],
             'autoresponder_body' => ['nullable', 'string', 'max:1000000'],
             'autoresponder_content_type' => ['required', 'string', 'in:text,html'],
             'autoresponder_delay_minutes' => ['required', 'integer', 'min:0', 'max:10080'],
-            'mail_delivery_mode' => ['required', Rule::in([
+            'mail_delivery_mode' => ['sometimes', Rule::in([
                 WebsiteMailConnection::MODE_LEGACY,
                 WebsiteMailConnection::MODE_MANAGED,
                 WebsiteMailConnection::MODE_CUSTOMER_POSTMARK,

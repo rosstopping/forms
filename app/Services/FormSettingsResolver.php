@@ -22,6 +22,11 @@ class FormSettingsResolver
         return $form->autoresponder_enabled_override ?? $form->website->autoresponder_enabled;
     }
 
+    public function resolveAutoresponderReplyTo(Form $form): ?string
+    {
+        return $form->autoresponder_reply_to_email_override ?: $form->website->autoresponder_reply_to_email;
+    }
+
     public function resolveAutoresponderSubject(Form $form, FormSubmission $submission): string
     {
         $template = $form->autoresponder_subject_override

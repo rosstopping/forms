@@ -50,6 +50,7 @@ class FormController extends Controller
             'email_enabled_override' => ['nullable', 'boolean'],
             'email_subject_override' => ['nullable', 'string', 'max:255'],
             'autoresponder_mode' => ['required', 'string', 'in:inherit,enabled,disabled'],
+            'autoresponder_reply_to_email_override' => ['nullable', 'email:rfc', 'max:255'],
             'autoresponder_subject_override' => ['nullable', 'string', 'max:255'],
             'autoresponder_body_override' => ['nullable', 'string', 'max:1000000'],
             'autoresponder_content_type_override' => ['nullable', 'string', 'in:text,html'],
@@ -92,7 +93,7 @@ class FormController extends Controller
 
         $form->fill($data)->save();
 
-        return Redirect::route('admin.forms.show', $form)->with('status', 'Form settings updated.');
+        return Redirect::route('admin.forms.show', [$form, ...($request->input('form_section') === 'reply' ? ['form_section' => 'reply'] : [])])->with('status', 'Form settings updated.');
     }
 
     protected function parseEmailRecipients(mixed $value): array

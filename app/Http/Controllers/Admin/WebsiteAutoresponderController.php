@@ -16,7 +16,7 @@ class WebsiteAutoresponderController extends Controller
     public function __invoke(UpdateWebsiteAutoresponderRequest $request, Website $website): RedirectResponse
     {
         $settings = $request->validated();
-        $mailDeliveryMode = $settings['mail_delivery_mode'];
+        $mailDeliveryMode = $settings['mail_delivery_mode'] ?? null;
         $postmarkServerToken = $settings['postmark_server_token'] ?? null;
         unset($settings['mail_delivery_mode'], $settings['postmark_server_token']);
         if ($settings['autoresponder_content_type'] === 'text') {
@@ -25,23 +25,25 @@ class WebsiteAutoresponderController extends Controller
 
         $website->update($settings);
 
-        $connection = $website->mailConnection()->firstOrNew();
-        $connection->fill([
-            'mode' => $mailDeliveryMode,
-            'status' => $mailDeliveryMode === WebsiteMailConnection::MODE_MANAGED && ! $connection->dkim_verified
-                ? 'pending_verification'
-                : 'active',
-            'connected_at' => $connection->connected_at ?? now(),
-            'paused_at' => null,
-            'pause_reason' => null,
-        ]);
+        if ($mailDeliveryMode !== null) {
+            $connection = $website->mailConnection()->firstOrNew();
+            $connection->fill([
+                'mode' => $mailDeliveryMode,
+                'status' => $mailDeliveryMode === WebsiteMailConnection::MODE_MANAGED && ! $connection->dkim_verified
+                    ? 'pending_verification'
+                    : 'active',
+                'connected_at' => $connection->connected_at ?? now(),
+                'paused_at' => null,
+                'pause_reason' => null,
+            ]);
 
-        if ($mailDeliveryMode === WebsiteMailConnection::MODE_CUSTOMER_POSTMARK && filled($postmarkServerToken)) {
-            $connection->postmark_server_token = $postmarkServerToken;
+            if ($mailDeliveryMode === WebsiteMailConnection::MODE_CUSTOMER_POSTMARK && filled($postmarkServerToken)) {
+                $connection->postmark_server_token = $postmarkServerToken;
+            }
+
+            $connection->save();
         }
 
-        $connection->save();
-
-        return redirect()->route('admin.websites.section', [$website, 'forms'])->with('status', 'Automatic reply settings updated.');
+        return redirect()->route('admin.websites.section', [$website, 'forms', ...($request->input('forms_section') === 'defaults' ? ['forms_section' => 'defaults'] : [])])->with('status', 'Automatic reply settings updated.');
     }
 }

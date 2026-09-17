@@ -43,6 +43,7 @@ class Website extends Model
         'email_recipients',
         'autoresponder_enabled',
         'autoresponder_from_name',
+        'autoresponder_reply_to_email',
         'autoresponder_from_email',
         'autoresponder_subject',
         'autoresponder_body',

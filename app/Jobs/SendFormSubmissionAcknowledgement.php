@@ -24,6 +24,7 @@ class SendFormSubmissionAcknowledgement implements ShouldQueue
         public string $emailBody,
         public ?string $fromEmail = null,
         public ?string $fromName = null,
+        public ?string $replyToEmail = null,
     ) {}
 
     public function handle(AutoresponderDeliveryService $deliveryService): void
@@ -35,6 +36,7 @@ class SendFormSubmissionAcknowledgement implements ShouldQueue
             $this->emailBody,
             $this->fromEmail,
             $this->fromName,
+            $this->replyToEmail ?? null,
         );
 
         if (! in_array($delivery->status, ['sent', 'delivered'], true)) {

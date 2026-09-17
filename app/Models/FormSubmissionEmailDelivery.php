@@ -23,6 +23,7 @@ class FormSubmissionEmailDelivery extends Model
         'subject',
         'from_email',
         'from_name',
+        'reply_to_email',
         'provider_message_id',
         'suppression_reason',
         'failure_reason',
