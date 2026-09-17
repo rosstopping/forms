@@ -52,7 +52,7 @@ class ContentPlanController extends Controller
             throw ValidationException::withMessages(['enabled' => app(ContentSchedule::class)->pauseReason($plan)]);
         }
 
-        return Redirect::route('admin.websites.section', [$website, 'section' => 'content'])->with('status', 'Content schedule updated.');
+        return Redirect::route('admin.websites.section', [$website, 'section' => 'content', ...($request->input('content_section') === 'automation' ? ['content_section' => 'automation'] : [])])->with('status', 'Content schedule updated.');
     }
 
     public function generate(Request $request, Website $website): RedirectResponse
@@ -80,7 +80,7 @@ class ContentPlanController extends Controller
             return $generation->wasRecentlyCreated;
         });
 
-        return Redirect::route('admin.websites.section', [$website, 'section' => 'content'])->with('status', $created ? 'Content generation queued.' : 'A content generation already exists today or is still running.');
+        return Redirect::route('admin.websites.section', [$website, 'section' => 'content', ...($request->input('content_section') === 'activity' ? ['content_section' => 'activity'] : [])])->with('status', $created ? 'Content generation queued.' : 'A content generation already exists today or is still running.');
     }
 
     public function syncGeneration(Request $request, Website $website, ContentGeneration $contentGeneration, GithubAppClient $github, CopilotAgentClient $copilot): RedirectResponse
@@ -106,7 +106,7 @@ class ContentPlanController extends Controller
             default => 'GitHub confirmed that the pull request is still open.',
         };
 
-        return Redirect::route('admin.websites.section', [$website, 'content'])->with('status', $message);
+        return Redirect::route('admin.websites.section', [$website, 'content', ...($request->input('content_section') === 'activity' ? ['content_section' => 'activity'] : [])])->with('status', $message);
     }
 
     public function cancelGeneration(Request $request, Website $website, ContentGeneration $contentGeneration): RedirectResponse
@@ -120,7 +120,7 @@ class ContentPlanController extends Controller
             'error' => 'Cancelled manually after the pull request lifecycle could not be confirmed.',
         ]);
 
-        return Redirect::route('admin.websites.section', [$website, 'content'])->with('status', 'Content generation cancelled.');
+        return Redirect::route('admin.websites.section', [$website, 'content', ...($request->input('content_section') === 'activity' ? ['content_section' => 'activity'] : [])])->with('status', 'Content generation cancelled.');
     }
 
     protected function ensureReady(Request $request, Website $website): void

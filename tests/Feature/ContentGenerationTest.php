@@ -461,7 +461,7 @@ test('website owners can queue and remove manual content requests', function () 
     $this->actingAs($owner)
         ->get(route('admin.websites.show', $website))
         ->assertSuccessful()
-        ->assertSee('Manual content requests')
+        ->assertSee('Content queue')
         ->assertSee($instructions)
         ->assertSee('Pending');
 
@@ -579,9 +579,9 @@ test('actioned content todos remain visible separately with their generation out
     $response = $this->actingAs($owner)->get(route('admin.websites.show', $website));
 
     $response->assertSuccessful()
-        ->assertSee('Pending todos')
+        ->assertSee('Pending requests')
         ->assertSee('Pending content todo')
-        ->assertSee('Actioned todos')
+        ->assertSee('Request history')
         ->assertSee('Completed content todo')
         ->assertSeeInOrder(['Completed content todo', 'Earlier completed content todo'])
         ->assertSee('pull request open')

@@ -171,14 +171,14 @@ class WebsiteController extends Controller
                 ->pendingInQueueOrder()
                 ->paginate(20, pageName: 'content_queue_page')
                 ->withQueryString()
-                ->fragment('content-requests-title');
+                ->appends(['content_section' => 'queue'])->fragment('content-requests-title');
             $actionedContentRequests = $website->contentRequests()
                 ->with(['creator', 'generation'])
                 ->whereNotNull('picked_up_at')
                 ->latest('picked_up_at')
                 ->latest('id')
-                ->limit(50)
-                ->get();
+                ->paginate(20, pageName: 'content_activity_page')
+                ->withQueryString()->appends(['content_section' => 'activity'])->fragment('content-activity-title');
         }
         $hasContentDeliveryConnection = $website->pixel_last_seen_at !== null
             || $website->wordpressConnection?->isConnected() === true

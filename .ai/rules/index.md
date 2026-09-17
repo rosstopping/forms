@@ -69,6 +69,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Notifications,Services}/**/*Prospect*.php | .ai/rules/notifications-services.md |
 | resources/views/{emails/**,mail/**,vendor/mail/**,vendor/notifications/**,components/email-layout.blade.php} | .ai/rules/notifications.md |
 | app/{Models/User.php,Http/Controllers/Admin/OnboardingLeadController.php},resources/views/{admin/onboarding-leads/**,layouts/app.blade.php},routes/web.php,tests/Feature/OnboardingLeadTest.php | .ai/rules/onboarding-leads-feature.md |
+| resources/views/admin/websites/partials/content*.blade.php,app/Http/Controllers/Admin/ContentPlanController.php | .ai/rules/partials-http-controllers-admin.md |
 | app/{Http/Controllers/Admin/BusinessProfileController.php,Services/BusinessProfileClient.php},resources/views/admin/websites/partials/business-profile.blade.php | .ai/rules/partials.md |
 | app/{Jobs,Services,Http/Controllers/Admin}/**/*SeoProspect*.php,resources/views/admin/prospect-discoveries/seo-show.blade.php | .ai/rules/prospect-discoveries.md |
 | app/{Console/Commands,Jobs,Services,Models,Http/Controllers/Admin}/**/*Prospect*.php,database/migrations/**/*prospect*.php,resources/views/admin/prospecting-strategy/** | .ai/rules/prospecting-strategy.md |
