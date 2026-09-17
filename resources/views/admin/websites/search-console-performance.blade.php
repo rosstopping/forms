@@ -10,15 +10,15 @@
     <div class="space-y-8">
         <header>
             <a href="{{ route('admin.websites.show', $website) }}" class="text-sm font-medium text-slate-600 hover:text-slate-900">← Back to {{ $website->name }}</a>
-            <p class="mt-6 text-xs font-medium uppercase tracking-wide text-slate-500">Google Search Console</p>
+            <p class="mt-6 font-medium uppercase tracking-wide text-slate-500 text-base sm:text-sm">Google Search Console</p>
             <div class="mt-1 flex flex-wrap items-end justify-between gap-4">
                 <div>
                     <h1 class="text-balance text-2xl font-semibold tracking-tight text-slate-950">Search performance</h1>
-                    <p class="mt-2 break-all text-sm text-slate-600">{{ $connection->property_url }}</p>
+                    <p class="mt-2 break-all text-slate-600 text-base sm:text-sm">{{ $connection->property_url }}</p>
                 </div>
-                <p class="text-sm text-slate-500">{{ $period['start']->format('j M') }}–{{ $period['end']->format('j M Y') }}</p>
+                <p class="text-slate-500 text-base sm:text-sm">{{ $period['start']->format('j M') }}–{{ $period['end']->format('j M Y') }}</p>
             </div>
-            <p class="mt-4 rounded-md bg-slate-100 px-4 py-3 text-sm text-slate-600">Position is the average position of your highest result for each search. Results are ordered by clicks and Search Console may limit the data it returns.</p>
+            <p class="mt-4 rounded-md bg-slate-100 px-4 py-3 text-slate-600 text-base sm:text-sm">Position is the average position of your highest result for each search. Results are ordered by clicks and Search Console may limit the data it returns.</p>
         </header>
 
         <div class="grid gap-4" data-search-console-history-charts>
@@ -28,13 +28,13 @@
         </div>
 
         <section aria-labelledby="queries-heading">
-            <div class="flex flex-wrap items-end justify-between gap-2 border-b border-slate-200 pb-3">
+            <div class="flex flex-wrap items-end justify-between gap-2 border-b border-slate-950/10 pb-3">
                 <div>
                     <h2 id="queries-heading" class="text-lg font-semibold text-slate-950">All available queries</h2>
-                    <p class="mt-1 text-sm text-slate-500">The searches people used and the page that ranked for each one. Select a query to see its history.</p>
+                    <p class="mt-1 text-slate-500 text-base sm:text-sm">The searches people used and the page that ranked for each one. Select a query to see its history.</p>
                 </div>
                 @if ($queries)
-                    <p class="text-sm tabular-nums text-slate-500">Rows {{ number_format((($queryPage - 1) * $pageSize) + 1) }}–{{ number_format((($queryPage - 1) * $pageSize) + count($queries)) }}</p>
+                    <p class="tabular-nums text-slate-500 text-base sm:text-sm">Rows {{ number_format((($queryPage - 1) * $pageSize) + 1) }}–{{ number_format((($queryPage - 1) * $pageSize) + count($queries)) }}</p>
                 @endif
             </div>
             <div class="-mx-4 overflow-x-auto whitespace-nowrap">
@@ -58,15 +58,15 @@
                 </div>
             </div>
             <nav class="mt-4 flex items-center justify-between" aria-label="Query results pages">
-                @if ($queryPage > 1)<a href="{{ $performanceUrl(['queries_page' => $queryPage - 1]) }}" class="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Previous</a>@else<span></span>@endif
-                @if ($hasMoreQueries)<a href="{{ $performanceUrl(['queries_page' => $queryPage + 1]) }}" class="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Next</a>@endif
+                @if ($queryPage > 1)<a href="{{ $performanceUrl(['queries_page' => $queryPage - 1]) }}" class="ui-button ui-button-secondary">Previous</a>@else<span></span>@endif
+                @if ($hasMoreQueries)<a href="{{ $performanceUrl(['queries_page' => $queryPage + 1]) }}" class="ui-button ui-button-secondary">Next</a>@endif
             </nav>
         </section>
 
         <section aria-labelledby="pages-heading">
-            <div class="flex flex-wrap items-end justify-between gap-2 border-b border-slate-200 pb-3">
-                <div><h2 id="pages-heading" class="text-lg font-semibold text-slate-950">All available landing pages</h2><p class="mt-1 text-sm text-slate-500">The pages that appeared in Google search results.</p></div>
-                @if ($landingPages)<p class="text-sm tabular-nums text-slate-500">Rows {{ number_format((($pagePage - 1) * $pageSize) + 1) }}–{{ number_format((($pagePage - 1) * $pageSize) + count($landingPages)) }}</p>@endif
+            <div class="flex flex-wrap items-end justify-between gap-2 border-b border-slate-950/10 pb-3">
+                <div><h2 id="pages-heading" class="text-lg font-semibold text-slate-950">All available landing pages</h2><p class="mt-1 text-slate-500 text-base sm:text-sm">The pages that appeared in Google search results.</p></div>
+                @if ($landingPages)<p class="tabular-nums text-slate-500 text-base sm:text-sm">Rows {{ number_format((($pagePage - 1) * $pageSize) + 1) }}–{{ number_format((($pagePage - 1) * $pageSize) + count($landingPages)) }}</p>@endif
             </div>
             <div class="-mx-4 overflow-x-auto whitespace-nowrap"><div class="inline-block min-w-full px-4 align-middle">
                 <table class="w-full divide-y divide-slate-950/10 text-sm">
@@ -86,8 +86,8 @@
                 </table>
             </div></div>
             <nav class="mt-4 flex items-center justify-between" aria-label="Landing page results pages">
-                @if ($pagePage > 1)<a href="{{ $performanceUrl(['pages_page' => $pagePage - 1]) }}" class="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Previous</a>@else<span></span>@endif
-                @if ($hasMorePages)<a href="{{ $performanceUrl(['pages_page' => $pagePage + 1]) }}" class="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Next</a>@endif
+                @if ($pagePage > 1)<a href="{{ $performanceUrl(['pages_page' => $pagePage - 1]) }}" class="ui-button ui-button-secondary">Previous</a>@else<span></span>@endif
+                @if ($hasMorePages)<a href="{{ $performanceUrl(['pages_page' => $pagePage + 1]) }}" class="ui-button ui-button-secondary">Next</a>@endif
             </nav>
         </section>
     </div>

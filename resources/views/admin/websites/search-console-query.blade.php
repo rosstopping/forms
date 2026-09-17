@@ -4,7 +4,7 @@
     <div class="space-y-8">
         <header>
             <a href="{{ route('admin.search-console.performance', $website) }}" class="text-sm font-medium text-slate-600 hover:text-slate-900">← Back to Search performance</a>
-            <p class="mt-6 text-xs font-medium uppercase tracking-wide text-slate-500">Google Search Console query</p>
+            <p class="mt-6 font-medium uppercase tracking-wide text-slate-500 text-base sm:text-sm">Google Search Console query</p>
             <h1 class="mt-1 text-balance text-2xl font-semibold tracking-tight text-slate-950">{{ $query }}</h1>
             <p class="mt-2 text-pretty text-base text-slate-600 sm:text-sm">First-party Google performance for this exact search query. Search Console may omit anonymised or very low-volume data.</p>
         </header>

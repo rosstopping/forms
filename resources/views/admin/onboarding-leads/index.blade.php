@@ -7,38 +7,38 @@
     @endif
 
     <header>
-        <p class="font-mono text-xs font-medium uppercase tracking-widest text-teal-700">Lead management</p>
+        <p class="font-mono font-medium uppercase tracking-widest text-teal-700 text-base sm:text-sm">Lead management</p>
         <h1 class="mt-1 text-2xl font-semibold text-slate-950 sm:text-3xl">Onboarding</h1>
-        <p class="mt-2 max-w-3xl text-sm text-slate-600">Track the full Get started journey, from a submitted domain through signup, verification, trial progress, and onboarding call.</p>
+        <p class="mt-2 max-w-3xl text-slate-600 text-base sm:text-sm">Track the full Get started journey, from a submitted domain through signup, verification, trial progress, and onboarding call.</p>
     </header>
 
     <dl class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <div class="rounded-xl border border-slate-200 bg-white p-4"><dt class="text-sm text-slate-500">Onboarding leads</dt><dd class="mt-1 text-3xl font-semibold tabular-nums text-slate-950">{{ $summary['total'] }}</dd></div>
+        <div class="ui-panel p-4"><dt class="text-sm text-slate-500">Onboarding leads</dt><dd class="mt-1 text-3xl font-semibold tabular-nums text-slate-950">{{ $summary['total'] }}</dd></div>
         <div class="rounded-xl border border-sky-200 bg-sky-50 p-4"><dt class="text-sm text-sky-800">Unclaimed domains</dt><dd class="mt-1 text-3xl font-semibold tabular-nums text-sky-950">{{ $summary['unclaimed'] }}</dd></div>
         <div class="rounded-xl border border-teal-200 bg-teal-50 p-4"><dt class="text-sm text-teal-800">Active trials</dt><dd class="mt-1 text-3xl font-semibold tabular-nums text-teal-950">{{ $summary['active'] }}</dd></div>
         <div class="rounded-xl border border-amber-200 bg-amber-50 p-4"><dt class="text-sm text-amber-800">Need verification</dt><dd class="mt-1 text-3xl font-semibold tabular-nums text-amber-950">{{ $summary['needs_verification'] }}</dd></div>
         <div class="rounded-xl border border-violet-200 bg-violet-50 p-4"><dt class="text-sm text-violet-800">Call not booked</dt><dd class="mt-1 text-3xl font-semibold tabular-nums text-violet-950">{{ $summary['call_not_booked'] }}</dd></div>
     </dl>
 
-    <form method="GET" class="grid gap-3 rounded-xl border border-slate-200 bg-white p-4 lg:grid-cols-[minmax(14rem,2fr)_repeat(3,minmax(10rem,1fr))_auto]">
-        <label class="sr-only" for="onboarding-search">Search onboarding leads</label>
-        <input id="onboarding-search" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Search name, email or domain" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
-        <label class="sr-only" for="onboarding-trial">Trial status</label>
-        <select id="onboarding-trial" name="trial" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+    <form method="GET" class="ui-panel grid gap-3 p-4 lg:grid-cols-[minmax(14rem,2fr)_repeat(3,minmax(10rem,1fr))_auto]">
+        <label class="ui-label sr-only" for="onboarding-search">Search onboarding leads</label>
+        <input id="onboarding-search" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Search name, email or domain" class="ui-input">
+        <label class="ui-label sr-only" for="onboarding-trial">Trial status</label>
+        <select id="onboarding-trial" name="trial" class="ui-input">
             <option value="">All trial statuses</option>
             <option value="active" @selected(($filters['trial'] ?? null) === 'active')>Active trial</option>
             <option value="expired" @selected(($filters['trial'] ?? null) === 'expired')>Expired</option>
             <option value="converted" @selected(($filters['trial'] ?? null) === 'converted')>Converted</option>
         </select>
-        <label class="sr-only" for="onboarding-verification">Verification status</label>
-        <select id="onboarding-verification" name="verification" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+        <label class="ui-label sr-only" for="onboarding-verification">Verification status</label>
+        <select id="onboarding-verification" name="verification" class="ui-input">
             <option value="">All verification</option>
             <option value="verified" @selected(($filters['verification'] ?? null) === 'verified')>Verified</option>
             <option value="pending" @selected(($filters['verification'] ?? null) === 'pending')>Pending</option>
             <option value="conflict" @selected(($filters['verification'] ?? null) === 'conflict')>Conflict</option>
         </select>
-        <label class="sr-only" for="onboarding-call">Call status</label>
-        <select id="onboarding-call" name="call" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+        <label class="ui-label sr-only" for="onboarding-call">Call status</label>
+        <select id="onboarding-call" name="call" class="ui-input">
             <option value="">All call statuses</option>
             <option value="not_booked" @selected(($filters['call'] ?? null) === 'not_booked')>Not booked</option>
             <option value="booking_started" @selected(($filters['call'] ?? null) === 'booking_started')>Booking started</option>
@@ -46,32 +46,32 @@
             <option value="completed" @selected(($filters['call'] ?? null) === 'completed')>Completed</option>
         </select>
         <div class="flex gap-2">
-            <button class="rounded-lg bg-slate-950 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Filter</button>
-            <a href="{{ route('admin.onboarding.index') }}" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Clear</a>
+            <button type="submit" class="ui-button ui-button-primary">Filter</button>
+            <a href="{{ route('admin.onboarding.index') }}" class="ui-button ui-button-secondary">Clear</a>
         </div>
     </form>
 
     <section class="space-y-4">
         <header>
             <h2 class="text-lg font-semibold text-slate-950">Unclaimed domains</h2>
-            <p class="mt-1 text-sm text-slate-600">Website reviews started by visitors who have not completed signup.</p>
+            <p class="mt-1 text-slate-600 text-base sm:text-sm">Website reviews started by visitors who have not completed signup.</p>
         </header>
 
-        <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div class="ui-panel overflow-hidden">
             <div class="divide-y divide-slate-100">
                 @forelse ($unclaimedAudits as $unclaimedAudit)
                     <article class="grid gap-3 p-4 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center">
                         <div class="min-w-0">
-                            <p class="truncate font-mono text-sm font-semibold text-slate-950">{{ $unclaimedAudit->domain }}</p>
-                            <p class="mt-1 text-xs text-slate-500">Started {{ $unclaimedAudit->created_at?->diffForHumans() }}</p>
+                            <p class="truncate font-mono font-semibold text-slate-950 text-base sm:text-sm">{{ $unclaimedAudit->domain }}</p>
+                            <p class="mt-1 text-slate-500 text-base sm:text-sm">Started {{ $unclaimedAudit->created_at?->diffForHumans() }}</p>
                         </div>
                         <span @class(['w-fit rounded-full px-2.5 py-1 text-xs font-semibold', 'bg-emerald-100 text-emerald-800' => $unclaimedAudit->status === \App\Models\WebsiteAudit::STATUS_COMPLETED, 'bg-red-100 text-red-800' => $unclaimedAudit->status === \App\Models\WebsiteAudit::STATUS_FAILED, 'bg-amber-100 text-amber-800' => in_array($unclaimedAudit->status, [\App\Models\WebsiteAudit::STATUS_PENDING, \App\Models\WebsiteAudit::STATUS_RUNNING], true)])>{{ Str::headline($unclaimedAudit->status) }}</span>
                         <div class="sm:text-right">
                             @if ($unclaimedAudit->email)
                                 <a href="mailto:{{ $unclaimedAudit->email }}" class="text-sm font-medium text-teal-700 hover:text-teal-900">{{ $unclaimedAudit->email }}</a>
-                                <p class="mt-1 text-xs text-slate-500">Confirmation pending</p>
+                                <p class="mt-1 text-slate-500 text-base sm:text-sm">Confirmation pending</p>
                             @else
-                                <p class="text-sm text-slate-500">No email submitted</p>
+                                <p class="text-slate-500 text-base sm:text-sm">No email submitted</p>
                             @endif
                         </div>
                     </article>
@@ -87,7 +87,7 @@
     <section class="space-y-4">
         <header>
             <h2 class="text-lg font-semibold text-slate-950">Signed-up trials</h2>
-            <p class="mt-1 text-sm text-slate-600">People who confirmed their email and created or connected their Sitewell account.</p>
+            <p class="mt-1 text-slate-600 text-base sm:text-sm">People who confirmed their email and created or connected their Sitewell account.</p>
         </header>
 
         @forelse ($users as $onboardingUser)
@@ -105,7 +105,7 @@
                 $nextLifecycleMessage = $onboardingUser->onboardingLifecycleMessages->whereNull('queued_at')->whereNull('suppressed_at')->sortBy('scheduled_for')->first();
                 $lifecycleClicks = $onboardingUser->onboardingLifecycleMessages->whereNotNull('clicked_at')->count();
             @endphp
-            <article class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <article class="ui-panel overflow-hidden">
                 <div class="flex flex-col gap-5 p-5 xl:flex-row xl:items-start xl:justify-between">
                     <div class="min-w-0 flex-1">
                         <div class="flex flex-wrap items-center gap-2">
@@ -115,9 +115,9 @@
                         <a href="mailto:{{ $onboardingUser->email }}" class="mt-1 inline-flex text-sm text-slate-600 hover:text-teal-700">{{ $onboardingUser->email }}</a>
                         <div class="mt-4 flex flex-wrap gap-2">
                             @forelse ($website?->domains ?? collect() as $domain)
-                                <span class="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 font-mono text-xs text-slate-700">{{ $domain->domain }}</span>
+                                <span class="rounded-lg border border-slate-950/10 bg-slate-50 px-2.5 py-1 font-mono text-xs text-slate-700">{{ $domain->domain }}</span>
                             @empty
-                                @if ($audit?->domain)<span class="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 font-mono text-xs text-slate-700">{{ $audit->domain }}</span>@endif
+                                @if ($audit?->domain)<span class="rounded-lg border border-slate-950/10 bg-slate-50 px-2.5 py-1 font-mono text-xs text-slate-700">{{ $audit->domain }}</span>@endif
                             @endforelse
                         </div>
                     </div>
@@ -126,12 +126,12 @@
                         <div>
                             <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Trial progress</dt>
                             <dd class="mt-1 text-sm font-semibold text-slate-900">{{ $isConverted ? 'Paid membership' : ($trialDay ? 'Day '.$trialDay.' of 14' : 'Dates unavailable') }}</dd>
-                            @if ($isTrialActive)<p class="mt-1 text-xs text-slate-500">{{ $daysRemaining }} {{ Str::plural('day', $daysRemaining) }} remaining</p>@elseif ($trialEndsAt && ! $isConverted)<p class="mt-1 text-xs text-red-600">Ended {{ $trialEndsAt->diffForHumans() }}</p>@endif
+                            @if ($isTrialActive)<p class="mt-1 text-slate-500 text-base sm:text-sm">{{ $daysRemaining }} {{ Str::plural('day', $daysRemaining) }} remaining</p>@elseif ($trialEndsAt && ! $isConverted)<p class="mt-1 text-red-600 text-base sm:text-sm">Ended {{ $trialEndsAt->diffForHumans() }}</p>@endif
                         </div>
                         <div>
                             <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Website verification</dt>
                             <dd class="mt-1 text-sm font-semibold {{ $primaryDomain?->isVerified() ? 'text-emerald-700' : ($primaryDomain?->ownership_status === \App\Models\WebsiteDomain::OWNERSHIP_CONFLICT ? 'text-red-700' : 'text-amber-700') }}">{{ $primaryDomain?->isVerified() ? 'Verified' : ($primaryDomain?->ownership_status === \App\Models\WebsiteDomain::OWNERSHIP_CONFLICT ? 'Conflict' : 'Pending') }}</dd>
-                            <p class="mt-1 text-xs text-slate-500">{{ $primaryDomain?->verification_method === 'search_console' ? 'Via Search Console' : ($website?->searchConsoleConnection?->property_url ? 'Search Console connected' : 'Search Console not connected') }}</p>
+                            <p class="mt-1 text-slate-500 text-base sm:text-sm">{{ $primaryDomain?->verification_method === 'search_console' ? 'Via Search Console' : ($website?->searchConsoleConnection?->property_url ? 'Search Console connected' : 'Search Console not connected') }}</p>
                         </div>
                         <div>
                             <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Onboarding call</dt>
@@ -139,8 +139,8 @@
                             <form method="POST" action="{{ route('admin.users.onboarding-call.update', $onboardingUser) }}" class="mt-2">
                                 @csrf
                                 @method('PATCH')
-                                <label for="call-status-{{ $onboardingUser->id }}" class="sr-only">Call status for {{ $onboardingUser->name }}</label>
-                                <select id="call-status-{{ $onboardingUser->id }}" name="status" onchange="this.form.submit()" class="w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs">
+                                <label for="call-status-{{ $onboardingUser->id }}" class="ui-label sr-only">Call status for {{ $onboardingUser->name }}</label>
+                                <select id="call-status-{{ $onboardingUser->id }}" name="status" onchange="this.form.submit()" class="ui-input w-full">
                                     <option value="not_booked" @selected(! $onboardingUser->onboarding_call_booked_at)>Not booked</option>
                                     <option value="booked" @selected($onboardingUser->onboarding_call_booked_at && ! $onboardingUser->onboarding_call_completed_at)>Booked</option>
                                     <option value="completed" @selected($onboardingUser->onboarding_call_completed_at)>Completed</option>
@@ -151,11 +151,11 @@
                             <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Lifecycle messages</dt>
                             <dd class="mt-1 text-sm font-semibold text-slate-900">{{ $lastLifecycleMessage ? $lastLifecycleMessage->step->label().' '.($lastLifecycleMessage->sent_at ? 'sent' : 'queued') : 'Nothing sent yet' }}</dd>
                             @if ($nextLifecycleMessage)
-                                <p class="mt-1 text-xs text-slate-500">Next: {{ $nextLifecycleMessage->step->label() }} {{ $nextLifecycleMessage->scheduled_for->diffForHumans() }}</p>
+                                <p class="mt-1 text-slate-500 text-base sm:text-sm">Next: {{ $nextLifecycleMessage->step->label() }} {{ $nextLifecycleMessage->scheduled_for->diffForHumans() }}</p>
                             @else
-                                <p class="mt-1 text-xs text-slate-500">No further messages scheduled</p>
+                                <p class="mt-1 text-slate-500 text-base sm:text-sm">No further messages scheduled</p>
                             @endif
-                            @if ($lifecycleClicks > 0)<p class="mt-1 text-xs font-medium text-emerald-700">{{ $lifecycleClicks }} tracked {{ Str::plural('click', $lifecycleClicks) }}</p>@endif
+                            @if ($lifecycleClicks > 0)<p class="mt-1 font-medium text-emerald-700 text-base sm:text-sm">{{ $lifecycleClicks }} tracked {{ Str::plural('click', $lifecycleClicks) }}</p>@endif
                         </div>
                     </dl>
                 </div>
@@ -169,9 +169,9 @@
                 </footer>
             </article>
         @empty
-            <div class="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center">
+            <div class="rounded-xl border border-dashed border-slate-950/10 bg-white p-10 text-center">
                 <h2 class="font-semibold text-slate-900">No onboarding leads found</h2>
-                <p class="mt-1 text-sm text-slate-600">Try clearing the filters, or wait for the next Get started signup.</p>
+                <p class="mt-1 text-slate-600 text-base sm:text-sm">Try clearing the filters, or wait for the next Get started signup.</p>
             </div>
         @endforelse
     </section>

@@ -5,10 +5,10 @@
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
         <h1 class="text-2xl font-semibold">Leads</h1>
-        <p class="text-sm text-slate-600">Find enquiries, assign owners, and keep every follow-up moving.</p>
+        <p class="text-slate-600 text-base sm:text-sm">Find enquiries, assign owners, and keep every follow-up moving.</p>
         </div>
         @if ($manageableWebsiteIds->isNotEmpty())
-            <a href="{{ route('admin.form-submissions.create') }}" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white">Add lead</a>
+            <a href="{{ route('admin.form-submissions.create') }}" class="ui-button ui-button-primary">Add lead</a>
         @endif
     </div>
 
@@ -18,7 +18,7 @@
 
     <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
         @foreach (\App\Models\FormSubmission::STATUS_LABELS as $status => $label)
-            <a href="{{ route('admin.form-submissions.index', ['status' => $status]) }}" class="rounded-lg border bg-white p-4 shadow-sm hover:border-slate-400">
+            <a href="{{ route('admin.form-submissions.index', ['status' => $status]) }}" class="ui-panel p-4 hover:bg-slate-50">
                 <div class="text-xs font-medium uppercase tracking-wide text-slate-500">{{ $label }}</div>
                 <div class="mt-1 text-2xl font-semibold text-slate-900">{{ $summary[$status] ?? 0 }}</div>
             </a>
@@ -26,26 +26,26 @@
     </div>
 
     <div class="flex flex-wrap gap-2">
-        <a href="{{ route('admin.form-submissions.index', ['follow_up' => 'overdue']) }}" class="rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700">Overdue {{ $followUpSummary['overdue'] }}</a>
-        <a href="{{ route('admin.form-submissions.index', ['follow_up' => 'today']) }}" class="rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-800">Due today {{ $followUpSummary['today'] }}</a>
-        <a href="{{ route('admin.form-submissions.index', ['assigned_to' => auth()->id()]) }}" class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700">My leads</a>
+        <a href="{{ route('admin.form-submissions.index', ['follow_up' => 'overdue']) }}" class="ui-button ui-button-danger ui-button-small">Overdue {{ $followUpSummary['overdue'] }}</a>
+        <a href="{{ route('admin.form-submissions.index', ['follow_up' => 'today']) }}" class="ui-button ui-button-secondary ui-button-small">Due today {{ $followUpSummary['today'] }}</a>
+        <a href="{{ route('admin.form-submissions.index', ['assigned_to' => auth()->id()]) }}" class="ui-button ui-button-secondary ui-button-small">My leads</a>
     </div>
 
-    <form method="GET" class="grid gap-3 rounded-lg border bg-white p-4 shadow-sm md:grid-cols-2 lg:grid-cols-5">
-        <input name="search" value="{{ request('search') }}" placeholder="Search name, email or message" class="rounded-md border border-slate-300 px-3 py-2 text-sm lg:col-span-2">
-        <select name="status" class="rounded-md border border-slate-300 px-3 py-2 text-sm"><option value="">All statuses</option>@foreach (\App\Models\FormSubmission::STATUS_LABELS as $value => $label)<option value="{{ $value }}" @selected(request('status') === $value)>{{ $label }}</option>@endforeach</select>
-        <select name="follow_up" class="rounded-md border border-slate-300 px-3 py-2 text-sm"><option value="">Any follow-up</option><option value="overdue" @selected(request('follow_up') === 'overdue')>Overdue</option><option value="today" @selected(request('follow_up') === 'today')>Due today</option><option value="upcoming" @selected(request('follow_up') === 'upcoming')>Upcoming</option><option value="none" @selected(request('follow_up') === 'none')>Not scheduled</option></select>
-        {{-- <select name="assigned_to" class="rounded-md border border-slate-300 px-3 py-2 text-sm"><option value="">Any owner</option><option value="unassigned" @selected(request('assigned_to') === 'unassigned')>Unassigned</option>@foreach ($users as $user)<option value="{{ $user->id }}" @selected((string) request('assigned_to') === (string) $user->id)>{{ $user->name }}</option>@endforeach</select> --}}
-        <select name="spam" class="rounded-md border border-slate-300 px-3 py-2 text-sm"><option value="exclude" @selected(request('spam', 'exclude') === 'exclude')>Hide spam</option><option value="all" @selected(request('spam') === 'all')>Include spam</option><option value="only" @selected(request('spam') === 'only')>Spam only</option></select>
-        <select name="tag_id" aria-label="Filter by tag" class="rounded-md border border-slate-300 px-3 py-2 text-sm">
+    <form method="GET" class="ui-panel grid gap-3 p-4 md:grid-cols-2 lg:grid-cols-5">
+        <input name="search" value="{{ request('search') }}" placeholder="Search name, email or message" class="ui-input lg:col-span-2">
+        <select name="status" class="ui-input"><option value="">All statuses</option>@foreach (\App\Models\FormSubmission::STATUS_LABELS as $value => $label)<option value="{{ $value }}" @selected(request('status') === $value)>{{ $label }}</option>@endforeach</select>
+        <select name="follow_up" class="ui-input"><option value="">Any follow-up</option><option value="overdue" @selected(request('follow_up') === 'overdue')>Overdue</option><option value="today" @selected(request('follow_up') === 'today')>Due today</option><option value="upcoming" @selected(request('follow_up') === 'upcoming')>Upcoming</option><option value="none" @selected(request('follow_up') === 'none')>Not scheduled</option></select>
+        {{-- <select name="assigned_to" class="ui-input"><option value="">Any owner</option><option value="unassigned" @selected(request('assigned_to') === 'unassigned')>Unassigned</option>@foreach ($users as $user)<option value="{{ $user->id }}" @selected((string) request('assigned_to') === (string) $user->id)>{{ $user->name }}</option>@endforeach</select> --}}
+        <select name="spam" class="ui-input"><option value="exclude" @selected(request('spam', 'exclude') === 'exclude')>Hide spam</option><option value="all" @selected(request('spam') === 'all')>Include spam</option><option value="only" @selected(request('spam') === 'only')>Spam only</option></select>
+        <select name="tag_id" aria-label="Filter by tag" class="ui-input">
             <option value="">All tags</option>
             @foreach ($leadTags as $tag)<option value="{{ $tag->id }}" @selected((string) request('tag_id') === (string) $tag->id)>{{ $tag->name }}</option>@endforeach
         </select>
-        @error('tag_id')<p class="text-sm text-red-700">{{ $message }}</p>@enderror
-        <div class="flex gap-2 lg:col-span-4"><button class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white">Filter leads</button><a href="{{ route('admin.form-submissions.index', ['reset_filters' => 1]) }}" class="rounded-md border px-4 py-2 text-sm font-medium text-slate-700">Clear</a></div>
+        @error('tag_id')<p class="text-red-700 text-base sm:text-sm">{{ $message }}</p>@enderror
+        <div class="flex gap-2 lg:col-span-4"><button type="submit" class="ui-button ui-button-primary">Filter leads</button><a href="{{ route('admin.form-submissions.index', ['reset_filters' => 1]) }}" class="ui-button ui-button-secondary">Clear</a></div>
     </form>
 
-    <form method="POST" action="{{ route('admin.form-submissions.bulk') }}" data-bulk-leads-form data-bulk-leads-total="{{ $bulkSelectableCount }}" class="overflow-hidden rounded-lg border bg-white shadow-sm">
+    <form method="POST" action="{{ route('admin.form-submissions.bulk') }}" data-bulk-leads-form data-bulk-leads-total="{{ $bulkSelectableCount }}" class="ui-panel overflow-hidden">
         @csrf
         @method('PATCH')
         <input type="hidden" name="action" data-bulk-leads-action>
@@ -56,21 +56,21 @@
         <input type="hidden" name="assigned_to" value="{{ request('assigned_to') }}">
         <input type="hidden" name="follow_up" value="{{ request('follow_up') }}">
         <input type="hidden" name="spam" value="{{ request('spam', 'exclude') }}">
-        <div class="flex flex-col gap-3 border-b border-slate-200 bg-slate-50 p-3 sm:flex-row sm:items-center">
+        <div class="flex flex-col gap-3 border-b border-slate-950/10 bg-slate-50 p-3 sm:flex-row sm:items-center">
             <div class="flex flex-wrap items-center gap-3">
                 <div data-bulk-leads-selection-control class="relative flex items-center gap-1">
-                    <input type="checkbox" data-bulk-leads-select-all aria-label="Select leads on this page" class="size-5 rounded border-slate-300">
+                    <input type="checkbox" data-bulk-leads-select-all aria-label="Select leads on this page" class="size-5">
                     <button type="button" data-bulk-leads-selection-toggle aria-label="Choose selection scope" aria-expanded="false" class="grid size-8 place-items-center rounded-md text-slate-600 hover:bg-slate-200">
                         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" class="size-4" aria-hidden="true"><path d="m5 7.5 5 5 5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </button>
-                    <div data-bulk-leads-selection-menu class="absolute left-0 top-full z-20 mt-2 hidden w-72 overflow-hidden rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
+                    <div data-bulk-leads-selection-menu class="ui-panel absolute left-0 top-full z-20 mt-2 hidden w-72 overflow-hidden p-2">
                         <button type="button" data-bulk-leads-select-page class="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-slate-700 hover:bg-slate-100">
-                            <span data-bulk-leads-page-indicator class="grid size-5 place-items-center rounded border border-slate-300 text-xs text-white">✓</span>
+                            <span data-bulk-leads-page-indicator class="grid size-5 place-items-center rounded border border-slate-950/10 text-xs text-white">✓</span>
                             <span class="flex-1 text-sm font-medium">Select this page</span>
                             <span class="rounded-full bg-sky-100 px-2.5 py-0.5 text-sm font-semibold tabular-nums text-sky-800">{{ $bulkPageSelectableCount }}</span>
                         </button>
                         <button type="button" data-bulk-leads-select-matching class="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-slate-700 hover:bg-slate-100">
-                            <span data-bulk-leads-all-indicator class="grid size-5 place-items-center rounded border border-slate-300 text-xs text-white">✓</span>
+                            <span data-bulk-leads-all-indicator class="grid size-5 place-items-center rounded border border-slate-950/10 text-xs text-white">✓</span>
                             <span class="flex-1 text-sm font-medium">Select all</span>
                             <span class="rounded-full bg-sky-100 px-2.5 py-0.5 text-sm font-semibold tabular-nums text-sky-800">{{ $bulkSelectableCount }}</span>
                         </button>
@@ -80,9 +80,9 @@
             <div data-bulk-leads-actions class="hidden flex-1 flex-wrap items-center gap-2 sm:justify-end">
                 <span class="text-sm text-slate-600"><span data-bulk-leads-count>0</span> selected</span>
                 <div class="relative">
-                    <button type="button" data-bulk-leads-menu-toggle aria-label="Lead actions" aria-expanded="false" class="grid size-9 place-items-center rounded-md border border-slate-300 bg-white text-lg font-bold tracking-widest text-slate-600 hover:bg-slate-100">•••</button>
-                    <div data-bulk-leads-menu class="absolute right-0 z-20 mt-2 hidden w-64 overflow-hidden rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
-                        <p class="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Lead actions</p>
+                    <button type="button" data-bulk-leads-menu-toggle aria-label="Lead actions" aria-expanded="false" class="grid size-9 place-items-center rounded-md border border-slate-950/10 bg-white text-lg font-bold tracking-widest text-slate-600 hover:bg-slate-100">•••</button>
+                    <div data-bulk-leads-menu class="ui-panel absolute right-0 z-20 mt-2 hidden w-64 overflow-hidden p-2">
+                        <p class="px-3 py-2 font-semibold uppercase tracking-wide text-slate-500 text-base sm:text-sm">Lead actions</p>
                         <button type="button" data-bulk-leads-open="update_status" class="flex w-full rounded-lg px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-100">Update status</button>
                         <button type="button" data-bulk-leads-open="resend_notification" class="flex w-full rounded-lg px-3 py-2.5 text-left text-sm text-blue-800 hover:bg-blue-50">Resend email notifications</button>
                         <button type="button" data-bulk-leads-open="mark_spam" class="flex w-full rounded-lg px-3 py-2.5 text-left text-sm text-amber-800 hover:bg-amber-50">Mark as spam</button>
@@ -91,12 +91,12 @@
                 </div>
             </div>
         </div>
-        @error('submission_ids')<p class="border-b border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">{{ $message }}</p>@enderror
+        @error('submission_ids')<p class="border-b border-red-200 bg-red-50 px-4 py-2 text-red-700 text-base sm:text-sm">{{ $message }}</p>@enderror
         <div class="divide-y divide-slate-100">
             @forelse ($submissions as $submission)
                 <div class="flex items-center gap-3 p-4 hover:bg-slate-50">
                     @if ($manageableWebsiteIds->contains($submission->website_id))
-                        <input type="checkbox" name="submission_ids[]" value="{{ $submission->id }}" aria-label="Select {{ $submission->displayName() }}" data-bulk-leads-checkbox class="rounded border-slate-300">
+                        <input type="checkbox" name="submission_ids[]" value="{{ $submission->id }}" aria-label="Select {{ $submission->displayName() }}" data-bulk-leads-checkbox>
                     @else
                         <span class="size-4 shrink-0" title="Read-only lead"></span>
                     @endif
@@ -123,19 +123,19 @@
             @endforelse
         </div>
 
-        <dialog data-bulk-leads-dialog class="m-auto w-[min(30rem,calc(100%-2rem))] rounded-xl border border-slate-200 bg-white p-0 shadow-2xl backdrop:bg-slate-950/50">
+        <dialog data-bulk-leads-dialog class="m-auto w-[min(30rem,calc(100%-2rem))] rounded-xl border border-slate-950/10 bg-white p-0 shadow-2xl backdrop:bg-slate-950/50">
             <div class="p-5">
                 <h2 data-bulk-leads-dialog-title class="text-lg font-semibold text-slate-950">Confirm bulk action</h2>
-                <p data-bulk-leads-dialog-message class="mt-2 text-sm text-slate-600"></p>
+                <p data-bulk-leads-dialog-message class="mt-2 text-slate-600 text-base sm:text-sm"></p>
                 <div data-bulk-leads-status-field class="mt-4 hidden">
-                    <label for="bulk_lead_status" class="text-sm font-medium text-slate-700">New status</label>
-                    <select id="bulk_lead_status" name="status" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                    <label for="bulk_lead_status" class="ui-label">New status</label>
+                    <select id="bulk_lead_status" name="status" class="ui-input mt-1 w-full">
                         @foreach (\App\Models\FormSubmission::STATUS_LABELS as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach
                     </select>
                 </div>
                 <div class="mt-6 flex justify-end gap-2">
-                    <button type="button" data-bulk-leads-cancel class="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
-                    <button type="submit" data-bulk-leads-confirm class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">Confirm</button>
+                    <button type="button" data-bulk-leads-cancel class="ui-button ui-button-secondary">Cancel</button>
+                    <button type="submit" data-bulk-leads-confirm class="ui-button ui-button-primary">Confirm</button>
                 </div>
             </div>
         </dialog>

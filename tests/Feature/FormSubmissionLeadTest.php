@@ -521,7 +521,7 @@ it('locks automatic replies for inactive websites in the UI and on update', func
 
     $this->get(route('admin.forms.show', $form))
         ->assertOk()
-        ->assertSee('Additional settings')
+        ->assertSee('Customer reply')
         ->assertSee('Available with an active Sitewell plan.')
         ->assertDontSee('data-autoresponder-content-editor', false);
 

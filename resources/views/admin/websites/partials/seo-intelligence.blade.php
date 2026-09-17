@@ -5,19 +5,19 @@
 @endphp
 <div id="website-panel-seo" class="space-y-6" role="region" aria-labelledby="website-tab-seo" data-tab-panel="seo" @if ($currentWebsiteSection !== 'seo') hidden @endif>
     <div class="space-y-6" data-seo-sections data-tabs-key="seo-intelligence" data-default-tab="{{ request('seo_section', request()->has('seo_filter') ? 'keywords' : 'overview') }}">
-        <div class="max-w-full overflow-x-auto border-b border-slate-950/10" role="navigation" aria-label="SEO Intelligence sections">
-            <div class="flex min-w-max gap-1 pb-2">
-                <a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'overview']) }}" id="seo-section-tab-overview" class="shrink-0 rounded-md px-3 py-2 text-base font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 aria-[current=page]:bg-slate-100 aria-[current=page]:text-slate-950 sm:text-sm" @if ($currentSeoSection === 'overview') aria-current="page" @endif data-tab="overview">Overview</a>
-                <a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'targets']) }}" id="seo-section-tab-targets" class="shrink-0 rounded-md px-3 py-2 text-base font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 aria-[current=page]:bg-slate-100 aria-[current=page]:text-slate-950 sm:text-sm" @if ($currentSeoSection === 'targets') aria-current="page" @endif data-tab="targets">Target keywords</a>
+        <div class="min-w-0" role="navigation" aria-label="SEO Intelligence sections">
+            <div class="ui-tabs">
+                <a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'overview']) }}" id="seo-section-tab-overview" class="ui-tab" @if ($currentSeoSection === 'overview') aria-current="page" @endif data-tab="overview">Overview</a>
+                <a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'targets']) }}" id="seo-section-tab-targets" class="ui-tab" @if ($currentSeoSection === 'targets') aria-current="page" @endif data-tab="targets">Target keywords</a>
                 @if ($seoSnapshot)
-                    <a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'actions']) }}" id="seo-section-tab-actions" class="shrink-0 rounded-md px-3 py-2 text-base font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 aria-[current=page]:bg-slate-100 aria-[current=page]:text-slate-950 sm:text-sm" @if ($currentSeoSection === 'actions') aria-current="page" @endif data-tab="actions">Recommended Actions</a>
+                    <a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'actions']) }}" id="seo-section-tab-actions" class="ui-tab" @if ($currentSeoSection === 'actions') aria-current="page" @endif data-tab="actions">Recommended Actions</a>
                 @endif
-                <a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'impact']) }}" id="seo-section-tab-impact" class="shrink-0 rounded-md px-3 py-2 text-base font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 aria-[current=page]:bg-slate-100 aria-[current=page]:text-slate-950 sm:text-sm" @if ($currentSeoSection === 'impact') aria-current="page" @endif data-tab="impact">SEO impact</a>
+                <a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'impact']) }}" id="seo-section-tab-impact" class="ui-tab" @if ($currentSeoSection === 'impact') aria-current="page" @endif data-tab="impact">SEO impact</a>
                 @if ($seoSnapshot)
-                    <a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'keywords']) }}" id="seo-section-tab-keywords" class="shrink-0 rounded-md px-3 py-2 text-base font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 aria-[current=page]:bg-slate-100 aria-[current=page]:text-slate-950 sm:text-sm" @if ($currentSeoSection === 'keywords') aria-current="page" @endif data-tab="keywords">Keywords</a>
-                    <a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'backlinks']) }}" id="seo-section-tab-backlinks" class="shrink-0 rounded-md px-3 py-2 text-base font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 aria-[current=page]:bg-slate-100 aria-[current=page]:text-slate-950 sm:text-sm" @if ($currentSeoSection === 'backlinks') aria-current="page" @endif data-tab="backlinks">Backlinks</a>
+                    <a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'keywords']) }}" id="seo-section-tab-keywords" class="ui-tab" @if ($currentSeoSection === 'keywords') aria-current="page" @endif data-tab="keywords">Keywords</a>
+                    <a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'backlinks']) }}" id="seo-section-tab-backlinks" class="ui-tab" @if ($currentSeoSection === 'backlinks') aria-current="page" @endif data-tab="backlinks">Backlinks</a>
                 @endif
-                    <a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'competitors']) }}" id="seo-section-tab-competitors" class="shrink-0 rounded-md px-3 py-2 text-base font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 aria-[current=page]:bg-slate-100 aria-[current=page]:text-slate-950 sm:text-sm" @if ($currentSeoSection === 'competitors') aria-current="page" @endif data-tab="competitors">Competitors</a>
+                    <a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'competitors']) }}" id="seo-section-tab-competitors" class="ui-tab" @if ($currentSeoSection === 'competitors') aria-current="page" @endif data-tab="competitors">Competitors</a>
             </div>
         </div>
 
@@ -40,16 +40,16 @@
         </div>
 
         <div id="seo-section-panel-overview" role="region" aria-labelledby="seo-section-tab-overview" data-tab-panel="overview" @if ($currentSeoSection !== 'overview') hidden @endif>
-    <section class="overflow-hidden rounded-xl border bg-white shadow-sm" aria-labelledby="seo-intelligence-title">
-        <div class="@container border-b border-slate-200 p-4">
+    <section class="ui-panel overflow-hidden" aria-labelledby="seo-intelligence-title">
+        <div class="@container border-b border-slate-950/10 p-4">
         <div class="flex flex-col gap-4 @xl:flex-row @xl:items-start @xl:justify-between">
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
-                    <p class="text-xs font-medium uppercase tracking-widest text-slate-500">Third-party market intelligence</p>
-                    <p class="rounded-full bg-teal-50 px-2 py-1 text-xs font-medium text-teal-800 ring-1 ring-teal-700/10">Estimated data</p>
+                    <p class="font-medium uppercase tracking-widest text-slate-500 text-base sm:text-sm">Third-party market intelligence</p>
+                    <p class="rounded-full bg-teal-50 px-2 py-1 font-medium text-teal-800 ring-1 ring-teal-700/10 text-base sm:text-sm">Estimated data</p>
                 </div>
                 <h2 id="seo-intelligence-title" class="mt-2 text-lg font-semibold text-slate-950">SEO Intelligence</h2>
-                <p class="mt-1 max-w-3xl text-sm text-slate-600">Organic visibility estimates for {{ $website->primaryDomain()?->domain ?: 'this website' }}. These figures are separate from Google Search Console performance.</p>
+                <p class="mt-1 max-w-3xl text-slate-600 text-base sm:text-sm">Organic visibility estimates for {{ $website->primaryDomain()?->domain ?: 'this website' }}. These figures are separate from Google Search Console performance.</p>
             </div>
 
             @if ($canManageWebsite)
@@ -57,24 +57,24 @@
                     @if ($dataForSeoConfigured)
                         <form method="POST" action="{{ route('admin.seo-intelligence.store', $website) }}">
                             @csrf
-                            <button type="submit" @disabled($seoGeneration && in_array($seoGeneration->status, ['pending', 'processing'], true)) class="rounded-lg border border-slate-950/10 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm shadow-slate-950/5 hover:bg-slate-50 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400">
+                            <button type="submit" @disabled($seoGeneration && in_array($seoGeneration->status, ['pending', 'processing'], true)) class="ui-button ui-button-secondary disabled:cursor-not-allowed">
                                 {{ $seoSnapshot ? 'Refresh intelligence' : 'Generate intelligence' }}
                             </button>
                         </form>
                     @else
-                        <p class="max-w-xs text-sm text-amber-700">Add the SEO data provider credentials to Sitewell before generating intelligence.</p>
+                        <p class="max-w-xs text-amber-700 text-base sm:text-sm">Add the SEO data provider credentials to Sitewell before generating intelligence.</p>
                     @endif
                     <form method="POST" action="{{ route('admin.seo-snapshot-settings.update', $website) }}" class="flex items-center gap-2">
                         @csrf @method('PUT')
                         <input type="hidden" name="seo_weekly_snapshots_enabled" value="0">
                         <input id="seo-weekly-snapshots" type="checkbox" name="seo_weekly_snapshots_enabled" value="1" @checked($website->seo_weekly_snapshots_enabled)>
-                        <label for="seo-weekly-snapshots" class="text-sm text-slate-600">Automatic weekly snapshots</label>
-                        <button class="rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">Save</button>
+                        <label for="seo-weekly-snapshots" class="ui-label">Automatic weekly snapshots</label>
+                        <button type="submit" class="ui-button ui-button-secondary ui-button-small">Save</button>
                     </form>
-                    <p class="max-w-sm text-right text-xs text-slate-500">Enabling this also imports available monthly history once.</p>
-                    <form method="POST" action="{{ route('admin.weekly-ranking-report-settings.update', $website) }}" class="mt-2 grid max-w-sm gap-2 rounded-lg border border-slate-200 bg-white p-3 text-left">
+                    <p class="max-w-sm text-right text-slate-500 text-base sm:text-sm">Enabling this also imports available monthly history once.</p>
+                    <form method="POST" action="{{ route('admin.weekly-ranking-report-settings.update', $website) }}" class="ui-panel mt-2 grid max-w-sm gap-2 p-3 text-left">
                         @csrf @method('PUT')
-                        <label for="weekly-ranking-reports" class="flex items-start gap-2">
+                        <label for="weekly-ranking-reports" class="ui-label flex items-start gap-2">
                             <input type="hidden" name="weekly_ranking_reports_enabled" value="0">
                             <input id="weekly-ranking-reports" type="checkbox" name="weekly_ranking_reports_enabled" value="1" class="mt-1" @checked($website->weekly_ranking_reports_enabled)>
                             <span>
@@ -82,8 +82,8 @@
                                 <span class="block text-xs leading-5 text-slate-500">Includes target keywords, Search Console performance and SEO estimates when available.</span>
                             </span>
                         </label>
-                        <p class="text-xs leading-5 text-slate-500">Email delivery does not run paid checks. Enable automatic weekly snapshots for fresh weekly target positions.</p>
-                        <button class="justify-self-start rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">Save email preference</button>
+                        <p class="leading-5 text-slate-500 text-base sm:text-sm">Email delivery does not run paid checks. Enable automatic weekly snapshots for fresh weekly target positions.</p>
+                        <button type="submit" class="ui-button ui-button-secondary ui-button-small justify-self-start">Save email preference</button>
                     </form>
                 </div>
             @endif
@@ -92,13 +92,13 @@
 
         @if ($seoGeneration && in_array($seoGeneration->status, ['pending', 'processing'], true))
             <div class="border-b border-blue-200 bg-blue-50 px-4 py-3">
-                <p class="text-sm font-medium text-blue-900">SEO intelligence is {{ $seoGeneration->status === 'pending' ? 'queued' : 'being generated' }}.</p>
-                <p class="mt-1 text-sm text-blue-700">This page remains available while the background job runs. Refresh shortly to see the results.</p>
+                <p class="font-medium text-blue-900 text-base sm:text-sm">SEO intelligence is {{ $seoGeneration->status === 'pending' ? 'queued' : 'being generated' }}.</p>
+                <p class="mt-1 text-blue-700 text-base sm:text-sm">This page remains available while the background job runs. Refresh shortly to see the results.</p>
             </div>
         @elseif ($seoGeneration?->status === 'failed')
             <div class="border-b border-red-200 bg-red-50 px-4 py-3">
-                <p class="text-sm font-medium text-red-900">The latest SEO intelligence refresh failed.</p>
-                <p class="mt-1 text-sm text-red-700">Existing successful data is retained. You can try again when the provider is available.</p>
+                <p class="font-medium text-red-900 text-base sm:text-sm">The latest SEO intelligence refresh failed.</p>
+                <p class="mt-1 text-red-700 text-base sm:text-sm">Existing successful data is retained. You can try again when the provider is available.</p>
             </div>
         @endif
 
@@ -124,16 +124,16 @@
                 </dl>
             </div>
 
-            <div class="@container border-t border-slate-200">
+            <div class="@container border-t border-slate-950/10">
             <div class="grid gap-px bg-slate-200 @3xl:grid-cols-[2fr_1fr]">
                 <div class="bg-white p-4">
-                    <p class="text-xs font-medium uppercase tracking-widest text-slate-500">What can we improve?</p>
+                    <p class="font-medium uppercase tracking-widest text-slate-500 text-base sm:text-sm">What can we improve?</p>
                     <h3 class="mt-2 text-base font-semibold text-slate-950">{{ number_format($strikingDistanceCount) }} striking-distance keywords</h3>
-                    <p class="mt-1 text-sm text-slate-600">Keywords currently ranking in positions 4–20 may offer the clearest near-term optimisation opportunities.</p>
+                    <p class="mt-1 text-slate-600 text-base sm:text-sm">Keywords currently ranking in positions 4–20 may offer the clearest near-term optimisation opportunities.</p>
                     <a href="{{ route('admin.websites.show', [$website, 'tab' => 'seo', 'seo_section' => 'keywords', 'seo_filter' => 'positions_11_20', 'seo_sort' => 'search_volume', 'seo_direction' => 'desc']) }}" class="mt-3 inline-flex text-sm font-medium text-teal-700 underline decoration-teal-700/30 underline-offset-4 hover:decoration-teal-700">Review page-two keywords</a>
                 </div>
                 <div class="bg-slate-50 p-4">
-                    <p class="text-sm font-medium text-slate-900">Snapshot details</p>
+                    <p class="font-medium text-slate-900 text-base sm:text-sm">Snapshot details</p>
                     <dl class="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
                         <dt class="text-slate-500">Observed</dt>
                         <dd class="text-right font-medium text-slate-800">{{ $seoSnapshot->completed_at?->format('j M Y, H:i') }}</dd>
@@ -145,14 +145,14 @@
                 </div>
             </div>
             </div>
-            <div data-seo-history-charts class="grid gap-4 border-t border-slate-200 p-4">
+            <div data-seo-history-charts class="grid gap-4 border-t border-slate-950/10 p-4">
                 <x-progress-chart title="Estimated organic traffic" description="Monthly third-party organic visibility estimate." :points="$seoHistory" value-key="estimated_organic_traffic" format="traffic" />
                 <x-progress-chart title="Ranking keywords" description="Keywords estimated to rank in Google's top 100." :points="$seoHistory" value-key="organic_keywords" />
             </div>
         @else
             <div class="p-8 text-center">
                 <h3 class="text-base font-semibold text-slate-950">No SEO snapshot yet</h3>
-                <p class="mx-auto mt-2 max-w-lg text-sm text-slate-600">Generate the first snapshot to discover estimated organic rankings and search opportunities. The website does not need to be online.</p>
+                <p class="mx-auto mt-2 max-w-lg text-slate-600 text-base sm:text-sm">Generate the first snapshot to discover estimated organic rankings and search opportunities. The website does not need to be online.</p>
             </div>
         @endif
     </section>
@@ -160,7 +160,7 @@
 
     @if ($seoSnapshot)
         <div id="seo-section-panel-actions" role="region" aria-labelledby="seo-section-tab-actions" data-tab-panel="actions" @if ($currentSeoSection !== 'actions') hidden @endif>
-        <section class="rounded-xl border bg-white shadow-sm" aria-labelledby="seo-opportunities-title">
+        <section class="ui-panel" aria-labelledby="seo-opportunities-title">
             <div class="border-b border-slate-950/10 p-4">
                 <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                     <div class="min-w-0">
@@ -216,7 +216,7 @@
                                 </dl>
                             </div>
 
-                            <div class="rounded-lg bg-slate-50 p-4">
+                            <div class="ui-well p-4">
                                 <h5 class="font-medium text-slate-950">Recommended action</h5>
                                 <p class="mt-1 text-pretty text-base text-slate-600 sm:text-sm">{{ $opportunity->recommendation }}</p>
                                 @if (data_get($metrics, 'ranking_url'))
@@ -229,13 +229,13 @@
                                         @if ($website->repository || ($canUseGrowthFeatures && config('forms.pixel_ui_enabled') && $website->pixel_enabled))
                                             <form method="POST" action="{{ route('admin.seo-opportunities.queue', [$website, $opportunity]) }}">
                                                 @csrf
-                                                <button type="submit" class="relative rounded-md border border-slate-950/10 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600">
+                                                <button type="submit" class="ui-button ui-button-secondary relative">
                                                     Add to action list
                                                     <span class="absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2 pointer-fine:hidden" aria-hidden="true"></span>
                                                 </button>
                                             </form>
                                         @else
-                                            <a href="{{ route('admin.website-repositories.create', $website) }}" class="relative inline-flex rounded-md border border-slate-950/10 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600">
+                                            <a href="{{ route('admin.website-repositories.create', $website) }}" class="ui-button ui-button-secondary relative">
                                                 Connect GitHub to add todo
                                                 <span class="absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2 pointer-fine:hidden" aria-hidden="true"></span>
                                             </a>
@@ -256,12 +256,12 @@
         </div>
 
         <div id="seo-section-panel-backlinks" role="region" aria-labelledby="seo-section-tab-backlinks" data-tab-panel="backlinks" @if ($currentSeoSection !== 'backlinks') hidden @endif>
-        <section class="rounded-xl border bg-white shadow-sm" aria-labelledby="backlinks-title">
+        <section class="ui-panel" aria-labelledby="backlinks-title">
             <div class="border-b border-slate-950/10 p-4">
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div><h3 id="backlinks-title" class="text-balance text-base font-semibold text-slate-950">Backlinks</h3><p class="mt-1 text-pretty text-base text-slate-600 sm:text-sm">Who links to this website, based on locally stored third-party estimates.</p></div>
                     @if ($latestBacklinkAudit)
-                        <a href="{{ route('admin.backlink-audits.show', [$website, $latestBacklinkAudit]) }}" class="inline-flex min-h-11 items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50">View latest audit</a>
+                        <a href="{{ route('admin.backlink-audits.show', [$website, $latestBacklinkAudit]) }}" class="ui-button ui-button-secondary">View latest audit</a>
                     @endif
                 </div>
             </div>
@@ -296,19 +296,19 @@
             <div class="border-t border-slate-950/10 bg-slate-50 p-4">
                 <form method="POST" action="{{ route('admin.backlink-audits.store', $website) }}" class="space-y-4">
                     @csrf
-                    <div><h4 class="font-semibold text-slate-950">Actionable backlink audit</h4><p class="mt-1 text-sm text-slate-600">Collect detailed links, linked pages, new and lost trends, and optional gaps against up to three competitors. This is a paid, explicit DataForSEO audit; results are reused for seven days.</p></div>
-                    @if ($latestBacklinkAudit)<p class="text-sm text-slate-600">Latest audit: {{ ucfirst(str_replace('_', ' ', $latestBacklinkAudit->status)) }} · {{ ($latestBacklinkAudit->completed_at ?? $latestBacklinkAudit->updated_at)->format('j M Y, H:i') }}</p>@endif
+                    <div><h4 class="font-semibold text-slate-950">Actionable backlink audit</h4><p class="mt-1 text-slate-600 text-base sm:text-sm">Collect detailed links, linked pages, new and lost trends, and optional gaps against up to three competitors. This is a paid, explicit DataForSEO audit; results are reused for seven days.</p></div>
+                    @if ($latestBacklinkAudit)<p class="text-slate-600 text-base sm:text-sm">Latest audit: {{ ucfirst(str_replace('_', ' ', $latestBacklinkAudit->status)) }} · {{ ($latestBacklinkAudit->completed_at ?? $latestBacklinkAudit->updated_at)->format('j M Y, H:i') }}</p>@endif
                     @if ($canManageWebsite)
                         <fieldset><legend class="text-sm font-medium text-slate-800">Compare competitors (optional)</legend><div class="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                             @forelse ($trackedCompetitors->where('excluded', false) as $competitor)
-                                <label class="flex min-h-11 items-center gap-2 rounded-md border bg-white px-3 py-2 text-sm text-slate-700"><input type="checkbox" name="competitor_ids[]" value="{{ $competitor->id }}" class="rounded border-slate-300 text-teal-700 focus:ring-teal-600"> <span class="break-all">{{ $competitor->domain }}</span></label>
+                                <label class="ui-label flex min-h-11 items-center gap-2 rounded-md border bg-white px-3 py-2"><input type="checkbox" name="competitor_ids[]" value="{{ $competitor->id }}"> <span class="break-all">{{ $competitor->domain }}</span></label>
                             @empty
-                                <p class="text-sm text-slate-500">Add competitors in the Competitors section to include link gaps.</p>
+                                <p class="text-slate-500 text-base sm:text-sm">Add competitors in the Competitors section to include link gaps.</p>
                             @endforelse
                         </div></fieldset>
-                        <button class="inline-flex min-h-11 items-center justify-center rounded-md bg-slate-950 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">{{ $latestBacklinkAudit?->status === 'failed' ? 'Retry backlink audit' : 'Run backlink audit' }}</button>
+                        <button type="submit" class="ui-button ui-button-primary">{{ $latestBacklinkAudit?->status === 'failed' ? 'Retry backlink audit' : 'Run backlink audit' }}</button>
                     @else
-                        <p class="text-sm text-slate-500">Managers can run backlink audits. Viewers can inspect saved results.</p>
+                        <p class="text-slate-500 text-base sm:text-sm">Managers can run backlink audits. Viewers can inspect saved results.</p>
                     @endif
                 </form>
             </div>
@@ -324,11 +324,11 @@
 
                 <form method="GET" action="{{ route('admin.websites.section', [$website, 'seo']) }}" class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto]">
                     <input type="hidden" name="tab" value="seo"><input type="hidden" name="seo_section" value="backlinks">
-                    <label><span class="sr-only">Search referring domains</span><input name="backlink_search" value="{{ $backlinkSearch }}" placeholder="Search domains" class="min-h-11 w-full rounded-md border-slate-300 text-sm"></label>
-                    <label><span class="sr-only">Filter referring domains by rank</span><select name="backlink_min_rank" class="min-h-11 w-full rounded-md border-slate-300 text-sm"><option value="0" @selected($backlinkMinRank === 0)>All domain ranks</option><option value="40" @selected($backlinkMinRank === 40)>Rank 40+</option><option value="70" @selected($backlinkMinRank === 70)>Rank 70+</option></select></label>
-                    <label><span class="sr-only">Sort referring domains</span><select name="backlink_sort" class="min-h-11 w-full rounded-md border-slate-300 text-sm"><option value="domain_rank" @selected($backlinkSort === 'domain_rank')>Domain rank</option><option value="backlinks_count" @selected($backlinkSort === 'backlinks_count')>Backlinks</option><option value="last_seen" @selected($backlinkSort === 'last_seen')>Last seen</option><option value="domain" @selected($backlinkSort === 'domain')>Domain</option></select></label>
-                    <label><span class="sr-only">Sort direction</span><select name="backlink_direction" class="min-h-11 w-full rounded-md border-slate-300 text-sm"><option value="desc" @selected($backlinkDirection === 'desc')>Descending</option><option value="asc" @selected($backlinkDirection === 'asc')>Ascending</option></select></label>
-                    <button class="min-h-11 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50">Apply</button>
+                    <label><span class="sr-only">Search referring domains</span><input name="backlink_search" value="{{ $backlinkSearch }}" placeholder="Search domains" class="ui-input min-h-11 w-full"></label>
+                    <label><span class="sr-only">Filter referring domains by rank</span><select name="backlink_min_rank" class="ui-input min-h-11 w-full"><option value="0" @selected($backlinkMinRank === 0)>All domain ranks</option><option value="40" @selected($backlinkMinRank === 40)>Rank 40+</option><option value="70" @selected($backlinkMinRank === 70)>Rank 70+</option></select></label>
+                    <label><span class="sr-only">Sort referring domains</span><select name="backlink_sort" class="ui-input min-h-11 w-full"><option value="domain_rank" @selected($backlinkSort === 'domain_rank')>Domain rank</option><option value="backlinks_count" @selected($backlinkSort === 'backlinks_count')>Backlinks</option><option value="last_seen" @selected($backlinkSort === 'last_seen')>Last seen</option><option value="domain" @selected($backlinkSort === 'domain')>Domain</option></select></label>
+                    <label><span class="sr-only">Sort direction</span><select name="backlink_direction" class="ui-input min-h-11 w-full"><option value="desc" @selected($backlinkDirection === 'desc')>Descending</option><option value="asc" @selected($backlinkDirection === 'asc')>Ascending</option></select></label>
+                    <button type="submit" class="ui-button ui-button-secondary">Apply</button>
                 </form>
 
                 <div class="-mx-4 -my-2 mt-4 overflow-x-auto whitespace-nowrap">
@@ -361,12 +361,12 @@
         </div>
 
         <div id="seo-section-panel-keywords" role="region" aria-labelledby="seo-section-tab-keywords" data-tab-panel="keywords" @if ($currentSeoSection !== 'keywords') hidden @endif>
-        <section class="rounded-xl border bg-white shadow-sm" aria-labelledby="ranking-keywords-title">
-            <div class="@container border-b border-slate-200 p-4">
+        <section class="ui-panel" aria-labelledby="ranking-keywords-title">
+            <div class="@container border-b border-slate-950/10 p-4">
             <div class="flex flex-col gap-4 @4xl:flex-row @4xl:items-end @4xl:justify-between">
                 <div>
                     <h3 id="ranking-keywords-title" class="text-base font-semibold text-slate-950">Ranking keywords</h3>
-                    <p class="mt-1 text-sm text-slate-600">Locally stored third-party estimates from this snapshot.</p>
+                    <p class="mt-1 text-slate-600 text-base sm:text-sm">Locally stored third-party estimates from this snapshot.</p>
                 </div>
                 <form method="GET" action="{{ route('admin.websites.section', [$website, 'seo']) }}" class="grid gap-3 @md:grid-cols-3">
                     <input type="hidden" name="tab" value="seo">
@@ -389,14 +389,14 @@
                     </div>
                     <div class="flex items-end gap-2">
                         <input type="hidden" name="seo_direction" value="{{ $seoSort === 'position' ? 'asc' : 'desc' }}">
-                        <button type="submit" class="rounded-lg border border-slate-950/10 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 shadow-sm shadow-slate-950/5 hover:bg-slate-50">Apply</button>
+                        <button type="submit" class="ui-button ui-button-secondary">Apply</button>
                     </div>
                 </form>
             </div>
             </div>
 
             <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-slate-200">
+                <table class="min-w-full divide-y divide-slate-950/10">
                     <thead>
                         <tr>
                             <th class="px-4 py-3">Keyword</th>
@@ -415,7 +415,7 @@
                                 <td class="max-w-sm px-4 py-3">
                                     <p class="truncate font-medium" title="{{ $keyword->keyword }}"><a href="{{ route('admin.seo-keywords.show', [$website, $keyword]) }}" class="text-teal-700 underline decoration-teal-700/30 underline-offset-4 hover:decoration-teal-700">{{ $keyword->keyword }}</a></p>
                                     @if ($keyword->ranking_url)
-                                        <p class="mt-1 truncate text-xs text-slate-500" title="{{ $keyword->ranking_url }}"><a href="{{ $keyword->ranking_url }}" target="_blank" rel="noopener noreferrer" class="hover:text-teal-700">{{ \Illuminate\Support\Str::after($keyword->ranking_url, '://') }}</a></p>
+                                        <p class="mt-1 truncate text-slate-500 text-base sm:text-sm" title="{{ $keyword->ranking_url }}"><a href="{{ $keyword->ranking_url }}" target="_blank" rel="noopener noreferrer" class="hover:text-teal-700">{{ \Illuminate\Support\Str::after($keyword->ranking_url, '://') }}</a></p>
                                     @endif
                                 </td>
                                 <td class="px-4 py-3 text-right font-semibold tabular-nums text-slate-950">{{ $keyword->position }}</td>
@@ -434,7 +434,7 @@
             </div>
 
             @if ($seoKeywords->hasPages())
-                <div class="border-t border-slate-200 p-4">{{ $seoKeywords->links() }}</div>
+                <div class="border-t border-slate-950/10 p-4">{{ $seoKeywords->links() }}</div>
             @endif
         </section>
         </div>

@@ -3,20 +3,20 @@
 @php($pageSpeedResults = collect(data_get($report->metrics, 'pagespeed', [])))
 
 @if ($pageSpeedResults->isNotEmpty())
-    <section class="rounded-lg border border-slate-200 bg-white shadow-sm" aria-labelledby="performance-summary-title">
-        <div class="border-b border-slate-200 p-4">
-            <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Google PageSpeed Insights</p>
+    <section class="ui-panel" aria-labelledby="performance-summary-title">
+        <div class="border-b border-slate-950/10 p-4">
+            <p class="font-medium uppercase tracking-wide text-slate-500 text-base sm:text-sm">Google PageSpeed Insights</p>
             <h2 id="performance-summary-title" class="mt-1 font-semibold text-slate-950">Page speed and Core Web Vitals</h2>
-            <p class="mt-1 text-sm text-slate-600">Field data reflects real Chrome users over the previous 28 days when enough traffic is available. Lab data is a simulated test from this report run.</p>
+            <p class="mt-1 text-slate-600 text-base sm:text-sm">Field data reflects real Chrome users over the previous 28 days when enough traffic is available. Lab data is a simulated test from this report run.</p>
         </div>
 
-        <div class="divide-y divide-slate-200">
+        <div class="divide-y divide-slate-950/10">
             @foreach ($pageSpeedResults->groupBy('url') as $url => $strategies)
                 <article class="p-4">
-                    <p class="truncate text-sm font-medium text-slate-950" title="{{ $url }}">{{ $url }}</p>
+                    <p class="truncate font-medium text-slate-950 text-base sm:text-sm" title="{{ $url }}">{{ $url }}</p>
                     <div class="mt-3 grid gap-4 lg:grid-cols-2">
                         @foreach ($strategies as $result)
-                            <div class="rounded-lg border border-slate-200 p-4">
+                            <div class="rounded-lg border border-slate-950/10 p-4">
                                 <div class="flex items-center justify-between gap-3">
                                     <h3 class="text-sm font-semibold capitalize text-slate-900">{{ $result['strategy'] }}</h3>
                                     @if ($result['available'])
@@ -34,10 +34,10 @@
                                 @if ($result['available'])
                                     @if (data_get($result, 'field.available'))
                                         <div class="mt-4">
-                                            <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Real-user Core Web Vitals</p>
+                                            <p class="font-medium uppercase tracking-wide text-slate-500 text-base sm:text-sm">Real-user Core Web Vitals</p>
                                             <dl class="mt-2 grid grid-cols-3 gap-2 text-sm">
                                                 @foreach ([['LCP', 'lcp_ms', ' ms', 'lcp_status'], ['INP', 'inp_ms', ' ms', 'inp_status'], ['CLS', 'cls', '', 'cls_status']] as [$label, $metric, $suffix, $status])
-                                                    <div class="rounded-md bg-slate-50 p-2">
+                                                    <div class="ui-well p-2">
                                                         <dt class="text-xs text-slate-500">{{ $label }}</dt>
                                                         <dd class="mt-1 font-semibold tabular-nums">{{ data_get($result, 'field.'.$metric) !== null ? number_format(data_get($result, 'field.'.$metric), $metric === 'cls' ? 2 : 0).$suffix : '—' }}</dd>
                                                         @if (data_get($result, 'field.'.$status))
@@ -53,11 +53,11 @@
                                             </dl>
                                         </div>
                                     @else
-                                        <p class="mt-4 rounded-md bg-slate-50 p-3 text-xs text-slate-600">Not enough real-user traffic is available for this page yet.</p>
+                                        <p class="mt-4 rounded-md bg-slate-50 p-3 text-slate-600 text-base sm:text-sm">Not enough real-user traffic is available for this page yet.</p>
                                     @endif
 
                                     <div class="mt-4">
-                                        <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Lab measurements</p>
+                                        <p class="font-medium uppercase tracking-wide text-slate-500 text-base sm:text-sm">Lab measurements</p>
                                         <dl class="mt-2 grid grid-cols-3 gap-2 text-sm sm:grid-cols-5">
                                             @foreach ([['LCP', 'lcp_ms', ' ms'], ['CLS', 'cls', ''], ['TBT', 'tbt_ms', ' ms'], ['FCP', 'fcp_ms', ' ms'], ['Speed index', 'speed_index_ms', ' ms']] as [$label, $metric, $suffix])
                                                 <div><dt class="text-xs text-slate-500">{{ $label }}</dt><dd class="mt-1 font-medium tabular-nums">{{ data_get($result, 'lab.'.$metric) !== null ? number_format(data_get($result, 'lab.'.$metric), $metric === 'cls' ? 2 : 0).$suffix : '—' }}</dd></div>
@@ -67,7 +67,7 @@
 
                                     @if (filled($result['recommendations']))
                                         <div class="mt-4 border-t border-slate-100 pt-3">
-                                            <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Top improvements</p>
+                                            <p class="font-medium uppercase tracking-wide text-slate-500 text-base sm:text-sm">Top improvements</p>
                                             <ul class="mt-2 space-y-2 text-sm text-slate-700">
                                                 @foreach ($result['recommendations'] as $recommendation)
                                                     <li>

@@ -12,8 +12,8 @@
                 <span class="text-xs font-medium uppercase tracking-widest text-violet-700">Preview</span>
             </div>
             <h2 class="mt-2 text-lg font-semibold text-slate-950">{{ $title }}</h2>
-            <p class="mt-1 max-w-3xl text-sm text-slate-700">{{ $description }}</p>
+            <p class="mt-1 max-w-3xl text-slate-700 text-base sm:text-sm">{{ $description }}</p>
         </div>
-        <a href="{{ route('admin.billing.index') }}" class="shrink-0 rounded-md bg-violet-700 px-4 py-2 text-center text-sm font-semibold text-white hover:bg-violet-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700">View packages</a>
+        <a href="{{ route('admin.billing.index') }}" class="ui-button ui-button-primary shrink-0 text-center">View packages</a>
     </div>
 </section>

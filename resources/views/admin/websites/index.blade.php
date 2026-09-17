@@ -5,18 +5,18 @@
     <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
             <h1 class="text-2xl font-semibold">Websites</h1>
-            <p class="text-sm text-slate-600">Monitor audit health, search performance, content, and form activity for each website.</p>
+            <p class="text-slate-600 text-base sm:text-sm">Monitor audit health, search performance, content, and form activity for each website.</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
             @if (Auth::user()?->isAdmin())
-                <a href="{{ route('admin.website-builder.create') }}" class="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Build new website</a>
-                <a href="{{ route('admin.websites.create') }}" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">Add website</a>
+                <a href="{{ route('admin.website-builder.create') }}" class="ui-button ui-button-secondary">Build new website</a>
+                <a href="{{ route('admin.websites.create') }}" class="ui-button ui-button-primary">Add website</a>
             @endif
         </div>
     </div>
 
-    <div class="overflow-x-auto rounded-lg border bg-white shadow-sm">
-        <table class="min-w-full divide-y divide-slate-200">
+    <div class="ui-panel overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-950/10">
             <thead class="bg-slate-50">
                 <tr>
                     <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Name</th>

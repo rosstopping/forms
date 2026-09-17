@@ -104,7 +104,7 @@ it('explains lifecycle controls and places website opportunities last in a colla
         ->assertSee('It will not automatically restart outreach')
         ->assertSee('Add or subtract points to correct the automated score')
         ->assertSee('Returns the score to zero')
-        ->assertSee('<details class="group', false)
+        ->assertSee('<details', false)
         ->assertSeeInOrder(['Activity timeline', 'Website opportunities']);
 });
 

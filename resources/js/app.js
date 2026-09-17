@@ -483,8 +483,8 @@ document.querySelectorAll('[data-bulk-leads-form]').forEach((form) => {
         dialogTitle.textContent = content[0];
         dialogMessage.textContent = content[1];
         confirmButton.textContent = content[2];
-        confirmButton.classList.toggle('bg-red-700', selectedAction === 'delete');
-        confirmButton.classList.toggle('bg-slate-900', selectedAction !== 'delete');
+        confirmButton.classList.toggle('ui-button-danger-confirm', selectedAction === 'delete');
+        confirmButton.classList.toggle('ui-button-primary', selectedAction !== 'delete');
         statusField.classList.toggle('hidden', selectedAction !== 'update_status');
         menu.classList.add('hidden');
         menuToggle.setAttribute('aria-expanded', 'false');
@@ -517,8 +517,8 @@ document.querySelectorAll('[data-confirm-action-dialog]').forEach((dialog) => {
         title.textContent = button.dataset.confirmTitle;
         message.textContent = button.dataset.confirmMessage;
         submit.textContent = button.dataset.confirmLabel;
-        submit.classList.toggle('bg-red-700', button.hasAttribute('data-confirm-danger'));
-        submit.classList.toggle('bg-slate-900', !button.hasAttribute('data-confirm-danger'));
+        submit.classList.toggle('ui-button-danger-confirm', button.hasAttribute('data-confirm-danger'));
+        submit.classList.toggle('ui-button-primary', !button.hasAttribute('data-confirm-danger'));
         dialog.showModal();
     }));
 

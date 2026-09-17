@@ -1,9 +1,9 @@
 <div id="business-post-queue" class="scroll-mt-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
         <h4 class="font-semibold text-slate-950">Post queue</h4>
-        <nav class="flex gap-1 overflow-x-auto rounded-md bg-slate-100 p-1 text-sm" aria-label="Post queue filters">
+        <nav class="ui-tabs" aria-label="Post queue filters">
             @foreach (['active' => 'In progress', 'published' => 'Published'] as $value => $label)
-                <a href="{{ route('admin.websites.section', [$website, 'business-profile', ...request()->only('bp_reviews'), 'bp_posts' => $value]) }}#business-post-queue" @if ($businessPostFilter === $value) aria-current="page" @endif @class(['whitespace-nowrap rounded px-3 py-1.5 font-medium', 'bg-white text-slate-950' => $businessPostFilter === $value, 'text-slate-600 hover:text-slate-950' => $businessPostFilter !== $value])>{{ $label }}</a>
+                <a href="{{ route('admin.websites.section', [$website, 'business-profile', ...request()->only('bp_reviews'), 'bp_posts' => $value]) }}#business-post-queue" @if ($businessPostFilter === $value) aria-current="page" @endif class="ui-tab">{{ $label }}</a>
             @endforeach
         </nav>
     </div>
@@ -19,12 +19,12 @@
                 @if ($post->status === 'pending_approval' && $canManageWebsite)
                     <form method="POST" action="{{ route('admin.business-profile.posts.update', [$website, $post]) }}" class="mt-4 space-y-3">
                         @csrf @method('PUT')
-                        <div><label for="business-summary-{{ $post->id }}" class="text-base font-medium text-slate-700 sm:text-sm">Post text</label><textarea id="business-summary-{{ $post->id }}" name="summary" rows="5" required maxlength="1500" class="{{ $profileInput }} mt-1">{{ $post->summary }}</textarea></div>
+                        <div><label for="business-summary-{{ $post->id }}" class="ui-label">Post text</label><textarea id="business-summary-{{ $post->id }}" name="summary" rows="5" required maxlength="1500" class="{{ $profileInput }} mt-1">{{ $post->summary }}</textarea></div>
                         <div class="grid gap-3 sm:grid-cols-2">
-                            <div><label for="business-cta-{{ $post->id }}" class="text-base font-medium text-slate-700 sm:text-sm">Button</label><select id="business-cta-{{ $post->id }}" name="call_to_action_type" class="{{ $profileInput }} mt-1">@foreach (['' => 'No button', 'LEARN_MORE' => 'Learn more', 'BOOK' => 'Book', 'ORDER' => 'Order', 'SIGN_UP' => 'Sign up', 'CALL' => 'Call'] as $value => $label)<option value="{{ $value }}" @selected(($post->call_to_action_type ?? '') === $value)>{{ $label }}</option>@endforeach</select></div>
-                            <div><label for="business-url-{{ $post->id }}" class="text-base font-medium text-slate-700 sm:text-sm">Button link</label><input id="business-url-{{ $post->id }}" type="url" name="call_to_action_url" value="{{ $post->call_to_action_url }}" maxlength="2048" placeholder="https://" class="{{ $profileInput }} mt-1"></div>
+                            <div><label for="business-cta-{{ $post->id }}" class="ui-label">Button</label><select id="business-cta-{{ $post->id }}" name="call_to_action_type" class="{{ $profileInput }} mt-1">@foreach (['' => 'No button', 'LEARN_MORE' => 'Learn more', 'BOOK' => 'Book', 'ORDER' => 'Order', 'SIGN_UP' => 'Sign up', 'CALL' => 'Call'] as $value => $label)<option value="{{ $value }}" @selected(($post->call_to_action_type ?? '') === $value)>{{ $label }}</option>@endforeach</select></div>
+                            <div><label for="business-url-{{ $post->id }}" class="ui-label">Button link</label><input id="business-url-{{ $post->id }}" type="url" name="call_to_action_url" value="{{ $post->call_to_action_url }}" maxlength="2048" placeholder="https://" class="{{ $profileInput }} mt-1"></div>
                         </div>
-                        <button type="submit" class="rounded-md bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-900 hover:bg-emerald-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600">Approve & publish</button>
+                        <button type="submit" class="ui-button ui-button-secondary ui-button-small">Approve & publish</button>
                     </form>
                 @elseif ($post->summary)
                     <p class="mt-3 whitespace-pre-line text-base break-words text-slate-600 sm:text-sm">{{ $post->summary }}</p>
@@ -39,7 +39,7 @@
                 @endif
             </article>
         @empty
-            <div class="rounded-lg bg-slate-50 p-5"><p class="font-medium text-slate-900">{{ $businessPostFilter === 'published' ? 'No posts published yet' : 'Your post queue is clear' }}</p><p class="mt-1 text-base text-pretty text-slate-600 sm:text-sm">{{ $businessPostFilter === 'published' ? 'Posts appear here after you approve and publish them to Google.' : 'Add a suggested post or your own idea above. Each draft will come back here for approval.' }}</p></div>
+            <div class="ui-well p-5"><p class="font-medium text-slate-900">{{ $businessPostFilter === 'published' ? 'No posts published yet' : 'Your post queue is clear' }}</p><p class="mt-1 text-base text-pretty text-slate-600 sm:text-sm">{{ $businessPostFilter === 'published' ? 'Posts appear here after you approve and publish them to Google.' : 'Add a suggested post or your own idea above. Each draft will come back here for approval.' }}</p></div>
         @endforelse
     </div>
     @if ($businessPosts->hasPages())<div class="mt-4">{{ $businessPosts->links() }}</div>@endif

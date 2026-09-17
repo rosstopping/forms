@@ -1,12 +1,12 @@
 @props(['report', 'history'])
 
-<section class="rounded-2xl border border-teal-200 bg-white p-5 sm:p-7" aria-labelledby="weekly-overview-heading">
+<section class="ui-panel ui-section border-teal-200 sm:p-7" aria-labelledby="weekly-overview-heading">
     <div class="flex flex-wrap items-start justify-between gap-4">
         <div>
-            <p class="font-mono text-xs text-teal-700">Your week with Sitewell</p>
+            <p class="font-mono text-teal-700 text-base sm:text-sm">Your week with Sitewell</p>
             <h2 id="weekly-overview-heading" class="mt-1 text-xl font-semibold text-slate-950">Weekly Overview</h2>
             @if ($report)
-                <p class="mt-2 text-sm text-slate-500">{{ $report->period_start->format('j M') }}–{{ $report->period_end->format('j M Y') }}</p>
+                <p class="mt-2 text-slate-500 text-base sm:text-sm">{{ $report->period_start->format('j M') }}–{{ $report->period_end->format('j M Y') }}</p>
             @endif
         </div>
         @if ($history->isNotEmpty())
@@ -22,7 +22,7 @@
         @endif
     </div>
     @if (! $report)
-        <p class="mt-4 text-sm leading-6 text-slate-600">Your first Weekly Overview will appear here when the next enabled weekly report is prepared.</p>
+        <p class="mt-4 leading-6 text-slate-600 text-base sm:text-sm">Your first Weekly Overview will appear here when the next enabled weekly report is prepared.</p>
     @else
         <div class="mt-5 max-w-4xl space-y-3 text-base leading-7 text-slate-700">
             @foreach (preg_split('/\n\s*\n/', $report->overview) as $paragraph)
@@ -31,8 +31,8 @@
         </div>
         <div class="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             @foreach ($report->snapshot['metric_cards'] ?? [] as $metric)
-                <div class="rounded-xl bg-slate-50 p-4">
-                    <p class="text-sm text-slate-600">{{ $metric['label'] }}</p>
+                <div class="ui-well p-4">
+                    <p class="text-slate-600 text-base sm:text-sm">{{ $metric['label'] }}</p>
                     <p class="mt-2 text-2xl font-semibold text-slate-950">{{ $metric['current'] === null ? '—' : number_format($metric['current'], 1) }}</p>
                     <p @class(['mt-1 text-xs', 'text-teal-700' => $metric['direction'] === 'positive', 'text-rose-700' => $metric['direction'] === 'negative', 'text-slate-500' => $metric['direction'] === 'neutral'])>
                         @if ($metric['change'] === null)
@@ -44,14 +44,14 @@
                 </div>
             @endforeach
         </div>
-        <p class="mt-3 text-xs leading-5 text-slate-500">Search metrics use the dated week below to allow for reporting delays. Average tracked position includes only keywords found in Google. Site health shows the percentage of recorded checks passing.</p>
-        <details class="mt-6 border-t border-slate-200 pt-5">
+        <p class="mt-3 leading-5 text-slate-500 text-base sm:text-sm">Search metrics use the dated week below to allow for reporting delays. Average tracked position includes only keywords found in Google. Site health shows the percentage of recorded checks passing.</p>
+        <details class="mt-6 border-t border-slate-950/10 pt-5">
             <summary class="cursor-pointer text-sm font-semibold text-teal-700">Explore this week’s details</summary>
             <div class="mt-5 grid gap-6 lg:grid-cols-2">
                 @foreach ($report->snapshot['sections'] ?? [] as $sourceKey => $section)
                     <div class="min-w-0 break-words">
                         <h3 class="font-semibold text-slate-950">{{ $section['title'] }}</h3>
-                        <p class="mt-2 text-sm leading-6 text-slate-600">{{ $section['summary'] }}</p>
+                        <p class="mt-2 leading-6 text-slate-600 text-base sm:text-sm">{{ $section['summary'] }}</p>
                         @if (data_get($report->snapshot, $sourceKey.'.metrics') || ($sourceKey === 'google_business' && data_get($report->snapshot, 'google_business.reviews')))
                             <dl class="mt-3 space-y-2 text-sm">
                                 @foreach (array_merge(data_get($report->snapshot, $sourceKey.'.metrics', []), $sourceKey === 'google_business' ? data_get($report->snapshot, 'google_business.reviews', []) : []) as $metric)
@@ -60,7 +60,7 @@
                             </dl>
                         @endif
                         @if ($sourceKey === 'rankings')
-                            <p class="mt-3 text-sm text-slate-600">Top 3: {{ data_get($report->snapshot, 'rankings.top_3', 0) }} · Positions 4–10: {{ data_get($report->snapshot, 'rankings.positions_4_10', 0) }} · Positions 11–20: {{ data_get($report->snapshot, 'rankings.positions_11_20', 0) }} · Outside top 20: {{ data_get($report->snapshot, 'rankings.outside_top_20', 0) }}</p>
+                            <p class="mt-3 text-slate-600 text-base sm:text-sm">Top 3: {{ data_get($report->snapshot, 'rankings.top_3', 0) }} · Positions 4–10: {{ data_get($report->snapshot, 'rankings.positions_4_10', 0) }} · Positions 11–20: {{ data_get($report->snapshot, 'rankings.positions_11_20', 0) }} · Outside top 20: {{ data_get($report->snapshot, 'rankings.outside_top_20', 0) }}</p>
                             <ul class="mt-3 space-y-2 text-sm text-slate-600">
                                 @foreach (data_get($report->snapshot, 'rankings.movements', []) as $movement)
                                     <li><strong>{{ $movement['term'] }}</strong>: {{ $movement['previous'] ?? 'Outside top 100' }} → {{ $movement['current'] ?? 'Outside top 100' }}. {{ implode('; ', $movement['crossings']) }}</li>
@@ -101,7 +101,7 @@
                 </div>
                 <div>
                     <h3 class="font-semibold text-slate-950">Recommended next priority</h3>
-                    <p class="mt-2 text-sm leading-6 text-slate-600">{{ $report->recommended_priority ? $report->recommended_priority['title'].'. '.$report->recommended_priority['reason'] : 'There is not enough evidence to recommend a specific next priority yet.' }}</p>
+                    <p class="mt-2 leading-6 text-slate-600 text-base sm:text-sm">{{ $report->recommended_priority ? $report->recommended_priority['title'].'. '.$report->recommended_priority['reason'] : 'There is not enough evidence to recommend a specific next priority yet.' }}</p>
                 </div>
             </div>
         </details>

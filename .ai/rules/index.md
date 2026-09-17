@@ -4,6 +4,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 
 | Applies to | Rule file |
 | --- | --- |
+| resources/{css/app.css,js/app.js,views/admin/**,views/account/**,views/components/**} | .ai/rules/account-components.md |
 | app/{Models/User.php,Support/MembershipPlan.php,Http/Middleware/EnsureMembershipFeature.php,Http/Controllers/{Account/BillingController.php,StripeWebhookController.php}},config/memberships.php,routes/web.php | .ai/rules/account.md |
 | app/{Actions,Http,Models,Jobs,Notifications}/**/*.php | .ai/rules/actions-http-models-jobs-notifications.md |
 | app/Http/Controllers/Admin/ContentRequestController.php,tests/Feature/{ContentGenerationTest.php,AdminResourceEditingTest.php,SeoOpportunityContentRequestTest.php}, app/Http/Controllers/Admin/UserController.php,tests/Feature/AdminResourceEditingTest.php | .ai/rules/admin-feature.md |

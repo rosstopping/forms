@@ -15,11 +15,11 @@
         </div>
     @endif
 
-    <div class="@container rounded-xl border border-slate-950/10 bg-white p-5 sm:p-6">
+    <div class="ui-panel ui-section @container">
         <div class="flex flex-col gap-5 @3xl:flex-row @3xl:items-end @3xl:justify-between">
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
-                    <p class="font-mono text-sm text-teal-700">Website health report</p>
+                    <p class="font-mono text-teal-700 text-base sm:text-sm">Website health report</p>
                     @if ($reportHistory->first()?->is($report))
                         <span class="rounded-full bg-teal-50 px-2.5 py-1 text-sm font-medium text-teal-700">Latest report</span>
                     @endif
@@ -28,9 +28,9 @@
                 <p class="mt-1 text-base text-slate-600 sm:text-sm">Generated {{ $report->created_at->toDayDateTimeString() }}.</p>
             </div>
             <div class="flex flex-col gap-3 @md:flex-row @md:flex-wrap @md:items-end">
-                <label class="block min-w-0 @md:min-w-72">
+                <label class="ui-label block min-w-0 @md:min-w-72">
                     <span class="block text-base font-medium text-slate-700 sm:text-sm">Previous reports</span>
-                    <select data-health-report-selector class="mt-1 block w-full rounded-lg border border-slate-950/15 bg-white px-3 py-2 text-base text-slate-900 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/20 sm:text-sm" aria-label="Select a website health report">
+                    <select data-health-report-selector class="ui-input mt-1 block w-full" aria-label="Select a website health report">
                         @foreach ($reportHistory as $historicalReport)
                             <option value="{{ route('admin.website-health-reports.show', [$report->website, $historicalReport]) }}" @selected($historicalReport->is($report))>
                                 {{ $historicalReport->created_at->format('j M Y, H:i') }} · {{ ucfirst(str_replace('_', ' ', $historicalReport->overall_status ?: $historicalReport->status)) }}{{ $loop->first ? ' · Latest' : '' }}
@@ -39,12 +39,12 @@
                     </select>
                 </label>
                 @if (! $reportHistory->first()?->is($report))
-                    <a href="{{ route('admin.websites.section', [$report->website, 'health']) }}" class="inline-flex shrink-0 items-center justify-center rounded-lg border border-slate-950/15 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600">Open latest</a>
+                    <a href="{{ route('admin.websites.section', [$report->website, 'health']) }}" class="ui-button ui-button-secondary">Open latest</a>
                 @endif
                 @if (auth()->user()?->isAdmin())
                     <form method="POST" action="{{ route('admin.website-health-reports.store', $report->website) }}" class="shrink-0">
                         @csrf
-                        <button type="submit" class="w-full rounded-lg border border-slate-950/15 px-3 py-2 text-base font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600 sm:text-sm @md:w-auto">Run report again</button>
+                        <button type="submit" class="ui-button ui-button-secondary w-full @md:w-auto">Run report again</button>
                     </form>
                 @endif
             </div>
@@ -55,13 +55,13 @@
         <section class="rounded-lg border border-violet-200 bg-violet-50 p-4 shadow-sm" aria-labelledby="ai-remediation-prompt-title">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                    <p class="text-xs font-medium uppercase tracking-wide text-violet-700">Administrator tool</p>
+                    <p class="font-medium uppercase tracking-wide text-violet-700 text-base sm:text-sm">Administrator tool</p>
                     <h2 id="ai-remediation-prompt-title" class="mt-1 font-semibold text-violet-950">AI remediation prompt</h2>
-                    <p class="mt-1 text-sm text-violet-800">Copy this into your preferred AI coding assistant to plan and implement the report fixes.</p>
+                    <p class="mt-1 text-violet-800 text-base sm:text-sm">Copy this into your preferred AI coding assistant to plan and implement the report fixes.</p>
                 </div>
-                <button type="button" class="js-copy-text shrink-0 rounded-md bg-violet-700 px-3 py-2 text-sm font-medium text-white hover:bg-violet-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700" data-copy-target="health-report-ai-prompt" data-copy-label="Copy prompt" data-copied-label="Copied">Copy prompt</button>
+                <button type="button" class="ui-button ui-button-secondary ui-button-small js-copy-text" data-copy-target="health-report-ai-prompt" data-copy-label="Copy prompt" data-copied-label="Copied">Copy prompt</button>
             </div>
-            <textarea id="health-report-ai-prompt" class="mt-4 h-72 w-full resize-y rounded-md border border-violet-200 bg-white p-3 font-mono text-xs leading-5 text-slate-800 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200" readonly>{{ $aiPrompt }}</textarea>
+            <textarea id="health-report-ai-prompt" class="ui-input mt-4 h-72 w-full resize-y font-mono leading-5" readonly>{{ $aiPrompt }}</textarea>
         </section>
     @endif
 
@@ -79,14 +79,14 @@
         <div class="grid gap-4 lg:grid-cols-2">
         @if ($canManageWebsite && $report->status === 'completed' && ($pixelRemediationAvailable || $githubRemediationAvailable))
             <section class="rounded-lg border border-teal-200 bg-teal-50 p-4 shadow-sm">
-                <p class="text-xs font-medium uppercase tracking-wide text-teal-700">Automated remediation</p>
+                <p class="font-medium uppercase tracking-wide text-teal-700 text-base sm:text-sm">Automated remediation</p>
                 <h2 class="mt-1 font-semibold text-teal-950">Prepare available fixes</h2>
                 @if ($pixelRemediationAvailable && $githubRemediationAvailable)
-                    <p class="mt-1 text-sm text-teal-800">Pixel is enabled for supported page fixes, and {{ $repositoryDeliveryLabel }} is connected for repository fixes. Nothing is published without review.</p>
+                    <p class="mt-1 text-teal-800 text-base sm:text-sm">Pixel is enabled for supported page fixes, and {{ $repositoryDeliveryLabel }} is connected for repository fixes. Nothing is published without review.</p>
                 @elseif ($pixelRemediationAvailable)
-                    <p class="mt-1 text-sm text-teal-800">Pixel is enabled for supported page fixes. Nothing is published without review.</p>
+                    <p class="mt-1 text-teal-800 text-base sm:text-sm">Pixel is enabled for supported page fixes. Nothing is published without review.</p>
                 @else
-                    <p class="mt-1 text-sm text-teal-800">{{ $repositoryDeliveryLabel }} is connected for repository fixes. Nothing is published without review.</p>
+                    <p class="mt-1 text-teal-800 text-base sm:text-sm">{{ $repositoryDeliveryLabel }} is connected for repository fixes. Nothing is published without review.</p>
                 @endif
                 <div class="mt-3 flex flex-wrap gap-2 text-xs font-medium">
                     @if ($pixelRemediationAvailable)
@@ -99,12 +99,12 @@
                 <div class="mt-4 flex flex-wrap gap-2">
                     <form method="POST" action="{{ route('admin.report-remediation.store', [$report->website, $report]) }}">
                         @csrf
-                        <button type="submit" class="rounded-md bg-teal-700 px-3 py-2 text-sm font-medium text-white hover:bg-teal-800">Prepare fixes</button>
+                        <button type="submit" class="ui-button ui-button-primary">Prepare fixes</button>
                     </form>
                     @if ($reviewablePixelOptimisations->isNotEmpty())
                         <form method="POST" action="{{ route('admin.report-optimisations.deploy', [$report->website, $report]) }}">
                             @csrf
-                            <button type="submit" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">Approve &amp; deploy all ({{ $reviewablePixelOptimisations->count() }})</button>
+                            <button type="submit" class="ui-button ui-button-primary">Approve &amp; deploy all ({{ $reviewablePixelOptimisations->count() }})</button>
                         </form>
                     @endif
                 </div>
@@ -113,16 +113,16 @@
         @if ($aiPrompt)
         @if ($remediationRun && $remediationRun->status !== \App\Models\RemediationRun::STATUS_COMPLETED)
             <section class="rounded-lg border border-blue-200 bg-blue-50 p-4 text-blue-900">
-                <p class="text-xs font-medium uppercase tracking-wide text-blue-700">GitHub remediation</p>
+                <p class="font-medium uppercase tracking-wide text-blue-700 text-base sm:text-sm">GitHub remediation</p>
                 <h2 class="mt-1 font-semibold">{{ str_replace('_', ' ', ucfirst($remediationRun->status)) }}</h2>
-                <p class="mt-1 text-sm">{{ count($remediationRun->findings) }} selected {{ Str::plural('finding', count($remediationRun->findings)) }} for {{ $remediationRun->repository->full_name }}.</p>
+                <p class="mt-1 text-base sm:text-sm">{{ count($remediationRun->findings) }} selected {{ Str::plural('finding', count($remediationRun->findings)) }} for {{ $remediationRun->repository->full_name }}.</p>
                 @if ($remediationRun->copilot_task_url || $remediationRun->pull_request_url)
                     <div class="mt-3 flex flex-wrap gap-2">
                         @if ($remediationRun->copilot_task_url)
-                            <a href="{{ $remediationRun->copilot_task_url }}" class="inline-flex rounded-md border border-blue-300 bg-white px-3 py-2 text-sm font-medium text-blue-800 hover:bg-blue-100" target="_blank" rel="noreferrer">View remediation task</a>
+                            <a href="{{ $remediationRun->copilot_task_url }}" class="ui-button ui-button-secondary" target="_blank" rel="noreferrer">View remediation task</a>
                         @endif
                         @if ($remediationRun->pull_request_url)
-                            <a href="{{ $remediationRun->pull_request_url }}" class="inline-flex rounded-md bg-blue-700 px-3 py-2 text-sm font-medium text-white hover:bg-blue-800" target="_blank" rel="noreferrer">View pull request</a>
+                            <a href="{{ $remediationRun->pull_request_url }}" class="ui-button ui-button-secondary" target="_blank" rel="noreferrer">View pull request</a>
                         @endif
                     </div>
                 @endif
@@ -130,19 +130,19 @@
                     <form method="POST" action="{{ route('admin.remediation-runs.complete', [$report->website, $report, $remediationRun]) }}" class="mt-3">
                         @csrf
                         @method('PATCH')
-                        <button type="submit" class="inline-flex rounded-md border border-blue-300 bg-white px-3 py-2 text-sm font-medium text-blue-800 hover:bg-blue-100">Mark as complete</button>
-                        <p class="mt-2 text-xs text-blue-800">Dismiss this remediation if the work is already finished. This does not change GitHub.</p>
+                        <button type="submit" class="ui-button ui-button-secondary">Mark as complete</button>
+                        <p class="mt-2 text-blue-800 text-base sm:text-sm">Dismiss this remediation if the work is already finished. This does not change GitHub.</p>
                     </form>
                 @endif
                 @if ($remediationRun->error)
-                    <p class="mt-3 text-sm text-red-700">{{ $remediationRun->error }}</p>
+                    <p class="mt-3 text-red-700 text-base sm:text-sm">{{ $remediationRun->error }}</p>
                 @endif
             </section>
         @elseif (! $pixelRemediationAvailable && ! $report->website->repository)
-            <section class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <section class="ui-well p-4">
                 <h2 class="font-semibold text-slate-900">Connect a remediation path</h2>
-                <p class="mt-1 text-sm text-slate-600">Enable the Sitewell Pixel for supported page fixes or connect GitHub for repository changes.</p>
-                <a href="{{ route('admin.website-repositories.create', $report->website) }}" class="mt-3 inline-flex rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">Connect GitHub</a>
+                <p class="mt-1 text-slate-600 text-base sm:text-sm">Enable the Sitewell Pixel for supported page fixes or connect GitHub for repository changes.</p>
+                <a href="{{ route('admin.website-repositories.create', $report->website) }}" class="ui-button ui-button-primary mt-3">Connect GitHub</a>
             </section>
         @endif
         @endif
@@ -152,17 +152,17 @@
     @if ($report->status === 'failed')
         <div class="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800">
             <h2 class="font-semibold">Report failed</h2>
-            <p class="mt-1 text-sm">{{ $report->error }}</p>
+            <p class="mt-1 text-base sm:text-sm">{{ $report->error }}</p>
         </div>
     @elseif ($report->status !== 'completed')
         <div class="rounded-lg border border-blue-200 bg-blue-50 p-4 text-blue-800">This report is {{ $report->status }}. Refresh after the queue has processed it.</div>
     @else
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            <div class="rounded-lg border bg-white p-4 shadow-sm"><p class="text-xs font-medium uppercase tracking-wide text-slate-500">Overall</p><p class="mt-2 text-xl font-semibold capitalize">{{ str_replace('_', ' ', $report->overall_status) }}</p></div>
-            <div class="rounded-lg border bg-white p-4 shadow-sm"><p class="text-xs font-medium uppercase tracking-wide text-slate-500">Pages analysed</p><p class="mt-2 text-2xl font-semibold">{{ data_get($report->metrics, 'pages_analyzed', 0) }}</p></div>
-            <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-4"><p class="text-xs font-medium uppercase tracking-wide text-emerald-700">Passed</p><p class="mt-2 text-2xl font-semibold text-emerald-800">{{ $report->passed_checks }}</p></div>
-            <div class="rounded-lg border border-amber-200 bg-amber-50 p-4"><p class="text-xs font-medium uppercase tracking-wide text-amber-700">Warnings</p><p class="mt-2 text-2xl font-semibold text-amber-800">{{ $report->warning_checks }}</p></div>
-            <div class="rounded-lg border border-red-200 bg-red-50 p-4"><p class="text-xs font-medium uppercase tracking-wide text-red-700">Failed</p><p class="mt-2 text-2xl font-semibold text-red-800">{{ $report->failed_checks }}</p></div>
+            <div class="ui-panel p-4"><p class="font-medium uppercase tracking-wide text-slate-500 text-base sm:text-sm">Overall</p><p class="mt-2 text-xl font-semibold capitalize">{{ str_replace('_', ' ', $report->overall_status) }}</p></div>
+            <div class="ui-panel p-4"><p class="font-medium uppercase tracking-wide text-slate-500 text-base sm:text-sm">Pages analysed</p><p class="mt-2 text-2xl font-semibold">{{ data_get($report->metrics, 'pages_analyzed', 0) }}</p></div>
+            <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-4"><p class="font-medium uppercase tracking-wide text-emerald-700 text-base sm:text-sm">Passed</p><p class="mt-2 text-2xl font-semibold text-emerald-800">{{ $report->passed_checks }}</p></div>
+            <div class="rounded-lg border border-amber-200 bg-amber-50 p-4"><p class="font-medium uppercase tracking-wide text-amber-700 text-base sm:text-sm">Warnings</p><p class="mt-2 text-2xl font-semibold text-amber-800">{{ $report->warning_checks }}</p></div>
+            <div class="rounded-lg border border-red-200 bg-red-50 p-4"><p class="font-medium uppercase tracking-wide text-red-700 text-base sm:text-sm">Failed</p><p class="mt-2 text-2xl font-semibold text-red-800">{{ $report->failed_checks }}</p></div>
         </div>
 
         <div class="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
@@ -174,7 +174,7 @@
         <x-structured-data-summary :report="$report" />
 
         @if (data_get($report->metrics, 'forms_count', 0) > 0)
-            <div class="rounded-lg border bg-white p-4 shadow-sm">
+            <div class="ui-panel p-4">
                 <h2 class="font-semibold">Last seven days of forms</h2>
                 <dl class="mt-4 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-5">
                     <div><dt class="text-slate-500">Submissions</dt><dd class="mt-1 text-xl font-semibold">{{ data_get($report->metrics, 'submissions', 0) }}</dd></div>
@@ -187,14 +187,14 @@
         @endif
 
         @foreach (collect($report->checks)->groupBy('category') as $category => $checks)
-            <div class="rounded-lg border bg-white p-4 shadow-sm">
+            <div class="ui-panel p-4">
                 <h2 class="font-semibold capitalize">{{ $category }}</h2>
                 <div class="mt-3 divide-y divide-slate-100">
                     @foreach ($checks as $check)
                         <div class="flex flex-col gap-2 py-3 sm:flex-row sm:items-start sm:justify-between">
                             <div>
                                 <h3 class="text-sm font-medium text-slate-900">{{ $check['label'] }}</h3>
-                                <p class="mt-1 text-sm text-slate-600">{{ $check['message'] }}</p>
+                                <p class="mt-1 text-slate-600 text-base sm:text-sm">{{ $check['message'] }}</p>
                             </div>
                             <span @class([
                                 'inline-flex w-fit rounded-full px-2.5 py-1 text-xs font-medium capitalize',
@@ -209,12 +209,12 @@
         @endforeach
 
         @if ($report->pages->isNotEmpty())
-            <div class="overflow-hidden rounded-lg border bg-white shadow-sm">
-                <div class="border-b border-slate-200 p-4">
+            <div class="ui-panel overflow-hidden">
+                <div class="border-b border-slate-950/10 p-4">
                     <h2 class="font-semibold">Page-by-page analysis</h2>
-                    <p class="mt-1 text-sm text-slate-600">Technical and on-page SEO evidence for every page visited.</p>
+                    <p class="mt-1 text-slate-600 text-base sm:text-sm">Technical and on-page SEO evidence for every page visited.</p>
                 </div>
-                <div class="divide-y divide-slate-200">
+                <div class="divide-y divide-slate-950/10">
                     @foreach ($report->pages as $page)
                         @php
                             $issues = collect($page->checks)->whereNotIn('status', ['passed']);
@@ -222,8 +222,8 @@
                         <details class="group p-4">
                             <summary class="flex cursor-pointer list-none flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                 <div class="min-w-0">
-                                    <p class="truncate text-sm font-medium text-slate-900">{{ parse_url($page->url, PHP_URL_PATH) ?: '/' }}</p>
-                                    <p class="mt-1 truncate text-xs text-slate-500">{{ $page->title ?: 'No page title' }}</p>
+                                    <p class="truncate font-medium text-slate-900 text-base sm:text-sm">{{ parse_url($page->url, PHP_URL_PATH) ?: '/' }}</p>
+                                    <p class="mt-1 truncate text-slate-500 text-base sm:text-sm">{{ $page->title ?: 'No page title' }}</p>
                                 </div>
                                 <div class="flex flex-wrap items-center gap-2 text-xs">
                                     <span @class([
@@ -263,7 +263,7 @@
                             </div>
                             @if ($issues->isNotEmpty())
                                 <div class="mt-4 flex justify-end border-t border-slate-100 pt-4">
-                                    <a href="{{ route('admin.website-health-report-pages.show', [$report->website, $report, $page]) }}" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">View SEO recommendations</a>
+                                    <a href="{{ route('admin.website-health-report-pages.show', [$report->website, $report, $page]) }}" class="ui-button ui-button-primary">View SEO recommendations</a>
                                 </div>
                             @endif
                         </details>

@@ -8,7 +8,7 @@
     <div class="flex items-center justify-between">
         <div>
             <h1 class="text-2xl font-semibold">{{ $formSubmission->displayName() }}</h1>
-            <p class="text-sm text-slate-600">{{ $formSubmission->replyToEmail() ?: 'No email address supplied' }}</p>
+            <p class="text-slate-600 text-base sm:text-sm">{{ $formSubmission->replyToEmail() ?: 'No email address supplied' }}</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
             @if ($canManage)
@@ -16,27 +16,27 @@
                     @unless ($formSubmission->is_manual)
                     <form method="POST" action="{{ route('admin.form-submissions.resend-notification', $formSubmission) }}" data-confirm-action-form>
                         @csrf
-                        <button type="button" data-confirm-action data-confirm-title="Resend this email notification?" data-confirm-message="The original lead notification will be sent again to the form's configured recipients." data-confirm-label="Resend notification" class="rounded-md border border-blue-300 bg-white px-3 py-2 text-sm font-medium text-blue-800 hover:bg-blue-50">Resend email notification</button>
+                        <button type="button" data-confirm-action data-confirm-title="Resend this email notification?" data-confirm-message="The original lead notification will be sent again to the form's configured recipients." data-confirm-label="Resend notification" class="ui-button ui-button-secondary">Resend email notification</button>
                     </form>
                     @endunless
                     <form method="POST" action="{{ route('admin.form-submissions.spam', $formSubmission) }}" data-confirm-action-form>
                         @csrf
                         @method('PATCH')
-                        <button type="button" data-confirm-action data-confirm-title="Mark this lead as spam?" data-confirm-message="The lead will be hidden from the default inbox, but it will not be deleted." data-confirm-label="Mark as spam" class="rounded-md border border-amber-300 bg-white px-3 py-2 text-sm font-medium text-amber-800 hover:bg-amber-50">Mark as spam</button>
+                        <button type="button" data-confirm-action data-confirm-title="Mark this lead as spam?" data-confirm-message="The lead will be hidden from the default inbox, but it will not be deleted." data-confirm-label="Mark as spam" class="ui-button ui-button-secondary">Mark as spam</button>
                     </form>
                 @endunless
                 <form method="POST" action="{{ route('admin.form-submissions.destroy', $formSubmission) }}" data-confirm-action-form>
                     @csrf
                     @method('DELETE')
-                    <button type="button" data-confirm-action data-confirm-title="Delete this lead?" data-confirm-message="This submission will be permanently deleted. This cannot be undone." data-confirm-label="Delete lead" data-confirm-danger class="rounded-md border border-red-300 bg-white px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50">Delete</button>
+                    <button type="button" data-confirm-action data-confirm-title="Delete this lead?" data-confirm-message="This submission will be permanently deleted. This cannot be undone." data-confirm-label="Delete lead" data-confirm-danger class="ui-button ui-button-danger">Delete</button>
                 </form>
             @endif
-            <a href="{{ route('admin.form-submissions.index') }}" class="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Back to submissions</a>
+            <a href="{{ route('admin.form-submissions.index') }}" class="ui-button ui-button-secondary">Back to submissions</a>
         </div>
     </div>
 
     <div class="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-        <div class="rounded-lg border bg-white p-4 shadow-sm">
+        <div class="ui-panel p-4">
             <h2 class="font-semibold">Lead overview</h2>
             <dl class="mt-3 space-y-2 text-sm">
                 <div class="flex justify-between"><dt class="text-slate-500">Source domain</dt><dd class="font-medium">{{ $formSubmission->source_domain ?: 'Unknown' }}</dd></div>
@@ -62,16 +62,16 @@
                     @include('admin.form-submissions.manual-fields', ['contactData' => $formSubmission->data ?? []])
                 @endif
                 <div>
-                    <label class="block text-sm font-medium text-slate-700" for="status">Status</label>
-                    <select id="status" name="status" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                    <label class="ui-label block" for="status">Status</label>
+                    <select id="status" name="status" class="ui-input mt-1 w-full">
                         @foreach (\App\Models\FormSubmission::STATUS_LABELS as $value => $label)
                             <option value="{{ $value }}" @selected($formSubmission->status === $value)>{{ $label }}</option>
                         @endforeach
                     </select>
                 </div>
                 {{-- <div>
-                    <label class="block text-sm font-medium text-slate-700" for="assigned_to">Assigned to</label>
-                    <select id="assigned_to" name="assigned_to" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                    <label class="ui-label block" for="assigned_to">Assigned to</label>
+                    <select id="assigned_to" name="assigned_to" class="ui-input mt-1 w-full">
                         <option value="">Unassigned</option>
                         @foreach ($users as $user)
                             <option value="{{ $user->id }}" @selected($formSubmission->assigned_to === $user->id)>{{ $user->name }}</option>
@@ -79,39 +79,39 @@
                     </select>
                 </div> --}}
                 <div>
-                    <label class="block text-sm font-medium text-slate-700" for="follow_up_at">Follow up</label>
-                    <input id="follow_up_at" name="follow_up_at" type="datetime-local" value="{{ old('follow_up_at', $formSubmission->follow_up_at?->format('Y-m-d\\TH:i')) }}" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
-                    <p class="mt-1 text-xs text-slate-500">Setting or changing this date schedules one email to the eligible assignee, or otherwise the website owner. Leave blank to cancel it.</p>
+                    <label class="ui-label block" for="follow_up_at">Follow up</label>
+                    <input id="follow_up_at" name="follow_up_at" type="datetime-local" value="{{ old('follow_up_at', $formSubmission->follow_up_at?->format('Y-m-d\\TH:i')) }}" class="ui-input mt-1 w-full">
+                    <p class="mt-1 text-slate-500 text-base sm:text-sm">Setting or changing this date schedules one email to the eligible assignee, or otherwise the website owner. Leave blank to cancel it.</p>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-700" for="notes">Notes</label>
-                    <textarea id="notes" name="notes" rows="4" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">{{ old('notes', $formSubmission->notes) }}</textarea>
+                    <label class="ui-label block" for="notes">Notes</label>
+                    <textarea id="notes" name="notes" rows="4" class="ui-input mt-1 w-full">{{ old('notes', $formSubmission->notes) }}</textarea>
                 </div>
                 <fieldset>
                     <legend class="text-sm font-medium text-slate-700">Lead tags</legend>
                     <input type="hidden" name="tags_present" value="1">
-                    <p class="mt-1 text-xs text-slate-500">Select tags to keep, or untick them to remove. Tags are shared across this website.</p>
+                    <p class="mt-1 text-slate-500 text-base sm:text-sm">Select tags to keep, or untick them to remove. Tags are shared across this website.</p>
                     @php
                         $selectedTagIds = old('tag_ids', old('tags_present') ? [] : $formSubmission->tags->modelKeys());
                         $selectedTagIds = is_array($selectedTagIds) ? $selectedTagIds : [];
                     @endphp
                     <div class="mt-2 flex flex-wrap gap-2">
                         @foreach ($leadTags as $tag)
-                            <label class="flex min-h-11 items-center gap-2 rounded-md border border-slate-200 px-3 text-sm text-slate-700">
-                                <input type="checkbox" name="tag_ids[]" value="{{ $tag->id }}" @checked(in_array($tag->id, $selectedTagIds)) class="rounded border-slate-300">{{ $tag->name }}
+                            <label class="ui-label flex min-h-11 items-center gap-2 rounded-md border border-slate-950/10 px-3">
+                                <input type="checkbox" name="tag_ids[]" value="{{ $tag->id }}" @checked(in_array($tag->id, $selectedTagIds))>{{ $tag->name }}
                             </label>
                         @endforeach
                     </div>
-                    <label for="new_tag" class="mt-3 block text-sm font-medium text-slate-700">New tag</label>
-                    <input id="new_tag" name="new_tag" value="{{ is_string(old('new_tag')) ? old('new_tag') : '' }}" maxlength="40" placeholder="e.g. Quote requested" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
-                    <p class="mt-1 text-xs text-slate-500">Added to this lead when you save. Up to 40 characters.</p>
-                    @error('new_tag')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror
-                    @error('tag_ids')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror
+                    <label for="new_tag" class="ui-label mt-3 block">New tag</label>
+                    <input id="new_tag" name="new_tag" value="{{ is_string(old('new_tag')) ? old('new_tag') : '' }}" maxlength="40" placeholder="e.g. Quote requested" class="ui-input mt-1 w-full">
+                    <p class="mt-1 text-slate-500 text-base sm:text-sm">Added to this lead when you save. Up to 40 characters.</p>
+                    @error('new_tag')<p class="mt-1 text-red-700 text-base sm:text-sm">{{ $message }}</p>@enderror
+                    @error('tag_ids')<p class="mt-1 text-red-700 text-base sm:text-sm">{{ $message }}</p>@enderror
                     @foreach ($errors->get('tag_ids.*') as $messages)
-                        @foreach ($messages as $message)<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@endforeach
+                        @foreach ($messages as $message)<p class="mt-1 text-red-700 text-base sm:text-sm">{{ $message }}</p>@endforeach
                     @endforeach
                 </fieldset>
-                <button type="submit" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">Save lead</button>
+                <button type="submit" class="ui-button ui-button-primary">Save lead</button>
             </form>
             @else
                 <dl class="mt-5 space-y-3 text-sm">
@@ -121,7 +121,7 @@
             @endif
         </div>
 
-        <div class="rounded-lg border bg-white p-4 shadow-sm">
+        <div class="ui-panel p-4">
             <h2 class="font-semibold">Enquiry details</h2>
             <dl class="mt-3 divide-y divide-slate-100">
                 @foreach ($formSubmission->data ?? [] as $key => $value)
@@ -134,28 +134,28 @@
                 <div class="flex justify-between"><dt class="text-slate-500">Customer reply</dt><dd>{{ $formSubmission->autoresponder_sent_at ? 'Sent '.$formSubmission->autoresponder_sent_at->diffForHumans() : ($formSubmission->autoresponder_failed_at ? 'Failed' : 'Not sent') }}</dd></div>
                 <div class="flex justify-between"><dt class="text-slate-500">Webhook</dt><dd>{{ $formSubmission->webhook_sent_at ? 'Sent '.$formSubmission->webhook_sent_at->diffForHumans() : ($formSubmission->webhook_failed_at ? 'Failed' : 'Not sent') }}</dd></div>
             </dl>
-            @error('email_notification')<p class="mt-3 text-sm text-red-700">{{ $message }}</p>@enderror
+            @error('email_notification')<p class="mt-3 text-red-700 text-base sm:text-sm">{{ $message }}</p>@enderror
         </div>
     </div>
 
-    <section class="rounded-lg border bg-white p-4 shadow-sm" aria-labelledby="review-invitation-title">
+    <section class="ui-panel p-4" aria-labelledby="review-invitation-title">
         <h2 id="review-invitation-title" class="font-semibold">Customer review invitation</h2>
-        <p class="mt-1 text-sm text-slate-600">After marking work completed, invite the customer to share an honest review. One invitation per lead; no automatic reminders.</p>
+        <p class="mt-1 text-slate-600 text-base sm:text-sm">After marking work completed, invite the customer to share an honest review. One invitation per lead; no automatic reminders.</p>
         @if ($canManage)
-            <details class="mt-4 rounded-md border border-slate-200 p-3" @if (! $formSubmission->website->review_url || $errors->has('review_url')) open @endif>
+            <details class="mt-4 rounded-md border border-slate-950/10 p-3" @if (! $formSubmission->website->review_url || $errors->has('review_url')) open @endif>
                 <summary class="cursor-pointer text-sm font-medium text-slate-700">Website review link</summary>
                 <form method="POST" action="{{ route('admin.form-submissions.review-link', $formSubmission) }}" class="mt-3 space-y-2">
                     @csrf @method('PUT')
-                    <label for="review_url" class="block text-sm text-slate-700">Direct link to leave a review</label>
-                    <input type="url" id="review_url" name="review_url" value="{{ is_string(old('review_url', $formSubmission->website->review_url)) ? old('review_url', $formSubmission->website->review_url) : '' }}" maxlength="2048" placeholder="https://…" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
-                    <p class="text-xs text-slate-500">Use your Google review link or another review platform. This setting is shared by all leads on {{ $formSubmission->website->name }}. Leave blank to disable new invitations.</p>
-                    @error('review_url')<p class="text-sm text-red-700">{{ $message }}</p>@enderror
-                    <button type="submit" class="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700">Save review link</button>
+                    <label for="review_url" class="ui-label block">Direct link to leave a review</label>
+                    <input type="url" id="review_url" name="review_url" value="{{ is_string(old('review_url', $formSubmission->website->review_url)) ? old('review_url', $formSubmission->website->review_url) : '' }}" maxlength="2048" placeholder="https://…" class="ui-input w-full">
+                    <p class="text-slate-500 text-base sm:text-sm">Use your Google review link or another review platform. This setting is shared by all leads on {{ $formSubmission->website->name }}. Leave blank to disable new invitations.</p>
+                    @error('review_url')<p class="text-red-700 text-base sm:text-sm">{{ $message }}</p>@enderror
+                    <button type="submit" class="ui-button ui-button-secondary">Save review link</button>
                 </form>
             </details>
         @endif
         @if ($invitation = $formSubmission->reviewInvitation)
-            <div class="mt-4 rounded-md bg-slate-50 p-4">
+            <div class="ui-well mt-4 p-4">
                 <h3 class="text-sm font-semibold">Invitation history</h3>
                 <dl class="mt-2 space-y-2 text-sm">
                     <div><dt class="inline text-slate-500">Status:</dt> <dd class="inline font-medium">{{ ucfirst($invitation->status) }}</dd></div>
@@ -170,34 +170,34 @@
                     <p class="mt-2 whitespace-pre-line">{{ $invitation->body }}</p>
                     <a href="{{ $invitation->review_url }}" target="_blank" rel="noopener noreferrer" class="mt-2 inline-block break-all underline">{{ $invitation->review_url }}</a>
                 </details>
-                <p class="mt-3 text-xs text-slate-500">Sent means the email service accepted the invitation. Review submissions are not tracked.</p>
+                <p class="mt-3 text-slate-500 text-base sm:text-sm">Sent means the email service accepted the invitation. Review submissions are not tracked.</p>
             </div>
         @elseif ($canManage && ! $reviewUnavailableReason)
-            <details class="mt-4 rounded-md border border-slate-200 p-4" @if ($errors->has('review_invitation') || $errors->has('preview_hash')) open @endif>
+            <details class="mt-4 rounded-md border border-slate-950/10 p-4" @if ($errors->has('review_invitation') || $errors->has('preview_hash')) open @endif>
                 <summary class="cursor-pointer text-sm font-medium">Preview review invitation</summary>
                 <dl class="mt-3 space-y-2 text-sm">
                     <div><dt class="inline text-slate-500">To:</dt> <dd class="inline">{{ $reviewPreview['recipient'] }}</dd></div>
                     <div><dt class="inline text-slate-500">From:</dt> <dd class="inline">{{ $reviewPreview['from_name'] }} &lt;{{ $reviewPreview['from_email'] }}&gt;</dd></div>
                     <div><dt class="inline text-slate-500">Subject:</dt> <dd class="inline">{{ $reviewPreview['subject'] }}</dd></div>
                 </dl>
-                <p class="mt-3 whitespace-pre-line text-sm text-slate-700">{{ $reviewPreview['body'] }}</p>
+                <p class="mt-3 whitespace-pre-line text-slate-700 text-base sm:text-sm">{{ $reviewPreview['body'] }}</p>
                 <a href="{{ $reviewPreview['review_url'] }}" target="_blank" rel="noopener noreferrer" class="mt-3 inline-block break-all text-sm underline">Leave an honest review: {{ $reviewPreview['review_url'] }}</a>
                 <form method="POST" action="{{ route('admin.form-submissions.review-invitations.store', $formSubmission) }}" class="mt-4">
                     @csrf
                     <input type="hidden" name="preview_hash" value="{{ $reviewPreviewHash }}">
-                    <button type="submit" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white">Send review invitation</button>
+                    <button type="submit" class="ui-button ui-button-primary">Send review invitation</button>
                 </form>
             </details>
         @elseif ($canManage)
-            <p class="mt-4 text-sm text-slate-600">{{ $reviewUnavailableReason }}</p>
+            <p class="mt-4 text-slate-600 text-base sm:text-sm">{{ $reviewUnavailableReason }}</p>
         @else
-            <p class="mt-4 text-sm text-slate-500">No review invitation has been sent.</p>
+            <p class="mt-4 text-slate-500 text-base sm:text-sm">No review invitation has been sent.</p>
         @endif
-        @error('review_invitation')<p class="mt-2 text-sm text-red-700">{{ $message }}</p>@enderror
-        @error('preview_hash')<p class="mt-2 text-sm text-red-700">{{ $message }}</p>@enderror
+        @error('review_invitation')<p class="mt-2 text-red-700 text-base sm:text-sm">{{ $message }}</p>@enderror
+        @error('preview_hash')<p class="mt-2 text-red-700 text-base sm:text-sm">{{ $message }}</p>@enderror
     </section>
 
-    <div class="rounded-lg border bg-white p-4 shadow-sm">
+    <div class="ui-panel p-4">
         <h2 class="font-semibold">Activity</h2>
         <div class="mt-4 flow-root">
             <ol class="space-y-4">
@@ -205,8 +205,8 @@
                     <li class="flex gap-3">
                         <span class="mt-1.5 size-2 shrink-0 rounded-full bg-slate-400"></span>
                         <div class="min-w-0">
-                            <p class="text-sm text-slate-800">{{ $activity->description }}</p>
-                            <p class="mt-0.5 text-xs text-slate-500">{{ $activity->user?->name ?: 'System' }} · {{ $activity->created_at->diffForHumans() }}</p>
+                            <p class="text-slate-800 text-base sm:text-sm">{{ $activity->description }}</p>
+                            <p class="mt-0.5 text-slate-500 text-base sm:text-sm">{{ $activity->user?->name ?: 'System' }} · {{ $activity->created_at->diffForHumans() }}</p>
                         </div>
                     </li>
                 @empty
@@ -216,13 +216,13 @@
         </div>
     </div>
 
-    <dialog data-confirm-action-dialog class="m-auto w-[min(30rem,calc(100%-2rem))] rounded-xl border border-slate-200 bg-white p-0 shadow-2xl backdrop:bg-slate-950/50">
+    <dialog data-confirm-action-dialog class="m-auto w-[min(30rem,calc(100%-2rem))] rounded-xl border border-slate-950/10 bg-white p-0 shadow-2xl backdrop:bg-slate-950/50">
         <div class="p-5">
             <h2 data-confirm-action-title class="text-lg font-semibold text-slate-950">Confirm action</h2>
-            <p data-confirm-action-message class="mt-2 text-sm text-slate-600"></p>
+            <p data-confirm-action-message class="mt-2 text-slate-600 text-base sm:text-sm"></p>
             <div class="mt-6 flex justify-end gap-2">
-                <button type="button" data-confirm-action-cancel class="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
-                <button type="button" data-confirm-action-submit class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">Confirm</button>
+                <button type="button" data-confirm-action-cancel class="ui-button ui-button-secondary">Cancel</button>
+                <button type="button" data-confirm-action-submit class="ui-button ui-button-primary">Confirm</button>
             </div>
         </div>
     </dialog>

@@ -18,6 +18,70 @@
     --color-moss: #315a46;
 }
 
+@utility ui-panel {
+    @apply rounded-xl border border-slate-950/10 bg-white;
+}
+
+@utility ui-section {
+    @apply p-5 sm:p-6;
+}
+
+@utility ui-well {
+    @apply rounded-lg bg-slate-50;
+}
+
+@utility ui-label {
+    @apply text-base font-medium text-slate-800 sm:text-sm;
+}
+
+@utility ui-input {
+    @apply min-w-0 rounded-lg border-0 bg-white px-3 py-2.5 text-base font-normal text-slate-950 shadow-xs ring-1 ring-slate-950/15 placeholder:text-slate-400 hover:ring-slate-950/25 focus:outline-2 focus:-outline-offset-1 focus:outline-teal-600 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 sm:text-sm;
+
+    &:is(select) {
+        @apply pr-10;
+    }
+
+    &:is(input, textarea)[readonly] {
+        @apply bg-slate-50 text-slate-700 shadow-none;
+    }
+
+    &[aria-invalid='true'] {
+        @apply ring-red-500 focus:outline-red-600;
+    }
+}
+
+@utility ui-button {
+    @apply inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-lg border-0 px-3 py-2 text-sm/5 font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600 disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+@utility ui-button-primary {
+    @apply bg-teal-700 text-white hover:bg-teal-800 disabled:hover:bg-teal-700;
+}
+
+@utility ui-button-secondary {
+    @apply bg-slate-100 text-slate-700 hover:bg-slate-200 disabled:hover:bg-slate-100;
+}
+
+@utility ui-button-danger {
+    @apply bg-rose-50 text-rose-700 hover:bg-rose-100 disabled:hover:bg-rose-50;
+}
+
+@utility ui-button-danger-confirm {
+    @apply bg-red-700 text-white hover:bg-red-800;
+}
+
+@utility ui-button-small {
+    @apply min-h-7 px-2.5 py-1 text-sm/5;
+}
+
+@utility ui-tabs {
+    @apply flex max-w-full gap-1 overflow-x-auto border-b border-slate-950/10 pb-2;
+}
+
+@utility ui-tab {
+    @apply shrink-0 rounded-lg px-3 py-2 text-sm font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900 aria-[current=page]:bg-teal-50 aria-[current=page]:text-teal-900 aria-selected:bg-teal-50 aria-selected:text-teal-900;
+}
+
 @layer base {
     button,
     a,
@@ -82,8 +146,8 @@
         @apply text-pretty;
     }
 
-    .admin-content :is(input:not([type='checkbox']):not([type='radio']), select, textarea) {
-        @apply rounded-xl border-0 bg-white px-3.5 py-3 text-base text-slate-950 shadow-sm ring-1 ring-slate-950/10 placeholder:text-slate-400 hover:ring-slate-950/20 focus:outline-2 focus:-outline-offset-1 focus:outline-teal-600 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 sm:py-2.5 sm:text-sm;
+    .admin-content :is(input:not([type='hidden']):not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):not([type='file']), select, textarea) {
+        @apply ui-input;
     }
 
     .admin-content select {
@@ -103,7 +167,7 @@
     }
 
     .admin-content .trix-toolbar .trix-button-row {
-        @apply justify-start gap-2 overflow-x-auto rounded-t-xl border border-b-0 border-slate-950/10 bg-slate-50 p-2;
+        @apply justify-start gap-2 overflow-x-auto rounded-t-lg border border-b-0 border-slate-950/10 bg-slate-50 p-2;
     }
 
     .admin-content .trix-toolbar .trix-button-group {
@@ -111,7 +175,7 @@
     }
 
     .admin-content .autoresponder-editor {
-        @apply min-h-44 rounded-b-xl border-0 bg-white px-3.5 py-3 text-base leading-6 text-slate-950 shadow-sm ring-1 ring-slate-950/10 focus:outline-2 focus:-outline-offset-1 focus:outline-teal-600 sm:text-sm;
+        @apply min-h-44 rounded-b-lg border-0 bg-white px-3.5 py-3 text-base leading-6 text-slate-950 shadow-sm ring-1 ring-slate-950/10 focus:outline-2 focus:-outline-offset-1 focus:outline-teal-600 sm:text-sm;
     }
 
     .admin-content .autoresponder-editor:empty::before {
@@ -127,7 +191,7 @@
     }
 
     .admin-content label[for] {
-        @apply text-base font-medium text-slate-800 sm:text-sm;
+        @apply ui-label;
     }
 
     .admin-content label[for] + :is(input, select, textarea, div) {
@@ -135,14 +199,14 @@
     }
 
     .admin-content :is(input[type='checkbox'], input[type='radio']) {
-        @apply size-5 shrink-0 appearance-none border-0 bg-white shadow-sm ring-1 ring-slate-950/15 hover:ring-slate-950/25 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600 checked:bg-teal-700 checked:ring-teal-700 disabled:cursor-not-allowed disabled:bg-slate-100 sm:size-4;
+        @apply size-5 shrink-0 appearance-none border-0 bg-white shadow-sm ring-1 ring-slate-950/15 hover:ring-slate-950/25 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600 checked:bg-teal-700 checked:ring-teal-700 disabled:cursor-not-allowed disabled:opacity-50 forced-colors:appearance-auto sm:size-4;
         background-position: center;
         background-repeat: no-repeat;
         background-size: 75%;
     }
 
     .admin-content input[type='checkbox'] {
-        @apply rounded-md;
+        @apply rounded-sm;
     }
 
     .admin-content input[type='checkbox']:checked {
@@ -157,8 +221,8 @@
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Ccircle cx='7' cy='7' r='3' fill='white'/%3E%3C/svg%3E");
     }
 
-    .admin-content label:has(> input[type='checkbox']) {
-        @apply cursor-pointer rounded-xl border-slate-950/10 bg-slate-50/60 hover:bg-slate-50;
+    .admin-content label:has(> input[type='checkbox']):not(:has(> .sr-only)) {
+        @apply cursor-pointer;
     }
 
     .admin-content table {
@@ -170,7 +234,7 @@
     }
 
     .admin-content th {
-        @apply whitespace-nowrap text-xs font-medium uppercase tracking-wider text-slate-500;
+        @apply whitespace-nowrap text-sm font-medium text-slate-600;
     }
 
     .admin-content tbody tr {
@@ -179,20 +243,6 @@
 
     .admin-content tbody tr:hover {
         @apply bg-teal-50/40;
-    }
-
-    .admin-content .bg-slate-900 {
-        @apply bg-teal-700 hover:bg-teal-800 focus-visible:outline-teal-700;
-    }
-
-    .admin-content .rounded-lg.border.bg-white,
-    .admin-content .rounded-xl.border.bg-white {
-        @apply border-slate-950/10 shadow-sm shadow-slate-950/5;
-    }
-
-    .admin-content a[class*='border'][class*='bg-white'],
-    .admin-content button[class*='border'][class*='bg-white'] {
-        @apply border-slate-950/10 shadow-sm shadow-slate-950/5;
     }
 
     .admin-content .website-tabs {

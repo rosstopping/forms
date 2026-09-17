@@ -5,12 +5,12 @@
     <div class="flex items-center justify-between">
         <div>
             <h1 class="text-2xl font-semibold">Forms</h1>
-            <p class="text-sm text-slate-600">Choose a form to set up team notifications and customer replies. Website defaults are shared across forms on the same website.</p>
+            <p class="text-slate-600 text-base sm:text-sm">Choose a form to set up team notifications and customer replies. Website defaults are shared across forms on the same website.</p>
         </div>
     </div>
 
-    <div class="overflow-x-auto rounded-xl bg-white ring-1 ring-slate-200/70">
-        <table class="min-w-full divide-y divide-slate-200">
+    <div class="ui-panel overflow-x-auto ring-slate-200/70">
+        <table class="min-w-full divide-y divide-slate-950/10">
             <thead class="bg-slate-50">
                 <tr>
                     <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Name</th>

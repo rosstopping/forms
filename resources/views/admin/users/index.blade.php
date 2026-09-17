@@ -11,15 +11,15 @@
     <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
             <h1 class="text-2xl font-semibold">Users</h1>
-            <p class="text-sm text-slate-600">Manage administrator and client accounts.</p>
+            <p class="text-slate-600 text-base sm:text-sm">Manage administrator and client accounts.</p>
         </div>
         <div class="flex items-center gap-3">
-            <a href="{{ route('admin.users.create') }}" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">Create user</a>
+            <a href="{{ route('admin.users.create') }}" class="ui-button ui-button-primary">Create user</a>
         </div>
     </div>
 
-    <div class="overflow-hidden rounded-lg border bg-white shadow-sm">
-        <table class="min-w-full divide-y divide-slate-200">
+    <div class="ui-panel overflow-hidden">
+        <table class="min-w-full divide-y divide-slate-950/10">
             <thead class="bg-slate-50">
                 <tr>
                     <th class="px-4 py-3 text-left text-sm font-semibold text-slate-700">Name</th>
@@ -47,14 +47,14 @@
                                 <form method="POST" action="{{ route('admin.users.onboarding-call.update', $user) }}">
                                     @csrf
                                     @method('PATCH')
-                                    <label for="onboarding-call-{{ $user->id }}" class="sr-only">Onboarding call status for {{ $user->name }}</label>
-                                    <select id="onboarding-call-{{ $user->id }}" name="status" onchange="this.form.submit()" class="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs">
+                                    <label for="onboarding-call-{{ $user->id }}" class="ui-label sr-only">Onboarding call status for {{ $user->name }}</label>
+                                    <select id="onboarding-call-{{ $user->id }}" name="status" onchange="this.form.submit()" class="ui-input">
                                         <option value="not_booked" @selected(! $user->onboarding_call_booked_at)>Not booked</option>
                                         <option value="booked" @selected($user->onboarding_call_booked_at && ! $user->onboarding_call_completed_at)>Booked</option>
                                         <option value="completed" @selected($user->onboarding_call_completed_at)>Completed</option>
                                     </select>
                                     @if ($user->onboarding_call_booking_started_at && ! $user->onboarding_call_booked_at)
-                                        <p class="mt-1 text-xs text-amber-700">Booking started</p>
+                                        <p class="mt-1 text-amber-700 text-base sm:text-sm">Booking started</p>
                                     @endif
                                 </form>
                             @else

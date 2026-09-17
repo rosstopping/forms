@@ -2,11 +2,11 @@
 
 @section('content')
 @if (! $website)
-    <section class="mx-auto max-w-2xl rounded-xl border border-slate-200 bg-white p-8 text-center">
+    <section class="ui-panel ui-section mx-auto max-w-2xl text-center">
         <h1 class="text-2xl font-semibold text-slate-950">Welcome to Sitewell</h1>
         <p class="mt-2 text-base text-slate-600 sm:text-sm">Add a website to start monitoring its health and planning improvements.</p>
         @if (Auth::user()?->isAdmin())
-            <a href="{{ route('admin.websites.create') }}" class="mt-6 inline-flex items-center justify-center rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600">Add a website</a>
+            <a href="{{ route('admin.websites.create') }}" class="ui-button ui-button-primary mt-6">Add a website</a>
         @endif
     </section>
 @else
@@ -21,7 +21,7 @@
     <div class="space-y-6">
         <header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div class="min-w-0">
-                <p class="font-mono text-xs text-teal-700">Website overview</p>
+                <p class="font-mono text-teal-700 text-base sm:text-sm">Website overview</p>
                 <h1 class="mt-1 truncate text-2xl font-semibold text-slate-950 sm:text-3xl">{{ $website->name }}</h1>
                 <p class="mt-2 text-base text-slate-600 sm:text-sm">Your latest website health, content work, and connected services in one place.</p>
             </div>
@@ -32,8 +32,8 @@
 
         <x-weekly-overview :report="$weeklyOverview" :history="$weeklyHistory" />
 
-        <section class="flex flex-col justify-between gap-4 rounded-xl border border-slate-200 bg-white p-6 sm:flex-row sm:items-center" aria-labelledby="ai-visibility-summary">
-            <div><h2 id="ai-visibility-summary" class="text-sm font-semibold text-slate-950">AI Visibility</h2><p class="mt-2 text-3xl font-semibold tabular-nums text-slate-950">{{ $aiVisibility['score'] === null ? '—' : $aiVisibility['score'].'%' }}</p><p class="mt-2 text-sm text-slate-600">@if ($aiVisibility['completed_checks']){{ $aiVisibility['brand_appearances'] }} of {{ $aiVisibility['completed_checks'] }} tracked AI checks mentioned your business in the last 7 days.@else Start tracking how AI platforms recommend your business.@endif</p>@if ($aiVisibility['comparable'])<p class="mt-1 text-xs text-slate-500">Previously {{ $aiVisibility['previous_score'] }}% in the preceding 7 days.</p>@endif</div>
+        <section class="ui-panel ui-section flex flex-col justify-between gap-4 sm:flex-row sm:items-center" aria-labelledby="ai-visibility-summary">
+            <div><h2 id="ai-visibility-summary" class="text-sm font-semibold text-slate-950">AI Visibility</h2><p class="mt-2 text-3xl font-semibold tabular-nums text-slate-950">{{ $aiVisibility['score'] === null ? '—' : $aiVisibility['score'].'%' }}</p><p class="mt-2 text-slate-600 text-base sm:text-sm">@if ($aiVisibility['completed_checks']){{ $aiVisibility['brand_appearances'] }} of {{ $aiVisibility['completed_checks'] }} tracked AI checks mentioned your business in the last 7 days.@else Start tracking how AI platforms recommend your business.@endif</p>@if ($aiVisibility['comparable'])<p class="mt-1 text-slate-500 text-base sm:text-sm">Previously {{ $aiVisibility['previous_score'] }}% in the preceding 7 days.</p>@endif</div>
             <a href="{{ route('admin.ai-visibility.index', $website) }}" class="text-sm font-semibold text-teal-700 hover:text-teal-900">View AI Visibility →</a>
         </section>
 
@@ -41,19 +41,19 @@
             <section class="overflow-hidden rounded-2xl bg-slate-950 text-white shadow-lg shadow-slate-950/10" aria-labelledby="onboarding-heading">
                 <div class="grid gap-8 p-6 sm:p-8 lg:grid-cols-[minmax(0,1.25fr)_minmax(20rem,0.75fr)] lg:items-center">
                     <div>
-                        <p class="font-mono text-xs font-medium uppercase tracking-widest text-teal-300">Your next step</p>
+                        <p class="font-mono font-medium uppercase tracking-widest text-teal-300 text-base sm:text-sm">Your next step</p>
                         @if (Auth::user()->onboarding_call_completed_at)
                             <h2 id="onboarding-heading" class="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">Your onboarding call is complete</h2>
-                            <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-300">Keep exploring your website health, SEO opportunities, and connected search data during the rest of your Growth trial.</p>
+                            <p class="mt-3 max-w-2xl leading-6 text-slate-300 text-base sm:text-sm">Keep exploring your website health, SEO opportunities, and connected search data during the rest of your Growth trial.</p>
                         @elseif (Auth::user()->onboarding_call_booked_at)
                             <h2 id="onboarding-heading" class="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">Your onboarding call is booked</h2>
-                            <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-300">We’ll use the call to explain your findings, answer your questions, and agree which improvements are worth prioritising.</p>
+                            <p class="mt-3 max-w-2xl leading-6 text-slate-300 text-base sm:text-sm">We’ll use the call to explain your findings, answer your questions, and agree which improvements are worth prioritising.</p>
                             <a href="{{ route('admin.onboarding-call') }}" target="_blank" rel="noreferrer" class="mt-6 inline-flex items-center justify-center rounded-xl border border-white/20 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">Reschedule your call</a>
                         @else
                             <h2 id="onboarding-heading" class="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">Let’s turn your findings into a practical plan</h2>
-                            <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-300">Your free onboarding call is where a Sitewell specialist explains what we found, answers your questions, and agrees which improvements are worth doing first.</p>
+                            <p class="mt-3 max-w-2xl leading-6 text-slate-300 text-base sm:text-sm">Your free onboarding call is where a Sitewell specialist explains what we found, answers your questions, and agrees which improvements are worth doing first.</p>
                             <a href="{{ route('admin.onboarding-call') }}" target="_blank" rel="noreferrer" class="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-teal-400 px-5 py-3.5 text-base font-semibold text-slate-950 hover:bg-teal-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-300 sm:w-auto">{{ Auth::user()->onboarding_call_booking_started_at ? 'Finish booking your free onboarding call' : 'Book your free onboarding call' }} <span class="ml-2" aria-hidden="true">→</span></a>
-                            <p class="mt-3 text-xs text-slate-400">No obligation. Choose a time that works for you.</p>
+                            <p class="mt-3 text-slate-400 text-base sm:text-sm">No obligation. Choose a time that works for you.</p>
                         @endif
                     </div>
                     <div class="rounded-xl border border-white/10 bg-white/5 p-5">
@@ -82,8 +82,8 @@
             </section>
         @endif
 
-        <section class="@container overflow-hidden rounded-xl border border-slate-200 bg-white" aria-labelledby="website-health-heading">
-            <div class="flex flex-col gap-4 border-b border-slate-200 p-5 sm:flex-row sm:items-start sm:justify-between sm:p-6">
+        <section class="ui-panel @container overflow-hidden" aria-labelledby="website-health-heading">
+            <div class="flex flex-col gap-4 border-b border-slate-950/10 p-5 sm:flex-row sm:items-start sm:justify-between sm:p-6">
                 <div>
                     <div class="flex flex-wrap items-center gap-2">
                         <h2 id="website-health-heading" class="text-xl font-semibold text-slate-950">Website health</h2>
@@ -95,7 +95,7 @@
                             'bg-slate-100 text-slate-600' => ! in_array($status, ['healthy', 'needs_attention', 'critical'], true),
                         ])>{{ $statusLabel }}</span>
                     </div>
-                    <p class="mt-1 text-sm text-slate-600">
+                    <p class="mt-1 text-slate-600 text-base sm:text-sm">
                         @if ($report?->completed_at)
                             Latest report completed {{ $report->completed_at->diffForHumans() }}.
                         @elseif ($report)
@@ -107,21 +107,21 @@
                 </div>
                 <div class="flex flex-wrap gap-2">
                     @if ($report)
-                        <a href="{{ route('admin.website-health-reports.show', [$website, $report]) }}" class="inline-flex items-center justify-center rounded-lg bg-teal-600 px-3.5 py-2 text-sm font-semibold text-white hover:bg-teal-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600">View health report</a>
+                        <a href="{{ route('admin.website-health-reports.show', [$website, $report]) }}" class="ui-button ui-button-primary">View health report</a>
                     @elseif ($canManageWebsite)
-                        <form method="POST" action="{{ route('admin.website-health-reports.store', $website) }}">@csrf<button type="submit" class="inline-flex items-center justify-center rounded-lg bg-teal-600 px-3.5 py-2 text-sm font-semibold text-white hover:bg-teal-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600">Run health report</button></form>
+                        <form method="POST" action="{{ route('admin.website-health-reports.store', $website) }}">@csrf<button type="submit" class="ui-button ui-button-primary">Run health report</button></form>
                     @endif
                     @if ($report && $canManageWebsite)
-                        <form method="POST" action="{{ route('admin.website-health-reports.store', $website) }}">@csrf<button type="submit" class="inline-flex items-center justify-center rounded-lg border border-slate-300 px-3.5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600">Run again</button></form>
+                        <form method="POST" action="{{ route('admin.website-health-reports.store', $website) }}">@csrf<button type="submit" class="ui-button ui-button-secondary">Run again</button></form>
                     @endif
                 </div>
             </div>
 
             @if ($report)
-                <dl class="grid grid-cols-2 border-b border-slate-200 @2xl:grid-cols-4">
-                    <div class="border-b border-r border-slate-200 p-4 @2xl:border-b-0"><dt class="truncate text-sm text-slate-500">Passed</dt><dd class="mt-1 text-2xl font-semibold tabular-nums text-emerald-700">{{ $report->passed_checks }}</dd></div>
-                    <div class="border-b border-slate-200 p-4 @2xl:border-b-0 @2xl:border-r"><dt class="truncate text-sm text-slate-500">Warnings</dt><dd class="mt-1 text-2xl font-semibold tabular-nums text-amber-700">{{ $report->warning_checks }}</dd></div>
-                    <div class="border-r border-slate-200 p-4"><dt class="truncate text-sm text-slate-500">Failed</dt><dd class="mt-1 text-2xl font-semibold tabular-nums text-red-700">{{ $report->failed_checks }}</dd></div>
+                <dl class="grid grid-cols-2 border-b border-slate-950/10 @2xl:grid-cols-4">
+                    <div class="border-b border-r border-slate-950/10 p-4 @2xl:border-b-0"><dt class="truncate text-sm text-slate-500">Passed</dt><dd class="mt-1 text-2xl font-semibold tabular-nums text-emerald-700">{{ $report->passed_checks }}</dd></div>
+                    <div class="border-b border-slate-950/10 p-4 @2xl:border-b-0 @2xl:border-r"><dt class="truncate text-sm text-slate-500">Warnings</dt><dd class="mt-1 text-2xl font-semibold tabular-nums text-amber-700">{{ $report->warning_checks }}</dd></div>
+                    <div class="border-r border-slate-950/10 p-4"><dt class="truncate text-sm text-slate-500">Failed</dt><dd class="mt-1 text-2xl font-semibold tabular-nums text-red-700">{{ $report->failed_checks }}</dd></div>
                     <div class="p-4"><dt class="truncate text-sm text-slate-500">Since last report</dt><dd class="mt-1 text-sm font-semibold text-slate-900"><span class="text-emerald-700">{{ $resolvedIssues }} resolved</span> · <span class="text-red-700">{{ $newIssues }} new</span></dd></div>
                 </dl>
                 <div class="p-5 sm:p-6">
@@ -130,10 +130,10 @@
                         @forelse ($topFindings as $finding)
                             <div class="flex gap-3 py-3 first:pt-0 last:pb-0">
                                 <span @class(['mt-1 size-2 shrink-0 rounded-full', 'bg-red-500' => $finding['status'] === 'failed', 'bg-amber-400' => $finding['status'] !== 'failed'])></span>
-                                <div class="min-w-0"><p class="font-medium text-slate-900">{{ $finding['label'] }}</p><p class="mt-0.5 text-sm text-slate-600">{{ $finding['message'] }}</p>@if ($finding['url'])<p class="mt-1 truncate text-xs text-slate-400">{{ $finding['url'] }}</p>@endif</div>
+                                <div class="min-w-0"><p class="font-medium text-slate-900">{{ $finding['label'] }}</p><p class="mt-0.5 text-slate-600 text-base sm:text-sm">{{ $finding['message'] }}</p>@if ($finding['url'])<p class="mt-1 truncate text-slate-400 text-base sm:text-sm">{{ $finding['url'] }}</p>@endif</div>
                             </div>
                         @empty
-                            <p class="py-2 text-sm text-slate-600">No outstanding findings were recorded in the latest report.</p>
+                            <p class="py-2 text-slate-600 text-base sm:text-sm">No outstanding findings were recorded in the latest report.</p>
                         @endforelse
                     </div>
                 </div>
@@ -141,36 +141,36 @@
         </section>
 
         <div class="grid gap-6 xl:grid-cols-2">
-            <section class="rounded-xl border border-slate-200 bg-white p-5 sm:p-6" aria-labelledby="content-heading">
-                <div class="flex items-start justify-between gap-4"><div><h2 id="content-heading" class="font-semibold text-slate-950">Website content</h2><p class="mt-1 text-sm text-slate-600">Ideas and updates waiting to be prepared.</p></div><a href="{{ route('admin.websites.section', [$website, 'content']) }}" class="shrink-0 text-sm font-semibold text-teal-700 hover:text-teal-900">View content</a></div>
+            <section class="ui-panel ui-section" aria-labelledby="content-heading">
+                <div class="flex items-start justify-between gap-4"><div><h2 id="content-heading" class="font-semibold text-slate-950">Website content</h2><p class="mt-1 text-slate-600 text-base sm:text-sm">Ideas and updates waiting to be prepared.</p></div><a href="{{ route('admin.websites.section', [$website, 'content']) }}" class="shrink-0 text-sm font-semibold text-teal-700 hover:text-teal-900">View content</a></div>
                 <dl class="mt-5 grid grid-cols-2 gap-3">
-                    <div class="rounded-lg bg-slate-50 p-4"><dt class="text-sm text-slate-500">Pending requests</dt><dd class="mt-1 text-2xl font-semibold tabular-nums text-slate-950">{{ $website->pending_content_requests_count }}</dd></div>
-                    <div class="rounded-lg bg-slate-50 p-4"><dt class="text-sm text-slate-500">Next preparation</dt><dd class="mt-1 text-sm font-semibold text-slate-950">{{ $nextContentRun ? $nextContentRun['next_run_at']->format('D j M') : 'Not scheduled' }}</dd></div>
+                    <div class="ui-well p-4"><dt class="text-sm text-slate-500">Pending requests</dt><dd class="mt-1 text-2xl font-semibold tabular-nums text-slate-950">{{ $website->pending_content_requests_count }}</dd></div>
+                    <div class="ui-well p-4"><dt class="text-sm text-slate-500">Next preparation</dt><dd class="mt-1 text-sm font-semibold text-slate-950">{{ $nextContentRun ? $nextContentRun['next_run_at']->format('D j M') : 'Not scheduled' }}</dd></div>
                 </dl>
                 <div class="mt-4 divide-y divide-slate-100">
                     @forelse ($website->contentRequests->take(3) as $contentRequest)
-                        <div class="py-3 first:pt-0 last:pb-0"><p class="line-clamp-2 text-sm font-medium text-slate-800">{{ $contentRequest->instructions }}</p><p class="mt-1 text-xs text-slate-500">{{ $contentRequest->picked_up_at ? 'Preparation started' : 'Waiting to be prepared' }} · {{ $contentRequest->created_at->diffForHumans() }}</p></div>
+                        <div class="py-3 first:pt-0 last:pb-0"><p class="line-clamp-2 font-medium text-slate-800 text-base sm:text-sm">{{ $contentRequest->instructions }}</p><p class="mt-1 text-slate-500 text-base sm:text-sm">{{ $contentRequest->picked_up_at ? 'Preparation started' : 'Waiting to be prepared' }} · {{ $contentRequest->created_at->diffForHumans() }}</p></div>
                     @empty
-                        <p class="text-sm text-slate-600">No content requests yet. Add an idea when you are ready to improve or expand a page.</p>
+                        <p class="text-slate-600 text-base sm:text-sm">No content requests yet. Add an idea when you are ready to improve or expand a page.</p>
                     @endforelse
                 </div>
             </section>
 
-            <section class="rounded-xl border border-slate-200 bg-white p-5 sm:p-6" aria-labelledby="schedule-heading">
+            <section class="ui-panel ui-section" aria-labelledby="schedule-heading">
                 <h2 id="schedule-heading" class="font-semibold text-slate-950">Next health check</h2>
                 @if ($nextHealthRun)
                     <time datetime="{{ $nextHealthRun['next_run_at']->toIso8601String() }}" class="mt-4 block text-2xl font-semibold tabular-nums text-slate-950">{{ $nextHealthRun['next_run_at']->format('D j M, H:i') }}</time>
-                    <p class="mt-1 text-sm text-slate-600">{{ $nextHealthRun['next_run_at']->diffForHumans() }} · {{ config('app.timezone') }}</p>
-                    <p class="mt-5 text-sm text-slate-600">Weekly reports help you spot regressions and new issues before they become bigger problems.</p>
+                    <p class="mt-1 text-slate-600 text-base sm:text-sm">{{ $nextHealthRun['next_run_at']->diffForHumans() }} · {{ config('app.timezone') }}</p>
+                    <p class="mt-5 text-slate-600 text-base sm:text-sm">Weekly reports help you spot regressions and new issues before they become bigger problems.</p>
                 @else
-                    <p class="mt-4 text-sm text-slate-600">Automatic health reports are not currently scheduled for this website.</p>
+                    <p class="mt-4 text-slate-600 text-base sm:text-sm">Automatic health reports are not currently scheduled for this website.</p>
                 @endif
             </section>
         </div>
 
         <div class="grid gap-6 xl:grid-cols-2">
-            <section class="@container rounded-xl border border-slate-200 bg-white p-5 sm:p-6" aria-labelledby="search-heading">
-                <div class="flex items-start justify-between gap-4"><div><h2 id="search-heading" class="font-semibold text-slate-950">Google Search Console</h2><p class="mt-1 text-sm text-slate-600">Organic search performance from your connected property.</p></div><a href="{{ route('admin.websites.section', [$website, 'search']) }}" class="shrink-0 text-sm font-semibold text-teal-700 hover:text-teal-900">{{ $website->searchConsoleConnection ? 'View search' : 'Connect' }}</a></div>
+            <section class="ui-panel ui-section @container" aria-labelledby="search-heading">
+                <div class="flex items-start justify-between gap-4"><div><h2 id="search-heading" class="font-semibold text-slate-950">Google Search Console</h2><p class="mt-1 text-slate-600 text-base sm:text-sm">Organic search performance from your connected property.</p></div><a href="{{ route('admin.websites.section', [$website, 'search']) }}" class="shrink-0 text-sm font-semibold text-teal-700 hover:text-teal-900">{{ $website->searchConsoleConnection ? 'View search' : 'Connect' }}</a></div>
                 @if ($website->searchConsoleConnection)
                     <div class="mt-5 flex flex-col gap-5">
                         @foreach ($searchMonths as $searchMonth)
@@ -185,28 +185,28 @@
                                         <div><dt class="text-sm text-slate-500">Position</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-slate-950">{{ number_format($searchMetric->position, 1) }}</dd></div>
                                     </dl>
                                 @else
-                                    <p class="mt-2 text-sm text-slate-600">No search performance imported for this month yet.</p>
+                                    <p class="mt-2 text-slate-600 text-base sm:text-sm">No search performance imported for this month yet.</p>
                                 @endif
                             </div>
                         @endforeach
                     </div>
-                    <p class="mt-4 text-xs text-slate-500">This month is incomplete. Figures reflect the latest imported data.</p>
+                    <p class="mt-4 text-slate-500 text-base sm:text-sm">This month is incomplete. Figures reflect the latest imported data.</p>
                 @else
-                    <p class="mt-5 text-sm text-slate-600">Connect Search Console to see clicks, visibility, and average position alongside website health.</p>
+                    <p class="mt-5 text-slate-600 text-base sm:text-sm">Connect Search Console to see clicks, visibility, and average position alongside website health.</p>
                 @endif
             </section>
 
             @if (config('forms.pixel_ui_enabled') && $website->pixel_enabled)
-                <section class="rounded-xl border border-slate-200 bg-white p-5 sm:p-6" aria-labelledby="pixel-heading">
-                    <div class="flex items-start justify-between gap-4"><div><h2 id="pixel-heading" class="font-semibold text-slate-950">Sitewell Pixel</h2><p class="mt-1 text-sm text-slate-600">Connected delivery and website activity.</p></div><a href="{{ route('admin.websites.section', [$website, 'pixel']) }}" class="shrink-0 text-sm font-semibold text-teal-700 hover:text-teal-900">View Pixel</a></div>
-                    <dl class="mt-5 grid grid-cols-2 gap-3"><div class="rounded-lg bg-slate-50 p-4"><dt class="text-sm text-slate-500">Live changes</dt><dd class="mt-1 text-2xl font-semibold tabular-nums text-slate-950">{{ $website->live_pixel_changes_count }}</dd></div><div class="rounded-lg bg-slate-50 p-4"><dt class="text-sm text-slate-500">Last seen</dt><dd class="mt-1 text-sm font-semibold text-slate-950">{{ $website->pixel_last_seen_at?->diffForHumans() ?: 'Waiting for activity' }}</dd></div></dl>
+                <section class="ui-panel ui-section" aria-labelledby="pixel-heading">
+                    <div class="flex items-start justify-between gap-4"><div><h2 id="pixel-heading" class="font-semibold text-slate-950">Sitewell Pixel</h2><p class="mt-1 text-slate-600 text-base sm:text-sm">Connected delivery and website activity.</p></div><a href="{{ route('admin.websites.section', [$website, 'pixel']) }}" class="shrink-0 text-sm font-semibold text-teal-700 hover:text-teal-900">View Pixel</a></div>
+                    <dl class="mt-5 grid grid-cols-2 gap-3"><div class="ui-well p-4"><dt class="text-sm text-slate-500">Live changes</dt><dd class="mt-1 text-2xl font-semibold tabular-nums text-slate-950">{{ $website->live_pixel_changes_count }}</dd></div><div class="ui-well p-4"><dt class="text-sm text-slate-500">Last seen</dt><dd class="mt-1 text-sm font-semibold text-slate-950">{{ $website->pixel_last_seen_at?->diffForHumans() ?: 'Waiting for activity' }}</dd></div></dl>
                 </section>
             @endif
 
             @if ($website->forms_count > 0)
-                <section class="rounded-xl border border-slate-200 bg-white p-5 sm:p-6" aria-labelledby="forms-heading">
-                    <div class="flex items-start justify-between gap-4"><div><h2 id="forms-heading" class="font-semibold text-slate-950">Form activity</h2><p class="mt-1 text-sm text-slate-600">An optional view of responses received through Sitewell forms.</p></div><a href="{{ route('admin.websites.section', [$website, 'forms']) }}" class="shrink-0 text-sm font-semibold text-teal-700 hover:text-teal-900">View forms</a></div>
-                    <dl class="mt-5 grid grid-cols-2 gap-3"><div class="rounded-lg bg-slate-50 p-4"><dt class="text-sm text-slate-500">Connected forms</dt><dd class="mt-1 text-2xl font-semibold tabular-nums text-slate-950">{{ $website->forms_count }}</dd></div><div class="rounded-lg bg-slate-50 p-4"><dt class="text-sm text-slate-500">Submissions</dt><dd class="mt-1 text-2xl font-semibold tabular-nums text-slate-950">{{ $website->submissions_count }}</dd></div></dl>
+                <section class="ui-panel ui-section" aria-labelledby="forms-heading">
+                    <div class="flex items-start justify-between gap-4"><div><h2 id="forms-heading" class="font-semibold text-slate-950">Form activity</h2><p class="mt-1 text-slate-600 text-base sm:text-sm">An optional view of responses received through Sitewell forms.</p></div><a href="{{ route('admin.websites.section', [$website, 'forms']) }}" class="shrink-0 text-sm font-semibold text-teal-700 hover:text-teal-900">View forms</a></div>
+                    <dl class="mt-5 grid grid-cols-2 gap-3"><div class="ui-well p-4"><dt class="text-sm text-slate-500">Connected forms</dt><dd class="mt-1 text-2xl font-semibold tabular-nums text-slate-950">{{ $website->forms_count }}</dd></div><div class="ui-well p-4"><dt class="text-sm text-slate-500">Submissions</dt><dd class="mt-1 text-2xl font-semibold tabular-nums text-slate-950">{{ $website->submissions_count }}</dd></div></dl>
                 </section>
             @endif
         </div>

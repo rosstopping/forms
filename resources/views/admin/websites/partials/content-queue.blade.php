@@ -1,22 +1,22 @@
 <section aria-labelledby="content-requests-title">
     <div class="flex flex-wrap items-start justify-between gap-3">
         <div><h2 id="content-requests-title" class="text-lg font-semibold text-balance text-slate-950">Content queue</h2><p class="mt-1 text-base text-pretty text-slate-600 sm:text-sm">Choose what Sitewell works on next. Move important requests to the top.</p></div>
-        <div class="text-sm"><a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'actions']) }}" class="inline-flex rounded-md border border-slate-950/15 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-50">Find SEO opportunities</a></div>
+        <div class="text-sm"><a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'actions']) }}" class="ui-button ui-button-secondary ui-button-small">Find SEO opportunities</a></div>
     </div>
     @if ($canManageWebsite && $canSubmitContentRequest)
-        <details class="mt-5 rounded-lg border border-slate-950/10 bg-white p-4" @if ($errors->has('instructions') || old('instructions')) open @endif>
+        <details class="ui-panel mt-5 p-4" @if ($errors->has('instructions') || old('instructions')) open @endif>
             <summary class="cursor-pointer font-medium text-slate-950">Add a content request</summary>
             <p class="mt-2 text-base text-pretty text-slate-600 sm:text-sm">Request a new page, an article, or an improvement to existing content.</p>
         <form method="POST" action="{{ route('admin.content-requests.store', $website) }}" class="mt-4">
             @csrf
-            <label class="block text-sm font-medium text-slate-900" for="content-request-instructions">What would you like Sitewell to create or change?</label>
-            <textarea id="content-request-instructions" name="instructions" rows="4" required maxlength="3000" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-base sm:text-sm" placeholder="For example: Create a new landing page or blog post for a specific category.">{{ old('instructions') }}</textarea>
+            <label class="ui-label block" for="content-request-instructions">What would you like Sitewell to create or change?</label>
+            <textarea id="content-request-instructions" name="instructions" rows="4" required maxlength="3000" class="ui-input mt-1 w-full" placeholder="For example: Create a new landing page or blog post for a specific category.">{{ old('instructions') }}</textarea>
             <div class="mt-2 flex flex-wrap items-center justify-between gap-3">
                 <div>
-                    <p class="text-sm text-slate-500">Include the audience, useful keywords, desired location in the site, and any claims or qualifications that must be preserved. Up to 3,000 characters.</p>
-                    @error('instructions')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror
+                    <p class="text-slate-500 text-base sm:text-sm">Include the audience, useful keywords, desired location in the site, and any claims or qualifications that must be preserved. Up to 3,000 characters.</p>
+                    @error('instructions')<p class="mt-1 text-red-700 text-base sm:text-sm">{{ $message }}</p>@enderror
                 </div>
-                <button type="submit" class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">Add content request</button>
+                <button type="submit" class="ui-button ui-button-primary">Add content request</button>
             </div>
         </form>
 
@@ -58,20 +58,20 @@
                                     @if ($queuePosition !== 1)
                                         <form method="POST" action="{{ route('admin.content-requests.bump', [$website, $contentRequest]) }}">
                                             @csrf
-                                            <button type="submit" class="w-full rounded-md border border-violet-200 bg-violet-50 px-3 py-2 text-sm font-medium text-violet-800 hover:bg-violet-100 sm:w-auto">Bump to top</button>
+                                            <button type="submit" class="ui-button ui-button-secondary w-full sm:w-auto">Bump to top</button>
                                         </form>
                                     @endif
                                     <form method="POST" action="{{ route('admin.content-requests.destroy', [$website, $contentRequest]) }}">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="w-full rounded-md border border-slate-950/10 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 sm:w-auto">Remove</button>
+                                        <button type="submit" class="ui-button ui-button-secondary w-full sm:w-auto">Remove</button>
                                     </form>
                                 </div>
                             @endif
                         </div>
                     </article>
                 @empty
-                    <p class="rounded-lg bg-slate-50 p-3 text-sm text-slate-500">Your queue is clear. Add a request or choose an SEO opportunity to plan your next improvement.</p>
+                    <p class="rounded-lg bg-slate-50 p-3 text-slate-500 text-base sm:text-sm">Your queue is clear. Add a request or choose an SEO opportunity to plan your next improvement.</p>
                 @endforelse
             </div>
             @if ($pendingContentRequests->hasPages())

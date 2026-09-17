@@ -8,13 +8,13 @@
 @endphp
 <div id="website-panel-forms" class="space-y-6" role="region" aria-labelledby="website-tab-forms" data-tab-panel="forms" @if ($currentWebsiteSection !== 'forms') hidden @endif>
     <header><h2 class="text-xl font-semibold text-balance text-slate-950">Forms and email setup</h2><p class="mt-2 text-base text-pretty text-slate-500 sm:text-sm">Choose a form to set team notifications. Set one default customer reply for the website, then customise individual forms only where needed.</p></header>
-    <nav class="overflow-x-auto border-b border-slate-950/10" aria-label="Forms sections"><div class="flex min-w-max gap-1 pb-2 text-sm">
+    <nav class="min-w-0" aria-label="Forms sections"><div class="ui-tabs">
         @foreach ($formsSections as $key => $label)
-            <a id="forms-tab-{{ $key }}" href="{{ route('admin.websites.section', [$website, 'forms', 'forms_section' => $key]) }}" @if ($formsSection === $key) aria-current="page" @endif @class(['rounded-lg px-3 py-2 font-medium', 'bg-teal-50 text-teal-900' => $formsSection === $key, 'text-slate-500 hover:bg-slate-50' => $formsSection !== $key])>{{ $label }}</a>
+            <a id="forms-tab-{{ $key }}" href="{{ route('admin.websites.section', [$website, 'forms', 'forms_section' => $key]) }}" @if ($formsSection === $key) aria-current="page" @endif class="ui-tab">{{ $label }}</a>
         @endforeach
     </div></nav>
     <section id="forms-section-list" class="space-y-4" aria-labelledby="forms-tab-list" @if ($formsSection !== 'list') hidden @endif>
-        <div class="rounded-xl bg-slate-50 p-4 text-base text-slate-600 sm:text-sm"><p><strong class="font-medium text-slate-900">Two different emails:</strong> team notifications tell you about an enquiry; customer replies acknowledge it to the visitor. Replies to a team notification go to the visitor automatically.</p></div>
+        <div class="ui-well p-4 text-base text-slate-600 sm:text-sm"><p><strong class="font-medium text-slate-900">Two different emails:</strong> team notifications tell you about an enquiry; customer replies acknowledge it to the visitor. Replies to a team notification go to the visitor automatically.</p></div>
         <div class="divide-y divide-slate-950/10">
             @forelse ($website->forms as $form)
                 @php
@@ -29,10 +29,10 @@
                             <p class="text-slate-600">Customer reply: <strong class="font-medium">{{ $hasReplyCustomisation ? 'Custom settings' : 'Website defaults' }}</strong></p>
                         </div>
                     </div>
-                    <div class="shrink-0 text-sm"><a href="{{ route('admin.forms.show', $form) }}" class="inline-flex rounded-lg bg-teal-50 px-3 py-2 font-medium text-teal-800 hover:bg-teal-100">{{ $canManageWebsite ? 'Set up form' : 'View form' }} →</a></div>
+                    <div class="shrink-0 text-sm"><a href="{{ route('admin.forms.show', $form) }}" class="ui-button ui-button-secondary">{{ $canManageWebsite ? 'Set up form' : 'View form' }} →</a></div>
                 </article>
             @empty
-                <div class="py-8"><h3 class="font-medium text-slate-900">No forms registered for this website.</h3><p class="mt-2 text-base text-slate-500 sm:text-sm">Connect a website form and it will appear here when its first submission is received. Then choose your notification recipients.</p><p class="mt-4 text-sm"><a href="{{ route('admin.websites.section', [$website, 'forms', 'forms_section' => 'installation']) }}" class="font-medium text-teal-700 underline">Connect your first form</a></p></div>
+                <div class="py-8"><h3 class="font-medium text-slate-900">No forms registered for this website.</h3><p class="mt-2 text-base text-slate-500 sm:text-sm">Connect a website form and it will appear here when its first submission is received. Then choose your notification recipients.</p><p class="mt-4 text-base sm:text-sm"><a href="{{ route('admin.websites.section', [$website, 'forms', 'forms_section' => 'installation']) }}" class="font-medium text-teal-700 underline">Connect your first form</a></p></div>
             @endforelse
         </div>
     </section>

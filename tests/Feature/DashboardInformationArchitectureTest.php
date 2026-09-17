@@ -56,7 +56,7 @@ it('prioritises the selected websites latest health and content work on the dash
         ->assertDontSee('Workspace totals')
         ->assertDontSee('Form activity')
         ->assertDontSee('href="'.route('admin.forms.index').'"', false)
-        ->assertDontSee('href="'.route('admin.form-submissions.index').'"', false);
+        ->assertSee('href="'.route('admin.form-submissions.index').'"', false);
 });
 
 it('shows the next site audit and content queue jobs', function (): void {
@@ -199,11 +199,11 @@ it('keeps forms and submissions inside the website workspace', function (): void
         ->assertSee('data-tab-panel="content"', false)
         ->assertDontSee('Connect GitHub')
         ->assertDontSee('href="'.route('admin.github.connect', $website).'"', false)
-        ->assertSee('Manual content requests')
-        ->assertSee('>Forms</button>', false)
-        ->assertSee('role="tablist"', false)
+        ->assertSee('Content queue')
+        ->assertSee('href="'.route('admin.websites.section', [$website, 'forms']).'"', false)
+        ->assertSee('aria-label="Website sections"', false)
         ->assertSee('data-tab-panel="health"', false)
-        ->assertSee('data-tab-panel="forms" hidden', false)
+        ->assertSee('data-tab-panel="forms"', false)
         ->assertDontSee('href="#health"', false)
         ->assertSee('Connect a website form')
         ->assertSee(route('forms.submit'))
@@ -211,7 +211,7 @@ it('keeps forms and submissions inside the website workspace', function (): void
         ->assertSee('name="_honeypot"', false)
         ->assertSee('data-copy-target="form-onboarding-example"', false)
         ->assertSee('Contact form')
-        ->assertSee('Submissions')
+        ->assertSee('Team notifications')
         ->assertDontSee('Recent submissions');
 });
 
@@ -225,7 +225,7 @@ it('shows GitHub content tools only to administrators', function (): void {
         ->assertOk()
         ->assertSee('data-tab="content"', false)
         ->assertSee('data-tab-panel="content"', false)
-        ->assertSee('Manual content requests')
+        ->assertSee('Content queue')
         ->assertSee('Change repository')
         ->assertSee('href="'.route('admin.website-repositories.create', $website).'"', false);
 });

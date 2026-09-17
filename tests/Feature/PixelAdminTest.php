@@ -17,7 +17,7 @@ it('hides the pixel workspace while the feature is disabled', function (): void 
         ->assertSuccessful()
         ->assertDontSee('data-tab="pixel"', false)
         ->assertDontSee('data-tab-panel="pixel"', false)
-        ->assertDontSee('Sitewell Pixel');
+        ->assertDontSee('id="pixel-installation-title"', false);
 });
 
 it('hides the pixel workspace below the growth membership', function (): void {
@@ -31,7 +31,7 @@ it('hides the pixel workspace below the growth membership', function (): void {
         ->assertSuccessful()
         ->assertDontSee('data-tab="pixel"', false)
         ->assertDontSee('data-tab-panel="pixel"', false)
-        ->assertDontSee('Sitewell Pixel');
+        ->assertDontSee('id="pixel-installation-title"', false);
 });
 
 it('shows the pixel workspace to growth members', function (): void {
@@ -57,7 +57,7 @@ it('hides the pixel workspace when it is disabled in website settings', function
         ->assertSuccessful()
         ->assertDontSee('data-tab="pixel"', false)
         ->assertDontSee('data-tab-panel="pixel"', false)
-        ->assertDontSee('Sitewell Pixel');
+        ->assertDontSee('id="pixel-installation-title"', false);
 });
 
 it('shows configured pixel installation and connection information', function (): void {

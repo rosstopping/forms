@@ -247,7 +247,8 @@ test('target comparison shows tracked competitors from the same successful obser
     $website->members()->attach($viewer, ['role' => Website::MEMBER_ROLE_VIEWER]);
     $response = $this->actingAs($viewer)->get(route('admin.websites.show', [$website, 'tab' => 'seo', 'seo_section' => 'targets']))->assertSuccessful();
     $html = $response->getContent();
-    $start = strpos($html, '<section class="overflow-hidden rounded-xl border bg-white shadow-sm" aria-labelledby="target-keywords-title">');
+    $start = strpos($html, 'aria-labelledby="target-keywords-title"');
+    expect($start)->not->toBeFalse();
     $section = substr($html, $start, strpos($html, '</section>', $start) - $start);
     expect($section)->toContain('Competitor comparison', '#17', '#3', '#22', '14 places ahead of you', '5 places behind you', 'absent.example', 'Not in top 100', 'https://ahead.example/service', $ranking->observed_at->format('j M Y, H:i'), 'Latest check failed')
         ->not->toContain('excluded.example', 'other-website.example', 'Check now');

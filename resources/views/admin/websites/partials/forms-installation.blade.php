@@ -1,7 +1,7 @@
-        <section class="@container rounded-xl border border-slate-950/10 bg-white p-5 lg:col-span-2 sm:p-6" aria-labelledby="form-onboarding-title">
+        <section class="ui-panel ui-section @container lg:col-span-2" aria-labelledby="form-onboarding-title">
             <h2 id="form-onboarding-title" class="text-xl font-semibold text-slate-950">Connect a website form</h2>
             <p class="mt-1 text-base text-slate-600 sm:text-sm">Use the installation example when adding a new form to this website.</p>
-            <details class="group mt-4 rounded-lg bg-slate-50 open:ring-1 open:ring-slate-950/10">
+            <details class="ui-well group mt-4 open:ring-1 open:ring-slate-950/10">
                 <summary class="flex cursor-pointer list-none items-center justify-between gap-3 rounded-lg px-4 py-3 text-base font-medium text-slate-800 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600 sm:text-sm [&::-webkit-details-marker]:hidden">
                     Show installation instructions
                     <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" class="size-5 shrink-0 group-open:rotate-180 sm:size-4" aria-hidden="true"><path d="m5 7.5 5 5 5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -28,10 +28,10 @@
 
                 <div class="min-w-0 rounded-md bg-slate-950 p-3 [--padding:--spacing(3)] [--radius:var(--radius-md)]">
                     <div class="flex items-center justify-between gap-3 pb-3">
-                        <p class="min-w-0 truncate font-mono text-sm text-slate-300">HTML · complete example</p>
+                        <p class="min-w-0 truncate font-mono text-slate-300 text-base sm:text-sm">HTML · complete example</p>
                         <button type="button" class="js-copy-text relative shrink-0 rounded-md border border-white/15 bg-white/10 px-3 py-2 text-base font-medium text-white hover:bg-white/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:text-sm" data-copy-target="form-onboarding-example" data-copy-label="Copy example" data-copied-label="Copied">Copy example<span class="absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2 pointer-fine:hidden" aria-hidden="true"></span></button>
                     </div>
-                    <textarea id="form-onboarding-example" class="h-96 w-full resize-y rounded-[calc(var(--radius)-var(--padding))] border-0 bg-slate-900 p-3 font-mono text-sm text-slate-100 focus:outline-2 focus:outline-offset-2 focus:outline-blue-400" readonly spellcheck="false">&lt;form method="POST" action="{{ route('forms.submit') }}"&gt;
+                    <textarea id="form-onboarding-example" class="ui-input h-96 w-full resize-y rounded-[calc(var(--radius)-var(--padding))] font-mono" readonly spellcheck="false">&lt;form method="POST" action="{{ route('forms.submit') }}"&gt;
     &lt;input type="hidden" name="_form_name" value="Contact form"&gt;
 
     &lt;div

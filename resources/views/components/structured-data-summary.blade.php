@@ -15,19 +15,19 @@
 @endphp
 
 @if ($schemaPages->isNotEmpty())
-    <section class="rounded-lg border border-slate-200 bg-white shadow-sm" aria-labelledby="structured-data-summary-title">
-        <div class="border-b border-slate-200 p-4">
-            <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Search appearance</p>
+    <section class="ui-panel" aria-labelledby="structured-data-summary-title">
+        <div class="border-b border-slate-950/10 p-4">
+            <p class="font-medium uppercase tracking-wide text-slate-500 text-base sm:text-sm">Search appearance</p>
             <h2 id="structured-data-summary-title" class="mt-1 font-semibold text-slate-950">Structured data and schema recommendations</h2>
-            <p class="mt-1 text-sm text-slate-600">Checks cover embedded JSON-LD syntax, common Google-supported properties, and opportunities supported by visible page evidence. Valid markup does not guarantee a rich result.</p>
+            <p class="mt-1 text-slate-600 text-base sm:text-sm">Checks cover embedded JSON-LD syntax, common Google-supported properties, and opportunities supported by visible page evidence. Valid markup does not guarantee a rich result.</p>
         </div>
-        <div class="divide-y divide-slate-200">
+        <div class="divide-y divide-slate-950/10">
             @foreach ($schemaPages as $schemaPage)
                 <article class="p-4">
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                         <div class="min-w-0">
-                            <p class="truncate text-sm font-medium text-slate-950" title="{{ $schemaPage['page']->url }}">{{ parse_url($schemaPage['page']->url, PHP_URL_PATH) ?: '/' }}</p>
-                            <p class="mt-1 text-xs text-slate-500">{{ $schemaPage['blocks'] }} JSON-LD {{ Str::plural('block', $schemaPage['blocks']) }}</p>
+                            <p class="truncate font-medium text-slate-950 text-base sm:text-sm" title="{{ $schemaPage['page']->url }}">{{ parse_url($schemaPage['page']->url, PHP_URL_PATH) ?: '/' }}</p>
+                            <p class="mt-1 text-slate-500 text-base sm:text-sm">{{ $schemaPage['blocks'] }} JSON-LD {{ Str::plural('block', $schemaPage['blocks']) }}</p>
                         </div>
                         @if ($schemaPage['types']->isNotEmpty())
                             <div class="flex flex-wrap gap-1.5">
@@ -40,7 +40,7 @@
                     @if ($schemaPage['issues']->isNotEmpty())
                         <div class="mt-3 grid gap-2 lg:grid-cols-2">
                             @foreach ($schemaPage['issues'] as $issue)
-                                <div class="rounded-md bg-slate-50 p-3 text-sm">
+                                <div class="ui-well p-3 text-sm">
                                     <div class="flex items-start justify-between gap-3">
                                         <p class="font-medium text-slate-900">{{ $issue['label'] }}</p>
                                         <span @class([
