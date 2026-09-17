@@ -4,7 +4,7 @@ Tags: website management, maintenance, seo, site audit
 Requires at least: 6.6
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 1.0.7
+Stable tag: 1.0.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -145,6 +145,10 @@ Updates are downloaded directly from Sitewell over verified HTTPS. The plugin ve
 The plugin does not add visitor tracking. Connection and deployment requests are limited to the operational data described in the External service section. See https://sitewell.digizu.co.uk/privacy-policy for details.
 
 == Changelog ==
+
+= 1.0.8 =
+* Allow external HTTPS and protocol-relative CSS, JavaScript and fonts from any host.
+* Keep local dependency, archive safety and template validation.
 
 = 1.0.7 =
 * Allow Google Fonts HTTPS stylesheets and font files in static releases.

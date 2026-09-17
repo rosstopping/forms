@@ -19,3 +19,6 @@ Supersedes the mandatory optimized-artifact rule: static-build-manifest.json and
 
 ## Allow Google Fonts for hosted text fonts
 Shared static validation permits HTTPS fonts.googleapis.com/css or /css2 query URLs and fonts.gstatic.com/s/ assets without fetching remote dependencies. This supersedes the blanket Google Fonts rejection. Keep rejecting other remote stylesheet/font dependencies, lookalike hosts and obsolete local WordPress Google font paths. Plugin 1.0.7 or later is required before deploying releases that use this exception.
+
+## Allow arbitrary external HTTPS asset hosts
+Plugin 1.0.8 supersedes the Google-only exception: external HTTPS and protocol-relative asset references are permitted from any host and are not fetched during validation. Preserve external URLs during uploads rewriting. Missing local dependencies, unsafe archive files, invalid supplied manifests/fingerprints and unbuilt templates remain errors. Do not reintroduce a CDN host allowlist or reject an external dependency merely for containing legacy WordPress paths.

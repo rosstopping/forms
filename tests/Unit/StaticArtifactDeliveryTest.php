@@ -35,7 +35,7 @@ it('rejects incomplete optimized releases and unresolved dependencies', function
         'missing font' => $files = array_diff_key($files, [ltrim($manifest['assets']['/font.ttf'], '/') => true]),
         'wrong bytes' => $files[ltrim($manifest['assets']['/site.css'], '/')] = 'corrupt',
         'missing image' => $files['index.html'] .= '<img src="/missing.png">',
-        'remote font' => $files['index.html'] .= '<style>@font-face{src:url(https://fonts.gstatic.com/font.woff2)}</style>',
+        'remote font' => $files['index.html'] .= '<style>@font-face{src:url(http://example.com/font.woff2)}</style>',
         'missing css import' => $files['legacy.css'] = '@import "missing.css";',
         'unbuilt page' => $files['service/index.html'] = "---\ntitle: Test\n---\nHello",
     };
@@ -70,10 +70,10 @@ it('rejects invalid supplied metadata and corrupt fingerprints even without meta
         ->toThrow(RuntimeException::class);
 })->with(['invalid manifest', 'corrupt fingerprint']);
 
-it('accepts Google Fonts through HTML and CSS without fetching remote dependencies', function (string $url): void {
+it('accepts external HTTPS and protocol-relative assets without fetching remote dependencies', function (string $url): void {
     $files = [
-        'index.html' => '<link rel="stylesheet" href="'.htmlspecialchars($url).'"><link rel="stylesheet" href="/style.css">',
-        'style.css' => '@import "'.$url.'";',
+        'index.html' => '<link rel="stylesheet" href="'.htmlspecialchars($url).'"><script src="'.htmlspecialchars($url).'"></script><link rel="stylesheet" href="/style.css">',
+        'style.css' => '@import "'.$url.'";@font-face{src:url("'.$url.'")}',
     ];
     (new StaticArtifactValidator)->validate(array_keys($files), fn (string $path): string|false => $files[$path] ?? false);
     expect(true)->toBeTrue();
@@ -81,17 +81,23 @@ it('accepts Google Fonts through HTML and CSS without fetching remote dependenci
     'https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap',
     'https://fonts.googleapis.com/css?family=Montserrat',
     'https://fonts.gstatic.com/s/lato/v24/example.woff2',
+    'https://cdn.example.com/site.css?v=2',
+    'https://cdn.example.com/app.js',
+    'https://cdn.example.com/font.woff2',
+    '//cdn.example.com/site.css',
+    'https://original.example.com/wp-content/fonts/google/font.woff2',
+    'https://original.example.com/litespeed/site.css',
 ]);
 
-it('still rejects other remote fonts and misleading Google Fonts URLs', function (string $url): void {
+it('still rejects missing local dependencies and insecure remote stylesheets or fonts', function (string $url): void {
     $files = ['index.html' => '<style>@font-face{src:url('.$url.')}</style>'];
     expect(fn () => (new StaticArtifactValidator)->validate(array_keys($files), fn (string $path): string|false => $files[$path] ?? false))
         ->toThrow(RuntimeException::class);
 })->with([
-    'http://fonts.googleapis.com/css2?family=Lato',
-    'https://fonts.googleapis.com.example.com/css2?family=Lato',
-    'https://fonts.gstatic.com@example.com/s/font.woff2',
-    'https://example.com/font.woff2',
+    'http://example.com/font.woff2',
+    'http://example.com/site.css',
+    '/missing.css',
+    '/missing.js',
     '/wp-content/fonts/google/missing.woff2',
 ]);
 
