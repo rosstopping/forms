@@ -22,6 +22,7 @@ use App\Services\WebsiteHealthReportPromptGenerator;
 use App\Services\WebsiteMailRecipients;
 use App\Support\MembershipPlan;
 use Dom\HTMLDocument;
+use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
@@ -76,6 +77,46 @@ it('shows Search Console reporting on the website dashboard', function (): void 
         ->assertSee('3.2')
         ->assertSee('View all data')
         ->assertSee(route('admin.search-console.performance', $website));
+});
+
+it('reports Search Console failures while keeping the website dashboard available', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $website = websiteWithDomain();
+    SearchConsoleConnection::factory()->for($website)->create(['connected_by' => $admin->id]);
+    $exception = new RuntimeException('Google authorization failed.');
+    Exceptions::fake();
+
+    $this->mock(SearchConsoleClient::class)
+        ->shouldReceive('report')->once()->andThrow($exception);
+
+    $this->actingAs($admin)
+        ->get(route('admin.websites.show', $website))
+        ->assertSuccessful()
+        ->assertSee('Search performance is temporarily unavailable. The rest of the dashboard is unaffected.')
+        ->assertDontSee($exception->getMessage());
+
+    Exceptions::assertReported(fn (RuntimeException $reported): bool => $reported === $exception);
+});
+
+it('reports Search Console history failures while preserving the current report', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $website = websiteWithDomain();
+    SearchConsoleConnection::factory()->for($website)->create(['connected_by' => $admin->id]);
+    $exception = new RuntimeException('Search history import failed.');
+    Exceptions::fake();
+
+    $this->mock(SearchConsoleClient::class)
+        ->shouldReceive('report')->once()->andReturn(searchConsoleReportData())
+        ->shouldReceive('monthlyPerformance')->once()->andThrow($exception);
+
+    $this->actingAs($admin)
+        ->get(route('admin.websites.show', $website))
+        ->assertSuccessful()
+        ->assertSee('2,500')
+        ->assertSee('example services')
+        ->assertDontSee($exception->getMessage());
+
+    Exceptions::assertReported(fn (RuntimeException $reported): bool => $reported === $exception);
 });
 
 it('shows sortable Search Console queries and landing pages to website users', function (): void {

@@ -257,7 +257,9 @@ class WebsiteController extends Controller
                 $cacheKey = 'search-console-report:'.$connection->id.':'.hash('sha256', $connection->property_url).':'.$connection->updated_at->timestamp;
                 $searchConsoleReport = Cache::remember($cacheKey, now()->addMinutes(15), fn (): array => $this->searchConsole->report($connection));
                 $searchConsoleHistory = Cache::remember($cacheKey.':monthly-history', now()->addHours(6), fn (): array => $this->searchConsoleHistory->syncSite($connection));
-            } catch (\Throwable) {
+            } catch (\Throwable $exception) {
+                report($exception);
+
                 $searchConsoleReportUnavailable = true;
             }
         }
