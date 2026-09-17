@@ -60,6 +60,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Enums,Models,Services,Jobs,Http/Controllers}/**/*Prospect*.php,config/outreach.php,database/migrations/**/*prospect*.php | .ai/rules/migrations.md |
 | app/{Models/ContentRequest.php,Jobs/StartContentGeneration.php,Http/Controllers/Admin/{ContentRequestController.php,ContentRequestPixelController.php}},resources/views/admin/websites/show.blade.php | .ai/rules/models-controllers-admin-views-admin-websites.md |
 | app/{Models/PixelPageSighting.php,Services/PixelHeartbeatRecorder.php,Http/Controllers/PixelHeartbeatController.php}, public/pixel.js | .ai/rules/models-controllers.md |
+| {app/Http/Controllers/GithubWebhookController.php,app/Models/WebsiteRepository.php,database/migrations/*website_repositories*.php} | .ai/rules/models-migrations.md |
 | app/{Jobs,Mail,Http/Controllers}/**/*FormSubmission*.php,app/Models/Website.php,resources/views/admin/websites/show.blade.php | .ai/rules/models-views-admin-websites.md |
 | app/{Models/Optimisation*.php,Services/*Deployment*.php,Contracts/DeploymentDriver.php} | .ai/rules/models.md |
 | app/{Notifications,Services}/**/*Prospect*.php | .ai/rules/notifications-services.md |

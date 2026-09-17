@@ -2,6 +2,7 @@
 
 use App\Jobs\StartCopilotRemediation;
 use App\Jobs\SyncCopilotRemediation;
+use App\Models\ContentGeneration;
 use App\Models\GithubInstallation;
 use App\Models\GithubUserAuthorization;
 use App\Models\RemediationRun;
@@ -586,4 +587,46 @@ it('prevents website owners from changing another clients GitHub repository conn
             'repository' => $installation->id.':456',
         ])
         ->assertForbidden();
+});
+
+it('connects the same repository to multiple websites with independent settings', function (): void {
+    $owner = User::factory()->create();
+    $production = Website::factory()->for($owner, 'owner')->create();
+    $staging = Website::factory()->for($owner, 'owner')->create();
+    $installation = GithubInstallation::factory()->for($owner, 'installer')->create();
+    mock(GithubAppClient::class)->shouldReceive('repositories')->times(3)->with($installation->installation_id)->andReturn([
+        ['id' => 1361491002, 'full_name' => 'sitewell-by-digizu/rowglo', 'default_branch' => 'main', 'private' => true],
+    ]);
+    $this->actingAs($owner);
+    foreach ([$production, $staging, $staging] as $website) {
+        $this->post(route('admin.website-repositories.store', $website), [
+            'repository' => $installation->id.':1361491002',
+            'project_path' => $website->is($production) ? 'production' : 'staging',
+        ])->assertSessionHasNoErrors()->assertRedirect();
+    }
+    expect(WebsiteRepository::count())->toBe(2)
+        ->and($production->repository()->sole()->project_path)->toBe('production')
+        ->and($staging->repository()->sole()->project_path)->toBe('staging');
+    $this->delete(route('admin.website-repositories.destroy', $staging))->assertRedirect();
+    expect($production->repository()->exists())->toBeTrue()->and($staging->repository()->exists())->toBeFalse();
+});
+
+it('updates pull request activity on every matching website repository', function (): void {
+    config(['services.github.webhook_secret' => 'test-secret']);
+    $production = WebsiteRepository::factory()->create();
+    $staging = WebsiteRepository::factory()->for($production->installation, 'installation')->create(['repository_id' => $production->repository_id]);
+    $run = RemediationRun::factory()->for($staging, 'repository')->create(['pull_request_number' => 12, 'status' => RemediationRun::STATUS_PULL_REQUEST_OPEN]);
+    $generation = ContentGeneration::factory()->create(['website_repository_id' => $staging->id, 'pull_request_number' => 12]);
+    $unrelated = RemediationRun::factory()->for($production, 'repository')->create(['pull_request_number' => 13, 'status' => RemediationRun::STATUS_PULL_REQUEST_OPEN]);
+    $payload = json_encode([
+        'action' => 'closed', 'repository' => ['id' => $production->repository_id],
+        'pull_request' => ['number' => 12, 'state' => 'closed', 'merged' => true],
+    ], JSON_THROW_ON_ERROR);
+    $this->call('POST', route('github.webhook'), [], [], [], [
+        'CONTENT_TYPE' => 'application/json', 'HTTP_X_GITHUB_EVENT' => 'pull_request',
+        'HTTP_X_HUB_SIGNATURE_256' => 'sha256='.hash_hmac('sha256', $payload, 'test-secret'),
+    ], $payload)->assertSuccessful();
+    expect($run->fresh()->status)->toBe(RemediationRun::STATUS_COMPLETED)
+        ->and($generation->fresh()->status)->toBe(ContentGeneration::STATUS_COMPLETED)
+        ->and($unrelated->fresh()->status)->toBe(RemediationRun::STATUS_PULL_REQUEST_OPEN);
 });

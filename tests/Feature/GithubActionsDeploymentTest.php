@@ -309,3 +309,28 @@ it('does not publish or notify for an artifact without the optimized build contr
         ->toThrow(RuntimeException::class, 'validated optimized artifact');
     expect($release->fresh()->status)->toBe('failed')->and(Storage::disk('local')->allFiles())->toBe([]);
 });
+
+it('queues separate releases for each site sharing a repository without duplicates', function (string $event): void {
+    Queue::fake();
+    $other = WebsiteRepository::factory()->for($this->repository->installation, 'installation')->create([
+        'repository_id' => $this->repository->repository_id,
+        'wordpress_workflow_path' => $this->repository->wordpress_workflow_path,
+        'wordpress_artifact_name' => $this->repository->wordpress_artifact_name,
+    ]);
+    WordpressConnection::factory()->for($other->website)->create();
+    if ($event === 'push') {
+        $this->repository->update(['wordpress_workflow_path' => null, 'wordpress_artifact_name' => null]);
+        $other->update(['wordpress_workflow_path' => null, 'wordpress_artifact_name' => null]);
+    }
+    $payload = [
+        'action' => 'completed', 'workflow_run' => $this->run,
+        'ref' => 'refs/heads/main', 'after' => $this->sha,
+        'repository' => ['id' => $this->repository->repository_id],
+        'installation' => ['id' => $this->repository->installation->installation_id],
+    ];
+    sendActionsDeploymentWebhook($payload, $event);
+    sendActionsDeploymentWebhook($payload, $event);
+    Queue::assertPushed(BuildWordPressStaticRelease::class, 2);
+    expect($this->repository->website->wordpressStaticReleases()->sole()->commit_sha)->toBe($this->sha)
+        ->and($other->website->wordpressStaticReleases()->sole()->commit_sha)->toBe($this->sha);
+})->with(['push', 'workflow_run']);
