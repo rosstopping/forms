@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Sitewell\StaticFrontend\Admin;
 
+use RuntimeException;
 use Sitewell\StaticFrontend\Contracts\StaticRootProvider;
+use Sitewell\StaticFrontend\DirectDelivery;
 
 final class SettingsPage {
 
@@ -16,7 +18,7 @@ final class SettingsPage {
 
 	public const OPTION_PREVIOUS_RELEASE = 'sitewell_static_frontend_previous_release';
 
-	public function __construct( private readonly StaticRootProvider $staticRoot ) {}
+	public function __construct( private readonly StaticRootProvider $staticRoot, private readonly ?DirectDelivery $delivery = null ) {}
 
 	public function register(): void {
 		add_options_page(
@@ -35,9 +37,29 @@ final class SettingsPage {
 			[
 				'type'              => 'boolean',
 				'default'           => false,
-				'sanitize_callback' => static fn ( mixed $value ): bool => self::activeRelease() !== null && ( $value === '1' || $value === 1 || $value === true ),
+				'sanitize_callback' => [ $this, 'saveEnabled' ],
 			]
 		);
+	}
+
+	public function saveEnabled( mixed $value ): bool {
+		$enable = $value === '1' || $value === 1 || $value === true;
+		try {
+			if ( $enable ) {
+				if ( $this->delivery === null ) {
+					throw new RuntimeException( 'Static delivery is unavailable.' );
+				}
+				$this->delivery->enable();
+			} else {
+				$this->delivery?->disable();
+			}
+
+			return $enable;
+		} catch ( RuntimeException $exception ) {
+			add_settings_error( self::OPTION_ENABLED, 'sitewell_delivery', $exception->getMessage() );
+
+			return self::isEnabled();
+		}
 	}
 
 	public function render(): void {
@@ -125,6 +147,18 @@ final class SettingsPage {
 			<p class="description"><?php echo esc_html( sprintf( __( 'Sitewell API: %s', 'sitewell-static-frontend' ), SITEWELL_STATIC_FRONTEND_API_URL ) ); ?></p>
 
 			<hr>
+		<?php settings_errors( self::OPTION_ENABLED ); ?>
+			<p><?php echo esc_html__( 'Fast delivery serves pages and assets directly from the web server. Saving with Sitewell enabled first checks that this works; a failed check leaves the current website in place.', 'sitewell-static-frontend' ); ?></p>
+		<?php if ( $enabled && ! get_option( DirectDelivery::OPTION, false ) ) { ?>
+			<p><?php echo esc_html__( 'This site still uses WordPress compatibility delivery. Save with the checkbox enabled to set up and verify fast delivery.', 'sitewell-static-frontend' ); ?></p>
+		<?php } ?>
+		<?php $configuration = $this->delivery?->configuration() ?? ''; ?>
+		<?php if ( $configuration !== '' ) { ?>
+			<details><summary><?php echo esc_html__( 'Nginx setup for your hosting provider', 'sitewell-static-frontend' ); ?></summary>
+				<p><?php echo esc_html__( 'Include this configuration in the existing WordPress server block before other server rewrites, run nginx -t and reload. Then enable Sitewell again. Do not replace the existing WordPress or PHP configuration.', 'sitewell-static-frontend' ); ?></p>
+				<textarea readonly rows="18" class="large-text code"><?php echo esc_textarea( $configuration ); ?></textarea>
+			</details>
+		<?php } ?>
 
 			<p>
 				<strong><?php echo esc_html__( 'Status:', 'sitewell-static-frontend' ); ?></strong>
@@ -160,7 +194,7 @@ final class SettingsPage {
 		<?php echo esc_html__( 'Use the Sitewell website', 'sitewell-static-frontend' ); ?>
 				</label>
 				<p class="description"><?php echo esc_html__( 'Clear this checkbox and save to restore the original WordPress website immediately.', 'sitewell-static-frontend' ); ?></p>
-		<?php submit_button( __( 'Save', 'sitewell-static-frontend' ) ); ?>
+		<?php submit_button( __( 'Save and verify delivery', 'sitewell-static-frontend' ) ); ?>
 			</form>
 
 			<p><a href="<?php echo esc_url( home_url( '/' ) ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html__( 'View public homepage', 'sitewell-static-frontend' ); ?></a></p>

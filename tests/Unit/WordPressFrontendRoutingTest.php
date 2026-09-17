@@ -24,6 +24,7 @@ namespace {
     define('SITEWELL_STATIC_FRONTEND_PATH', $argv[1].'/');
     define('SITEWELL_STATIC_FRONTEND_API_URL', 'https://sitewell.example/api');
     define('MINUTE_IN_SECONDS', 60);
+    define('ABSPATH', $argv[2].'/');
     function is_admin(): bool { return false; }
     function wp_upload_dir(): array { return ['basedir' => $GLOBALS['argv'][2]]; }
     function wp_next_scheduled(string $hook): int { return 1; }

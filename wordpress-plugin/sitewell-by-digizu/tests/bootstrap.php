@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 if ( ! defined( 'SITEWELL_STATIC_FRONTEND_VERSION' ) ) {
-	define( 'SITEWELL_STATIC_FRONTEND_VERSION', '1.0.2' );
+	define( 'SITEWELL_STATIC_FRONTEND_VERSION', '1.0.3' );
 }
 
 if ( ! class_exists( 'WP_Error' ) ) {
@@ -69,7 +69,7 @@ function wp_json_encode( mixed $value ): string|false {
 function wp_remote_request( string $url, array $arguments ): array|WP_Error {
 	$GLOBALS['sitewell_test_request'] = compact( 'url', 'arguments' );
 
-	return $GLOBALS['sitewell_test_response'];
+	return isset( $GLOBALS['sitewell_test_http'] ) ? ( $GLOBALS['sitewell_test_http'] )( $url, $arguments ) : $GLOBALS['sitewell_test_response'];
 }
 
 /**
@@ -90,9 +90,39 @@ require_once dirname( __DIR__ ) . '/src/Contracts/StaticRootProvider.php';
 require_once dirname( __DIR__ ) . '/src/Admin/SettingsPage.php';
 require_once dirname( __DIR__ ) . '/src/StaticArtifactValidator.php';
 require_once dirname( __DIR__ ) . '/src/StaticPublisher.php';
+require_once dirname( __DIR__ ) . '/src/DeliveryRules.php';
+require_once dirname( __DIR__ ) . '/src/DirectDelivery.php';
 require_once dirname( __DIR__ ) . '/src/ReleaseInstaller.php';
 require_once dirname( __DIR__ ) . '/src/ActiveStaticRootProvider.php';
 require_once dirname( __DIR__ ) . '/src/ResolvedStaticFile.php';
 require_once dirname( __DIR__ ) . '/src/StaticPathResolver.php';
 require_once dirname( __DIR__ ) . '/src/BypassPolicy.php';
 require_once dirname( __DIR__ ) . '/src/SitewellClient.php';
+
+function is_multisite(): bool {
+	return false;
+}
+function site_url( string $path = '/' ): string {
+	return home_url( $path );
+}
+function wp_parse_url( string $url, int $component = -1 ): mixed {
+	return parse_url( $url, $component );
+}
+function is_wp_error( mixed $response ): bool {
+	return $response instanceof WP_Error;
+}
+function wp_remote_retrieve_header( array $response, string $name ): string {
+	return $response['headers'][ $name ] ?? '';
+}
+
+if ( ! function_exists( 'wp_delete_file' ) ) {
+	function wp_delete_file( string $path ): void {
+		if ( is_file( $path ) || is_link( $path ) ) {
+			unlink( $path );
+		}
+	}
+}
+
+function wp_cache_delete( string $key, string $group = '' ): bool {
+	return true;
+}

@@ -47,7 +47,7 @@ final class ReleaseInstaller {
 		'xsl',
 	];
 
-	public function __construct( private readonly string $releasesPath, private readonly ?string $publicPath = null ) {}
+	public function __construct( private readonly string $releasesPath, private readonly ?string $publicPath = null, private readonly ?DirectDelivery $delivery = null ) {}
 
 	/**
 	 * @param  array{release_id: string, checksum: string, size: int}  $release
@@ -65,7 +65,14 @@ final class ReleaseInstaller {
 			if ( ! flock( $lock, LOCK_EX ) ) {
 				throw new RuntimeException( 'Could not lock deployment.' );
 			}
-			$this->installLocked( $release, $archivePath );
+			foreach ( [ SettingsPage::OPTION_ACTIVE_RELEASE, SettingsPage::OPTION_PREVIOUS_RELEASE, DirectDelivery::OPTION ] as $option ) {
+				wp_cache_delete( $option, 'options' );
+			}
+			if ( $this->delivery !== null && get_option( DirectDelivery::OPTION, false ) ) {
+				$this->delivery->locked( fn () => $this->installLocked( $release, $archivePath ) );
+			} else {
+				$this->installLocked( $release, $archivePath );
+			}
 		} finally {
 			flock( $lock, LOCK_UN );
             // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Close the deployment lock handle.
@@ -115,6 +122,15 @@ final class ReleaseInstaller {
 		if ( $this->publicPath !== null ) {
 			try {
 				( new StaticPublisher( $this->publicPath ) )->publish( $releasePath );
+			} catch ( RuntimeException $exception ) {
+				$this->removeDirectory( $releasePath );
+				throw $exception;
+			}
+		}
+
+		if ( $this->delivery !== null && get_option( DirectDelivery::OPTION, false ) ) {
+			try {
+				$this->delivery->publish( $releasePath );
 			} catch ( RuntimeException $exception ) {
 				$this->removeDirectory( $releasePath );
 				throw $exception;

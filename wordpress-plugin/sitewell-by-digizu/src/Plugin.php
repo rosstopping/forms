@@ -30,13 +30,13 @@ final class Plugin {
 			new BypassPolicy(),
 			SITEWELL_STATIC_FRONTEND_PATH . 'templates/static-router.php',
 		);
-		$this->settingsPage       = new SettingsPage( $this->staticRoot );
+		$this->settingsPage       = new SettingsPage( $this->staticRoot, DirectDelivery::forWordPress() );
 		$client                   = new SitewellClient( SITEWELL_STATIC_FRONTEND_API_URL );
 		$uploads                  = wp_upload_dir();
 		$releasesPath             = defined( 'SITEWELL_STATIC_FRONTEND_RELEASES_PATH' )
 			? (string) SITEWELL_STATIC_FRONTEND_RELEASES_PATH
 			: rtrim( (string) ( $uploads['basedir'] ?? '' ), '/\\' ) . '/sitewell-static-frontend/releases';
-		$this->deployments        = new DeploymentManager( $client, new ReleaseInstaller( $releasesPath, defined( 'SITEWELL_STATIC_FRONTEND_PUBLIC_PATH' ) ? (string) SITEWELL_STATIC_FRONTEND_PUBLIC_PATH : null ) );
+		$this->deployments        = new DeploymentManager( $client, new ReleaseInstaller( $releasesPath, defined( 'SITEWELL_STATIC_FRONTEND_PUBLIC_PATH' ) ? (string) SITEWELL_STATIC_FRONTEND_PUBLIC_PATH : null, DirectDelivery::forWordPress() ) );
 		$this->deploymentEndpoint = new DeploymentEndpoint( $this->deployments );
 		$this->connectionActions  = new ConnectionActions( $client, $this->deployments );
 	}
@@ -56,6 +56,12 @@ final class Plugin {
 	}
 
 	public static function deactivate(): void {
+		try {
+			DirectDelivery::forWordPress()->disable();
+			update_option( SettingsPage::OPTION_ENABLED, false, false );
+		} catch ( \RuntimeException $exception ) {
+			wp_die( esc_html( $exception->getMessage() ) );
+		}
 		wp_clear_scheduled_hook( 'sitewell_static_frontend_check_updates' );
 	}
 
@@ -72,7 +78,7 @@ final class Plugin {
 		add_filter( 'cron_schedules', [ self::class, 'cronSchedules' ] );
 		self::scheduleUpdates();
 
-		if ( ! SettingsPage::isEnabled() ) {
+		if ( ! SettingsPage::isEnabled() || get_option( DirectDelivery::OPTION, false ) ) {
 			return;
 		}
 
