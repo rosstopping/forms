@@ -217,6 +217,19 @@
                 @endif
 
                 <main class="admin-content mx-auto max-w-[96rem] p-4 sm:p-6 lg:p-8 xl:p-10">
+                    @if ($searchConsoleAccessWarning && (($isWebsiteWorkspace ?? false) || request()->routeIs('admin.dashboard')))
+                        <section class="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-5" role="alert" aria-labelledby="search-console-access-title">
+                            <h2 id="search-console-access-title" class="font-semibold text-amber-950">Search Console access needs attention</h2>
+                            <p class="mt-1 text-sm text-amber-900">Sitewell cannot read Search Console data for {{ $currentWebsite->name }} ({{ $searchConsoleAccessWarning->property_url }}). The property may have lost verification, or the connected Google account may no longer have permission. Search data cannot update while access is unavailable.</p>
+                            <p class="mt-2 text-sm text-amber-900">Check ownership verification and account permissions in Google Search Console. This notice clears automatically after Sitewell successfully reads the property again.</p>
+                            <div class="mt-3 flex flex-wrap gap-3">
+                                <a href="https://search.google.com/search-console" target="_blank" rel="noopener noreferrer" class="ui-button ui-button-secondary">Open Search Console</a>
+                                @if ($currentWebsite->isManageableBy(Auth::user()) && (Auth::user()->isAdmin() || $currentWebsite->owner?->hasMembershipFeature(\App\Support\MembershipPlan::FEATURE_SEARCH_CONSOLE)))
+                                    <a href="{{ route('admin.search-console.connect', $currentWebsite) }}" class="ui-button ui-button-secondary">Reconnect Google</a>
+                                @endif
+                            </div>
+                        </section>
+                    @endif
                     @yield('content')
                 </main>
             </div>

@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\SearchConsoleConnection;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\Request;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 
@@ -206,8 +208,28 @@ class SearchConsoleClient
 
     protected function request(SearchConsoleConnection $connection): PendingRequest
     {
+        $propertyUrl = $connection->property_url;
+
         return Http::baseUrl((string) config('services.google.search_console_url'))
             ->acceptJson()->withToken($this->oauth->accessToken($connection))
+            ->afterResponse(function (Response $response, Request $request) use ($connection, $propertyUrl): void {
+                if (! $propertyUrl || ! str_ends_with($request->url(), '/sites/'.rawurlencode($propertyUrl).'/searchAnalytics/query')) {
+                    return;
+                }
+
+                $accessDenied = $response->forbidden() && (
+                    collect($response->json('error.errors', []))->contains(fn (array $error): bool => in_array($error['reason'] ?? null, ['forbidden', 'insufficientPermissions'], true))
+                    || str_contains((string) $response->json('error.message', ''), 'User does not have sufficient permission for site')
+                );
+
+                if (! $accessDenied && ! $response->successful()) {
+                    return;
+                }
+
+                $query = SearchConsoleConnection::query()->whereKey($connection->id)->where('property_url', $propertyUrl);
+                $accessDenied ? $query->whereNull('access_denied_at') : $query->whereNotNull('access_denied_at');
+                $query->update(['access_denied_at' => $accessDenied ? now() : null]);
+            })
             ->connectTimeout(5)->timeout(30)->retry([500, 1500], throw: false);
     }
 

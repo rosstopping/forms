@@ -4,6 +4,7 @@ paths:
   - 'app/Services/Pixel*.php'
   - 'app/Services/{SitemapFetcher,ProspectWebsiteAnalyzer,WebsiteHealthAuditor}.php'
   - 'app/Services/WeeklyReport*.php'
+  - app/Services/SearchConsoleClient.php
 ---
 
 # Services
@@ -19,3 +20,6 @@ Public and website-health sitemap availability checks use SitemapFetcher and eva
 
 ## Append verified AI Visibility facts to the shared Weekly Overview
 WeeklyReportBuilder includes AI Visibility only from persisted observations. WeeklyReportGenerator appends its computed AI summary verbatim and excludes that topic from the narrative writer, rejecting generated AI-platform claims. Reuse the frozen overview in the existing weekly email; do not generate visibility checks while building or rendering reports.
+
+## Distinguish Search Console access loss from temporary failures
+Persist property-specific permission failures for a visible site warning, including failures from background jobs. Google can also return 403 for quota limits; do not label these as lost verification. Clear the warning only after a successful read of the same selected property, never from listing sites or an old property's response. Search Console access loss is not proof that Sitewell website ownership should be revoked.

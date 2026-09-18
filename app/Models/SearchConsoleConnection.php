@@ -24,6 +24,7 @@ class SearchConsoleConnection extends Model
             'refresh_token' => 'encrypted',
             'access_token_expires_at' => 'datetime',
             'opportunities_checked_at' => 'datetime',
+            'access_denied_at' => 'datetime',
         ];
     }
 

@@ -14,10 +14,16 @@ class NavigationComposer
         $user = Auth::user();
         $newLeadCount = 0;
         $followUpReminderCount = 0;
+        $searchConsoleAccessWarning = null;
 
         $currentWebsite = request()->attributes->get('currentWebsite');
 
         if ($user && $currentWebsite instanceof Website && $currentWebsite->isAccessibleBy($user)) {
+            $searchConsoleAccessWarning = $currentWebsite->searchConsoleConnection()
+                ->whereNotNull('property_url')
+                ->whereNotNull('access_denied_at')
+                ->first();
+
             $query = FormSubmission::query()
                 ->whereBelongsTo($currentWebsite)
                 ->where('status', 'new')
@@ -35,6 +41,6 @@ class NavigationComposer
             $followUpReminderCount = $followUpQuery->count();
         }
 
-        $view->with(compact('newLeadCount', 'followUpReminderCount'));
+        $view->with(compact('newLeadCount', 'followUpReminderCount', 'searchConsoleAccessWarning'));
     }
 }
