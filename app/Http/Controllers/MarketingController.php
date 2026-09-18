@@ -230,6 +230,204 @@ class MarketingController extends Controller
     {
         return [
             [
+                'slug' => 'why-isnt-my-website-showing-on-google',
+                'category' => 'Search',
+                'title' => 'Why isn\'t my website showing on Google?',
+                'seo_title' => 'Website not showing on Google?',
+                'excerpt' => 'A practical guide to diagnosing when a business website is missing from Google, including the difference between indexing issues and low rankings.',
+                'date' => '18 September 2026',
+                'date_iso' => '2026-09-18',
+                'read_time' => '8 min read',
+                'sections' => [
+                    [
+                        'heading' => 'First, separate two different problems',
+                        'paragraphs' => [
+                            'When a business owner says their website is not showing on Google, it usually means one of two things: Google has not indexed the page, or the page exists in Google but ranks too low to be seen.',
+                            'Those are different problems and need different fixes. A clear diagnosis saves time and prevents unnecessary rebuilds.',
+                        ],
+                    ],
+                    [
+                        'heading' => 'Problem A: The page is not indexed',
+                        'paragraphs' => [
+                            'If a page is not indexed, Google has not added it to searchable results yet. In that case, ranking work will not help until indexing is resolved.',
+                            'A practical first check is searching Google for site:yourdomain.co.uk plus a key page topic. If the page does not appear at all, start with indexing and crawl checks.',
+                        ],
+                        'points' => [
+                            'Check whether the page returns properly and is not broken or blocked.',
+                            'Check whether the page is linked from other pages on your website.',
+                            'Check whether important pages were accidentally set to noindex during a redesign or migration.',
+                        ],
+                    ],
+                    [
+                        'heading' => 'Problem B: The page is indexed but ranking poorly',
+                        'paragraphs' => [
+                            'If your page appears in Google but far down the results, the challenge is usually relevance, quality, and competition rather than indexing.',
+                            'This is where service-page clarity, stronger local context, and regular page improvements tend to make the biggest difference.',
+                        ],
+                        'links' => [
+                            [
+                                'route' => 'marketing.article',
+                                'parameters' => ['why-isnt-my-website-ranking-on-google'],
+                                'label' => 'Read our guide on why websites struggle to rank',
+                                'description' => 'Useful when pages are indexed but not earning visible positions.',
+                            ],
+                        ],
+                    ],
+                    [
+                        'heading' => 'A simple diagnosis workflow for business owners',
+                        'paragraphs' => [
+                            'Work through your key service pages one by one rather than trying to fix everything at once.',
+                        ],
+                        'points' => [
+                            'List three to five services that should bring enquiries.',
+                            'Check whether each service page is indexed.',
+                            'Search the service and location terms your customers would actually use.',
+                            'Note whether Google shows the right page, the wrong page, or no page.',
+                            'Prioritise fixes on pages tied to commercial enquiries first.',
+                        ],
+                    ],
+                    [
+                        'heading' => 'Common reasons visibility drops after a website change',
+                        'paragraphs' => [
+                            'A site can disappear from expected searches after platform changes, URL changes, or content rewrites. Often this happens because old pages were removed without proper redirects or new pages became harder for Google to understand.',
+                            'If traffic has also dropped, it is worth checking broader causes before assuming one technical fault explains everything.',
+                        ],
+                        'links' => [
+                            [
+                                'route' => 'marketing.article',
+                                'parameters' => ['why-has-my-website-traffic-dropped'],
+                                'label' => 'Read the full guide to diagnosing traffic drops',
+                            ],
+                        ],
+                    ],
+                    [
+                        'heading' => 'What to do next if you are still unsure',
+                        'paragraphs' => [
+                            'If you cannot tell whether the issue is indexing, ranking, or both, use an audit process that prioritises what affects enquiries first.',
+                        ],
+                        'links' => [
+                            [
+                                'route' => 'marketing.landing',
+                                'parameters' => ['managed-seo-services'],
+                                'label' => 'Explore managed SEO services',
+                            ],
+                            [
+                                'route' => 'marketing.free-site-audit',
+                                'label' => 'Start a free website audit',
+                                'description' => 'Get a practical diagnosis and clear next actions.',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            [
+                'slug' => 'why-has-my-website-traffic-dropped',
+                'category' => 'Search',
+                'title' => 'Why has my website traffic dropped?',
+                'seo_title' => 'Why website traffic drops',
+                'excerpt' => 'A practical explanation of why website traffic can fall, from algorithm shifts and ranking losses to tracking errors, seasonality, and content decay.',
+                'date' => '18 September 2026',
+                'date_iso' => '2026-09-18',
+                'read_time' => '10 min read',
+                'sections' => [
+                    [
+                        'heading' => 'Traffic drops are rarely caused by one thing',
+                        'paragraphs' => [
+                            'A traffic dip feels urgent, but the cause is not always obvious. Many businesses lose visits because several smaller issues stack up at the same time.',
+                            'Treat this as a diagnosis exercise: isolate what changed, which pages were affected, and whether lost traffic also reduced enquiries.',
+                        ],
+                    ],
+                    [
+                        'heading' => 'Cause 1: Search results changed after an algorithm update',
+                        'paragraphs' => [
+                            'Google regularly changes how it evaluates pages. Some updates favour clearer, more useful pages and can reduce visibility for pages that became thin, outdated, or less relevant than competitors.',
+                            'Do not panic and rewrite everything. Start with the pages that lost the most important commercial queries.',
+                        ],
+                    ],
+                    [
+                        'heading' => 'Cause 2: Ranking losses on key pages',
+                        'paragraphs' => [
+                            'Small ranking movements on high-impression queries can create large traffic drops. If your page moved from lower page one to page two, clicks can fall quickly even though the page still appears in results.',
+                            'This is often a page-improvement problem, not a full-site rebuild problem.',
+                        ],
+                        'links' => [
+                            [
+                                'route' => 'marketing.landing',
+                                'parameters' => ['seo-for-small-businesses'],
+                                'label' => 'See how ongoing SEO improvements are prioritised',
+                            ],
+                        ],
+                    ],
+                    [
+                        'heading' => 'Cause 3: Technical problems that block or weaken pages',
+                        'paragraphs' => [
+                            'Broken pages, redirect mistakes, accidental noindex tags, and major performance problems can all reduce search visibility.',
+                            'A common pattern is that traffic declines after website changes where important pages were moved, renamed, or replaced without careful checks.',
+                        ],
+                    ],
+                    [
+                        'heading' => 'Cause 4: Seasonality, demand shifts, or market events',
+                        'paragraphs' => [
+                            'Not every decline is a website fault. Some industries have predictable quiet periods, and some demand changes are driven by economic or local events.',
+                            'Compare year-on-year periods and enquiry quality before assuming your SEO has failed.',
+                        ],
+                    ],
+                    [
+                        'heading' => 'Cause 5: Tracking problems, not real demand loss',
+                        'paragraphs' => [
+                            'Analytics setup issues can make traffic look worse than it is. Tag changes, broken scripts, consent-mode changes, and property misconfiguration can all distort reporting.',
+                            'Always check whether form submissions and calls dropped as well. If leads remained stable, measurement could be part of the issue.',
+                        ],
+                    ],
+                    [
+                        'heading' => 'Cause 6: Competitors improved while your pages stood still',
+                        'paragraphs' => [
+                            'Competitors who keep refining their pages can overtake businesses with static websites. This is especially common in local services where multiple businesses offer similar work.',
+                        ],
+                        'links' => [
+                            [
+                                'route' => 'marketing.landing',
+                                'parameters' => ['local-seo-services'],
+                                'label' => 'Understand how local SEO improvements compound over time',
+                            ],
+                        ],
+                    ],
+                    [
+                        'heading' => 'Cause 7: Content decay on once-useful pages',
+                        'paragraphs' => [
+                            'Pages that previously performed can decline when details become outdated, examples no longer match your offer, or competitors provide clearer answers.',
+                            'Refreshing proven pages is often more effective than publishing unrelated new posts.',
+                        ],
+                    ],
+                    [
+                        'heading' => 'A practical recovery checklist',
+                        'paragraphs' => [
+                            'Use this order to avoid wasting time:',
+                        ],
+                        'points' => [
+                            'Confirm the drop in both Search Console and analytics.',
+                            'Identify which pages and queries lost clicks first.',
+                            'Check indexing and technical health on affected pages.',
+                            'Review competitor pages now outranking yours.',
+                            'Update the highest-impact pages before creating new ones.',
+                        ],
+                    ],
+                    [
+                        'heading' => 'When to bring in outside support',
+                        'paragraphs' => [
+                            'If the cause is still unclear after these checks, a focused audit can separate urgent fixes from longer-term improvements.',
+                        ],
+                        'links' => [
+                            [
+                                'route' => 'marketing.free-site-audit',
+                                'label' => 'Start a free website audit',
+                                'description' => 'Get a practical diagnosis of visibility, content, and lead-path issues.',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            [
                 'slug' => 'why-isnt-my-website-ranking-on-google',
                 'category' => 'Search',
                 'title' => 'Why isn\'t my website ranking on Google?',
