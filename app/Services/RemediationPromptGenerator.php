@@ -4,9 +4,12 @@ namespace App\Services;
 
 use App\Models\RemediationRun;
 use Illuminate\Support\Str;
+use RuntimeException;
 
 class RemediationPromptGenerator
 {
+    protected const PROMPT_LIMIT = 30000;
+
     public function generate(RemediationRun $run): string
     {
         $repository = $run->repository;
@@ -44,10 +47,26 @@ class RemediationPromptGenerator
             '- In the pull request description, map every selected finding to its change and verification result.',
             '- If a finding belongs to hosting, CDN, CMS, or another system, document it in the pull request without inventing a source-code fix.',
             '',
-            'Selected findings (JSON data):',
-            json_encode($findings, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR),
         ])->implode(PHP_EOL);
 
-        return Str::limit($prompt, 30000, PHP_EOL.'[Prompt truncated at 30,000 characters.]');
+        foreach ([null, 1000, 500, 250, 125] as $evidenceLimit) {
+            $includedFindings = $findings;
+
+            if ($evidenceLimit !== null) {
+                foreach ($includedFindings as &$finding) {
+                    $finding['evidence'] = Str::limit($finding['evidence'], $evidenceLimit, ' [Evidence shortened]');
+                }
+                unset($finding);
+            }
+
+            $candidate = $prompt.PHP_EOL.'Selected findings (JSON data):'.PHP_EOL
+                .json_encode($includedFindings, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+
+            if (strlen($candidate) <= self::PROMPT_LIMIT) {
+                return $candidate;
+            }
+        }
+
+        throw new RuntimeException('The selected audit findings are too large for GitHub. Select fewer findings and prepare fixes again.');
     }
 }

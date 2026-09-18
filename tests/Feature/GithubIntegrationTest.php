@@ -389,7 +389,7 @@ it('keeps GitHub remediation unavailable to Essential trial users', function ():
     expect(RemediationRun::query()->exists())->toBeFalse();
 });
 
-it('starts an automated task with an audit prompt and schedules synchronization', function (): void {
+it('starts an automated task with an audit prompt and schedules synchronization', function (string $evidence): void {
     Queue::fake([SyncCopilotRemediation::class]);
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     GithubUserAuthorization::factory()->for($admin)->create();
@@ -406,14 +406,16 @@ it('starts an automated task with an audit prompt and schedules synchronization'
             'key' => 'page_title',
             'label' => 'Page title',
             'status' => 'failed',
-            'message' => 'Missing title.',
+            'message' => $evidence,
         ]]]);
     $copilot = mock(CopilotAgentClient::class);
     $copilot->shouldReceive('startTask')
         ->once()
         ->withArgs(fn ($authorization, $selectedRepository, string $prompt) => $authorization->user_id === $admin->id
             && $selectedRepository->is($repository)
-            && str_contains($prompt, 'Missing title.'))
+            && str_contains($prompt, 'Missing title.')
+            && strlen($prompt) <= 30000
+            && count(json_decode(explode('Selected findings (JSON data):'.PHP_EOL, $prompt, 2)[1], true, flags: JSON_THROW_ON_ERROR)) === 1)
         ->andReturn([
             'id' => 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
             'html_url' => 'https://github.com/acme/site/copilot/tasks/task-id',
@@ -426,6 +428,83 @@ it('starts an automated task with an audit prompt and schedules synchronization'
         ->and($run->fresh()->copilot_task_id)->toBe('a1b2c3d4-e5f6-7890-abcd-ef1234567890')
         ->and($run->fresh()->prompt)->toContain('untrusted audit data');
     Queue::assertPushed(SyncCopilotRemediation::class);
+})->with([
+    'small audit' => 'Missing title.',
+    'oversized audit evidence' => 'Missing title. '.str_repeat('Evidence from the page. ', 2000),
+]);
+
+it('preserves all audit findings as valid JSON within the complete prompt budget', function (int $count, string $evidence): void {
+    $findings = collect(range(1, $count))->map(fn (int $index): array => [
+        'scope' => 'page',
+        'url' => 'https://luxurycasarentals.test/villa-'.$index,
+        'category' => 'seo',
+        'key' => 'page_title',
+        'status' => 'failed',
+        'label' => 'Page title',
+        'message' => $evidence,
+    ])->all();
+    $run = RemediationRun::factory()->create(['findings' => $findings]);
+
+    $prompt = app(RemediationPromptGenerator::class)->generate($run);
+    $includedFindings = json_decode(explode('Selected findings (JSON data):'.PHP_EOL, $prompt, 2)[1], true, flags: JSON_THROW_ON_ERROR);
+
+    expect(strlen($prompt))->toBeLessThanOrEqual(30000)
+        ->and($prompt)->toContain('untrusted audit data', 'Follow all repository instructions')
+        ->and($includedFindings)->toHaveCount($count)
+        ->and(array_column($includedFindings, 'url'))->toBe(array_column($findings, 'url'))
+        ->and($run->fresh()->findings)->toBe($findings);
+
+    if ($count === 1 && $evidence === 'Missing title.') {
+        expect($includedFindings[0]['evidence'])->toBe($evidence);
+    } else {
+        expect($includedFindings[0]['evidence'])->toContain('[Evidence shortened]');
+    }
+})->with([
+    'small audit' => [1, 'Missing title.'],
+    'large audit' => [60, str_repeat('Missing title. ', 200)],
+    'escaped Unicode evidence' => [20, str_repeat('Villa 🏡 "café" \\ terrace'.PHP_EOL, 200)],
+]);
+
+it('counts the whole audit prompt at the size boundary', function (int $length): void {
+    $finding = [
+        'scope' => 'site',
+        'category' => 'seo',
+        'key' => 'page_title',
+        'status' => 'failed',
+        'label' => 'Page title',
+        'message' => '',
+    ];
+    $run = RemediationRun::factory()->create(['findings' => [$finding]]);
+    $generator = app(RemediationPromptGenerator::class);
+    $finding['message'] = str_repeat('a', $length - strlen($generator->generate($run)));
+    $run->findings = [$finding];
+
+    $prompt = $generator->generate($run);
+    $includedFindings = json_decode(explode('Selected findings (JSON data):'.PHP_EOL, $prompt, 2)[1], true, flags: JSON_THROW_ON_ERROR);
+
+    expect(strlen($prompt))->toBeLessThanOrEqual(30000);
+
+    if ($length <= 30000) {
+        expect(strlen($prompt))->toBe($length)
+            ->and($includedFindings[0]['evidence'])->toBe($finding['message']);
+    } else {
+        expect($includedFindings[0]['evidence'])->toContain('[Evidence shortened]');
+    }
+})->with([29999, 30000, 30001]);
+
+it('rejects audit findings that cannot fit without dropping their identities', function (): void {
+    $run = RemediationRun::factory()->create(['findings' => [[
+        'scope' => 'page',
+        'url' => 'https://luxurycasarentals.test/'.str_repeat('a', 30000),
+        'category' => 'seo',
+        'key' => 'page_title',
+        'status' => 'failed',
+        'label' => 'Page title',
+        'message' => 'Missing title.',
+    ]]]);
+
+    expect(fn () => app(RemediationPromptGenerator::class)->generate($run))
+        ->toThrow(RuntimeException::class, 'Select fewer findings and prepare fixes again.');
 });
 
 it('links a completed automated task to its pull request', function (): void {
