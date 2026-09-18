@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreContentRequestRequest;
 use App\Jobs\GenerateContentRequestPixelOptimisations;
+use App\Models\BacklinkOpportunity;
 use App\Models\CompetitorOpportunity;
 use App\Models\ContentRequest;
 use App\Models\SearchOpportunity;
@@ -43,15 +44,9 @@ class ContentRequestController extends Controller
 
         DB::transaction(function () use ($contentRequest): void {
             $contentRequest->seoImpact?->update(['status' => 'cancelled', 'next_measurement_at' => null]);
-            $contentRequest->searchOpportunity?->update([
-                'status' => SearchOpportunity::STATUS_OPEN,
-                'content_request_id' => null,
-            ]);
-            $contentRequest->seoOpportunity?->update([
-                'status' => SeoOpportunity::STATUS_OPEN,
-                'content_request_id' => null,
-            ]);
-            CompetitorOpportunity::where('website_id', $contentRequest->website_id)->where('content_request_id', $contentRequest->id)->update(['status' => 'open', 'content_request_id' => null]);
+            foreach ([SearchOpportunity::class, SeoOpportunity::class, CompetitorOpportunity::class, BacklinkOpportunity::class] as $model) {
+                $model::where('website_id', $contentRequest->website_id)->where('content_request_id', $contentRequest->id)->update(['status' => 'open', 'content_request_id' => null]);
+            }
             $contentRequest->delete();
         });
 

@@ -8,6 +8,7 @@
             <p class="mt-2 text-slate-600 text-base sm:text-sm">Upcoming automation and actions to review across every website.</p>
         </header>
 
+        <x-seo-impact-reviews :reviews="$impactReviews" />
         <dl class="grid gap-4 sm:grid-cols-3">
             @foreach (['Websites' => $websites->count(), 'Awaiting review' => $approvalCount, 'Requests awaiting preparation' => $websites->sum('pending_content_requests_count')] as $label => $count)
                 <div class="ui-panel ui-section"><dt class="text-sm text-slate-500">{{ $label }}</dt><dd class="mt-2 text-3xl font-semibold tabular-nums text-slate-950">@if ($label === 'Requests awaiting preparation')<a href="#content-queue" class="text-teal-700 underline decoration-teal-700/30 underline-offset-4 hover:text-teal-900" aria-label="View {{ $count }} requests awaiting preparation">{{ number_format($count) }}</a>@else{{ number_format($count) }}@endif</dd></div>

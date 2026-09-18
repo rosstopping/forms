@@ -66,6 +66,7 @@ use App\Http\Controllers\Admin\SeoTargetKeywordController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\UserImpersonationController;
 use App\Http\Controllers\Admin\UserOnboardingCallController;
+use App\Http\Controllers\Admin\WebsiteActionController;
 use App\Http\Controllers\Admin\WebsiteAiChatController;
 use App\Http\Controllers\Admin\WebsiteAiQuestionCreditController;
 use App\Http\Controllers\Admin\WebsiteAiQuestionReportController;
@@ -319,12 +320,15 @@ Route::middleware(['web', 'auth', ResolveCurrentWebsite::class])->prefix('admin'
         Route::post('websites/{website}/seo-target-keywords/{seoTargetKeyword}/restore', 'restore')->name('seo-target-keywords.restore');
         Route::post('websites/{website}/seo-target-keywords/{seoTargetKeyword}/check', 'check')->middleware('throttle:20,1')->name('seo-target-keywords.check');
     });
+    Route::post('websites/{website}/actions/queue', [WebsiteActionController::class, 'store'])->middleware('membership:growth')->name('website-actions.queue');
     Route::middleware('membership:growth')->controller(SeoImpactController::class)->group(function (): void {
         Route::get('websites/{website}/seo-impacts', 'index')->name('seo-impacts.index');
         Route::get('websites/{website}/seo-impacts/{seoImpact}', 'show')->name('seo-impacts.show');
         Route::put('websites/{website}/seo-impacts/{seoImpact}', 'update')->name('seo-impacts.update');
         Route::post('websites/{website}/seo-impacts/{seoImpact}/live', 'confirmLive')->name('seo-impacts.live');
         Route::post('websites/{website}/seo-impacts/{seoImpact}/review', 'review')->name('seo-impacts.review');
+        Route::post('websites/{website}/seo-impacts/{seoImpact}/acknowledge', 'acknowledge')->name('seo-impacts.acknowledge');
+        Route::post('websites/{website}/seo-impacts/{seoImpact}/followup', 'followup')->name('seo-impacts.followup');
     });
     Route::post('websites/{website}/seo-opportunities/{seoOpportunity}/queue', [SeoOpportunityController::class, 'queue'])->middleware('membership:growth')->name('seo-opportunities.queue');
     Route::post('websites/{website}/search-opportunities/{searchOpportunity}/queue', [SearchOpportunityController::class, 'queue'])->middleware('membership:growth')->name('search-opportunities.queue');

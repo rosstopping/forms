@@ -1,5 +1,5 @@
 @php
-    $availableSeoSections = $seoSnapshot ? ['overview', 'targets', 'actions', 'impact', 'keywords', 'backlinks', 'competitors'] : ['overview', 'targets', 'impact', 'competitors'];
+    $availableSeoSections = $seoSnapshot ? ['overview', 'targets', 'actions', 'impact', 'pages', 'keywords', 'backlinks', 'competitors'] : ['overview', 'targets', 'actions', 'impact', 'pages', 'competitors'];
     $requestedSeoSection = request('seo_section', request()->has('seo_filter') ? 'keywords' : 'overview');
     $currentSeoSection = in_array($requestedSeoSection, $availableSeoSections, true) ? $requestedSeoSection : 'overview';
 @endphp
@@ -9,16 +9,18 @@
             <div class="ui-tabs">
                 <a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'overview']) }}" id="seo-section-tab-overview" class="ui-tab" @if ($currentSeoSection === 'overview') aria-current="page" @endif data-tab="overview">Overview</a>
                 <a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'targets']) }}" id="seo-section-tab-targets" class="ui-tab" @if ($currentSeoSection === 'targets') aria-current="page" @endif data-tab="targets">Target keywords</a>
-                @if ($seoSnapshot)
-                    <a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'actions']) }}" id="seo-section-tab-actions" class="ui-tab" @if ($currentSeoSection === 'actions') aria-current="page" @endif data-tab="actions">Recommended Actions</a>
-                @endif
+                    <a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'actions']) }}" id="seo-section-tab-actions" class="ui-tab" @if ($currentSeoSection === 'actions') aria-current="page" @endif data-tab="actions">Action list</a>
                 <a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'impact']) }}" id="seo-section-tab-impact" class="ui-tab" @if ($currentSeoSection === 'impact') aria-current="page" @endif data-tab="impact">SEO impact</a>
                 @if ($seoSnapshot)
                     <a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'keywords']) }}" id="seo-section-tab-keywords" class="ui-tab" @if ($currentSeoSection === 'keywords') aria-current="page" @endif data-tab="keywords">Keywords</a>
                     <a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'backlinks']) }}" id="seo-section-tab-backlinks" class="ui-tab" @if ($currentSeoSection === 'backlinks') aria-current="page" @endif data-tab="backlinks">Backlinks</a>
                 @endif
                     <a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'competitors']) }}" id="seo-section-tab-competitors" class="ui-tab" @if ($currentSeoSection === 'competitors') aria-current="page" @endif data-tab="competitors">Competitors</a>
+                <a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'pages']) }}" id="seo-section-tab-pages" class="ui-tab" @if ($currentSeoSection === 'pages') aria-current="page" @endif>Pages</a>
             </div>
+        </div>
+        <div id="seo-section-panel-pages" role="region" aria-labelledby="seo-section-tab-pages" @if ($currentSeoSection !== 'pages') hidden @endif>
+            @if ($currentSeoSection === 'pages') @include('admin.websites.partials.page-workspace') @endif
         </div>
 
         <div id="seo-section-panel-impact" role="region" aria-labelledby="seo-section-tab-impact" data-tab-panel="impact" @if ($currentSeoSection !== 'impact') hidden @endif>
@@ -158,103 +160,11 @@
     </section>
         </div>
 
-    @if ($seoSnapshot)
         <div id="seo-section-panel-actions" role="region" aria-labelledby="seo-section-tab-actions" data-tab-panel="actions" @if ($currentSeoSection !== 'actions') hidden @endif>
-        <section class="ui-panel" aria-labelledby="seo-opportunities-title">
-            <div class="border-b border-slate-950/10 p-4">
-                <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-                    <div class="min-w-0">
-                        <h3 id="seo-opportunities-title" class="text-balance text-base font-semibold text-slate-950">Recommended actions</h3>
-                        <p class="max-w-[72ch] text-pretty text-base text-slate-600 sm:text-sm">Prioritised from third-party ranking estimates. Review each recommendation before changing the website.</p>
-                    </div>
-                    <p class="shrink-0 text-base tabular-nums text-slate-500 sm:text-sm">{{ number_format($seoOpportunities->count()) }} shown</p>
-                </div>
-            </div>
-
-            <div class="divide-y divide-slate-950/10">
-                @forelse ($seoOpportunities as $opportunity)
-                    @php($metrics = $opportunity->metrics ?? [])
-                    <article class="@container p-4">
-                        <div class="grid gap-4 @3xl:grid-cols-[2fr_3fr]">
-                            <div class="min-w-0">
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <p class="rounded-full bg-teal-50 px-2 py-1 font-medium text-teal-800 ring-1 ring-teal-700/10">{{ str($opportunity->type)->headline() }}</p>
-                                    <p class="tabular-nums text-slate-500">Priority {{ number_format((float) $opportunity->priority_score) }}/100</p>
-                                    @if ($opportunity->status === 'queued')
-                                        <p class="rounded-full bg-slate-100 px-2 py-1 font-medium text-slate-700">Added to content todos</p>
-                                    @endif
-                                </div>
-                                <h4 class="mt-3 text-balance font-semibold text-slate-950">{{ $opportunity->title }}</h4>
-                                <p class="mt-1 text-pretty text-base text-slate-600 sm:text-sm">{{ $opportunity->summary }}</p>
-                                <dl class="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-base sm:text-sm">
-                                    <div>
-                                        <dt class="font-medium text-slate-700">Position</dt>
-                                        <dd class="tabular-nums text-slate-500">{{ data_get($metrics, 'position', '—') }}</dd>
-                                    </div>
-                                    <div>
-                                        <dt class="font-medium text-slate-700">Volume</dt>
-                                        <dd class="tabular-nums text-slate-500">{{ is_null(data_get($metrics, 'search_volume')) ? '—' : number_format(data_get($metrics, 'search_volume')) }}</dd>
-                                    </div>
-                                    @if (! is_null(data_get($metrics, 'position_change')))
-                                        <div>
-                                            <dt class="font-medium text-slate-700">Change</dt>
-                                            <dd class="tabular-nums {{ data_get($metrics, 'position_change') > 0 ? 'text-emerald-700' : 'text-red-700' }}">{{ data_get($metrics, 'position_change') > 0 ? '+' : '' }}{{ data_get($metrics, 'position_change') }}</dd>
-                                        </div>
-                                    @endif
-                                    @if (data_get($metrics, 'search_intent'))
-                                        <div>
-                                            <dt class="font-medium text-slate-700">Intent</dt>
-                                            <dd class="capitalize text-slate-500">{{ data_get($metrics, 'search_intent') }}</dd>
-                                        </div>
-                                    @endif
-                                    @if (data_get($metrics, 'uses_adaptive_threshold'))
-                                        <div class="sm:col-span-2">
-                                            <dt class="font-medium text-slate-700">Why this appears</dt>
-                                            <dd class="text-slate-500">Selected from a limited keyword sample using broader thresholds.</dd>
-                                        </div>
-                                    @endif
-                                </dl>
-                            </div>
-
-                            <div class="ui-well p-4">
-                                <h5 class="font-medium text-slate-950">Recommended action</h5>
-                                <p class="mt-1 text-pretty text-base text-slate-600 sm:text-sm">{{ $opportunity->recommendation }}</p>
-                                @if (data_get($metrics, 'ranking_url'))
-                                    <div class="mt-3 text-base font-medium sm:text-sm">
-                                        <a href="{{ data_get($metrics, 'ranking_url') }}" target="_blank" rel="noopener noreferrer" class="text-teal-700 underline decoration-teal-700/30 underline-offset-4 hover:decoration-teal-700">Open ranking page</a>
-                                    </div>
-                                @endif
-                                @if ($canManageWebsite && $opportunity->status === 'open')
-                                    <div class="mt-4">
-                                        @if ($website->repository || ($canUseGrowthFeatures && config('forms.pixel_ui_enabled') && $website->pixel_enabled))
-                                            <form method="POST" action="{{ route('admin.seo-opportunities.queue', [$website, $opportunity]) }}">
-                                                @csrf
-                                                <button type="submit" class="ui-button ui-button-secondary relative">
-                                                    Add to action list
-                                                    <span class="absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2 pointer-fine:hidden" aria-hidden="true"></span>
-                                                </button>
-                                            </form>
-                                        @else
-                                            <a href="{{ route('admin.website-repositories.create', $website) }}" class="ui-button ui-button-secondary relative">
-                                                Connect GitHub to add todo
-                                                <span class="absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2 pointer-fine:hidden" aria-hidden="true"></span>
-                                            </a>
-                                        @endif
-                                    </div>
-                                @endif
-                            </div>
-                        </div>
-                    </article>
-                @empty
-                    <div class="p-8 text-center">
-                        <h4 class="text-balance font-semibold text-slate-950">No priority actions found</h4>
-                        <p class="mx-auto mt-2 max-w-[60ch] text-pretty text-base text-slate-600 sm:text-sm">No ranked keyword estimates were stored in this snapshot. Run another snapshot after the provider has discovered rankings for the website.</p>
-                    </div>
-                @endforelse
-            </div>
-        </section>
+            @if ($currentSeoSection === 'actions') @include('admin.websites.partials.action-center') @endif
         </div>
 
+    @if ($seoSnapshot)
         <div id="seo-section-panel-backlinks" role="region" aria-labelledby="seo-section-tab-backlinks" data-tab-panel="backlinks" @if ($currentSeoSection !== 'backlinks') hidden @endif>
         <section class="ui-panel" aria-labelledby="backlinks-title">
             <div class="border-b border-slate-950/10 p-4">

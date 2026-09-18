@@ -180,6 +180,13 @@ class OptimisationDeploymentManager
                     'status' => OptimisationStatus::RolledBack,
                     'rolled_back_at' => now(),
                 ]);
+                if ($action === DeploymentAction::Deploy && $lockedOptimisation->content_request_id) {
+                    $request = $lockedOptimisation->contentRequest;
+                    if (! $request->optimisations()->where('status', '!=', OptimisationStatus::Deployed)->exists()) {
+                        $impact = app(SeoImpactTracker::class)->forRequest($request);
+                        app(SeoImpactAutomation::class)->activate($impact, now(), 'Published through Sitewell Pixel. Server HTML checks do not verify browser-applied Pixel content.', $request->instructions, $request->optimisations()->pluck('url')->all());
+                    }
+                }
                 $lockedOptimisation->website()->increment('pixel_payload_version');
                 Log::info('Pixel optimisation lifecycle changed.', [
                     'optimisation' => $lockedOptimisation->public_id,

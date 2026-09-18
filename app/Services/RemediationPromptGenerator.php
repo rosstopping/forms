@@ -40,6 +40,7 @@ class RemediationPromptGenerator
             '- Preserve the current design, content intent, and working behavior.',
             '- Add or update automated tests where appropriate.',
             '- Run the repository test, lint, and build commands relevant to changed files.',
+            '- Include the absolute canonical URL of each affected page in the pull request description for automatic live checks and impact measurement.',
             '- In the pull request description, map every selected finding to its change and verification result.',
             '- If a finding belongs to hosting, CDN, CMS, or another system, document it in the pull request without inventing a source-code fix.',
             '',

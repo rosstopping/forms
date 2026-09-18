@@ -14,9 +14,42 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Str;
 
 class SeoImpactController extends Controller
 {
+    public function acknowledge(Request $request, Website $website, SeoImpact $seoImpact): RedirectResponse
+    {
+        abort_unless($website->isManageableBy($request->user()), 403);
+        abort_unless($seoImpact->website_id === $website->id, 404);
+        $seoImpact->update(['acknowledged_at' => now()]);
+
+        return Redirect::route('admin.websites.section', [$website, 'seo', 'seo_section' => 'impact', 'seo_impact' => $seoImpact->id])->with('status', 'Result marked as read. Scheduled tracking continues automatically.');
+    }
+
+    public function followup(Request $request, Website $website, SeoImpact $seoImpact, SeoImpactTracker $tracker): RedirectResponse
+    {
+        abort_unless($website->isManageableBy($request->user()), 403);
+        abort_unless($seoImpact->website_id === $website->id, 404);
+        abort_unless($seoImpact->review_available_at, 422);
+        DB::transaction(function () use ($request, $website, $seoImpact, $tracker): void {
+            $impact = SeoImpact::lockForUpdate()->findOrFail($seoImpact->id);
+            $followup = $website->contentRequests()->firstOrCreate(['action_fingerprint' => hash('sha256', 'impact-followup:'.$impact->id)], [
+                'created_by' => $request->user()->id,
+                'instructions' => Str::limit('Investigate the result of '.$impact->title."\n".($impact->automatic_summary ?: 'The live page verification needs attention.')."\nAffected URLs: ".implode(', ', $impact->target_urls)."\nInspect the original changes and evidence. Propose a focused correction for review; do not automatically publish or roll back.", 3000, ''),
+            ]);
+            $tracker->forRequest($followup)->update([
+                'target_urls' => $impact->target_urls, 'target_queries' => $impact->target_queries, 'primary_metric' => $impact->primary_metric,
+                'country' => $impact->country, 'device' => $impact->device,
+                'evidence' => ['source' => 'impact_review', 'seo_impact_id' => $impact->id, 'outcome' => $impact->outcome, 'verification' => $impact->verification],
+                'next_measurement_at' => $impact->target_urls ? now() : null,
+            ]);
+            $impact->update(['status' => 'completed', 'next_measurement_at' => null, 'next_verification_at' => null, 'acknowledged_at' => now(), 'decision' => 'investigate', 'decision_notes' => $impact->automatic_summary, 'reviewed_by' => $request->user()->id, 'reviewed_at' => now()]);
+        });
+
+        return Redirect::route('admin.websites.section', [$website, 'content'])->with('status', 'Follow-up queued with the page, original objective and results attached.');
+    }
+
     public function index(Request $request, Website $website): RedirectResponse
     {
         abort_unless($website->isAccessibleBy($request->user()), 403);
@@ -36,8 +69,8 @@ class SeoImpactController extends Controller
     {
         DB::transaction(function () use ($request, $seoImpact): void {
             $impact = SeoImpact::lockForUpdate()->findOrFail($seoImpact->id);
-            abort_unless($impact->status === 'planned', 422, 'The measurement brief is frozen after live confirmation.');
-            $impact->update([...$request->validated(), 'baseline' => null, 'property_url' => null, 'next_measurement_at' => now(), 'measurement_error' => null]);
+            abort_unless($impact->status === 'planned' || ($impact->automated && $impact->verification_status === 'scope_missing'), 422, 'The measurement brief is frozen after live confirmation.');
+            $impact->update([...$request->validated(), ...($impact->live_at ? ['verification_status' => 'pending', 'next_verification_at' => now()] : []), 'baseline' => null, 'property_url' => null, 'next_measurement_at' => now(), 'measurement_error' => null]);
         });
 
         return Redirect::route('admin.websites.section', [$website, 'seo', 'seo_section' => 'impact', 'seo_impact' => $seoImpact->id])->with('status', 'Brief saved. Its Search Console baseline will be collected automatically.');

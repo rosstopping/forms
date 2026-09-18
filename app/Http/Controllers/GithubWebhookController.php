@@ -7,9 +7,11 @@ use App\Models\GithubInstallation;
 use App\Models\RemediationRun;
 use App\Models\WebsiteRepository;
 use App\Services\GithubWebhookSignature;
+use App\Services\SeoImpactAutomation;
 use App\Services\WordPressStaticReleaseQueuer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
 class GithubWebhookController extends Controller
 {
@@ -70,8 +72,12 @@ class GithubWebhookController extends Controller
                     'pull_request_state' => $request->string('pull_request.state')->toString(),
                     'status' => $merged ? RemediationRun::STATUS_COMPLETED : $run->status,
                     'completed_at' => $merged ? now() : $run->completed_at,
-                    'merged_at' => $merged ? now() : $run->merged_at,
+                    'merged_at' => $run->merged_at ?? ($merged ? Carbon::parse($request->input('pull_request.merged_at') ?: now()) : null),
                 ]);
+            }
+
+            if ($run && $merged) {
+                app(SeoImpactAutomation::class)->remediationMerged($run);
             }
 
             $generation = ContentGeneration::query()
@@ -83,8 +89,11 @@ class GithubWebhookController extends Controller
                     'pull_request_state' => $request->string('pull_request.state')->toString(),
                     'status' => $merged ? ContentGeneration::STATUS_COMPLETED : $generation->status,
                     'completed_at' => $merged ? now() : $generation->completed_at,
-                    'merged_at' => $merged ? now() : $generation->merged_at,
+                    'merged_at' => $generation->merged_at ?? ($merged ? Carbon::parse($request->input('pull_request.merged_at') ?: now()) : null),
                 ]);
+                if ($merged) {
+                    app(SeoImpactAutomation::class)->generationMerged($generation, $request->input('pull_request', []));
+                }
             }
         }
     }

@@ -9,6 +9,7 @@ use App\Models\ContentGeneration;
 use App\Models\Optimisation;
 use App\Models\RemediationRun;
 use App\Models\SearchConsoleMetric;
+use App\Models\SeoImpact;
 use App\Models\Website;
 use App\Models\WebsiteDomain;
 use App\Models\WeeklyReport;
@@ -16,6 +17,7 @@ use App\Services\AiVisibilityReport;
 use App\Services\ContentQueueOverview;
 use App\Services\DashboardSchedule;
 use App\Services\DashboardWorkActivity;
+use App\Services\WebsiteActionCenter;
 use App\Support\WebsiteNavigation;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\Request;
@@ -58,6 +60,7 @@ class DashboardController extends Controller
 
         return view('admin.overview', [
             'websites' => $websites,
+            'impactReviews' => SeoImpact::whereIn('website_id', $websites->modelKeys())->whereNotNull('review_available_at')->whereNull('acknowledged_at')->with('website:id,name')->latest('review_available_at')->limit(10)->get(),
             'contentQueue' => $contentQueue->forWebsites($websites),
             'workActivity' => $workActivity->forWebsites($websites->modelKeys()),
             'automationSchedule' => $schedule->forWebsites($websites->filter(fn (Website $website): bool => $website->is_active && (! $website->owner || $website->owner->hasActiveMembership()))),
@@ -124,6 +127,8 @@ class DashboardController extends Controller
 
         return view('admin.dashboard', [
             'website' => $website,
+            'priorityActions' => ($user->isAdmin() || $website->owner?->hasMembershipFeature('growth')) ? app(WebsiteActionCenter::class)->forWebsite($website)->where('stage', 'open')->take(5) : collect(),
+            'impactReviews' => ($user->isAdmin() || $website->owner?->hasMembershipFeature('growth')) ? SeoImpact::where('website_id', $website->id)->whereNotNull('review_available_at')->whereNull('acknowledged_at')->latest('review_available_at')->limit(5)->get() : collect(),
             'weeklyOverview' => $weeklyOverview,
             'aiVisibility' => app(AiVisibilityReport::class)->forPeriod($website, today()->subDays(6), now()->endOfDay()),
             'weeklyHistory' => $weeklyHistory,

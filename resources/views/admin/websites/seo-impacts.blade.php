@@ -4,7 +4,7 @@
             <p class="mt-2 max-w-3xl leading-6 text-slate-600 text-base sm:text-sm">Follow each change from its original brief to live delivery and measured results. Reviews compare the same pages and search terms over equal 28-day periods.</p>
         </header>
         <div class="ui-panel p-4 text-sm text-slate-600">
-            Reviews needing a decision appear first. Within each stage, priority is business value × confidence ÷ effort. Use “Bump to top” to apply that priority to the content queue.
+            Results and failed page checks appear first. Sitewell records the original objective, assumes merged PRs are live, checks the affected pages, and prepares results after four and eight weeks.
         </div>
         <div class="space-y-3">
             @forelse ($impacts as $impact)
@@ -17,11 +17,12 @@
                                 <span class="text-slate-500">Priority {{ $impact->priorityScore() }}</span>
                             </div>
                             <h2 class="mt-3 font-semibold text-slate-950"><a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'impact', 'seo_impact' => $impact->id]) }}" class="hover:underline">{{ $impact->title }}</a></h2>
-                            <p class="mt-2 text-slate-600 text-base sm:text-sm">{{ $impact->target_urls ? implode(', ', $impact->target_urls) : 'Add the canonical target pages to complete this brief.' }}</p>
+                            <p class="mt-2 text-slate-600 text-base sm:text-sm">{{ $impact->target_urls ? implode(', ', $impact->target_urls) : 'Affected page URLs will be taken from the brief or pull request.' }}</p>
+                            @if ($impact->automatic_summary)<p class="mt-2 text-base text-slate-600 sm:text-sm">{{ $impact->automatic_summary }}</p>@endif
                             @if ($impact->live_at)
-                                <p class="mt-2 text-slate-500 text-base sm:text-sm">Confirmed live {{ $impact->live_at->setTimezone('America/Los_Angeles')->format('j M Y') }} · {{ ucfirst($impact->primary_metric) }} is the primary measure</p>
+                                <p class="mt-2 text-slate-500 text-base sm:text-sm">Tracked live from {{ $impact->live_at->setTimezone('America/Los_Angeles')->format('j M Y') }} · {{ ucfirst($impact->primary_metric) }} is the primary measure</p>
                             @elseif ($impact->generation?->merged_at)
-                                <p class="mt-2 text-amber-800 text-base sm:text-sm">Pull request merged · Live confirmation still needed</p>
+                                <p class="mt-2 text-amber-800 text-base sm:text-sm">Pull request merged · Automatic tracking is being prepared</p>
                             @endif
                         </div>
                         <div class="flex flex-wrap gap-2">

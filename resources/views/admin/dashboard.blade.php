@@ -29,6 +29,15 @@
                 <a href="{{ str_starts_with($primaryDomain, 'http') ? $primaryDomain : 'https://'.$primaryDomain }}" target="_blank" rel="noreferrer" class="inline-flex shrink-0 items-center gap-2 text-sm font-medium text-slate-600 hover:text-teal-700">Visit website <span aria-hidden="true">↗</span></a>
             @endif
         </header>
+        <x-seo-impact-reviews :reviews="$impactReviews" />
+        @if ($priorityActions->isNotEmpty())
+            <section class="ui-panel ui-section" aria-labelledby="priority-actions-title">
+                <div class="flex flex-wrap items-center justify-between gap-3"><h2 id="priority-actions-title" class="text-xl font-semibold">Your next priorities</h2><a class="ui-button ui-button-secondary" href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'actions']) }}">View all actions</a></div>
+                <p class="mt-2 text-base text-slate-600 sm:text-sm">Outstanding audit and SEO recommendations, combined by page and ordered by priority.</p>
+                <div class="mt-4 divide-y divide-slate-950/10">@foreach ($priorityActions as $action)<article class="flex flex-wrap justify-between gap-4 py-4"><div class="min-w-0 flex-1"><h3 class="font-medium">{{ $action['title'] }}</h3><p class="mt-1 text-base text-slate-600 sm:text-sm">{{ $action['reason'] }}</p></div>@if ($canManageWebsite)<form method="POST" action="{{ route('admin.website-actions.queue', $website) }}">@csrf<input type="hidden" name="action_key" value="{{ $action['key'] }}"><button type="submit" class="ui-button ui-button-secondary">Add to queue</button></form>@endif</article>@endforeach</div>
+            </section>
+        @endif
+
 
         <x-weekly-overview :report="$weeklyOverview" :history="$weeklyHistory" />
 

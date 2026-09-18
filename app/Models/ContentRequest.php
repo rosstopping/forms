@@ -15,7 +15,7 @@ class ContentRequest extends Model
     /** @use HasFactory<ContentRequestFactory> */
     use HasFactory;
 
-    protected $fillable = ['backlink_context', 'backlink_fingerprint', 'competitor_context', 'competitor_fingerprint', 'website_id', 'created_by', 'content_generation_id', 'instructions', 'picked_up_at', 'bumped_at', 'pixel_processed_at', 'pixel_error'];
+    protected $fillable = ['action_fingerprint', 'backlink_context', 'backlink_fingerprint', 'competitor_context', 'competitor_fingerprint', 'website_id', 'created_by', 'content_generation_id', 'instructions', 'picked_up_at', 'bumped_at', 'pixel_processed_at', 'pixel_error'];
 
     protected function casts(): array
     {

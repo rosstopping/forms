@@ -68,8 +68,8 @@ test('managers can save a bounded brief and see impact pages', function (): void
     expect($this->impact->fresh()->target_queries)->toBe(['garden offices', 'garden rooms'])
         ->and($this->impact->fresh()->country)->toBe('gbr')
         ->and($this->impact->fresh()->priorityScore())->toBe(10.0);
-    $this->get(route('admin.websites.section', [$this->website, 'seo', 'seo_section' => 'impact']))->assertSuccessful()->assertSee('Improve the service page')->assertSee('Bump to top');
-    $this->get(route('admin.websites.section', [$this->website, 'seo', 'seo_section' => 'impact', 'seo_impact' => $this->impact->id]))->assertSuccessful()->assertSee('Confirm live and start measuring');
+    $this->get(route('admin.websites.section', [$this->website, 'seo', 'seo_section' => 'impact']))->assertSuccessful()->assertSee('Improve the service page')->assertSee('Improve the service page');
+    $this->get(route('admin.websites.section', [$this->website, 'seo', 'seo_section' => 'impact', 'seo_impact' => $this->impact->id]))->assertSuccessful()->assertSee('Ready to track automatically')->assertDontSee('Confirm live and start measuring');
 });
 
 test('viewers can read impact evidence but cannot change briefs or confirm delivery', function (): void {
@@ -103,10 +103,10 @@ test('briefs reject foreign urls overlapping controls and invalid scopes', funct
     [['target_urls' => ['http://[::1]/service']]],
 ]);
 
-test('delivery needs explicit evidence and freezes measurement scope without claiming a merge is live', function (): void {
+test('the optional legacy delivery endpoint validates evidence and freezes scope', function (): void {
     $generation = ContentGeneration::factory()->create(['merged_at' => now()]);
     $this->impact->update(['content_generation_id' => $generation->id]);
-    $this->actingAs($this->owner)->get(route('admin.websites.section', [$this->website, 'seo', 'seo_section' => 'impact']))->assertSee('Live confirmation still needed');
+    $this->actingAs($this->owner)->get(route('admin.websites.section', [$this->website, 'seo', 'seo_section' => 'impact']))->assertSee('Pull request merged · Automatic tracking is being prepared');
     $this->post(route('admin.seo-impacts.live', [$this->website, $this->impact]), ['live_date' => '2026-09-18'])->assertSessionHasErrors();
     $this->post(route('admin.seo-impacts.live', [$this->website, $this->impact]), [
         'live_date' => '2026-09-17', 'actual_changes' => 'Updated the service title and linked from the homepage.',
@@ -248,7 +248,7 @@ test('review pages render measured evidence and preserve viewer restrictions', f
         'baseline' => [...impactMeasurementSample(), 'start' => '2026-07-01', 'end' => '2026-07-28'],
         'observations' => [...impactMeasurementSample(150), 'start' => '2026-08-26', 'end' => '2026-09-22']]);
     SeoImpactReview::factory()->for($this->impact, 'impact')->create(['checkpoint' => 56]);
-    $this->actingAs($this->owner)->get(route('admin.websites.section', [$this->website, 'seo', 'seo_section' => 'impact', 'seo_impact' => $this->impact->id]))->assertSuccessful()->assertSee('Day 56')->assertSee('Measure for another 28 days')->assertSee('Linked Pixel changes');
+    $this->actingAs($this->owner)->get(route('admin.websites.section', [$this->website, 'seo', 'seo_section' => 'impact', 'seo_impact' => $this->impact->id]))->assertSuccessful()->assertSee('Day 56')->assertSee('Search results')->assertDontSee('Save decision')->assertSee('Linked Pixel changes');
     $viewer = User::factory()->create();
     $this->website->members()->attach($viewer, ['role' => Website::MEMBER_ROLE_VIEWER]);
     $this->actingAs($viewer)->get(route('admin.websites.section', [$this->website, 'seo', 'seo_section' => 'impact', 'seo_impact' => $this->impact->id]))->assertSuccessful()->assertDontSee('Save decision')->assertDontSee('https://github.com/example/repo/pull/1');

@@ -36,9 +36,9 @@ test('website owners can add an seo recommendation to content todos', function (
         ]);
 
     $this->actingAs($owner)
-        ->get(route('admin.websites.show', [$website, 'tab' => 'seo']))
+        ->get(route('admin.websites.section', [$website, 'seo', 'seo_section' => 'actions']))
         ->assertSuccessful()
-        ->assertSee('Add to action list');
+        ->assertSee('Add to content queue');
 
     $this->actingAs($owner)
         ->post(route('admin.seo-opportunities.queue', [$website, $opportunity]))
@@ -55,9 +55,9 @@ test('website owners can add an seo recommendation to content todos', function (
         ->and($opportunity->contentRequest->instructions)->toContain('https://example.com/garden-offices');
 
     $this->actingAs($owner)
-        ->get(route('admin.websites.show', [$website, 'tab' => 'seo']))
+        ->get(route('admin.websites.section', [$website, 'seo', 'seo_section' => 'actions', 'action_state' => 'queued']))
         ->assertSuccessful()
-        ->assertSee('Added to content todos');
+        ->assertSee('View progress');
 });
 
 test('removing an unprocessed content todo reopens its seo recommendation', function (): void {

@@ -13,6 +13,8 @@ use App\Services\ContentSchedule;
 use App\Services\PixelInstallationSnippet;
 use App\Services\SearchConsoleClient;
 use App\Services\SearchConsoleHistoryStore;
+use App\Services\WebsiteActionCenter;
+use App\Services\WebsitePageWorkspace;
 use App\Services\WebsiteProspectService;
 use App\Support\MembershipPlan;
 use Closure;
@@ -148,6 +150,15 @@ class WebsiteController extends Controller
         $canRunHealthReports = $user?->isAdmin() === true || $website->owner?->hasMembershipFeature(MembershipPlan::FEATURE_HEALTH_REPORTS) === true;
         $canUseSearchConsole = $user?->isAdmin() === true || $website->owner?->hasMembershipFeature(MembershipPlan::FEATURE_SEARCH_CONSOLE) === true;
         $canUseGrowthFeatures = $user?->isAdmin() === true || $website->owner?->hasMembershipFeature(MembershipPlan::FEATURE_GROWTH) === true;
+        $unifiedActions = collect();
+        $pageWorkspace = ['pages' => collect(), 'selected' => null];
+        if ($canUseGrowthFeatures && in_array($request->query('seo_section'), ['actions', 'pages'], true)) {
+            $unifiedActions = app(WebsiteActionCenter::class)->forWebsite($website);
+            if ($request->query('seo_section') === 'pages') {
+                $request->validate(['page_url' => ['nullable', 'string', 'url:http,https', 'max:700']]);
+                $pageWorkspace = app(WebsitePageWorkspace::class)->forWebsite($website, $unifiedActions, $request->query('page_url'));
+            }
+        }
         $impacts = null;
         $seoImpact = null;
         if ($canUseGrowthFeatures && $request->query('seo_section') === 'impact') {
@@ -158,6 +169,7 @@ class WebsiteController extends Controller
                     ->findOrFail($request->query('seo_impact'));
             } else {
                 $impacts = SeoImpact::where('website_id', $website->id)->with(['generation', 'contentRequest.generation'])
+                    ->orderByRaw('CASE WHEN review_available_at IS NOT NULL AND acknowledged_at IS NULL THEN 0 ELSE 1 END')
                     ->orderByRaw("CASE WHEN status = 'review_required' THEN 0 WHEN status = 'measuring' THEN 1 WHEN status = 'planned' THEN 2 ELSE 3 END")
                     ->orderByRaw('1.0 * business_value * confidence / effort DESC')->latest('id')
                     ->paginate(20, pageName: 'impact_page')->withQueryString();
@@ -361,7 +373,7 @@ class WebsiteController extends Controller
             'dataForSeoConfigured', 'outreachProspect', 'pixelInstallationSnippet', 'canUseGrowthFeatures', 'canUseCompleteFeatures', 'canUseAutoresponders',
             'websiteAiQuestions', 'websiteAiQuestionsUsed', 'websiteAiWeeklyLimit', 'pixelOptimisations', 'websiteUsers', 'soleManagerId',
             'hasContentDeliveryConnection', 'contentSupportCallUrl', 'contentWeeklyLimit', 'contentScheduleReason', 'nextContentRun',
-            'pendingContentRequests', 'actionedContentRequests', 'impacts', 'seoImpact',
+            'pendingContentRequests', 'actionedContentRequests', 'impacts', 'seoImpact', 'unifiedActions', 'pageWorkspace',
             'businessPostSuggestions', 'businessQueuedTopics', 'businessPosts', 'businessReviews', 'businessPostCounts', 'businessReviewCounts', 'businessPostFilter', 'businessReviewFilter',
         ));
     }

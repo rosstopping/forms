@@ -17,6 +17,30 @@ class WebsiteCrawler
 {
     public function __construct(protected StructuredDataAnalyzer $structuredDataAnalyzer) {}
 
+    /** @return array<string, mixed> */
+    public function inspectPage(string $url): array
+    {
+        $host = (string) parse_url($url, PHP_URL_HOST);
+        if (! in_array(parse_url($url, PHP_URL_SCHEME), ['http', 'https'], true) || $host === '' || parse_url($url, PHP_URL_USER)) {
+            throw new RuntimeException('A public HTTP page URL is required.');
+        }
+        $this->ensurePublicDomain($host);
+        $response = $this->request()->timeout(15)->get($url);
+        $isHtml = Str::contains(Str::lower((string) $response->header('content-type')), ['text/html', 'application/xhtml+xml']) || ! $response->header('content-type');
+        $analysis = $response->successful() && $isHtml
+            ? $this->analyseHtml($this->boundedBody($response->body()), $url)
+            : $this->emptyAnalysis($url, 0);
+        unset($analysis['discovered_links']);
+        $analysis['status_code'] = $response->status();
+        $analysis['checks'][] = $this->check('page_available', 'Page available', $response->successful() && $isHtml ? 'passed' : 'failed', 'HTTP '.$response->status().($isHtml ? '' : ' · response is not HTML'));
+        if (Str::contains(Str::lower((string) $response->header('x-robots-tag')), ['noindex', 'none'])) {
+            $analysis['checks'] = array_values(array_filter($analysis['checks'], fn ($check) => $check['key'] !== 'indexable'));
+            $analysis['checks'][] = $this->check('indexable', 'Indexing directive', 'failed', 'The response header contains a noindex directive.');
+        }
+
+        return $analysis;
+    }
+
     /** @return array<int, array<string, mixed>> */
     public function crawl(Website $website): array
     {

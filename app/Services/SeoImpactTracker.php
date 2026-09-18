@@ -23,6 +23,7 @@ class SeoImpactTracker
         $urls = $this->websiteUrls($request->website, $urls);
 
         return SeoImpact::firstOrCreate(['website_id' => $request->website_id, 'source_key' => 'request:'.$request->id], [
+            'automated' => true,
             'content_request_id' => $request->id,
             'content_generation_id' => $request->content_generation_id,
             'title' => Str::limit($source?->title ?? $request->instructions, 200, ''),
@@ -49,6 +50,7 @@ class SeoImpactTracker
         $target = collect($generation->target_keyword_context ?? [])->firstWhere('id', $generation->seo_target_keyword_id);
         $urls = $this->websiteUrls($generation->plan->website, empty($target['ranking_url']) ? [] : [$target['ranking_url']]);
         SeoImpact::firstOrCreate(['website_id' => $generation->plan->website_id, 'source_key' => 'generation:'.$generation->id], [
+            'automated' => true,
             'content_generation_id' => $generation->id,
             'title' => Str::limit($target ? 'Improve search visibility for '.$target['term'] : 'Focused content improvement', 200, ''),
             'hypothesis' => 'Improve existing coverage for the intended search need, using verified business facts and relevant internal links.',

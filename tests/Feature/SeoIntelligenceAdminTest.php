@@ -236,7 +236,7 @@ test('the seo tab displays and filters locally stored keyword estimates', functi
     $this->actingAs($owner)
         ->get(route('admin.websites.show', [$website, 'tab' => 'seo', 'seo_filter' => 'positions_11_20']))
         ->assertSuccessful()
-        ->assertSeeInOrder(['Overview', 'Recommended Actions', 'Keywords', 'Backlinks', 'Competitors'])
+        ->assertSeeInOrder(['Overview', 'Action list', 'Keywords', 'Backlinks', 'Competitors'])
         ->assertSee('data-default-tab="keywords"', false)
         ->assertSee('data-tab-panel="overview"', false)
         ->assertSee('data-tab-panel="actions"', false)
@@ -249,9 +249,6 @@ test('the seo tab displays and filters locally stored keyword estimates', functi
         ->assertSee('Backlinks')
         ->assertSee('872')
         ->assertSee('publisher.example')
-        ->assertSee('Recommended actions')
-        ->assertSee('Move “garden rooms doncaster” towards page one')
-        ->assertSee('Strengthen the ranking page and its relevant internal links.')
         ->assertSee('Organic competitors')
         ->assertSee('competitor-one.example')
         ->assertSee('63')
@@ -260,6 +257,10 @@ test('the seo tab displays and filters locally stored keyword estimates', functi
         ->assertSee('Third-party market intelligence')
         ->assertSee('Locally stored third-party estimates')
         ->assertSee('DataForSEO');
+    $this->get(route('admin.websites.section', [$website, 'seo', 'seo_section' => 'actions']))
+        ->assertSuccessful()->assertSee('Your prioritised action list')
+        ->assertSee('Move “garden rooms doncaster” towards page one')
+        ->assertSee('Strengthen the ranking page and its relevant internal links.');
 });
 
 test('website users can drill into locally observed keyword history', function (): void {

@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\SeoImpact;
 use App\Services\SearchConsoleClient;
+use App\Services\SeoImpactAutomation;
 use App\Services\SeoImpactEvaluator;
 use App\Services\SeoImpactTracker;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -43,7 +44,7 @@ class MeasureSeoImpact implements ShouldBeUnique, ShouldQueue
             }
             $connection = $impact->website->searchConsoleConnection;
             if (! $connection?->property_url || ($impact->property_url && $impact->property_url !== $connection->property_url)) {
-                $impact->update(['measurement_error' => 'Connect the original Search Console property before measuring this change.', 'next_measurement_at' => now()->addDay()]);
+                $impact->update([...(! $impact->measurement_error ? ['review_available_at' => now(), 'acknowledged_at' => null] : []), 'measurement_error' => 'Connect the original Search Console property before measuring this change.', 'next_measurement_at' => now()->addDay()]);
 
                 return;
             }
@@ -75,7 +76,7 @@ class MeasureSeoImpact implements ShouldBeUnique, ShouldQueue
                     return;
                 }
                 $updates = ['property_url' => $connection->property_url, 'baseline' => $baseline, 'observations' => $observations,
-                    'last_measured_at' => now(), 'next_measurement_at' => $impact->live_at ? now()->addDay() : null, 'measurement_error' => null];
+                    'last_measured_at' => now(), 'next_measurement_at' => $impact->live_at ? ($impact->automated ? $impact->live_at->copy()->setTimezone('America/Los_Angeles')->startOfDay()->addDays($impact->review_after_days + 3)->utc() : now()->addDay()) : null, 'measurement_error' => null];
                 if ($review) {
                     $locked->reviews()->firstOrCreate(['checkpoint' => $impact->review_after_days], [
                         'period_start' => $observations['start'], 'period_end' => $observations['end'], 'baseline' => $baseline,
@@ -84,10 +85,16 @@ class MeasureSeoImpact implements ShouldBeUnique, ShouldQueue
                     $updates['outcome'] = $review['outcome'];
                     if ($impact->review_after_days === 28) {
                         $updates['review_after_days'] = 56;
+                        if ($impact->automated) {
+                            $updates['next_measurement_at'] = $impact->live_at->copy()->setTimezone('America/Los_Angeles')->startOfDay()->addDays(59)->utc();
+                        }
                     } else {
                         $updates['status'] = 'review_required';
                         $updates['next_measurement_at'] = null;
                     }
+                }
+                if ($review && $impact->automated) {
+                    $updates = [...$updates, ...app(SeoImpactAutomation::class)->checkpointUpdates($impact, $review, $baseline, $observations)];
                 }
                 $locked->update($updates);
             });
@@ -113,6 +120,7 @@ class MeasureSeoImpact implements ShouldBeUnique, ShouldQueue
         $urls = array_map($tracker->urlKey(...), [...$impact->target_urls, ...($impact->control_url ? [$impact->control_url] : [])]);
 
         return SeoImpact::where('website_id', $impact->website_id)->whereKeyNot($impact->id)
+            ->when($impact->content_generation_id, fn ($query) => $query->where(fn ($query) => $query->whereNull('content_generation_id')->orWhere('content_generation_id', '!=', $impact->content_generation_id)))
             ->whereBetween('live_at', [Carbon::parse($start, 'America/Los_Angeles')->utc(), $end->copy()->endOfDay()->utc()])
             ->get(['target_urls', 'target_queries'])->contains(fn (SeoImpact $other): bool => array_intersect($urls, array_map($tracker->urlKey(...), $other->target_urls)) !== []
                 || array_intersect(array_map('mb_strtolower', $impact->target_queries), array_map('mb_strtolower', $other->target_queries)) !== []);
@@ -122,7 +130,7 @@ class MeasureSeoImpact implements ShouldBeUnique, ShouldQueue
     {
         SeoImpact::whereKey($this->impact->id)->whereIn('status', ['planned', 'measuring'])->update([
             'measurement_error' => 'Search Console could not be measured. The next scheduled attempt will retry; missing data is not zero.',
-            'next_measurement_at' => now()->addDay(),
+            'next_measurement_at' => now()->addDay(), 'review_available_at' => now(), 'acknowledged_at' => null,
         ]);
     }
 }
