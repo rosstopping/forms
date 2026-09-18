@@ -21,7 +21,9 @@ use App\Services\WebsiteActionCenter;
 use App\Support\WebsiteNavigation;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
@@ -36,6 +38,25 @@ class DashboardController extends Controller
             ->withCount(['contentRequests as pending_content_requests_count' => fn ($query) => $query->whereNull('picked_up_at')])
             ->orderBy('name')
             ->get();
+
+        $filters = $request->validate([
+            'hub' => ['nullable', Rule::in(['priorities', 'approvals', 'results', 'automation', 'websites'])],
+            'site_id' => ['nullable', 'integer', Rule::in($websites->modelKeys())],
+            'action_state' => ['nullable', Rule::in(['open', 'queued', 'measuring', 'review', 'completed'])],
+            'actions_page' => ['nullable', 'integer', 'min:1'],
+            'sites_page' => ['nullable', 'integer', 'min:1'],
+        ]);
+        $allWebsites = $websites;
+        $websites = ! empty($filters['site_id']) ? $websites->where('id', (int) $filters['site_id'])->values() : $websites;
+        $hubSection = $filters['hub'] ?? 'priorities';
+        $actionState = $filters['action_state'] ?? 'open';
+        $actions = app(WebsiteActionCenter::class)->forWebsites($websites);
+        $actionCounts = $actions->countBy('stage');
+        $filteredActions = $actions->where('stage', $actionState)->values();
+        $actionPage = $request->integer('actions_page', 1);
+        $priorityActions = new LengthAwarePaginator($filteredActions->forPage($actionPage, 12)->values(), $filteredActions->count(), 12, $actionPage, ['path' => route('admin.overview'), 'pageName' => 'actions_page', 'query' => $request->query()]);
+        $sitesPage = $request->integer('sites_page', 1);
+        $websiteDirectory = new LengthAwarePaginator($websites->forPage($sitesPage, 15)->values(), $websites->count(), 15, $sitesPage, ['path' => route('admin.overview'), 'pageName' => 'sites_page', 'query' => $request->query()]);
 
         $optimisations = Optimisation::query()
             ->whereIn('website_id', $websites->modelKeys())
@@ -60,7 +81,13 @@ class DashboardController extends Controller
 
         return view('admin.overview', [
             'websites' => $websites,
-            'impactReviews' => SeoImpact::whereIn('website_id', $websites->modelKeys())->whereNotNull('review_available_at')->whereNull('acknowledged_at')->with('website:id,name')->latest('review_available_at')->limit(10)->get(),
+            'allWebsites' => $allWebsites,
+            'hubSection' => $hubSection,
+            'actionState' => $actionState,
+            'actionCounts' => $actionCounts,
+            'priorityActions' => $priorityActions,
+            'websiteDirectory' => $websiteDirectory,
+            'impactReviews' => SeoImpact::whereIn('website_id', $websites->modelKeys())->whereNotNull('review_available_at')->whereNull('acknowledged_at')->with('website:id,name')->latest('review_available_at')->paginate(10, ['*'], 'results_page')->withQueryString(),
             'contentQueue' => $contentQueue->forWebsites($websites),
             'workActivity' => $workActivity->forWebsites($websites->modelKeys()),
             'automationSchedule' => $schedule->forWebsites($websites->filter(fn (Website $website): bool => $website->is_active && (! $website->owner || $website->owner->hasActiveMembership()))),

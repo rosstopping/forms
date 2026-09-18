@@ -26,7 +26,7 @@ it('shows queue totals with blocked websites first and a scheduled run', functio
     ContentRequest::factory()->count(2)->for($blocked)->create();
     ContentRequest::factory()->for($blocked)->create(['picked_up_at' => now()]);
     $this->actingAs($this->admin)->get(route('admin.overview'))->assertSuccessful()
-        ->assertSee('href="#content-queue"', false)
+        ->assertSee('href="'.route('admin.overview', ['hub' => 'automation']).'#content-queue"', false)
         ->assertSee('Requests awaiting preparation')
         ->assertSeeInOrder(['id="approvals-heading"', 'id="content-queue-heading"', 'id="schedule-heading"'], false)
         ->assertViewHas('contentQueue', function ($rows) use ($blocked): bool {

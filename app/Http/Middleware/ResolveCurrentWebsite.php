@@ -32,7 +32,8 @@ class ResolveCurrentWebsite
             ->get();
 
         $routeWebsite = $request->route('website');
-        $routeWebsiteId = $routeWebsite instanceof Website ? $routeWebsite->id : null;
+        $isOverviewAction = $user->isAdmin() && $request->routeIs('admin.website-actions.queue') && $request->input('return_to') === 'overview';
+        $routeWebsiteId = $routeWebsite instanceof Website && ! $isOverviewAction ? $routeWebsite->id : null;
         $currentWebsite = $accessibleWebsites->firstWhere('id', $routeWebsiteId)
             ?? $accessibleWebsites->firstWhere('id', $user->current_website_id)
             ?? $accessibleWebsites->first();

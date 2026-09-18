@@ -11,6 +11,8 @@ use App\Models\SeoImpact;
 use App\Models\SeoOpportunity;
 use App\Models\User;
 use App\Models\Website;
+use App\Models\WebsiteDomain;
+use App\Models\WebsiteHealthReport;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -22,11 +24,44 @@ class WebsiteActionCenter
     /** @return Collection<int, array<string, mixed>> */
     public function forWebsite(Website $website): Collection
     {
-        $website->loadMissing('domains');
+        return $this->forWebsites(collect([$website]))->map(fn (array $action): array => collect($action)->except('website')->all());
+    }
+
+    /** @param Collection<int, Website> $websites
+     * @return Collection<int, array<string, mixed>>
+     */
+    public function forWebsites(Collection $websites): Collection
+    {
+        $actions = collect();
+        foreach ($websites->chunk(25) as $batch) {
+            $ids = $batch->pluck('id');
+            $domains = WebsiteDomain::whereIn('website_id', $ids)->get()->groupBy('website_id');
+            $reports = WebsiteHealthReport::whereIn('id', WebsiteHealthReport::selectRaw('MAX(id)')->whereIn('website_id', $ids)->where('status', 'completed')->groupBy('website_id'))->with('pages')->get()->keyBy('website_id');
+            $impacts = SeoImpact::whereIn('website_id', $ids)->where('status', '!=', 'cancelled')->latest('id')->get()->groupBy('website_id');
+            $requests = ContentRequest::whereIn('website_id', $ids)->whereNotNull('action_fingerprint')->get()->groupBy('website_id');
+            $sources = [
+                'search' => SearchOpportunity::whereIn('website_id', $ids)->whereIn('status', ['open', 'queued'])->latest('last_detected_at')->groupLimit(500, 'website_id')->get()->groupBy('website_id'),
+                'seo' => SeoOpportunity::whereIn('website_id', $ids)->whereIn('status', ['open', 'queued'])->with('keyword')->latest('id')->groupLimit(500, 'website_id')->get()->groupBy('website_id'),
+                'competitor' => CompetitorOpportunity::whereIn('website_id', $ids)->whereIn('status', ['open', 'queued'])->latest('id')->groupLimit(300, 'website_id')->get()->groupBy('website_id'),
+                'backlink' => BacklinkOpportunity::whereIn('website_id', $ids)->whereIn('status', ['open', 'queued'])->latest('id')->groupLimit(300, 'website_id')->get()->groupBy('website_id'),
+            ];
+            foreach ($batch as $website) {
+                $website->setRelation('domains', $domains->get($website->id, collect()));
+                $siteSources = collect($sources)->map(fn ($rows, $source) => $source === 'search'
+                    ? $rows->get($website->id, collect())->take(500)
+                    : $rows->get($website->id, collect())->take($source === 'seo' ? 500 : 300)->unique('fingerprint'))->all();
+                $actions = $actions->concat($this->assemble($website, $reports->get($website->id), $impacts->get($website->id, collect()), $siteSources, $requests->get($website->id, collect())->keyBy('action_fingerprint'))
+                    ->map(fn ($action) => [...$action, 'website' => $website]));
+            }
+        }
+
+        return $actions->sortBy([['score', 'desc'], ['title', 'asc'], ['key', 'asc']])->values();
+    }
+
+    private function assemble(Website $website, ?WebsiteHealthReport $report, Collection $impacts, array $sources, Collection $requests): Collection
+    {
         $items = collect();
-        $impacts = SeoImpact::where('website_id', $website->id)->where('status', '!=', 'cancelled')->latest('id')->get();
         $completedRequests = $impacts->where('status', 'completed')->pluck('content_request_id')->filter();
-        $report = $website->healthReports()->where('status', 'completed')->with('pages')->latest('id')->first();
         if ($report) {
             $homepage = $website->primaryDomain() ? 'https://'.$website->primaryDomain()->domain : null;
             foreach (collect([['url' => $homepage, 'checks' => $report->checks ?? []]])->concat($report->pages->map(fn ($page) => ['url' => $page->url, 'checks' => $page->checks ?? []])) as $page) {
@@ -52,12 +87,6 @@ class WebsiteActionCenter
                 }
             }
         }
-        $sources = [
-            'search' => SearchOpportunity::where('website_id', $website->id)->whereIn('status', ['open', 'queued'])->latest('last_detected_at')->limit(500)->get(),
-            'seo' => SeoOpportunity::where('website_id', $website->id)->whereIn('status', ['open', 'queued'])->with('keyword')->latest('id')->limit(500)->get()->unique('fingerprint'),
-            'competitor' => CompetitorOpportunity::where('website_id', $website->id)->whereIn('status', ['open', 'queued'])->latest('id')->limit(300)->get()->unique('fingerprint'),
-            'backlink' => BacklinkOpportunity::where('website_id', $website->id)->whereIn('status', ['open', 'queued'])->latest('id')->limit(300)->get()->unique('fingerprint'),
-        ];
         foreach ($sources as $source => $rows) {
             foreach ($rows as $row) {
                 $revision = null;
@@ -88,7 +117,6 @@ class WebsiteActionCenter
                     'date' => $row->last_detected_at ?? $row->created_at, 'request_id' => $requestId, 'revision' => $revision]);
             }
         }
-        $requests = ContentRequest::where('website_id', $website->id)->whereNotNull('action_fingerprint')->get()->keyBy('action_fingerprint');
         $actions = $items->map(function ($item) use ($website) {
             $item['url'] = $this->tracker->websiteUrls($website, array_filter([$item['url']]))[0] ?? null;
             $item['key'] = hash('sha256', $item['url'] ? $this->tracker->urlKey($item['url']) : ($item['query'] ? 'term:'.mb_strtolower(trim($item['query'])) : $item['source'].':'.$item['id']));
