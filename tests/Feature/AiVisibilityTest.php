@@ -526,3 +526,79 @@ test('keyword resync requires a manager and enabled tracking', function (): void
     $this->post(route('admin.ai-visibility.sync-keywords', $website))->assertSessionHasErrors('enabled');
     expect(AiVisibilityPrompt::count())->toBe(0)->and(AiVisibilitySetting::sole()->enabled)->toBeFalse();
 });
+
+test('check now explains why a site cannot queue checks', function (string $condition, string $message): void {
+    Queue::fake();
+    $website = Website::factory()->create();
+    $settings = AiVisibilitySetting::factory()->for($website)->create(['enabled' => true]);
+    $prompt = AiVisibilityPrompt::factory()->for($website)->create();
+
+    match ($condition) {
+        'paused' => $settings->update(['enabled' => false]),
+        'inactive' => $website->update(['is_active' => false]),
+        'membership' => $website->owner->update(['membership_status' => 'cancelled']),
+        'provider' => $settings->update(['providers' => []]),
+        'unavailable' => config(['ai_visibility.providers.openai.enabled' => false]),
+        'missing key' => config(['ai.providers.openai.key' => null]),
+        'limit' => config(['ai_visibility.max_active_prompts' => 0]),
+        'questions' => $prompt->update(['active' => false]),
+    };
+
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $this->actingAs($admin)->post(route('admin.ai-visibility.check', $website))
+        ->assertRedirect(route('admin.ai-visibility.index', $website))
+        ->assertSessionHas('status', fn (string $status): bool => str_contains($status, $message));
+
+    expect(AiVisibilityResult::count())->toBe(0);
+    Queue::assertNothingPushed();
+})->with([
+    ['paused', 'AI tracking is paused.'],
+    ['inactive', 'This website is inactive.'],
+    ['membership', 'active membership for the website owner'],
+    ['provider', 'AI provider is missing'],
+    ['unavailable', 'OpenAI checks are temporarily unavailable.'],
+    ['missing key', 'OpenAI checks are temporarily unavailable.'],
+    ['limit', 'disabled by the question limit'],
+    ['questions', 'No active questions are available.'],
+]);
+
+test('check now distinguishes pending checks from checks not yet due', function (string $status, string $message): void {
+    Queue::fake();
+    $website = Website::factory()->create();
+    AiVisibilitySetting::factory()->for($website)->create(['enabled' => true]);
+    $prompt = AiVisibilityPrompt::factory()->for($website)->create();
+    AiVisibilityResult::factory()->for($prompt, 'prompt')->create(['status' => $status]);
+
+    $this->actingAs($website->owner)->post(route('admin.ai-visibility.check', $website))
+        ->assertSessionHas('status', fn (string $feedback): bool => str_contains($feedback, $message));
+
+    expect(AiVisibilityResult::count())->toBe(1);
+    Queue::assertNothingPushed();
+})->with([
+    ['queued', 'already queued or running'],
+    ['running', 'already queued or running'],
+    ['completed', 'No new AI checks are due yet.'],
+    ['failed', 'including failed attempts'],
+]);
+
+test('check now confirms queued checks and active empty states do not request activation', function (): void {
+    Queue::fake();
+    $website = Website::factory()->create();
+    AiVisibilitySetting::factory()->for($website)->create(['enabled' => true]);
+    AiVisibilityPrompt::factory()->for($website)->create();
+
+    $this->actingAs($website->owner)->get(route('admin.ai-visibility.index', $website))
+        ->assertOk()->assertSee('Tracking is on. Use Check now')->assertDontSee('Turn on AI tracking above');
+    $this->post(route('admin.ai-visibility.check', $website))
+        ->assertSessionHas('status', '1 AI checks queued.');
+    Queue::assertPushed(CheckAiVisibility::class, 1);
+});
+
+test('activation explains why first checks were blocked', function (): void {
+    Queue::fake();
+    $website = Website::factory()->create(['is_active' => false]);
+    AiVisibilityPrompt::factory()->for($website)->create();
+    $this->actingAs($website->owner)->put(route('admin.ai-visibility.settings', $website), ['enabled' => true])
+        ->assertSessionHas('status', 'AI tracking is on. This website is inactive. Reactivate the website before running AI checks.');
+    Queue::assertNothingPushed();
+});

@@ -115,9 +115,9 @@ class AiVisibilityController extends Controller
         });
 
         if ($started) {
-            $count = $scheduler->queue($website);
+            $outcome = $scheduler->queueWithFeedback($website);
 
-            return $this->redirect($website, $count > 0 ? 'AI tracking is on. '.$count.' first checks queued; results will appear here when ready.' : 'AI tracking is on. No checks are due or this website is not currently eligible for checks.');
+            return $this->redirect($website, 'AI tracking is on. '.$outcome['message']);
         }
 
         return $this->redirect($website, $request->boolean('enabled') ? 'Tracking settings saved.' : 'AI tracking is paused. Your questions and results have been kept.');
@@ -164,9 +164,9 @@ class AiVisibilityController extends Controller
         if ($prompt) {
             $this->assertNested($website, $prompt);
         }
-        $count = $scheduler->queue($website, $prompt);
+        $outcome = $scheduler->queueWithFeedback($website, $prompt);
 
-        return $this->redirect($website, $count > 0 ? $count.' AI checks queued.' : 'No checks are due. Turn on tracking and make sure you have an active question.');
+        return $this->redirect($website, $outcome['message']);
     }
 
     /** @param array<string, mixed> $data */
