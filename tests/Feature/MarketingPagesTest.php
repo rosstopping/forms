@@ -28,8 +28,33 @@ it('shows each public marketing page', function (string $route, string $copy): v
 it('shows journal articles and returns not found for unknown slugs', function (): void {
     $this->get(route('marketing.journal'))
         ->assertSuccessful()
+        ->assertSee('Why isn\'t my website showing on Google?')
+        ->assertSee('Why has my website traffic dropped?')
         ->assertSee('Why isn\'t my website ranking on Google?')
         ->assertSee('What does website maintenance actually include?');
+
+    $this->get(route('marketing.article', 'why-isnt-my-website-showing-on-google'))
+        ->assertSuccessful()
+        ->assertSee('First, separate two different problems')
+        ->assertSee('Problem A: The page is not indexed')
+        ->assertSee('Problem B: The page is indexed but ranking poorly')
+        ->assertSee('A simple diagnosis workflow for business owners')
+        ->assertSee('Start a free website audit')
+        ->assertSee('href="'.route('marketing.article', 'why-isnt-my-website-ranking-on-google').'"', false)
+        ->assertSee('href="'.route('marketing.article', 'why-has-my-website-traffic-dropped').'"', false)
+        ->assertSee('href="'.route('marketing.landing', 'managed-seo-services').'"', false)
+        ->assertSee('href="'.route('marketing.free-site-audit').'"', false);
+
+    $this->get(route('marketing.article', 'why-has-my-website-traffic-dropped'))
+        ->assertSuccessful()
+        ->assertSee('Cause 1: Search results changed after an algorithm update')
+        ->assertSee('Cause 5: Tracking problems, not real demand loss')
+        ->assertSee('Cause 7: Content decay on once-useful pages')
+        ->assertSee('A practical recovery checklist')
+        ->assertSee('Start a free website audit')
+        ->assertSee('href="'.route('marketing.landing', 'seo-for-small-businesses').'"', false)
+        ->assertSee('href="'.route('marketing.landing', 'local-seo-services').'"', false)
+        ->assertSee('href="'.route('marketing.free-site-audit').'"', false);
 
     $this->get(route('marketing.article', 'why-isnt-my-website-ranking-on-google'))
         ->assertSuccessful()
@@ -85,6 +110,8 @@ it('outputs canonical URLs for key marketing pages', function (string $routeName
     'privacy policy' => ['marketing.privacy'],
     'terms of service' => ['marketing.terms'],
     'journal article' => ['marketing.article', ['a-clean-website-handover']],
+    'showing article' => ['marketing.article', ['why-isnt-my-website-showing-on-google']],
+    'traffic drop article' => ['marketing.article', ['why-has-my-website-traffic-dropped']],
     'ranking article' => ['marketing.article', ['why-isnt-my-website-ranking-on-google']],
     'website management landing page' => ['marketing.landing', ['website-management-services']],
     'website maintenance landing page' => ['marketing.landing', ['website-maintenance-packages']],
@@ -103,6 +130,8 @@ it('uses shorter SEO page titles for flagged marketing pages', function (string 
 })->with([
     'home' => ['marketing.home', [], 'Managed business websites'],
     'clean handover article' => ['marketing.article', ['a-clean-website-handover'], 'A clean website handover'],
+    'showing article' => ['marketing.article', ['why-isnt-my-website-showing-on-google'], 'Website not showing on Google?'],
+    'traffic drop article' => ['marketing.article', ['why-has-my-website-traffic-dropped'], 'Why website traffic drops'],
     'ranking article' => ['marketing.article', ['why-isnt-my-website-ranking-on-google'], 'Why your website is not ranking'],
     'website maintenance article' => ['marketing.article', ['what-website-maintenance-actually-includes'], 'Website maintenance explained'],
     'forms article' => ['marketing.article', ['forms-that-never-lose-a-lead'], 'Build forms that capture leads'],
@@ -155,6 +184,8 @@ it('publishes an XML sitemap for the marketing site', function (): void {
         ->assertSee('<loc>'.route('marketing.free-site-audit').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.journal').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.contact').'</loc>', false)
+        ->assertSee('<loc>'.route('marketing.article', 'why-isnt-my-website-showing-on-google').'</loc>', false)
+        ->assertSee('<loc>'.route('marketing.article', 'why-has-my-website-traffic-dropped').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.article', 'why-isnt-my-website-ranking-on-google').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.article', 'what-website-maintenance-actually-includes').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.privacy').'</loc>', false)
