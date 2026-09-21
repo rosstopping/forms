@@ -28,10 +28,35 @@ it('shows each public marketing page', function (string $route, string $copy): v
 it('shows journal articles and returns not found for unknown slugs', function (): void {
     $this->get(route('marketing.journal'))
         ->assertSuccessful()
+        ->assertSee('How often should I update my website?')
+        ->assertSee('How do I know if my SEO is working?')
         ->assertSee('Why isn\'t my website showing on Google?')
         ->assertSee('Why has my website traffic dropped?')
         ->assertSee('Why isn\'t my website ranking on Google?')
         ->assertSee('What does website maintenance actually include?');
+
+    $this->get(route('marketing.article', 'how-often-should-i-update-my-website'))
+        ->assertSuccessful()
+        ->assertSee('Start by separating four different kinds of update')
+        ->assertSee('Technical maintenance should be ongoing, not annual')
+        ->assertSee('A simple rhythm usually beats long periods of neglect')
+        ->assertSee('Start a free website audit')
+        ->assertSee('href="'.route('marketing.article', 'what-website-maintenance-actually-includes').'"', false)
+        ->assertSee('href="'.route('marketing.article', 'how-do-i-know-if-my-seo-is-working').'"', false)
+        ->assertSee('href="'.route('marketing.landing', 'website-management-services').'"', false)
+        ->assertSee('href="'.route('marketing.landing', 'website-maintenance-packages').'"', false)
+        ->assertSee('href="'.route('marketing.free-site-audit').'"', false);
+
+    $this->get(route('marketing.article', 'how-do-i-know-if-my-seo-is-working'))
+        ->assertSuccessful()
+        ->assertSee('Start with the business outcome, not the dashboard')
+        ->assertSee('Conversions and leads tell you whether the traffic is useful')
+        ->assertSee('How Sitewell monitors website performance')
+        ->assertSee('Start a free website audit')
+        ->assertSee('href="'.route('marketing.article', 'search-data-to-content-decisions').'"', false)
+        ->assertSee('href="'.route('marketing.article', 'how-often-should-i-update-my-website').'"', false)
+        ->assertSee('href="'.route('marketing.landing', 'managed-seo-services').'"', false)
+        ->assertSee('href="'.route('marketing.free-site-audit').'"', false);
 
     $this->get(route('marketing.article', 'why-isnt-my-website-showing-on-google'))
         ->assertSuccessful()
@@ -110,6 +135,8 @@ it('outputs canonical URLs for key marketing pages', function (string $routeName
     'privacy policy' => ['marketing.privacy'],
     'terms of service' => ['marketing.terms'],
     'journal article' => ['marketing.article', ['a-clean-website-handover']],
+    'website updates article' => ['marketing.article', ['how-often-should-i-update-my-website']],
+    'seo working article' => ['marketing.article', ['how-do-i-know-if-my-seo-is-working']],
     'showing article' => ['marketing.article', ['why-isnt-my-website-showing-on-google']],
     'traffic drop article' => ['marketing.article', ['why-has-my-website-traffic-dropped']],
     'ranking article' => ['marketing.article', ['why-isnt-my-website-ranking-on-google']],
@@ -130,6 +157,8 @@ it('uses shorter SEO page titles for flagged marketing pages', function (string 
 })->with([
     'home' => ['marketing.home', [], 'Managed business websites'],
     'clean handover article' => ['marketing.article', ['a-clean-website-handover'], 'A clean website handover'],
+    'website updates article' => ['marketing.article', ['how-often-should-i-update-my-website'], 'How often to update a website'],
+    'seo working article' => ['marketing.article', ['how-do-i-know-if-my-seo-is-working'], 'How to know if SEO is working'],
     'showing article' => ['marketing.article', ['why-isnt-my-website-showing-on-google'], 'Website not showing on Google?'],
     'traffic drop article' => ['marketing.article', ['why-has-my-website-traffic-dropped'], 'Why website traffic drops'],
     'ranking article' => ['marketing.article', ['why-isnt-my-website-ranking-on-google'], 'Why your website is not ranking'],
@@ -184,6 +213,8 @@ it('publishes an XML sitemap for the marketing site', function (): void {
         ->assertSee('<loc>'.route('marketing.free-site-audit').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.journal').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.contact').'</loc>', false)
+        ->assertSee('<loc>'.route('marketing.article', 'how-often-should-i-update-my-website').'</loc>', false)
+        ->assertSee('<loc>'.route('marketing.article', 'how-do-i-know-if-my-seo-is-working').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.article', 'why-isnt-my-website-showing-on-google').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.article', 'why-has-my-website-traffic-dropped').'</loc>', false)
         ->assertSee('<loc>'.route('marketing.article', 'why-isnt-my-website-ranking-on-google').'</loc>', false)

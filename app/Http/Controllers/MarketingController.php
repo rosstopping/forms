@@ -230,6 +230,199 @@ class MarketingController extends Controller
     {
         return [
             [
+                'slug' => 'how-often-should-i-update-my-website',
+                'category' => 'Website care',
+                'title' => 'How often should I update my website?',
+                'seo_title' => 'How often to update a website',
+                'excerpt' => 'A practical guide to how often a business website should be updated, covering content changes, technical maintenance, SEO improvements and redesign decisions.',
+                'date' => '21 September 2026',
+                'date_iso' => '2026-09-21',
+                'read_time' => '8 min read',
+                'sections' => [
+                    [
+                        'heading' => 'Start by separating four different kinds of update',
+                        'paragraphs' => [
+                            'When people ask how often a website should be updated, they often bundle several different jobs into one question. A content edit, a plugin update, an SEO improvement, and a full redesign are not the same kind of work and should not run to the same timetable.',
+                            'It is easier to make sensible decisions once you separate what needs ongoing care from what only needs to happen when the business or website has genuinely changed.',
+                        ],
+                    ],
+                    [
+                        'heading' => 'Content updates should follow real business changes',
+                        'paragraphs' => [
+                            'Service pages, pricing notes, team details, trust points, and calls to action should be reviewed whenever the business behind them changes. A page that still describes last year’s offer can quietly weaken trust long before it creates an obvious complaint.',
+                            'That does not mean rewriting everything every month. It means checking whether the important pages still match the business a customer meets today.',
+                        ],
+                        'points' => [
+                            'Update service pages when your offer, process, or pricing approach changes.',
+                            'Refresh trust points when you add stronger proof, examples, or answers to common objections.',
+                            'Review your contact paths when customers keep asking for the same missing information.',
+                        ],
+                    ],
+                    [
+                        'heading' => 'Technical maintenance should be ongoing, not annual',
+                        'paragraphs' => [
+                            'Technical maintenance is the part that should happen continuously in the background. Software updates, form checks, backups, security reviews, and obvious errors are easier to deal with when someone is looking regularly rather than waiting for a yearly panic.',
+                            'For most small businesses, the real question is not whether maintenance should happen every month or every quarter. It is whether anybody is actually responsible for noticing issues before they cost enquiries.',
+                        ],
+                        'links' => [
+                            [
+                                'route' => 'marketing.article',
+                                'parameters' => ['what-website-maintenance-actually-includes'],
+                                'label' => 'Read what proper website maintenance should include',
+                                'description' => 'A practical look at the checks and improvements that keep a business website dependable.',
+                            ],
+                            [
+                                'route' => 'marketing.landing',
+                                'parameters' => ['website-maintenance-packages'],
+                                'label' => 'Explore Sitewell’s website maintenance packages',
+                            ],
+                        ],
+                    ],
+                    [
+                        'heading' => 'SEO improvements should respond to evidence',
+                        'paragraphs' => [
+                            'SEO work rarely benefits from an arbitrary “update every Tuesday” rule. A better approach is to review the pages that matter, watch how they perform in search, and improve the ones that are already close to doing useful work.',
+                            'Sometimes that means improving an existing service page. Sometimes it means creating a missing page. Sometimes it means leaving a page alone and fixing a more urgent issue first.',
+                        ],
+                        'points' => [
+                            'Review clicks and impressions on the pages tied to valuable services.',
+                            'Look for pages ranking near stronger positions rather than chasing every possible keyword.',
+                            'Prioritise pages that could realistically generate enquiries if they improved.',
+                        ],
+                        'links' => [
+                            [
+                                'route' => 'marketing.article',
+                                'parameters' => ['how-do-i-know-if-my-seo-is-working'],
+                                'label' => 'Learn how to tell whether your SEO is actually working',
+                            ],
+                            [
+                                'route' => 'marketing.article',
+                                'parameters' => ['search-data-to-content-decisions'],
+                                'label' => 'See how search data can guide your next website improvement',
+                            ],
+                        ],
+                    ],
+                    [
+                        'heading' => 'A redesign is a bigger decision, not the default fix',
+                        'paragraphs' => [
+                            'A redesign can be worthwhile when the website no longer reflects the business, cannot support the next stage of growth, or has become genuinely difficult to manage. It is not automatically the answer just because results have slowed down.',
+                            'Many businesses would get better value from improving the pages, forms, and search visibility they already have instead of resetting everything every few years.',
+                        ],
+                    ],
+                    [
+                        'heading' => 'A simple rhythm usually beats long periods of neglect',
+                        'paragraphs' => [
+                            'Most business websites benefit from a light but regular rhythm: monthly checks on the important journeys, quarterly reviews of key pages and search opportunities, and larger changes only when the evidence supports them.',
+                            'That kind of steady attention is usually cheaper, calmer, and more effective than ignoring a website for three years and then funding a rushed rebuild because too many small issues have piled up.',
+                        ],
+                        'links' => [
+                            [
+                                'route' => 'marketing.free-site-audit',
+                                'label' => 'Start a free website audit',
+                                'description' => 'Get a practical view of what deserves attention before assuming you need a redesign.',
+                            ],
+                            [
+                                'route' => 'marketing.landing',
+                                'parameters' => ['website-management-services'],
+                                'label' => 'See how Sitewell manages ongoing website improvements',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            [
+                'slug' => 'how-do-i-know-if-my-seo-is-working',
+                'category' => 'Search',
+                'title' => 'How do I know if my SEO is working?',
+                'seo_title' => 'How to know if SEO is working',
+                'excerpt' => 'A practical guide to measuring whether SEO is helping your business, using clicks, impressions, rankings, conversions and leads rather than vanity metrics.',
+                'date' => '21 September 2026',
+                'date_iso' => '2026-09-21',
+                'read_time' => '8 min read',
+                'sections' => [
+                    [
+                        'heading' => 'Start with the business outcome, not the dashboard',
+                        'paragraphs' => [
+                            'SEO is working when it helps more of the right people find your website and take a useful next step. A report full of green arrows means very little if the phone is quieter, leads are poor, or the wrong pages are getting attention.',
+                            'That is why the most useful measurements mix visibility with action. You want to know whether the website is being seen, chosen, and trusted enough to create genuine enquiries.',
+                        ],
+                    ],
+                    [
+                        'heading' => 'Clicks show whether more searchers are choosing your pages',
+                        'paragraphs' => [
+                            'Clicks from Google Search Console are one of the clearest signs that your pages are earning attention. If clicks are rising on commercially relevant pages, that usually means your titles, relevance, and positioning are improving enough for more people to visit.',
+                            'Look at clicks page by page, not only sitewide. A small increase on a key service page can matter more than a large increase on a low-value blog post.',
+                        ],
+                    ],
+                    [
+                        'heading' => 'Impressions tell you where Google is testing your visibility',
+                        'paragraphs' => [
+                            'Impressions can show that Google is starting to surface your page more often, even before clicks increase. That can be a useful early sign that a page is becoming more relevant for the searches you care about.',
+                            'On their own, impressions are not success. They are more useful as a clue that a page is entering the conversation and may deserve another round of improvement.',
+                        ],
+                    ],
+                    [
+                        'heading' => 'Rankings only matter with context',
+                        'paragraphs' => [
+                            'Ranking improvements can be encouraging, but a movement from position 58 to 37 is not the same as moving from position 11 to 5. Context matters because some ranking changes create business impact and others barely change what a customer sees.',
+                            'Use rankings to understand where a page is close enough to stronger visibility that improving it could realistically bring more visitors.',
+                        ],
+                        'points' => [
+                            'Check which page is ranking, not just which query moved.',
+                            'Look at location and device where that matters to your business.',
+                            'Pay more attention to pages close to page one than to pages that remain far away.',
+                        ],
+                    ],
+                    [
+                        'heading' => 'Conversions and leads tell you whether the traffic is useful',
+                        'paragraphs' => [
+                            'A good SEO result is not just more sessions. It is more of the right visitors becoming calls, forms, bookings, or qualified enquiries. If traffic rises but nothing useful happens afterwards, the website may be attracting the wrong audience or doing a poor job once they arrive.',
+                            'That is why lead quality and conversion behaviour matter alongside search metrics. The purpose of SEO is not to win a dashboard. It is to support the business.',
+                        ],
+                        'points' => [
+                            'Track whether important forms and calls to action are being used more often.',
+                            'Review lead quality, not just lead volume, when pages start attracting new traffic.',
+                            'Check that enquiry handling still works so improved visibility does not create missed opportunities.',
+                        ],
+                    ],
+                    [
+                        'heading' => 'Avoid vanity metrics that sound good but change nothing',
+                        'paragraphs' => [
+                            'Not every metric deserves equal attention. Total impressions, broad ranking swings, and traffic spikes on irrelevant pages can create noise that makes SEO look busier than it really is.',
+                            'The better question is always: did visibility improve on the pages and searches most likely to help the business? If the answer is no, the report probably needs less celebration and more prioritisation.',
+                        ],
+                    ],
+                    [
+                        'heading' => 'How Sitewell monitors website performance',
+                        'paragraphs' => [
+                            'Sitewell looks at clicks, impressions, ranking context, page quality, and what happens after the visit. That makes it easier to choose the next useful improvement instead of reacting to isolated numbers.',
+                            'For a business owner, the value is not having to stitch together Search Console, page performance, and website issues alone. The evidence should lead to a clear next step.',
+                        ],
+                        'links' => [
+                            [
+                                'route' => 'marketing.article',
+                                'parameters' => ['search-data-to-content-decisions'],
+                                'label' => 'Read how Sitewell turns search data into practical content decisions',
+                            ],
+                            [
+                                'route' => 'marketing.article',
+                                'parameters' => ['how-often-should-i-update-my-website'],
+                                'label' => 'See how regular website improvements support SEO progress',
+                            ],
+                            [
+                                'route' => 'marketing.landing',
+                                'parameters' => ['managed-seo-services'],
+                                'label' => 'Explore Sitewell’s managed SEO services',
+                            ],
+                            [
+                                'route' => 'marketing.free-site-audit',
+                                'label' => 'Start a free website audit',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            [
                 'slug' => 'why-isnt-my-website-showing-on-google',
                 'category' => 'Search',
                 'title' => 'Why isn\'t my website showing on Google?',
@@ -596,6 +789,11 @@ class MarketingController extends Controller
                                 'description' => 'Use ranking and query data to decide which page is worth improving next.',
                             ],
                             [
+                                'route' => 'marketing.article',
+                                'parameters' => ['how-often-should-i-update-my-website'],
+                                'label' => 'Read how often a business website should really be updated',
+                            ],
+                            [
                                 'route' => 'marketing.features',
                                 'label' => 'Explore how Sitewell handles health checks and search opportunities',
                             ],
@@ -710,6 +908,11 @@ class MarketingController extends Controller
                                 'route' => 'marketing.landing',
                                 'parameters' => ['managed-seo-services'],
                                 'label' => 'Explore managed SEO services',
+                            ],
+                            [
+                                'route' => 'marketing.article',
+                                'parameters' => ['how-do-i-know-if-my-seo-is-working'],
+                                'label' => 'Learn which SEO measurements actually matter to a business owner',
                             ],
                         ],
                     ],
