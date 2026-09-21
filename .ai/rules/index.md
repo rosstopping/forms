@@ -86,6 +86,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Services/SeoIntelligence/** | .ai/rules/seo-intelligence.md |
 | app/{Services/Github*,Http/Controllers/**/*Github*,Models/{GithubInstallation,WebsiteRepository,RemediationRun}.php}, app/{Services/PixelUrlNormalizer.php,Services/PixelPayloadBuilder.php,Http/Controllers/PixelPayloadController.php,Models/Optimisation.php} | .ai/rules/services-controllers.md |
 | app/Services/BacklinkAuditService.php,tests/Feature/BacklinkAuditTest.php | .ai/rules/services-feature.md |
+| app/{Services,Jobs,Console/Commands}/**/*Competitor*.php | .ai/rules/services-jobs-console-commands.md |
 | app/{Services,Jobs,Http/Controllers/Admin}/**/*SeoProspect*.php, app/{Services,Jobs,Http/Controllers/Admin}/**/*Competitor*.php, app/{Services,Jobs,Http/Controllers/Admin}/**/*AiVisibility*.php | .ai/rules/services-jobs-http-controllers-admin.md |
 | app/{Services,Jobs,Http/Controllers}/**/*Content*.php | .ai/rules/services-jobs-http-controllers.md |
 | {app/Services/WordPressStaticReleaseBuilder.php,wordpress-plugin/sitewell-by-digizu/**} | .ai/rules/services-sitewell-by-digizu.md |

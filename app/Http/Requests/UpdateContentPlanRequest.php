@@ -29,6 +29,7 @@ class UpdateContentPlanRequest extends FormRequest
     {
         return [
             'enabled' => ['required', 'boolean'],
+            'competitor_research_mode' => ['sometimes', 'required', Rule::in(['manual', 'research', 'drafts'])],
             'weekday' => ['required', 'integer', 'between:0,6'],
             'additional_weekdays' => ['sometimes', 'array', 'max:'.max(0, app(ContentSchedule::class)->weeklyLimit($this->route('website')) - 1)],
             'additional_weekdays.*' => ['required', 'integer', 'between:0,6', 'distinct', Rule::notIn([$this->input('weekday')])],

@@ -13,13 +13,13 @@ class CompetitorAudit extends Model
     /** @use HasFactory<CompetitorAuditFactory> */
     use HasFactory;
 
-    protected $fillable = ['website_competitor_id', 'website_id', 'domain', 'competitor_domain', 'provider', 'location_code', 'language_code', 'status', 'stages', 'errors', 'limits', 'started_at', 'completed_at'];
+    protected $fillable = ['website_competitor_id', 'website_id', 'domain', 'competitor_domain', 'provider', 'location_code', 'language_code', 'status', 'stages', 'errors', 'limits', 'started_at', 'completed_at', 'trigger', 'comparison_pages'];
 
-    protected $attributes = ['status' => 'pending', 'provider' => 'dataforseo'];
+    protected $attributes = ['status' => 'pending', 'provider' => 'dataforseo', 'trigger' => 'manual'];
 
     protected function casts(): array
     {
-        return ['stages' => 'array', 'errors' => 'array', 'limits' => 'array', 'started_at' => 'datetime', 'completed_at' => 'datetime'];
+        return ['stages' => 'array', 'errors' => 'array', 'limits' => 'array', 'started_at' => 'datetime', 'completed_at' => 'datetime', 'comparison_pages' => 'array'];
     }
 
     public function website(): BelongsTo

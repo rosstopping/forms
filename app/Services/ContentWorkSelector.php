@@ -2,10 +2,12 @@
 
 namespace App\Services;
 
+use App\Models\CompetitorOpportunity;
 use App\Models\ContentGeneration;
 use App\Models\ContentPlan;
 use App\Models\ContentRequest;
 use App\Models\SeoTargetKeyword;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 
 class ContentWorkSelector
@@ -24,10 +26,43 @@ class ContentWorkSelector
             && $previous->pull_request_state !== 'closed')->flatMap(fn (ContentGeneration $previous): array => $this->generationKeys($previous))->unique();
         $recentKeys = $history->filter(fn (ContentGeneration $previous): bool => ($previous->merged_at ?? ($previous->copilot_task_id ? $previous->started_at : null))?->greaterThan(now()->subDays(14)) === true)
             ->flatMap(fn (ContentGeneration $previous): array => $this->generationKeys($previous))->unique();
-        $requests = $website->contentRequests()->pendingInQueueOrder()->with('seoImpact')->get()
-            ->reject(fn (ContentRequest $request): bool => $openKeys->intersect($this->requestKeys($request))->isNotEmpty()
+        $pendingRequests = $website->contentRequests()->pendingInQueueOrder()->with('seoImpact')->get();
+        $automaticAuditIds = $pendingRequests->filter(fn (ContentRequest $request): bool => (bool) data_get($request->competitor_context, 'automatic'))
+            ->pluck('competitor_context.audit_id')->filter();
+        $eligibleAuditIds = $automaticAuditIds->isEmpty() ? collect() : app(CompetitorContentContext::class)->eligibleAudits($website)
+            ->whereKey($automaticAuditIds)->pluck('id');
+        $requests = $pendingRequests
+            ->reject(fn (ContentRequest $request): bool => (data_get($request->competitor_context, 'automatic') && ($generation->plan->competitor_research_mode !== 'drafts'
+                || ! $eligibleAuditIds->contains(data_get($request->competitor_context, 'audit_id'))))
+                || $openKeys->intersect($this->requestKeys($request))->isNotEmpty()
                 || $recentKeys->intersect($this->requestKeys($request))->isNotEmpty()
                 || $protectedKeys->intersect($this->requestKeys($request))->isNotEmpty())->take(2);
+        if ($requests->isEmpty() && $generation->trigger === 'scheduled'
+            && $generation->plan->competitor_research_mode === 'drafts'
+            && ! app(ContentSchedule::class)->pauseReason($generation->plan)) {
+            $blockedKeys = $openKeys->merge($recentKeys)->merge($protectedKeys);
+            $opportunity = app(CompetitorContentContext::class)->opportunities($website)->first(function (CompetitorOpportunity $opportunity) use ($blockedKeys): bool {
+                $brief = $opportunity->brief;
+                $term = $brief['primary_keyword'] ?? null;
+                if (! is_string($term) || $term === '') {
+                    return false;
+                }
+                $keys = ['term:'.mb_strtolower(trim($term))];
+                foreach ($brief['keywords'] ?? [] as $keyword) {
+                    $keys[] = 'term:'.mb_strtolower(trim($keyword['keyword']));
+                }
+                if (! empty($brief['existing_page_url'])) {
+                    $keys[] = $this->urlKey($brief['existing_page_url']);
+                }
+
+                return $blockedKeys->intersect($keys)->isEmpty();
+            });
+            if ($opportunity) {
+                $requests = new EloquentCollection([
+                    app(ContentOpportunityQueuer::class)->queueCompetitor($opportunity, $generation->plan->creator, automatic: true),
+                ]);
+            }
+        }
         $eligible = $active->filter(function (SeoTargetKeyword $keyword) use ($snapshot, $openKeys, $recentKeys, $protectedKeys): bool {
             $row = collect($snapshot)->firstWhere('id', $keyword->id);
             $keys = $this->targetKeys($keyword->id, $keyword->term, $row['ranking_url'] ?? null);
@@ -94,6 +129,15 @@ class ContentWorkSelector
         if ($request->seoImpact) {
             $keys = [...$keys, ...array_map(fn (string $url): string => $this->urlKey($url), $request->seoImpact->target_urls),
                 ...array_map(fn (string $query): string => 'term:'.mb_strtolower(trim($query)), $request->seoImpact->target_queries)];
+        }
+        $existingUrl = data_get($request->competitor_context, 'existing_page_url');
+        if (is_string($existingUrl) && $existingUrl !== '') {
+            $keys[] = $this->urlKey($existingUrl);
+        }
+        foreach (data_get($request->competitor_context, 'keywords', []) as $keyword) {
+            if (! empty($keyword['keyword'])) {
+                $keys[] = 'term:'.mb_strtolower(trim($keyword['keyword']));
+            }
         }
         $term = data_get($request->competitor_context, 'primary_keyword');
         if (is_string($term) && $term !== '') {

@@ -12,7 +12,7 @@
             @if ($canManageWebsite && ! $audit->competitor->excluded)<form method="POST" action="{{ route('admin.competitors.audit', [$website, $audit->competitor]) }}">@csrf<button type="submit" class="ui-button ui-button-primary">{{ $audit->status === 'failed' ? 'Retry audit' : 'Refresh audit' }}</button></form>@endif
             <a href="{{ route('admin.competitor-audits.show', [$website, $audit]) }}" class="text-sm font-medium text-teal-700 hover:underline">Check progress</a>
         </div>
-        @if (in_array($audit->status, ['pending', 'processing']))<p role="status" class="rounded-md bg-teal-50 p-3 text-teal-900 text-base sm:text-sm">Audit in progress. {{ count($audit->stages ?? []) }} of 7 stages saved. Check progress to see new results.</p>@endif
+        @if (in_array($audit->status, ['pending', 'processing']))<p role="status" class="rounded-md bg-teal-50 p-3 text-teal-900 text-base sm:text-sm">Audit in progress. {{ count($audit->stages ?? []) }} of {{ count(\App\Services\CompetitorAuditService::STAGES) }} stages saved. Check progress to see new results.</p>@endif
         @foreach ($audit->errors ?? [] as $stage => $error)<p role="alert" class="rounded-md bg-amber-50 p-3 text-amber-900 text-base sm:text-sm">{{ ucfirst(str_replace('_', ' ', $stage)) }}: {{ $error }}</p>@endforeach
     </header>
     <section class="space-y-4" aria-labelledby="competitor-opportunities-heading">
@@ -45,6 +45,17 @@
             @empty<tr><td colspan="6" class="p-6 text-center text-slate-500">No keywords in this sample.</td></tr>@endforelse
         </tbody></table></div><div class="mt-4">{{ $keywords->links() }}</div>
     </section>
+    @if ($audit->comparison_pages)
+        <section class="ui-panel p-4 sm:p-6" aria-labelledby="own-page-comparison-heading">
+            <h2 id="own-page-comparison-heading" class="text-lg font-semibold">Your pages compared</h2>
+            <p class="mt-2 text-base text-slate-600 sm:text-sm">Briefs compare available page content with competitor evidence. An unavailable page means the comparison is limited, not that your content is missing.</p>
+            <ul class="mt-4 space-y-3 text-sm text-slate-600">
+                @foreach ($audit->comparison_pages as $page)
+                    <li class="break-all">{{ $page['url'] }} · {{ $page['status'] === 'completed' ? 'Content analysed' : 'Content unavailable' }}</li>
+                @endforeach
+            </ul>
+        </section>
+    @endif
     <section class="space-y-4" aria-labelledby="competitor-pages-heading">
         <h2 id="competitor-pages-heading" class="text-lg font-semibold">Leading pages</h2>
         @forelse ($audit->pages as $page)

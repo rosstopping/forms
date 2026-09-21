@@ -29,6 +29,7 @@ return [
         ],
         'growth' => [
             'name' => 'Growth',
+            'competitor_research' => ['competitors' => 3, 'interval_days' => 14, 'analyse_pages' => 5, 'ranked_keywords' => 100],
             'price' => 395,
             'description' => 'For businesses ready to have their search visibility actively managed and improved.',
             'summary' => 'Everything in Essential',
@@ -37,6 +38,7 @@ return [
                 'Bring your existing site or take your Sitewell website with you',
                 'Search performance interpreted by our SEO specialists',
                 'Striking-distance keywords and commercial opportunities',
+                'Automated competitor research to guide your content and SEO improvements',
                 'SEO improvements for existing pages',
                 'New landing pages and content prepared for you',
                 'Up to one scheduled content improvement per week, prepared for review',
@@ -46,6 +48,7 @@ return [
         ],
         'complete' => [
             'name' => 'Complete',
+            'competitor_research' => ['competitors' => 5, 'interval_days' => 7, 'analyse_pages' => 8, 'ranked_keywords' => 200],
             'price' => 695,
             'description' => 'For businesses that want one specialist team managing their website, search, and local presence.',
             'summary' => 'Everything in Growth',
@@ -53,6 +56,7 @@ return [
                 'Free website included if you need one',
                 'Bring your existing site or take your Sitewell website with you',
                 'Up to three scheduled content improvements per week, prepared for review',
+                'Broader, weekly competitor research with deeper page comparisons',
                 'Specialist Google Business Profile management',
                 'Profile health checks and recommended changes',
                 'Google posts prepared for your business',

@@ -22,6 +22,11 @@ Schedule::command('content:dispatch')
     ->onOneServer()
     ->withoutOverlapping();
 
+Schedule::command('competitors:dispatch-research')
+    ->hourly()
+    ->onOneServer()
+    ->withoutOverlapping();
+
 Schedule::command('content:send-suggestion-reminders')
     ->everyMinute()
     ->onOneServer()

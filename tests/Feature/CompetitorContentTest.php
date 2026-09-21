@@ -26,7 +26,7 @@ test('automatic context uses fresh relevant nonexcluded unqueued evidence and ma
     $audit = CompetitorAudit::factory()->create(['status' => 'completed', 'completed_at' => now()]);
     $website = $audit->website;
     $website->domains()->create(['domain' => 'example.com', 'is_primary' => true]);
-    $plan = ContentPlan::factory()->for($website)->create();
+    $plan = ContentPlan::factory()->for($website)->create(['competitor_research_mode' => 'drafts']);
     $generation = ContentGeneration::factory()->for($plan, 'plan')->create();
     $opportunity = CompetitorOpportunity::factory()->for($audit, 'audit')->create();
     $context = app(CompetitorContentContext::class);

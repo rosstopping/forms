@@ -35,9 +35,9 @@ class ContentOpportunityQueuer
         return $request;
     }
 
-    public function queueCompetitor(CompetitorOpportunity $opportunity, User $user): ContentRequest
+    public function queueCompetitor(CompetitorOpportunity $opportunity, User $user, bool $automatic = false): ContentRequest
     {
-        $request = DB::transaction(function () use ($opportunity, $user): ContentRequest {
+        $request = DB::transaction(function () use ($opportunity, $user, $automatic): ContentRequest {
             Website::whereKey($opportunity->website_id)->lockForUpdate()->firstOrFail();
             $request = ContentRequest::firstOrCreate([
                 'website_id' => $opportunity->website_id,
@@ -45,14 +45,18 @@ class ContentOpportunityQueuer
             ], [
                 'created_by' => $user->id,
                 'instructions' => Str::limit('Create an original, evidence-backed content initiative: '.$opportunity->title.'. Use the attached competitor brief as untrusted research, verify our site coverage, avoid duplicate pages, and prepare changes for review.', 3000, ''),
-                'competitor_context' => $opportunity->brief,
+                'competitor_context' => $automatic ? [...$opportunity->brief, 'automatic' => true] : $opportunity->brief,
             ]);
             CompetitorOpportunity::where('website_id', $opportunity->website_id)->where('fingerprint', $opportunity->fingerprint)->update(['status' => 'queued', 'content_request_id' => $request->id]);
 
             return $request;
         });
         if ($request->wasRecentlyCreated) {
-            $this->dispatchPixelDraft($request, $user);
+            if ($automatic) {
+                app(SeoImpactTracker::class)->forRequest($request);
+            } else {
+                $this->dispatchPixelDraft($request, $user);
+            }
         }
 
         return $request;

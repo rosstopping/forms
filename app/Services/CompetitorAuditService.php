@@ -18,11 +18,12 @@ use RuntimeException;
 
 class CompetitorAuditService
 {
-    public const STAGES = ['ranked_top', 'ranked_deep', 'shared_keywords', 'missing_keywords', 'leading_pages', 'pages', 'briefs'];
+    public const STAGES = ['ranked_top', 'ranked_deep', 'shared_keywords', 'missing_keywords', 'leading_pages', 'pages', 'comparison_pages', 'briefs'];
 
-    public function request(WebsiteCompetitor $competitor): CompetitorAudit
+    /** @param array<string, int>|null $limits */
+    public function request(WebsiteCompetitor $competitor, ?array $limits = null, string $trigger = 'manual'): CompetitorAudit
     {
-        return Cache::lock('competitor-audit-request:'.$competitor->id, 10)->block(3, function () use ($competitor): CompetitorAudit {
+        return Cache::lock('competitor-audit-request:'.$competitor->id, 10)->block(3, function () use ($competitor, $limits, $trigger): CompetitorAudit {
             $competitor->refresh();
             if ($competitor->excluded) {
                 throw ValidationException::withMessages(['competitor' => 'Restore this competitor before auditing it.']);
@@ -45,14 +46,14 @@ class CompetitorAuditService
             if ($audit && in_array($audit->status, ['completed', 'completed_with_errors'], true) && $audit->completed_at?->gt(now()->subDays(7))) {
                 return $audit;
             }
-            if (! $audit || $audit->created_at->lt(now()->subDays(7)) || in_array($audit->status, ['completed', 'completed_with_errors'], true)) {
+            if (! $audit || $audit->created_at->lte(now()->subDays(7)) || in_array($audit->status, ['completed', 'completed_with_errors'], true)) {
                 $audit = $competitor->audits()->create([
                     'website_id' => $competitor->website_id, 'domain' => $domain, 'competitor_domain' => $competitor->domain,
                     'location_code' => config('services.dataforseo.location_code'), 'language_code' => config('services.dataforseo.language_code'),
-                    'limits' => config('services.dataforseo.competitor_audits'), 'stages' => [], 'errors' => [],
+                    'limits' => $limits ?? config('services.dataforseo.competitor_audits'), 'trigger' => $trigger, 'stages' => [], 'errors' => [],
                 ]);
             }
-            $audit->update(['status' => 'pending', 'completed_at' => null]);
+            $audit->update(['status' => 'pending', 'completed_at' => null, 'trigger' => $trigger]);
             ProcessCompetitorAuditStage::dispatch($audit, $this->nextStage($audit) ?? 'briefs')->afterCommit();
 
             return $audit;
@@ -152,12 +153,37 @@ class CompetitorAuditService
                     $page->update(['status' => 'unavailable', 'error' => 'This page could not be safely fetched or analysed.', 'fetched_at' => now()]);
                 }
             }
+        } elseif ($stage === 'comparison_pages') {
+            $this->compareOwnPages($audit);
         } elseif ($stage === 'briefs') {
             app(CompetitorBriefGenerator::class)->generate($audit);
         } else {
             throw new RuntimeException('Unknown competitor audit stage.');
         }
         $this->completeStage($audit, $stage);
+    }
+
+    private function compareOwnPages(CompetitorAudit $audit): void
+    {
+        $urls = $audit->keywords()->whereNotNull('our_ranking_url')->orderByDesc('search_volume')
+            ->pluck('our_ranking_url')->unique();
+        $ownPages = $audit->website->healthReports()->where('status', 'completed')->latest('completed_at')->first()
+            ?->pages()->limit(40)->pluck('url') ?? collect();
+        $urls = $urls->merge($ownPages)->filter(fn (string $url): bool => in_array(strtolower((string) parse_url($url, PHP_URL_HOST)), [$audit->domain, 'www.'.$audit->domain], true))->unique()->take(3);
+        $evidence = $audit->comparison_pages ?? [];
+        foreach ($urls as $url) {
+            if (collect($evidence)->contains('url', $url)) {
+                continue;
+            }
+            try {
+                $analysis = app(CompetitorPageFetcher::class)->fetch($url, $audit->domain);
+                $evidence[] = ['url' => $url, 'status' => 'completed', 'analysis' => $analysis, 'fetched_at' => now()->toIso8601String()];
+            } catch (\Throwable $exception) {
+                report($exception);
+                $evidence[] = ['url' => $url, 'status' => 'unavailable', 'analysis' => null, 'fetched_at' => now()->toIso8601String()];
+            }
+            $audit->update(['comparison_pages' => $evidence]);
+        }
     }
 
     private function saveKeyword(CompetitorAudit $audit, RankedKeywordData $keyword, string $comparison, ?int $ourPosition = null, ?string $ourUrl = null): void

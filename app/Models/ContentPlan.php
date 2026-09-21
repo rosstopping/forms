@@ -13,13 +13,13 @@ class ContentPlan extends Model
     /** @use HasFactory<ContentPlanFactory> */
     use HasFactory;
 
-    protected $fillable = ['website_id', 'created_by', 'enabled', 'additional_weekdays', 'weekday', 'hour', 'timezone', 'audience', 'guidance', 'last_generated_at', 'suggestion_reminder_sent_for'];
+    protected $fillable = ['website_id', 'created_by', 'enabled', 'additional_weekdays', 'weekday', 'hour', 'timezone', 'audience', 'guidance', 'last_generated_at', 'suggestion_reminder_sent_for', 'competitor_research_mode', 'competitor_researched_at'];
 
-    protected $attributes = ['enabled' => false, 'weekday' => 1, 'hour' => 8, 'timezone' => 'Europe/London'];
+    protected $attributes = ['enabled' => false, 'weekday' => 1, 'hour' => 8, 'timezone' => 'Europe/London', 'competitor_research_mode' => 'manual'];
 
     protected function casts(): array
     {
-        return ['additional_weekdays' => 'array', 'weekday' => 'integer', 'hour' => 'integer', 'enabled' => 'boolean', 'last_generated_at' => 'datetime', 'suggestion_reminder_sent_for' => 'datetime'];
+        return ['additional_weekdays' => 'array', 'weekday' => 'integer', 'hour' => 'integer', 'enabled' => 'boolean', 'last_generated_at' => 'datetime', 'suggestion_reminder_sent_for' => 'datetime', 'competitor_researched_at' => 'datetime'];
     }
 
     public function website(): BelongsTo

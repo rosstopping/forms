@@ -16,7 +16,7 @@ class SeoImpactTracker
     {
         $request->loadMissing(['searchOpportunity', 'seoOpportunity.keyword']);
         $source = $request->searchOpportunity ?? $request->seoOpportunity;
-        $url = $request->searchOpportunity?->page ?? data_get($request->seoOpportunity?->metrics, 'ranking_url');
+        $url = $request->searchOpportunity?->page ?? data_get($request->seoOpportunity?->metrics, 'ranking_url') ?? data_get($request->competitor_context, 'existing_page_url');
         $query = $request->searchOpportunity?->query ?? $request->seoOpportunity?->keyword?->keyword ?? data_get($request->competitor_context, 'primary_keyword');
         preg_match_all('~https?://[^\s<>"\)]+~i', $request->instructions, $matches);
         $urls = $url ? [$url] : array_values(array_unique(array_map(fn (string $value): string => rtrim($value, '.,;'), $matches[0])));
@@ -34,7 +34,7 @@ class SeoImpactTracker
             'business_value' => in_array(data_get($source?->metrics, 'search_intent'), ['commercial', 'transactional'], true) ? 5 : 3,
             'confidence' => $request->searchOpportunity ? 4 : 2,
             'effort' => str_contains($source?->type ?? '', 'ctr') ? 2 : 3,
-            'evidence' => ['source' => $request->searchOpportunity ? 'search_console' : ($request->seoOpportunity ? 'third_party_estimate' : 'editorial_brief'), 'observation' => $source?->summary, 'metrics' => $source?->metrics],
+            'evidence' => ['source' => $request->searchOpportunity ? 'search_console' : ($request->seoOpportunity || $request->competitor_context ? 'third_party_estimate' : 'editorial_brief'), 'observation' => $source?->summary, 'metrics' => $source?->metrics, 'competitor_brief' => $request->competitor_context],
             'next_measurement_at' => $urls !== [] ? now() : null,
         ]);
     }

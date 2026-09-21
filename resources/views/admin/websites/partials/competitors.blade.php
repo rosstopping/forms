@@ -1,7 +1,8 @@
 <div class="space-y-6">
     <section class="ui-panel p-4 sm:p-6" aria-labelledby="competitor-research-heading">
         <h2 id="competitor-research-heading" class="text-lg font-semibold text-slate-950">Competitor research</h2>
-        <p class="mt-2 max-w-3xl text-slate-600 text-base sm:text-sm">Learn which searches competitors appear for and how their pages address them. Audit selected domains to find evidence-backed content ideas. Audits use paid provider data, inspect up to five pages, and reuse results for seven days.</p>
+        <p class="mt-2 max-w-3xl text-slate-600 text-base sm:text-sm">Compare ranking pages with your own content to find evidence-backed improvements. Manual audits inspect up to five competitor pages and reuse results for seven days. Growth and Complete also include automatic research, with broader coverage on Complete.</p>
+        <a href="{{ route('admin.websites.section', [$website, 'section' => 'content', 'content_section' => 'automation']) }}" class="mt-3 inline-block text-sm font-medium text-teal-700 hover:underline">Set up automatic research and drafts</a>
         @if ($canManageWebsite)
             <form method="POST" action="{{ route('admin.competitors.store', $website) }}" class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
                 @csrf

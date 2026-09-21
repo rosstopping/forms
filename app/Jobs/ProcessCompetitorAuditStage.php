@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\CompetitorAudit;
 use App\Services\CompetitorAuditService;
+use App\Services\CompetitorResearchAutomation;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -31,6 +32,20 @@ class ProcessCompetitorAuditStage implements ShouldBeUnique, ShouldQueue
     {
         Cache::lock('competitor-audit-processing:'.$this->audit->id, 270)->block(3, function () use ($service): void {
             $this->audit->refresh();
+            if ($this->audit->trigger === 'scheduled' && app(CompetitorResearchAutomation::class)->pauseReason($this->audit->website->contentPlan)) {
+                $this->audit->update(['status' => 'failed', 'errors' => ['automation' => 'Automatic research is paused. Check the content plan and subscription.']]);
+
+                return;
+            }
+            if ($this->audit->trigger === 'scheduled') {
+                $allowance = app(CompetitorResearchAutomation::class)->allowance($this->audit->website);
+                $limits = $this->audit->limits;
+                foreach (['ranked_keywords', 'shared_keywords', 'missing_keywords'] as $key) {
+                    $limits[$key] = min($limits[$key], $allowance['ranked_keywords']);
+                }
+                $limits['analyse_pages'] = min($limits['analyse_pages'], $allowance['analyse_pages']);
+                $this->audit->update(['limits' => $limits]);
+            }
             if ($this->audit->competitor->excluded) {
                 $this->audit->update(['status' => 'failed', 'errors' => ['competitor' => 'Competitor excluded. Restore it to retry.']]);
 
@@ -40,7 +55,9 @@ class ProcessCompetitorAuditStage implements ShouldBeUnique, ShouldQueue
             if ($next = $service->nextStage($this->audit)) {
                 self::dispatch($this->audit, $next)->afterCommit();
             } else {
-                $this->audit->update(['status' => $this->audit->pages()->where('status', 'unavailable')->exists() ? 'completed_with_errors' : 'completed', 'completed_at' => now()]);
+                $incomplete = $this->audit->pages()->where('status', 'unavailable')->exists()
+                    || collect($this->audit->comparison_pages)->contains('status', 'unavailable');
+                $this->audit->update(['status' => $incomplete ? 'completed_with_errors' : 'completed', 'completed_at' => now()]);
             }
         });
     }

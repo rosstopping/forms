@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Ai\Agents\CompetitorAnalyst;
 use App\Models\CompetitorAudit;
+use App\Models\CompetitorKeyword;
+use App\Models\CompetitorPage;
 use App\Models\ContentRequest;
 use App\Models\SeoKeyword;
 use Illuminate\Support\Facades\DB;
@@ -20,16 +22,33 @@ class CompetitorBriefGenerator
             return;
         }
         $website = $audit->website;
+        $relatedPages = CompetitorPage::query()->where('status', 'completed')->whereNotNull('fetched_at')
+            ->where('fetched_at', '>=', now()->subDays(30))
+            ->whereHas('audit', fn ($query) => $query->where('website_id', $audit->website_id)->whereKeyNot($audit->id)
+                ->where('domain', $audit->domain)->where('location_code', $audit->location_code)->where('language_code', $audit->language_code)
+                ->whereIn('status', ['completed', 'completed_with_errors'])->whereHas('competitor', fn ($query) => $query->where('excluded', false)))
+            ->whereIn('url', CompetitorKeyword::query()->select('ranking_url')
+                ->whereIn('keyword', $keywords->pluck('keyword'))
+                ->whereHas('audit', fn ($query) => $query->where('website_id', $audit->website_id)
+                    ->where('domain', $audit->domain)->where('location_code', $audit->location_code)->where('language_code', $audit->language_code)))
+            ->with(['audit.keywords' => fn ($query) => $query->whereIn('keyword', $keywords->pluck('keyword'))])
+            ->latest('fetched_at')->limit(5)->get();
+        $pages = $pages->concat($relatedPages)->unique('url');
         $ownPages = $website->healthReports()->where('status', 'completed')->latest('completed_at')->first()?->pages()->limit(40)->get(['url', 'title', 'meta_description']) ?? collect();
         $ownKeywords = SeoKeyword::query()->where('website_id', $website->id)->whereHas('snapshot', fn ($query) => $query->where('domain', $audit->domain)->where('location_code', $audit->location_code)->where('language_code', $audit->language_code))->latest('id')->limit(100)->get(['keyword', 'ranking_url']);
-        $ownUrls = $ownPages->pluck('url')->merge($ownKeywords->pluck('ranking_url'))->filter()->unique();
+        $ownUrls = $ownPages->pluck('url')->merge($ownKeywords->pluck('ranking_url'))
+            ->merge(collect($audit->comparison_pages)->pluck('url'))
+            ->filter(fn (?string $url): bool => in_array(strtolower((string) parse_url($url ?? '', PHP_URL_HOST)), [$audit->domain, 'www.'.$audit->domain], true))->unique();
         $context = [
             'website' => $website->name, 'domain' => $audit->domain,
             'audience' => Str::limit((string) $website->contentPlan?->audience, 4000, ''),
             'guidance' => Str::limit((string) $website->contentPlan?->guidance, 6000, ''),
             'own_pages' => $ownPages->all(), 'own_keywords' => $ownKeywords->all(),
+            'own_page_evidence' => $audit->comparison_pages ?? [],
+            'related_rankings' => $relatedPages->flatMap(fn ($page) => $page->audit->keywords->where('ranking_url', $page->url)
+                ->map(fn ($keyword): array => ['keyword' => $keyword->keyword, 'ranking_url' => $keyword->ranking_url, 'position' => $keyword->position, 'audit_id' => $page->competitor_audit_id]))->values()->all(),
             'queued_briefs' => ContentRequest::where('website_id', $website->id)->whereNotNull('competitor_fingerprint')->latest()->limit(30)->pluck('instructions')->all(),
-            'keywords' => $keywords->values()->toArray(), 'pages' => $pages->map(fn ($page): array => ['url' => $page->url, 'analysis' => $page->analysis])->all(),
+            'keywords' => $keywords->values()->toArray(), 'pages' => $pages->map(fn ($page): array => ['url' => $page->url, 'analysis' => $page->analysis, 'audit_id' => $page->competitor_audit_id, 'fetched_at' => $page->fetched_at?->toIso8601String()])->all(),
         ];
         $response = (new CompetitorAnalyst)->prompt(json_encode($context, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR), timeout: 120);
         $items = $this->normalizeItems($response['opportunities']);
@@ -57,8 +76,14 @@ class CompetitorBriefGenerator
                 if ($primary->search_intent === 'navigational' || Str::contains(Str::lower($primary->keyword), $audit->competitor_domain)) {
                     continue;
                 }
+                if (! in_array($primary->ranking_url, $item['source_urls'], true)) {
+                    continue;
+                }
                 $fingerprint = hash('sha256', $audit->location_code.'|'.$audit->language_code.'|'.Str::lower(trim($primary->keyword)));
-                $brief = [...$item, 'keywords' => $keywords->only($ids)->values()->toArray(), 'audit_id' => $audit->id, 'competitor_domain' => $audit->competitor_domain, 'our_domain' => $audit->domain, 'location_code' => $audit->location_code, 'language_code' => $audit->language_code, 'collected_at' => $audit->started_at?->toIso8601String(), 'data_source' => 'dataforseo_estimate'];
+                $brief = [...$item, 'primary_keyword' => $primary->keyword, 'keywords' => $keywords->only($ids)->values()->toArray(), 'audit_id' => $audit->id, 'competitor_domain' => $audit->competitor_domain, 'our_domain' => $audit->domain, 'location_code' => $audit->location_code, 'language_code' => $audit->language_code, 'collected_at' => $audit->started_at?->toIso8601String(), 'data_source' => 'dataforseo_estimate',
+                    'source_evidence' => $pages->whereIn('url', $item['source_urls'])->map(fn ($page): array => ['url' => $page->url, 'audit_id' => $page->competitor_audit_id, 'fetched_at' => $page->fetched_at?->toIso8601String()])->values()->all(),
+                    'compared_own_urls' => collect($audit->comparison_pages)->where('status', 'completed')->pluck('url')->all(),
+                ];
                 $score = $item['relevance'] * 100 + min(50, (int) (log10(($primary->search_volume ?? 0) + 1) * 10)) + max(0, 30 - $primary->position);
                 $audit->opportunities()->firstOrCreate(['fingerprint' => $fingerprint], ['website_id' => $audit->website_id, 'title' => $item['title'], 'priority_score' => $score, 'brief' => $brief]);
             }

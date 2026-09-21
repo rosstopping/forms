@@ -2,7 +2,7 @@
     <div class="flex flex-wrap items-start justify-between gap-4">
         <div class="min-w-0">
             <h2 id="content-schedule-title" class="text-lg font-semibold text-balance text-slate-950">Content schedule</h2>
-            <p class="mt-2 max-w-2xl text-base text-pretty text-slate-500 sm:text-sm">Set a steady rhythm for your website. Sitewell starts with queued requests, then eligible target keywords, and prepares every change for review.</p>
+            <p class="mt-2 max-w-2xl text-base text-pretty text-slate-500 sm:text-sm">Set a steady rhythm for your website. Sitewell starts with queued requests, then eligible competitor briefs and target keywords, and prepares every change for review.</p>
         </div>
         @if ($website->repository && Auth::user()?->isAdmin())
             <form method="POST" action="{{ route('admin.content-generations.store', $website) }}">
@@ -80,6 +80,26 @@
             @elseif ($contentPlan?->additional_weekdays)
                 <p class="mt-4 text-base text-amber-800 sm:text-sm">Your saved extra days are paused. They resume when this website has an active Complete subscription.</p>
             @endif
+        </div>
+
+        <div class="ui-well p-4 sm:p-5">
+            <h3 class="font-medium text-slate-900">Competitor research</h3>
+            <p class="mt-2 text-base text-slate-500 sm:text-sm">Compare competitors’ ranking pages with your own content to find useful improvements. {{ $contentWeeklyLimit === 3 ? 'Complete researches up to five tracked competitors every seven days, analysing up to eight pages per competitor.' : 'Growth researches up to three tracked competitors every fourteen days, analysing up to five pages per competitor.' }} Competitors with the oldest research are checked first.</p>
+            <div class="mt-4">
+                <label for="competitor-research-mode">How should Sitewell use competitor research?</label>
+                <select id="competitor-research-mode" name="competitor_research_mode" class="ui-input w-full" aria-describedby="competitor-research-help" @if ($errors->has('competitor_research_mode')) aria-invalid="true" @endif>
+                    @foreach (['manual' => 'Manual — research when requested', 'research' => 'Research only — find opportunities automatically', 'drafts' => 'Prepare drafts — use research in scheduled content'] as $value => $label)
+                        <option value="{{ $value }}" @selected(old('competitor_research_mode', $contentPlan?->competitor_research_mode ?? 'manual') === $value)>{{ $label }}</option>
+                    @endforeach
+                </select>
+                @error('competitor_research_mode')<p class="mt-2 text-base text-rose-700 sm:text-sm" role="alert">{{ $message }}</p>@enderror
+                <p id="competitor-research-help" class="mt-2 text-base text-slate-500 sm:text-sm">Prepare drafts is recommended. Enable scheduled content above to prepare drafts within your existing weekly allowance. Research only can run while scheduled content is off. All drafts require review before publication.</p>
+            </div>
+            <p class="mt-3 text-base text-slate-500 sm:text-sm">Automatic research starts after you select Research only or Prepare drafts and save. It requires an active Growth or Complete subscription, a website domain and selected competitors. Excluded competitors are skipped.</p>
+            @if ($contentPlan?->competitor_researched_at)
+                <p class="mt-3 text-base text-slate-500 sm:text-sm">Last research batch scheduled: {{ $contentPlan->competitor_researched_at->copy()->setTimezone($contentPlan->timezone)->format('j M Y, H:i') }}. Check individual audits for results or failures.</p>
+            @endif
+            <a href="{{ route('admin.websites.section', [$website, 'section' => 'seo', 'seo_section' => 'competitors']) }}" class="mt-3 inline-block text-sm font-medium text-teal-700 hover:underline">Manage competitors and view research</a>
         </div>
 
         <details class="ui-well p-4 sm:p-5" @if ($errors->has('audience') || $errors->has('guidance')) open @endif>
