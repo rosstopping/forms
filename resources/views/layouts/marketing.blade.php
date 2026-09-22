@@ -12,7 +12,7 @@
 </head>
 <body class="min-h-dvh bg-paper font-sans text-ink">
     <div class="isolate min-h-dvh">
-        @if (\App\Support\MembershipPlan::activeGrowthOffer())
+        @if (request()->routeIs('marketing.pricing') && \App\Support\MembershipPlan::activeGrowthOffer())
             <a href="{{ route('marketing.pricing') }}" class="flex items-center justify-center gap-2 bg-garden px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-moss"><span>2026 Growth offer: save 20% — now £316/month</span><span aria-hidden="true">→</span></a>
         @endif
         <header class="border-b border-ink/10">

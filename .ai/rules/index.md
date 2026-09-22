@@ -45,6 +45,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Jobs/SendFormSubmissionAcknowledgement.php,Services/FormSettingsResolver.php,Http/Controllers/FormSubmissionController.php},resources/views/{admin/forms/show.blade.php,admin/websites/show.blade.php,emails/form-submission-acknowledgement*.blade.php} | .ai/rules/forms-websites.md |
 | app/{Models/Website.php,Support/MembershipPlan.php,Services/FormSettingsResolver.php,Http/Controllers/{FormSubmissionController.php,Admin/FormController.php,Admin/WebsiteAutoresponderController.php},Http/Requests/UpdateWebsiteAutoresponderRequest.php},resources/views/admin/{forms/show.blade.php,websites/show.blade.php},config/{forms.php,mail.php} | .ai/rules/forms.md |
 | app/{Services/{GithubAppClient,WordPressStaticReleaseBuilder,WordPressStaticReleaseQueuer},Http/Controllers/GithubWebhookController,Models/WebsiteRepository}.php | .ai/rules/github-webhook-controller-models.md |
+| resources/views/{marketing/home,layouts/marketing}.blade.php | .ai/rules/homelayouts.md |
 | resources/views/{emails/customer-review-invitation*.blade.php,components/email-layout.blade.php,vendor/mail/html/**} | .ai/rules/html.md |
 | app/Http/Controllers/Admin/**,resources/views/admin/websites/**, app/Http/Controllers/Admin/{WebsiteController,SeoImpactController}.php,resources/views/admin/websites/** | .ai/rules/http-controllers-admin-views-admin-websites.md |
 | app/Http/Controllers/Admin/ProspectController.php | .ai/rules/http-controllers-admin.md |
