@@ -31,7 +31,7 @@ class RedirectResolver
 
         $referrer = $request->header('referer');
 
-        if ($referrer && str_contains($referrer, 'form=success')) {
+        if ($this->isValidRedirect($referrer, $website)) {
             return $this->appendQuery($referrer, ['form' => 'success', 'form_name' => $form->slug]);
         }
 

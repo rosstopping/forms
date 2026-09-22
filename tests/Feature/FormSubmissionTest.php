@@ -92,6 +92,65 @@ it('redirects to the submitted success url even when the request accepts json', 
     ])->assertRedirect('https://redirect.example/thank-you');
 });
 
+it('returns successful submissions to their registered referring page', function (string $referrer, string $expected): void {
+    $website = Website::factory()->create();
+    $website->domains()->create(['domain' => 'redirect.example', 'is_primary' => true]);
+
+    $this->withHeaders([
+        'Origin' => 'https://redirect.example',
+        'Referer' => $referrer,
+    ])->post('/submit', [
+        '_form_name' => 'Contact form',
+        'name' => 'Grace Hopper',
+    ])->assertRedirect($expected);
+})->with([
+    'ordinary contact page' => ['https://redirect.example/contact/', 'https://redirect.example/contact/?form=success&form_name=contact-form'],
+    'query and fragment' => ['https://redirect.example/contact/?campaign=summer#enquiry', 'https://redirect.example/contact/?campaign=summer&form=success&form_name=contact-form#enquiry'],
+    'previous error' => ['https://redirect.example/contact/?form=error&form_name=old', 'https://redirect.example/contact/?form=success&form_name=contact-form'],
+    'www alias' => ['https://www.redirect.example/contact/', 'https://www.redirect.example/contact/?form=success&form_name=contact-form'],
+]);
+
+it('does not redirect successful submissions to an unregistered referring page', function (string $referrer): void {
+    $website = Website::factory()->create();
+    $website->domains()->create(['domain' => 'redirect.example', 'is_primary' => true]);
+
+    $this->withHeaders([
+        'Origin' => 'https://redirect.example',
+        'Referer' => $referrer,
+    ])->post('/submit', [
+        '_form_name' => 'Contact form',
+        'name' => 'Grace Hopper',
+    ])->assertRedirect(route('forms.submitted'));
+})->with([
+    'foreign domain' => 'https://other.example/contact/?form=success',
+    'lookalike domain' => 'https://redirect.example.other.example/?form=success',
+    'unsupported scheme' => 'ftp://redirect.example/contact/?form=success',
+    'relative URL' => '/contact/?form=success',
+]);
+
+it('keeps configured success redirects ahead of the referring page', function (bool $submitted, bool $formOverride, string $expected): void {
+    $website = Website::factory()->create(['success_redirect_url' => 'https://redirect.example/website-thanks']);
+    $website->domains()->create(['domain' => 'redirect.example', 'is_primary' => true]);
+    Form::factory()->for($website)->create([
+        'name' => 'Contact form',
+        'slug' => 'contact-form',
+        'success_redirect_url_override' => $formOverride ? 'https://redirect.example/form-thanks' : null,
+    ]);
+
+    $this->withHeaders([
+        'Origin' => 'https://redirect.example',
+        'Referer' => 'https://redirect.example/contact/',
+    ])->post('/submit', [
+        '_form_name' => 'Contact form',
+        '_form_success_url' => $submitted ? 'https://redirect.example/submitted-thanks' : null,
+        'name' => 'Grace Hopper',
+    ])->assertRedirect($expected);
+})->with([
+    'submitted URL' => [true, true, 'https://redirect.example/submitted-thanks'],
+    'form override' => [false, true, 'https://redirect.example/form-thanks'],
+    'website default' => [false, false, 'https://redirect.example/website-thanks'],
+]);
+
 it('escapes submitted HTML exactly once when rendering the email', function (): void {
     $message = "Hello, I'd like a <strong>website</strong>.";
 
