@@ -2,6 +2,8 @@
 
 ## Near term
 
+- [ ] **Suggest onboarding answers from the business website.** Add a “Suggest from website” action to the admin client setup wizard, using the business name and URL. Fetch a bounded selection of actual homepage, about, service and contact pages, then use OpenAI through the existing Laravel AI SDK to return structured suggestions for services, target customers, locations, business strengths, content language/tone, writing examples and initial keywords. Run in the background with visible progress, retryable errors and preserved wizard answers. Show source-page links and editable suggestions for explicit acceptance; never overwrite existing answers without a choice. Leave unknowns blank and label website claims, such as qualifications, as needing confirmation. Commercial priorities, profitability, desired outcomes and competitor selection remain human decisions. Completion requires reviewed suggestions to populate the saved wizard draft, respect the content-generation guidance budget, and leave activation, publishing and paid research settings unchanged.
+
 - Manual lead entry shipped 10 September 2026: managers can add and edit contact details without a website form, with normal statuses, tags, internal reminders and manual review invitations. Leads remain website-scoped and creation sends no form emails or webhooks.
 
 - Close the advertised-feature gaps below, starting with plan alignment and lead follow-up foundations.

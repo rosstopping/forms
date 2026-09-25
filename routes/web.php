@@ -79,6 +79,7 @@ use App\Http\Controllers\Admin\WebsiteHealthReportPageController;
 use App\Http\Controllers\Admin\WebsiteMemberController;
 use App\Http\Controllers\Admin\WebsiteProspectController;
 use App\Http\Controllers\Admin\WebsiteRepositoryController;
+use App\Http\Controllers\Admin\WebsiteSetupController;
 use App\Http\Controllers\Admin\WeeklyRankingReportSettingsController;
 use App\Http\Controllers\Admin\WordPressConnectionController;
 use App\Http\Controllers\Admin\WordPressPairingCodeController;
@@ -231,6 +232,11 @@ Route::middleware(['web', 'auth', ResolveCurrentWebsite::class])->prefix('admin'
     Route::put('account/profile', [ProfileController::class, 'update'])->middleware('impersonate.protect')->name('profile.update');
     Route::post('account/billing/checkout', [BillingController::class, 'checkout'])->middleware(['impersonate.protect', 'throttle:10,1'])->name('billing.checkout');
     Route::post('account/billing/portal', [BillingController::class, 'portal'])->middleware(['impersonate.protect', 'throttle:10,1'])->name('billing.portal');
+    Route::get('website-setup', [WebsiteSetupController::class, 'create'])->name('website-setup.create');
+    Route::post('website-setup', [WebsiteSetupController::class, 'store'])->name('website-setup.store');
+    Route::get('websites/{website}/setup/{step?}', [WebsiteSetupController::class, 'edit'])->name('website-setup.edit');
+    Route::put('websites/{website}/setup/{step}', [WebsiteSetupController::class, 'update'])->name('website-setup.update');
+    Route::post('websites/{website}/setup-wordpress', [WebsiteSetupController::class, 'pairing'])->middleware('throttle:6,1')->name('website-setup.pairing');
     Route::resource('websites', WebsiteController::class);
     Route::get('websites/{website}/section/ai-visibility', [AiVisibilityController::class, 'index'])->name('ai-visibility.index');
     Route::prefix('websites/{website}/ai-visibility')->name('ai-visibility.')->group(function () {

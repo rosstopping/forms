@@ -13,14 +13,12 @@ class OnboardingCallController extends Controller
     {
         $user = $request->user();
 
-        abort_unless(
+        if (
             $user?->onboarding_status === 'trial_active'
                 && $user->onboarding_trial_ends_at?->isFuture()
-                && ! $user->onboarding_call_completed_at,
-            404,
-        );
-
-        if (! $user->onboarding_call_booking_started_at) {
+                && ! $user->onboarding_call_completed_at
+                && ! $user->onboarding_call_booking_started_at
+        ) {
             $user->forceFill(['onboarding_call_booking_started_at' => now()])->save();
         }
 

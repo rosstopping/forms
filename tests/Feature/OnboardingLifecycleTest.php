@@ -136,6 +136,31 @@ it('records lifecycle delivery and signed call-to-action clicks', function (): v
     expect($message->fresh()->clicked_at)->not->toBeNull();
 });
 
+it('keeps an emailed booking link working after the trial expires', function (): void {
+    config(['marketing.booking_url' => 'https://calendar.example.test/sitewell']);
+    $user = lifecycleUser([
+        'onboarding_trial_ends_at' => now()->subDay(),
+        'membership_current_period_end' => now()->subDay(),
+    ]);
+    $message = OnboardingLifecycleMessage::factory()->for($user)->create([
+        'step' => OnboardingLifecycleStep::BookCall,
+        'sent_at' => now()->subDays(10),
+    ]);
+    $url = URL::temporarySignedRoute('onboarding-lifecycle.click', now()->addHour(), [
+        'onboardingLifecycleMessage' => $message,
+    ]);
+    $notification = new OnboardingLifecycleNotification($message, $user, $url);
+
+    $response = $this->actingAs($user)->get($notification->toMail($user)->actionUrl);
+    $response->assertRedirect(route('admin.onboarding-call'));
+
+    $this->get($response->headers->get('Location'))
+        ->assertRedirect('https://calendar.example.test/sitewell');
+
+    expect($message->fresh()->clicked_at)->not->toBeNull()
+        ->and($user->fresh()->onboarding_call_booking_started_at)->toBeNull();
+});
+
 it('suppresses remaining messages after a paid conversion', function (): void {
     Notification::fake();
     $user = lifecycleUser(['membership_status' => 'active']);

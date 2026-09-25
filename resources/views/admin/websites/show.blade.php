@@ -18,6 +18,7 @@
         </div>
         <div class="flex flex-wrap items-center gap-2">
             @if (Auth::user()?->isAdmin())
+                <a href="{{ route('admin.website-setup.edit', $website) }}" class="ui-button ui-button-secondary">Client setup</a>
                 @if ($outreachProspect)
                     <a href="{{ route('admin.prospects.show', $outreachProspect) }}" class="ui-button ui-button-secondary">View outreach prospect</a>
                 @else

@@ -18,6 +18,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Http/Controllers/Admin,Services,Jobs}/**/*Pixel*.php,resources/views/admin/{websites/**,website-health-reports/**},routes/web.php | .ai/rules/admin-services-jobs-views-adminwebsites.md |
 | app/{Http/Controllers/Admin,Services,Jobs}/**/*SeoProspect*.php | .ai/rules/admin-services-jobs.md |
 | {app/Support/MembershipPlan.php,app/Http/Middleware/EnsureMembershipFeature.php,app/Http/Controllers/Admin/{WebsiteController.php,WebsiteHealthReportController.php,SearchConsoleController.php},resources/views/admin/websites/**,routes/web.php} | .ai/rules/admin-views-admin-websites.md |
+| {app/{Models/WebsiteSetup.php,Services/WebsiteSetupService.php,Http/Controllers/Admin/WebsiteSetupController.php,Http/Requests/*WebsiteSetupRequest.php},resources/views/admin/websites/{setup.blade.php,partials/setup-*.blade.php},tests/Feature/WebsiteSetupTest.php} | .ai/rules/admin-websites-feature.md |
 | app/{Services,Jobs,Console/Commands,Http/Controllers/Admin}/**/*BusinessProfile*.php,resources/views/admin/websites/partials/business-profile*.blade.php | .ai/rules/admin-websites-partials.md |
 | resources/views/admin/websites/**,routes/web.php, resources/views/admin/websites/show.blade.php | .ai/rules/admin-websites.md |
 | app/{Ai,Jobs,Mail,Models,Http/Controllers/Admin}/**/*Prospect*.php | .ai/rules/admin.md |
@@ -48,7 +49,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | resources/views/{marketing/home,layouts/marketing}.blade.php | .ai/rules/homelayouts.md |
 | resources/views/{emails/customer-review-invitation*.blade.php,components/email-layout.blade.php,vendor/mail/html/**} | .ai/rules/html.md |
 | app/Http/Controllers/Admin/**,resources/views/admin/websites/**, app/Http/Controllers/Admin/{WebsiteController,SeoImpactController}.php,resources/views/admin/websites/** | .ai/rules/http-controllers-admin-views-admin-websites.md |
-| app/Http/Controllers/Admin/ProspectController.php | .ai/rules/http-controllers-admin.md |
+| app/Http/Controllers/Admin/ProspectController.php, app/Http/Controllers/Admin/OnboardingCallController.php | .ai/rules/http-controllers-admin.md |
 | app/{Services,Http/Controllers}/**/*ProspectOutreach*.php,app/Http/Controllers/ProspectReportController.php,config/outreach.php | .ai/rules/http-controllers.md |
 | app/Http/Controllers/Admin/DashboardController.php,resources/views/admin/overview.blade.php,app/Http/Middleware/ResolveCurrentWebsite.php | .ai/rules/http-middleware.md |
 | resources/views/{auth/**,layouts/auth.blade.php,components/auth/**},app/Http/Controllers/Auth/**,app/Http/Requests/{ResetPasswordRequest,SendPasswordResetLinkRequest}.php | .ai/rules/http-requests.md |

@@ -44,16 +44,20 @@ it('tracks when a trial user opens the booking calendar', function (): void {
     expect($user->fresh()->onboarding_call_booking_started_at)->not->toBeNull();
 });
 
-it('does not expose the tracked booking redirect outside onboarding', function (): void {
+it('opens the booking calendar outside onboarding without recording trial activity', function (): void {
+    config(['marketing.booking_url' => 'https://calendar.example.test/sitewell']);
     $user = User::factory()->create();
     Website::factory()->for($user, 'owner')->create();
 
     $this->actingAs($user)
         ->get(route('admin.onboarding-call'))
-        ->assertNotFound();
+        ->assertRedirect('https://calendar.example.test/sitewell');
+
+    expect($user->fresh()->onboarding_call_booking_started_at)->toBeNull();
 });
 
-it('does not expose the booking redirect after the onboarding trial expires', function (): void {
+it('opens the booking calendar after the onboarding trial expires without recording trial activity', function (): void {
+    config(['marketing.booking_url' => 'https://calendar.example.test/sitewell']);
     $user = User::factory()->create([
         'onboarding_status' => 'trial_active',
         'onboarding_trial_ends_at' => now()->subMinute(),
@@ -62,7 +66,25 @@ it('does not expose the booking redirect after the onboarding trial expires', fu
 
     $this->actingAs($user)
         ->get(route('admin.onboarding-call'))
-        ->assertNotFound();
+        ->assertRedirect('https://calendar.example.test/sitewell');
+
+    expect($user->fresh()->onboarding_call_booking_started_at)->toBeNull();
+});
+
+it('opens the booking calendar after a completed call without recording new trial activity', function (): void {
+    config(['marketing.booking_url' => 'https://calendar.example.test/sitewell']);
+    $user = User::factory()->create([
+        'onboarding_status' => 'trial_active',
+        'onboarding_trial_ends_at' => now()->addDays(10),
+        'onboarding_call_completed_at' => now()->subDay(),
+    ]);
+    Website::factory()->for($user, 'owner')->create();
+
+    $this->actingAs($user)
+        ->get(route('admin.onboarding-call'))
+        ->assertRedirect('https://calendar.example.test/sitewell');
+
+    expect($user->fresh()->onboarding_call_booking_started_at)->toBeNull();
 });
 
 it('updates checklist progress from genuine onboarding activity', function (): void {

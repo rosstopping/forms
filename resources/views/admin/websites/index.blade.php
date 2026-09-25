@@ -9,8 +9,9 @@
         </div>
         <div class="flex flex-wrap items-center gap-2">
             @if (Auth::user()?->isAdmin())
+                <a href="{{ route('admin.website-setup.create') }}" class="ui-button ui-button-primary">Set up client</a>
                 <a href="{{ route('admin.website-builder.create') }}" class="ui-button ui-button-secondary">Build new website</a>
-                <a href="{{ route('admin.websites.create') }}" class="ui-button ui-button-primary">Add website</a>
+                <a href="{{ route('admin.websites.create') }}" class="ui-button ui-button-secondary">Add website</a>
             @endif
         </div>
     </div>
