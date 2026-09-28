@@ -46,7 +46,7 @@ class ProspectOutreach extends Mailable
         $messageType = $this->delivery?->message_type ?? $this->previewMessageType ?? ProspectOutreachMessageType::Initial;
         $isInitialOutreach = $messageType === ProspectOutreachMessageType::Initial;
         $showcaseVideoUrl = $this->prospect->showcase_video_url;
-        $auditReportUrl = $isInitialOutreach ? null : $this->auditReportUrl();
+        $auditReportUrl = ! $isInitialOutreach || $this->prospect->include_site_audit ? $this->auditReportUrl() : null;
         $bookingUrl = ! $isInitialOutreach || filled($showcaseVideoUrl) ? 'https://cal.com/ross' : null;
         $trackingOpenUrl = null;
 
@@ -64,6 +64,7 @@ class ProspectOutreach extends Mailable
         return new Content(
             view: 'mail.prospects.outreach',
             with: [
+                'isInitialOutreach' => $isInitialOutreach,
                 'showcaseVideoUrl' => $showcaseVideoUrl,
                 'auditReportUrl' => $auditReportUrl,
                 'bookingUrl' => $bookingUrl,

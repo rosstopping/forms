@@ -33,6 +33,7 @@ class UpdateProspectRequest extends FormRequest
             'website_url' => ['nullable', 'url:http,https', 'max:255'],
             'status' => ['required', 'string', Rule::in(Prospect::STATUSES)],
             'outreach_subject' => ['nullable', 'string', 'max:255'],
+            'include_site_audit' => ['sometimes', 'boolean'],
             'outreach_body' => ['nullable', 'string', 'max:10000'],
             'showcase_video_url' => ['nullable', 'url:http,https', 'max:2048'],
             'next_follow_up_at' => ['nullable', 'date'],

@@ -162,7 +162,8 @@ class ProspectController extends Controller
             $data['scheduled_send_at'] = null;
         }
         unset($data['suppressed']);
-        $draftChanged = $prospect->outreach_subject !== ($data['outreach_subject'] ?? null)
+        $draftChanged = (array_key_exists('include_site_audit', $data) && $prospect->include_site_audit !== $request->boolean('include_site_audit'))
+            || $prospect->outreach_subject !== ($data['outreach_subject'] ?? null)
             || $prospect->outreach_body !== ($data['outreach_body'] ?? null)
             || $prospect->showcase_video_url !== ($data['showcase_video_url'] ?? null);
         $data['showcase_video_thumbnail_url'] = $loomVideoThumbnail->fetch($data['showcase_video_url'] ?? null);

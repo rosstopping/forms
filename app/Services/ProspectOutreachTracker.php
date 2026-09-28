@@ -57,11 +57,9 @@ class ProspectOutreachTracker
                 ]);
             }
 
-            if ($messageType === ProspectOutreachMessageType::Initial) {
-                return $delivery->load('links');
-            }
-
-            if ($messageType !== ProspectOutreachMessageType::PostVideoFollowUp && filled($prospect->website_url) && $prospect->analysed_at !== null) {
+            if ($messageType !== ProspectOutreachMessageType::PostVideoFollowUp
+                && ($messageType !== ProspectOutreachMessageType::Initial || $prospect->include_site_audit)
+                && filled($prospect->website_url) && $prospect->analysed_at !== null) {
                 $auditLink = $delivery->links()->create([
                     'kind' => 'website_audit',
                     'label' => 'Website audit',

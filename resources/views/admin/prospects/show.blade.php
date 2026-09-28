@@ -107,12 +107,21 @@
                     </form>
                 </section>
             @endif
-            <section class="ui-panel ui-section"><div class="flex items-center justify-between gap-3"><div><h2 class="font-semibold">Outreach draft</h2><p class="text-slate-500 text-base sm:text-sm">Editing the draft or its video link resets approval.</p></div>@if ($prospect->approved_at)<span class="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">Approved</span>@endif</div>
+            <section class="ui-panel ui-section"><div class="flex items-center justify-between gap-3"><div><h2 class="font-semibold">Outreach draft</h2><p class="text-slate-500 text-base sm:text-sm">Editing the draft, video link or audit option resets approval.</p></div>@if ($prospect->approved_at)<span class="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">Approved</span>@endif</div>
                 <form method="POST" action="{{ route('admin.prospects.update', $prospect) }}" class="mt-4 space-y-4">@csrf @method('PUT')
                     <input type="hidden" name="business_name" value="{{ $prospect->business_name }}"><input type="hidden" name="contact_name" value="{{ $prospect->contact_name }}"><input type="hidden" name="email" value="{{ $prospect->email }}"><input type="hidden" name="website_url" value="{{ $prospect->website_url }}"><input type="hidden" name="status" value="{{ $prospect->status }}">
                     <div><label for="outreach_subject" class="ui-label">Subject</label><input id="outreach_subject" name="outreach_subject" value="{{ old('outreach_subject', $prospect->outreach_subject) }}" class="ui-input mt-1 w-full" placeholder="Waiting for research…"></div>
                     <div><label for="outreach_body" class="ui-label">Message</label><textarea id="outreach_body" name="outreach_body" rows="11" class="ui-input mt-1 w-full" placeholder="Waiting for research…">{{ old('outreach_body', $prospect->outreach_body) }}</textarea></div>
                     <div><label for="showcase_video_url" class="ui-label">Showcase video URL</label><input id="showcase_video_url" type="url" name="showcase_video_url" value="{{ old('showcase_video_url', $prospect->showcase_video_url) }}" placeholder="https://www.loom.com/share/..." class="ui-input mt-1 w-full"><p class="mt-1 text-slate-500 text-base sm:text-sm">This prospect-specific link appears behind the video button in test and live emails.</p>@error('showcase_video_url')<p class="mt-1 text-red-600 text-base sm:text-sm">{{ $message }}</p>@enderror</div>
+                    <input type="hidden" name="include_site_audit" value="0">
+                    <div>
+                        <label for="include_site_audit" class="flex items-center gap-2 text-sm font-medium">
+                            <input id="include_site_audit" type="checkbox" name="include_site_audit" value="1" @checked(old('include_site_audit', $prospect->include_site_audit))>
+                            Include site audit
+                        </label>
+                        <p class="mt-1 text-sm text-slate-500">Adds the site audit after the video in test and live emails. Save the draft before sending a test. The audit needs a website URL and completed research.</p>
+                        @error('include_site_audit')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                    </div>
                     <button type="submit" class="ui-button ui-button-secondary">Save draft</button>
                 </form>
             </section>

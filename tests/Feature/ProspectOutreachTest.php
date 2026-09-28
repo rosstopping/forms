@@ -1,6 +1,7 @@
 <?php
 
 use App\Ai\Agents\ProspectOutreachWriter;
+use App\Enums\ProspectOutreachMessageType;
 use App\Jobs\AnalyzeProspect;
 use App\Mail\ProspectOutreach;
 use App\Models\Prospect;
@@ -8,6 +9,7 @@ use App\Models\User;
 use App\Services\InitialProspectOutreachGenerator;
 use App\Services\LoomVideoThumbnail;
 use App\Services\ProspectLifecycleManager;
+use App\Services\ProspectOutreachTracker;
 use App\Services\ProspectWebsiteAnalyzer;
 use Dom\HTMLDocument;
 use Illuminate\Http\Client\Request;
@@ -504,6 +506,32 @@ it('renders the optional video and thumbnail in initial outreach', function () {
         ->assertDontSeeInHtml('signature=');
 });
 
+it('includes a compact Digizu footer in initial and video test and live emails', function (ProspectOutreachMessageType $type, bool $live): void {
+    $prospect = Prospect::factory()->create([
+        'outreach_subject' => 'Quick introduction',
+        'outreach_body' => 'Hello from Ross.',
+        'showcase_video_url' => 'https://video.example.com/introduction',
+        'approved_at' => now(),
+    ]);
+    $delivery = $live ? app(ProspectOutreachTracker::class)->createDelivery($prospect, $type) : null;
+    $mail = new ProspectOutreach($prospect, $delivery, $type);
+
+    $mail->assertSeeInOrderInHtml(['Hello from Ross.', 'Watch your video', 'Book a call with Ross', 'We’re Digizu'])
+        ->assertSeeInHtml('a local web development agency based in Doncaster')
+        ->assertSeeInHtml('https://digizu.co.uk/assets/images/logo-web.png')
+        ->assertSeeInHtml('href="https://digizu.co.uk"', false)
+        ->assertSeeInHtml('width="90"', false);
+
+    if (! $live) {
+        $mail->assertDontSeeInHtml('/outreach/click/')->assertDontSeeInHtml('/outreach/open/');
+    }
+})->with([
+    'initial test' => [ProspectOutreachMessageType::Initial, false],
+    'initial live' => [ProspectOutreachMessageType::Initial, true],
+    'video test' => [ProspectOutreachMessageType::PersonalisedVideo, false],
+    'video live' => [ProspectOutreachMessageType::PersonalisedVideo, true],
+]);
+
 it('does not include a private website audit link in initial outreach', function () {
     $prospect = Prospect::factory()->create([
         'business_name' => 'Acme Plumbing',
@@ -534,4 +562,55 @@ it('includes the showcase video when offering a prospect a new website', functio
         ->assertSeeInHtml('Watch your video')
         ->assertSeeInOrderInHtml(['Watch your video', 'Book a call with Ross', '01302 248 374'])
         ->assertDontSeeInHtml('signature=');
+});
+
+it('saves the initial audit option and resets approval when it changes', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $prospect = Prospect::factory()->for($admin, 'owner')->create([
+        'outreach_subject' => 'Hello', 'outreach_body' => 'Hello from Ross.',
+        'approved_at' => now(), 'approved_by' => $admin->id, 'status' => 'approved',
+    ]);
+    $data = $prospect->only(['business_name', 'contact_name', 'email', 'website_url', 'status', 'outreach_subject', 'outreach_body', 'showcase_video_url']);
+
+    $this->actingAs($admin)->put(route('admin.prospects.update', $prospect), [...$data, 'include_site_audit' => '1'])
+        ->assertRedirect()->assertSessionHasNoErrors();
+    expect($prospect->fresh()->include_site_audit)->toBeTrue()
+        ->and($prospect->fresh()->approved_at)->toBeNull();
+    $this->get(route('admin.prospects.show', $prospect))->assertSuccessful()->assertSee('Include site audit');
+
+    $this->put(route('admin.prospects.update', $prospect), [...$data, 'include_site_audit' => '0'])
+        ->assertRedirect()->assertSessionHasNoErrors();
+    expect($prospect->fresh()->include_site_audit)->toBeFalse();
+});
+
+it('includes an opted in initial audit after the optional video in test and live emails', function (bool $live, bool $hasVideo): void {
+    $prospect = Prospect::factory()->create([
+        'outreach_subject' => 'Hello', 'outreach_body' => 'Hello from Ross.',
+        'website_url' => 'https://example.com', 'analysed_at' => now(),
+        'include_site_audit' => true,
+        'showcase_video_url' => $hasVideo ? 'https://video.example.com/introduction' : null,
+    ]);
+    $delivery = $live ? app(ProspectOutreachTracker::class)->createDelivery($prospect) : null;
+    $mail = new ProspectOutreach($prospect, $delivery);
+    $mail->assertSeeInHtml('View your website audit');
+    if ($hasVideo) {
+        $mail->assertSeeInOrderInHtml(['Watch your video', 'Your website audit', 'Book a call with Ross']);
+    } else {
+        $mail->assertDontSeeInHtml('Watch your video');
+    }
+    if ($live) {
+        $audit = $delivery->links->firstWhere('kind', 'website_audit');
+        expect($audit)->not->toBeNull();
+        $mail->assertSeeInHtml(URL::signedRoute('prospect-outreach-links.show', $audit));
+    } else {
+        $mail->assertDontSeeInHtml('/outreach/click/')->assertDontSeeInHtml('/outreach/open/');
+    }
+})->with([true, false])->with([true, false]);
+
+it('omits an opted in audit when research is unavailable', function (): void {
+    $prospect = Prospect::factory()->create(['include_site_audit' => true, 'analysed_at' => null]);
+    (new ProspectOutreach($prospect))->assertDontSeeInHtml('Your website audit');
+    $delivery = app(ProspectOutreachTracker::class)->createDelivery($prospect);
+    expect($delivery->links->firstWhere('kind', 'website_audit'))->toBeNull();
+    (new ProspectOutreach($prospect, $delivery))->assertDontSeeInHtml('Your website audit');
 });
