@@ -15,7 +15,9 @@
             </div>
             <div class="flex shrink-0 flex-wrap gap-2 text-base sm:text-sm">
                 <p class="rounded-md bg-white px-2.5 py-1 font-medium text-slate-700 ring-1 ring-slate-950/10">{{ str($prospect->status)->replace('_', ' ')->title() }}</p>
+                @if ($prospect->status !== 'converted')
                 <p @class(['rounded-md px-2.5 py-1 font-medium', 'bg-rose-50 text-rose-800' => $prospect->lead_temperature === 'hot', 'bg-amber-50 text-amber-800' => $prospect->lead_temperature === 'warm', 'bg-slate-100 text-slate-700' => $prospect->lead_temperature === 'cold'])>{{ ucfirst($prospect->lead_temperature) }} lead</p>
+                @endif
             </div>
         </div>
         <div class="@container border-y border-slate-950/10 py-4">

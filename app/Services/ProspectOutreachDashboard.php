@@ -26,7 +26,7 @@ class ProspectOutreachDashboard
 
         return [
             'priorityCounts' => [
-                'warm' => (clone $accessibleProspects)->where('lead_temperature', 'warm')->count(),
+                'warm' => (clone $accessibleProspects)->where('status', '!=', 'converted')->where('lead_temperature', 'warm')->count(),
                 'replied' => (clone $recentRepliesQuery)->where('replied_at', '>=', $today)->count(),
                 'booking' => ProspectEngagementEvent::query()->whereIn('prospect_id', clone $accessibleProspects)->where('event_type', ProspectEngagementEventType::BookingPageClicked)->where('occurred_at', '>=', $today)->distinct('prospect_id')->count('prospect_id'),
                 'cold_followed_up' => ProspectOutreachDelivery::query()->whereIn('prospect_id', clone $accessibleProspects)->whereIn('message_type', [ProspectOutreachMessageType::ColdFollowUp, ProspectOutreachMessageType::FinalFollowUp])->where('sent_at', '>=', $today)->where('status', 'sent')->count(),
@@ -34,7 +34,7 @@ class ProspectOutreachDashboard
             ],
             'warmProspects' => Prospect::query()
                 ->accessibleTo($user)
-                ->where('lead_temperature', 'warm')
+                ->where('status', '!=', 'converted')->where('lead_temperature', 'warm')
                 ->with(['outreachState', 'engagementEvents' => fn ($query) => $query->where('score_delta', '>', 0)->latest('occurred_at')->limit(3)])
                 ->orderByDesc(ProspectOutreachState::query()->select('last_engagement_at')->whereColumn((new ProspectOutreachState)->qualifyColumn('prospect_id'), (new Prospect)->qualifyColumn('id'))->limit(1))
                 ->limit(12)

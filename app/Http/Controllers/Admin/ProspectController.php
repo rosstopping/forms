@@ -35,8 +35,8 @@ class ProspectController extends Controller
 
         $query = Prospect::query()->accessibleTo($request->user());
         $summary = (clone $query)->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
-        $temperatureSummary = (clone $query)->selectRaw('lead_temperature, count(*) as total')->groupBy('lead_temperature')->pluck('total', 'lead_temperature');
-        $hotVideoQuery = Prospect::query()
+        $temperatureSummary = (clone $query)->where('status', '!=', 'converted')->selectRaw('lead_temperature, count(*) as total')->groupBy('lead_temperature')->pluck('total', 'lead_temperature');
+        $hotVideoQuery = Prospect::query()->where('status', '!=', 'converted')
             ->accessibleTo($request->user())
             ->whereHas('outreachState', fn ($query) => $query
                 ->whereIn('lifecycle_state', [ProspectLifecycleState::Hot, ProspectLifecycleState::NeedsPersonalisedVideo])
@@ -54,7 +54,7 @@ class ProspectController extends Controller
                 ->limit(1))
             ->limit(12)
             ->get();
-        $manualFollowUpQuery = Prospect::query()
+        $manualFollowUpQuery = Prospect::query()->where('status', '!=', 'converted')
             ->accessibleTo($request->user())
             ->whereHas('outreachState', fn ($query) => $query->whereNotNull('manual_follow_up_required_at'));
         $manualFollowUpProspectsCount = (clone $manualFollowUpQuery)->count();
@@ -72,7 +72,7 @@ class ProspectController extends Controller
         }
         $emailStatus = $request->string('email_status')->toString();
         $query->when($request->filled('status') && ! $showingDeleted, fn ($query) => $query->where('status', $request->string('status')))
-            ->when(in_array($activeTab, ['hot', 'warm'], true) && ! $showingDeleted, fn ($query) => $query->where('lead_temperature', $activeTab))
+            ->when(in_array($activeTab, ['hot', 'warm'], true) && ! $showingDeleted, fn ($query) => $query->where('status', '!=', 'converted')->where('lead_temperature', $activeTab))
             ->when($activeTab === 'replies' && ! $showingDeleted, fn ($query) => $query->whereHas('outreachState', fn ($query) => $query->where('lifecycle_state', ProspectLifecycleState::Replied)))
             ->when($emailStatus === 'missing', fn ($query) => $query->where(fn ($query) => $query->whereNull('email')->orWhere('email', '')))
             ->when($emailStatus === 'present', fn ($query) => $query->whereNotNull('email')->where('email', '!=', ''))

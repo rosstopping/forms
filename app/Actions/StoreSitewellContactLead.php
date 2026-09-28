@@ -11,15 +11,15 @@ use Illuminate\Support\Facades\DB;
 
 class StoreSitewellContactLead
 {
-    /** @param array{name: string, email: string, agency?: string|null, website?: string|null, goals: string} $enquiry */
-    public function handle(array $enquiry, Request $request): FormSubmission
+    /** @param array{name: string, email: string, agency?: string|null, website?: string|null, goals: string, client_websites?: int|string, offers_seo?: string, type?: string} $enquiry */
+    public function handle(array $enquiry, Request $request, bool $agencyBeta = false): FormSubmission
     {
-        return DB::transaction(function () use ($enquiry, $request): FormSubmission {
+        return DB::transaction(function () use ($enquiry, $request, $agencyBeta): FormSubmission {
             $website = $this->contactWebsite();
             $form = $website->forms()->firstOrCreate(
-                ['slug' => 'sitewell-contact'],
+                ['slug' => $agencyBeta ? 'sitewell-agency-beta' : 'sitewell-contact'],
                 [
-                    'name' => 'Sitewell contact form',
+                    'name' => $agencyBeta ? 'Sitewell agency beta' : 'Sitewell contact form',
                     'is_active' => true,
                     'auto_discovered' => false,
                     'first_seen_at' => now(),
@@ -27,7 +27,7 @@ class StoreSitewellContactLead
             );
             $submission = $form->submissions()->create([
                 'website_id' => $website->id,
-                'source_url' => route('marketing.contact'),
+                'source_url' => route($agencyBeta ? 'marketing.agencies' : 'marketing.contact'),
                 'source_domain' => parse_url((string) config('app.url'), PHP_URL_HOST),
                 'data' => $enquiry,
                 'ip_address' => $request->ip(),

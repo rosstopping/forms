@@ -52,6 +52,12 @@ class ProspectLifecycleManager
                 'stop_reason' => $stopsOutreach ? $stopReason : $outreachState->stop_reason,
             ];
 
+            if ($lifecycleState === ProspectLifecycleState::Customer) {
+                $attributes['temperature_override'] = null;
+                $attributes['manual_follow_up_required_at'] = null;
+                $attributes['manual_follow_up_reason'] = null;
+            }
+
             $outreachState->update($attributes);
             $prospect->update($this->legacyProspectAttributes($lifecycleState));
             $prospect->recordActivity('status_manually_changed', 'Lifecycle manually changed to '.str($lifecycleState->value)->replace('_', ' ')->title().'.', $actor);
@@ -352,7 +358,7 @@ class ProspectLifecycleManager
         return match ($lifecycleState) {
             ProspectLifecycleState::Replied => ['status' => 'replied', 'replied_at' => now(), 'scheduled_send_at' => null, 'next_follow_up_at' => null],
             ProspectLifecycleState::NotInterested => ['status' => 'not_interested', 'scheduled_send_at' => null, 'next_follow_up_at' => null],
-            ProspectLifecycleState::Customer => ['status' => 'converted', 'converted_at' => now(), 'scheduled_send_at' => null, 'next_follow_up_at' => null],
+            ProspectLifecycleState::Customer => ['status' => 'converted', 'lead_temperature' => 'cold', 'converted_at' => now(), 'scheduled_send_at' => null, 'next_follow_up_at' => null],
             ProspectLifecycleState::Pilot => ['status' => 'converted', 'converted_at' => now(), 'scheduled_send_at' => null, 'next_follow_up_at' => null],
             default => $lifecycleState->stopsNormalOutreach() ? ['scheduled_send_at' => null, 'next_follow_up_at' => null] : [],
         };

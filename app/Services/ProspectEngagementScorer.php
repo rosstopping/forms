@@ -129,6 +129,10 @@ class ProspectEngagementScorer
 
     private function applyEvent(Prospect $prospect, ProspectOutreachState $outreachState, ProspectEngagementEvent $event, ?User $actor = null): void
     {
+        if ($prospect->status === 'converted' || $outreachState->lifecycle_state === ProspectLifecycleState::Customer) {
+            return;
+        }
+
         if (in_array($event->source, config('outreach.ignored_engagement_sources', []), true)) {
             return;
         }

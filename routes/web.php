@@ -84,6 +84,7 @@ use App\Http\Controllers\Admin\WeeklyRankingReportSettingsController;
 use App\Http\Controllers\Admin\WordPressConnectionController;
 use App\Http\Controllers\Admin\WordPressPairingCodeController;
 use App\Http\Controllers\Admin\WordPressStaticReleaseController;
+use App\Http\Controllers\AgencyMarketingController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
@@ -109,6 +110,10 @@ use App\Support\WebsiteNavigation;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+
+Route::get('/agencies', [AgencyMarketingController::class, 'index'])->name('marketing.agencies');
+Route::post('/agencies/beta', [AgencyMarketingController::class, 'store'])->middleware('throttle:6,1')->name('marketing.agencies.store');
+Route::get('/agencies/{slug}', [AgencyMarketingController::class, 'show'])->where('slug', '[a-z0-9-]+')->name('marketing.agencies.show');
 
 Route::controller(MarketingController::class)->group(function () {
     Route::get('/', 'home')->name('marketing.home');

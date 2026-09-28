@@ -24,6 +24,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | resources/views/admin/websites/**,routes/web.php, resources/views/admin/websites/show.blade.php | .ai/rules/admin-websites.md |
 | app/{Ai,Jobs,Mail,Models,Http/Controllers/Admin}/**/*Prospect*.php | .ai/rules/admin.md |
 | app/{Http/Controllers/Admin/WebsiteAiQuestion*Controller.php,Mail/WebsiteAiQuestionReported.php,Models/WebsiteAiQuestion.php},resources/views/admin/{websites/show.blade.php,website-ai-question-report.blade.php} | .ai/rules/adminwebsites.md |
+| {config/agencies.php,app/Http/Controllers/AgencyMarketingController.php,app/Http/Requests/StoreAgencyBetaRequest.php,resources/views/marketing/agencies/**} | .ai/rules/agencies.md |
 | app/{Ai/Agents/PixelOptimisationWriter.php,Services/PixelOptimisationGenerator.php,Http/Controllers/Admin/*PageOptimisationsController.php} | .ai/rules/agents-controllers-admin.md |
 | app/{Ai/Agents/CompetitorAnalyst.php,Services/CompetitorBriefGenerator.php} | .ai/rules/agents.md |
 | app/{Jobs/StartContentGeneration.php,Services/ContentGenerationPromptGenerator.php,Services/SeoTargetKeywordSelector.php,Models/ContentGeneration.php} | .ai/rules/app-jobs.md |
@@ -98,6 +99,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Services,Jobs,Http/Controllers/Admin}/**/*SeoProspect*.php, app/{Services,Jobs,Http/Controllers/Admin}/**/*Competitor*.php, app/{Services,Jobs,Http/Controllers/Admin}/**/*AiVisibility*.php | .ai/rules/services-jobs-http-controllers-admin.md |
 | app/{Services,Jobs,Http/Controllers}/**/*Content*.php | .ai/rules/services-jobs-http-controllers.md |
 | {app/Services/WordPressStaticReleaseBuilder.php,wordpress-plugin/sitewell-by-digizu/**} | .ai/rules/services-sitewell-by-digizu.md |
+| app/Services/Prospect*.php,resources/views/admin/prospects/** | .ai/rules/services-views-admin-prospects.md |
 | app/Services/ContentQueueOverview.php,resources/views/admin/overview.blade.php, app/Services/DashboardWorkActivity.php,resources/views/admin/overview.blade.php | .ai/rules/services-views-admin.md |
 | app/Services/WebsiteCrawler.php, app/Services/Pixel*.php, app/Services/{SitemapFetcher,ProspectWebsiteAnalyzer,WebsiteHealthAuditor}.php, app/Services/WeeklyReport*.php, app/Services/SearchConsoleClient.php | .ai/rules/services.md |
 | {app/Services/WordPressStaticReleaseBuilder.php,app/Http/Controllers/WordPress*Release*Controller.php,wordpress-plugin/sitewell-by-digizu/**} | .ai/rules/sitewell-by-digizu.md |

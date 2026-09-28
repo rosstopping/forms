@@ -27,7 +27,7 @@
                     <a href="{{ route('marketing.home') }}" aria-label="Homepage" class="font-display text-2xl font-semibold tracking-tight text-ink">Sitewell</a>
                 </div>
                 <nav class="hidden items-center gap-8 text-sm text-ink/65 lg:flex" aria-label="Main navigation">
-                    @foreach ([['route' => 'marketing.how-it-works', 'label' => 'How it works'], ['route' => 'marketing.features', 'label' => 'Services'], ['route' => 'marketing.pricing', 'label' => 'Pricing'], ['route' => 'marketing.journal', 'label' => 'Guides'], ['route' => 'marketing.about', 'label' => 'About']] as $item)
+                    @foreach ([['route' => 'marketing.how-it-works', 'label' => 'How it works'], ['route' => 'marketing.features', 'label' => 'Services'], ['route' => 'marketing.pricing', 'label' => 'Pricing'], ['route' => 'marketing.agencies', 'label' => 'For Agencies'], ['route' => 'marketing.journal', 'label' => 'Guides'], ['route' => 'marketing.about', 'label' => 'About']] as $item)
                         <a href="{{ route($item['route']) }}" @class(['hover:text-ink', 'text-ink' => request()->routeIs($item['route'])])>{{ $item['label'] }}</a>
                     @endforeach
                 </nav>
@@ -41,6 +41,7 @@
                         <div class="grid gap-1">
                             <a href="{{ route('marketing.how-it-works') }}" class="rounded-md px-3 py-3 text-base hover:bg-lichen/50">How it works</a>
                             <a href="{{ route('marketing.features') }}" class="rounded-md px-3 py-3 text-base hover:bg-lichen/50">Features</a>
+                            <a href="{{ route('marketing.agencies') }}" class="rounded-md px-3 py-3 text-base hover:bg-lichen/50">For Agencies</a>
                             <a href="{{ route('marketing.examples') }}" class="rounded-md px-3 py-3 text-base hover:bg-lichen/50">Examples</a>
                             <a href="{{ route('marketing.pricing') }}" class="rounded-md px-3 py-3 text-base hover:bg-lichen/50">Pricing</a>
                             <a href="{{ route('marketing.about') }}" class="rounded-md px-3 py-3 text-base hover:bg-lichen/50">About</a>
@@ -74,6 +75,7 @@
                         <a href="{{ route('marketing.comparison') }}" class="font-normal hover:text-paper">Compare Sitewell</a>
                         <a href="{{ route('marketing.pricing') }}" class="font-normal hover:text-paper">Pricing</a>
                         <a href="{{ route('marketing.free-site-audit') }}" class="font-normal hover:text-paper">Get started</a>
+                        <a href="{{ route('marketing.agencies') }}" class="font-normal hover:text-paper">For Agencies</a>
                         <a href="{{ route('marketing.wordpress') }}" class="font-normal hover:text-paper">WordPress plugin</a>
                     </nav>
                     <nav class="grid content-start gap-3 text-base text-paper/70 sm:text-sm" aria-label="Industries">

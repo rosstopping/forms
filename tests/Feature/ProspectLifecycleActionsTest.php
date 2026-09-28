@@ -1,10 +1,12 @@
 <?php
 
 use App\Enums\ProspectAutomationStatus;
+use App\Enums\ProspectEngagementEventType;
 use App\Enums\ProspectLifecycleState;
 use App\Enums\ProspectSequenceStep;
 use App\Models\Prospect;
 use App\Models\User;
+use App\Services\ProspectEngagementScorer;
 
 it('provides manual pause resume temperature and score controls', function (): void {
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
@@ -57,3 +59,24 @@ it('blocks non administrators and validates lifecycle actions', function (): voi
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     $this->actingAs($admin)->patch(route('admin.prospects.lifecycle', $prospect), ['action' => 'adjust_score'])->assertSessionHasErrors(['score_delta', 'reason']);
 });
+
+it('removes customer temperatures and keeps customers out of lead queues after later engagement', function (string $temperature): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $prospect = Prospect::factory()->for($admin, 'owner')->create(['lead_temperature' => $temperature]);
+    $this->actingAs($admin)->patch(route('admin.prospects.lifecycle', $prospect), ['action' => 'mark_customer'])->assertRedirect();
+    expect($prospect->fresh()->status)->toBe('converted')
+        ->and($prospect->fresh()->lead_temperature)->toBe('cold');
+
+    app(ProspectEngagementScorer::class)->record(
+        $prospect->fresh(), ProspectEngagementEventType::ReplyReceived, 'customer-reply',
+    );
+    expect($prospect->fresh()->status)->toBe('converted')
+        ->and($prospect->outreachState->fresh()->lifecycle_state)->toBe(ProspectLifecycleState::Customer);
+    $this->get(route('admin.prospects.show', $prospect))->assertSuccessful()
+        ->assertDontSee('Cold lead')->assertDontSee('Warm lead')->assertDontSee('Hot lead');
+
+    // Simulate a customer converted before temperature cleanup was introduced.
+    $prospect->update(['lead_temperature' => $temperature]);
+    $this->get(route('admin.prospects.index', ['tab' => $temperature]))->assertSuccessful()
+        ->assertViewHas('prospects', fn ($prospects): bool => $prospects->isEmpty());
+})->with(['warm', 'hot']);

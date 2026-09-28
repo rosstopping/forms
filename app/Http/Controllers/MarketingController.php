@@ -203,6 +203,7 @@ class MarketingController extends Controller
     {
         $urls = collect([
             'marketing.home',
+            'marketing.agencies',
             'marketing.how-it-works',
             'marketing.features',
             'marketing.pricing',
@@ -217,6 +218,9 @@ class MarketingController extends Controller
             'marketing.privacy',
             'marketing.terms',
         ])->map(fn (string $routeName): string => route($routeName))
+            ->merge(collect(array_keys(config('agencies.pages', [])))->map(
+                fn (string $slug): string => route('marketing.agencies.show', $slug)
+            ))
             ->merge(collect(array_keys(config('marketing.feature_pages')))->map(
                 fn (string $feature): string => route('marketing.feature', $feature)
             ))
