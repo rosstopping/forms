@@ -34,14 +34,15 @@ it('includes a tracked optional video in a live initial email', function (): voi
     $delivery = $prospect->outreachDeliveries()->with('links')->sole();
     expect($delivery->sent_at)->not->toBeNull()
         ->and($delivery->recipient_email)->toBe($prospect->email)
-        ->and($delivery->links)->toHaveCount(1)
-        ->and($delivery->links->sole()->kind)->toBe('showcase_video')
-        ->and($delivery->links->sole()->destination_url)->toBe($prospect->showcase_video_url);
+        ->and($delivery->links)->toHaveCount(2)
+        ->and($delivery->links->firstWhere('kind', 'showcase_video')->destination_url)->toBe($prospect->showcase_video_url)
+        ->and($delivery->links->firstWhere('kind', 'book_call')->destination_url)->toBe('https://cal.com/ross');
 
     Mail::assertSent(ProspectOutreach::class, function (ProspectOutreach $mail) use ($delivery): bool {
         $mail->assertSeeInHtml('/outreach/open/'.$delivery->uuid)
             ->assertSeeInHtml('/outreach/click/')
-            ->assertSeeInHtml('Watch your video')
+            ->assertSeeInOrderInHtml(['Watch your video', 'Book a call with Ross', '01302 248 374'])
+            ->assertSeeInHtml(URL::signedRoute('prospect-outreach-links.show', $delivery->links->firstWhere('kind', 'book_call')))
             ->assertDontSeeInHtml('View your website audit')
             ->assertSeeInHtml('signature=');
 

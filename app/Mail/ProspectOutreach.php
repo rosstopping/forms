@@ -47,7 +47,7 @@ class ProspectOutreach extends Mailable
         $isInitialOutreach = $messageType === ProspectOutreachMessageType::Initial;
         $showcaseVideoUrl = $this->prospect->showcase_video_url;
         $auditReportUrl = $isInitialOutreach ? null : $this->auditReportUrl();
-        $bookingUrl = $isInitialOutreach ? null : 'https://cal.com/ross';
+        $bookingUrl = ! $isInitialOutreach || filled($showcaseVideoUrl) ? 'https://cal.com/ross' : null;
         $trackingOpenUrl = null;
 
         if ($this->delivery) {

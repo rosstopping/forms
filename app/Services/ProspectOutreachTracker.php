@@ -48,6 +48,15 @@ class ProspectOutreachTracker
                 ]);
             }
 
+            if ($messageType !== ProspectOutreachMessageType::PostVideoFollowUp
+                && ($messageType !== ProspectOutreachMessageType::Initial || filled($prospect->showcase_video_url))) {
+                $delivery->links()->create([
+                    'kind' => 'book_call',
+                    'label' => 'Book a call',
+                    'destination_url' => 'https://cal.com/ross',
+                ]);
+            }
+
             if ($messageType === ProspectOutreachMessageType::Initial) {
                 return $delivery->load('links');
             }
@@ -63,14 +72,6 @@ class ProspectOutreachTracker
                         'prospect' => $prospect,
                         'outreach_link' => $auditLink->uuid,
                     ]),
-                ]);
-            }
-
-            if ($messageType !== ProspectOutreachMessageType::PostVideoFollowUp) {
-                $delivery->links()->create([
-                    'kind' => 'book_call',
-                    'label' => 'Book a call',
-                    'destination_url' => 'https://cal.com/ross',
                 ]);
             }
 

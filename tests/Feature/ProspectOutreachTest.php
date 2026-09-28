@@ -300,7 +300,8 @@ it('sends the exact saved draft as a test to the administrator without contactin
             ->assertDontSeeInHtml('/outreach/click/')
             ->assertDontSeeInHtml('/outreach/open/')
             ->assertDontSeeInHtml('Your website video')
-            ->assertDontSeeInHtml('https://cal.com/ross');
+            ->assertSeeInHtml('https://cal.com/ross')
+            ->assertSeeInOrderInHtml(['Watch your video', 'Book a call with Ross', '01302 248 374']);
 
         $document = HTMLDocument::createFromString($mail->render(), LIBXML_NOERROR);
         expect($document->querySelector('.content-cell')->textContent)->toContain($prospect->outreach_body);
@@ -436,7 +437,7 @@ it('sends approved test and live outreach without a prospect showcase video', fu
 
     Mail::assertSent(ProspectOutreach::class, 2);
     foreach (Mail::sent(ProspectOutreach::class) as $mail) {
-        $mail->assertDontSeeInHtml('Watch your video');
+        $mail->assertDontSeeInHtml('Watch your video')->assertDontSeeInHtml('Book a call with Ross');
     }
     expect($prospect->outreachDeliveries()->with('links')->sole()->links)->toBeEmpty();
 });
@@ -498,7 +499,7 @@ it('renders the optional video and thumbnail in initial outreach', function () {
         ->assertSeeInHtml('https://video.example.com/acme-plumbing')
         ->assertSeeInHtml('https://cdn.loom.com/acme-plumbing.jpg')
         ->assertDontSeeInHtml('Your website video')
-        ->assertDontSeeInHtml('Book a call with Ross')
+        ->assertSeeInOrderInHtml(['Watch your video', 'Book a call with Ross', '01302 248 374'])
         ->assertDontSeeInHtml('Full disclosure')
         ->assertDontSeeInHtml('signature=');
 });
@@ -531,6 +532,6 @@ it('includes the showcase video when offering a prospect a new website', functio
         ->assertDontSeeInHtml('Your website video')
         ->assertSeeInHtml('https://video.example.com/new-website')
         ->assertSeeInHtml('Watch your video')
-        ->assertDontSeeInHtml('Book a call with Ross')
+        ->assertSeeInOrderInHtml(['Watch your video', 'Book a call with Ross', '01302 248 374'])
         ->assertDontSeeInHtml('signature=');
 });
