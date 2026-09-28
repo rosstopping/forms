@@ -7,7 +7,7 @@ return [
     'node_binary' => env('COPILOT_SDK_NODE_BINARY', 'node'),
     'timeout_seconds' => (int) env('COPILOT_SDK_TIMEOUT_SECONDS', 60),
     'max_tool_calls' => 10,
-    'max_tokens' => 10000,
+    'max_tokens' => 30000,
     'provider' => $provider,
     'model' => env('COPILOT_SDK_MODEL'),
     'api_key' => env('COPILOT_SDK_API_KEY') ?: ($provider === 'openai' ? env('OPENAI_API_KEY') : null),

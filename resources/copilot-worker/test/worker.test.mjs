@@ -190,3 +190,18 @@ test('SDK provider errors become safe categories without raw provider details', 
         assert.doesNotMatch(JSON.stringify(result), /private-key|secret-provider-error/);
     }
 });
+
+test('a multi-turn task can exceed the old pilot budget while the new limit is still enforced', async () => {
+    for (const [tokensPerTurn, status] of [[4000, 'validated'], [8000, 'failed']]) {
+        const input = { ...request('live'), limits: { ...request().limits, maxTokens: 30000 } };
+        const result = await runFixture(input, { env, adapterFactory: async () => ({
+            run: async ({ tools, onUsage }) => {
+                for (let i = 0; i < 4; i++) onUsage({ apiCallId: `turn-${i}`, inputTokens: tokensPerTurn, outputTokens: 100 });
+                await simulateFixture(tools);
+            }, close: async () => {},
+        }) });
+        assert.equal(result.status, status);
+        assert.equal(result.usage.events, 4);
+        if (status === 'failed') assert.equal(result.error, 'token_limit');
+    }
+});

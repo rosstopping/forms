@@ -68,10 +68,15 @@ class CopilotSdkTitleRunner
             throw new DomainException('SDK worker returned an invalid result identity; no branch was published.');
         }
         $diagnostics = ' Elapsed: '.max(0, min(3600000, (int) ($result['elapsedMs'] ?? 0))).' ms; tool calls: '.max(0, min(1000, (int) ($result['toolCalls'] ?? 0))).'.';
+        $usage = [];
+        foreach (['inputTokens', 'outputTokens', 'cacheReadTokens', 'cacheWriteTokens', 'events'] as $key) {
+            $usage[$key] = max(0, min(1000000000, (int) data_get($result, 'usage.'.$key, 0)));
+        }
+        $run->update(['usage' => $usage]);
         if (($result['status'] ?? null) === 'failed') {
             $reason = match ($result['error'] ?? null) {
                 'time_limit' => 'SDK reached the '.$request['limits']['timeoutSeconds'].'-second time limit before completing.',
-                'token_limit' => 'SDK reached its reported token limit.',
+                'token_limit' => 'SDK reached its reported token limit of '.$request['limits']['maxTokens'].'. Reported input/output: '.$usage['inputTokens'].'/'.$usage['outputTokens'].'; cache read/write: '.$usage['cacheReadTokens'].'/'.$usage['cacheWriteTokens'].'.',
                 'tool_limit' => 'SDK reached its tool-call limit.',
                 'cancelled' => 'SDK execution was cancelled.',
                 'provider_authentication' => 'The model provider rejected the API key.',
@@ -91,10 +96,6 @@ class CopilotSdkTitleRunner
         if (! $valid) {
             $reason = ($result['changes'] ?? null) === [] ? 'SDK finished without editing the file.' : 'SDK output failed independent title-only validation.';
             throw new DomainException($reason.$diagnostics.' No branch was published.');
-        }
-        $usage = [];
-        foreach (['inputTokens', 'outputTokens', 'cacheReadTokens', 'cacheWriteTokens', 'events'] as $key) {
-            $usage[$key] = max(0, (int) data_get($result, 'usage.'.$key, 0));
         }
 
         return ['replacement' => $expected, 'usage' => $usage];

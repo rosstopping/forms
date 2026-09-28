@@ -278,3 +278,26 @@ it('distinguishes a model that made no edits from an invalid title change', func
     $this->artisan('copilot-sdk:test-repository', [...$this->commands, '--publish' => true])
         ->expectsOutputToContain('SDK finished without editing the file.')->assertFailed();
 });
+
+it('gives the repository test a bounded budget for multiple model turns', function (): void {
+    $this->artisan('copilot-sdk:test-repository', [...$this->commands, '--publish' => true])->assertSuccessful();
+    Process::assertRan(fn (PendingProcess $process): bool => json_decode($process->input, true)['limits']['maxTokens'] === 30000);
+});
+
+it('retains reported usage when a model run reaches its token limit', function (): void {
+    Process::fake(function (PendingProcess $process) {
+        $request = json_decode($process->input, true);
+
+        return Process::result(output: json_encode([
+            'protocolVersion' => 1, 'runId' => $request['runId'], 'fixture' => 'repository-title', 'mode' => 'live',
+            'status' => 'failed', 'error' => 'token_limit', 'elapsedMs' => 43271, 'toolCalls' => 4,
+            'usage' => ['inputTokens' => 25000, 'outputTokens' => 5500, 'cacheReadTokens' => 1000, 'cacheWriteTokens' => 0, 'events' => 4],
+        ]), exitCode: 1);
+    });
+    $this->artisan('copilot-sdk:test-repository', [...$this->commands, '--publish' => true])
+        ->expectsOutputToContain('reported token limit of 30000')->assertFailed();
+    $run = CopilotSdkTestRun::sole();
+    expect($run->usage)->toMatchArray(['inputTokens' => 25000, 'outputTokens' => 5500, 'events' => 4])
+        ->and($run->error)->toContain('Reported input/output: 25000/5500; cache read/write: 1000/0.');
+    Http::assertNotSent(fn (Request $request) => $request->method() === 'POST' && str_contains($request->url(), '/repos/'));
+});
