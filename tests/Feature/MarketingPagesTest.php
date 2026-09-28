@@ -305,14 +305,16 @@ it('features the local UK phone call to action on the home page', function (): v
         ->assertSuccessful()
         ->assertSee('Hi, I’m Ross.')
         ->assertSee('Founder of Sitewell. Based in the UK.')
-        ->assertSee('01302 985 828')
-        ->assertSee('href="tel:+441302985828"', false);
+        ->assertSee('01484 501 086')
+        ->assertSee('href="tel:+441484501086"', false);
 });
 
 it('keeps contact separate from website-only onboarding', function (): void {
     $this->get(route('marketing.contact'))
         ->assertSuccessful()
         ->assertSee('Contact Sitewell')
+        ->assertSee('01484 501 086')
+        ->assertSee('href="tel:+441484501086"', false)
         ->assertSee('Work email')
         ->assertSee('Send enquiry')
         ->assertDontSee('No account, email address, or website access is needed.');
