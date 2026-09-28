@@ -254,6 +254,8 @@ it('renders the video test with direct links and the same video layout without e
         ->assertSeeInHtml('https://cdn.loom.com/sessions/thumbnails/preview.jpg')
         ->assertSeeInHtml('Your website audit')
         ->assertSeeInHtml('Book a call with Ross')
+        ->assertSeeInHtml('01302 248 374')
+        ->assertSeeInHtml('href="tel:+441302248374"', false)
         ->assertSeeInOrderInHtml(['Watch your video', 'Book a call with Ross', 'Your website audit']);
     $content = $mail->content()->with;
     expect($content['trackingOpenUrl'])->toBeNull()

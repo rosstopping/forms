@@ -17,6 +17,7 @@
 <p style="margin:6px 0 16px;font-size:14px;color:#59685f;">Pick any time that works for you.</p>
 <a href="{{ $bookingUrl }}" style="display:inline-block;border-radius:8px;background:#dce9d9;padding:12px 18px;color:#315a46;font-weight:600;text-decoration:none;">Book a call with Ross</a>
 <p style="margin:14px 0 0;font-size:14px;color:#59685f;">Or use this <a href="{{ $bookingUrl }}" style="color:#167a53;">booking link</a></p>
+<p style="margin:14px 0 0;font-size:14px;color:#59685f;">You can also call me on <a href="tel:+441302248374" style="color:#167a53;">01302 248 374</a>.</p>
 </div>@endif
 @if ($auditReportUrl)
 <div style="margin:28px 0 0;border:1px solid #dce3dd;border-radius:12px;background:#eef3ec;padding:20px;">
