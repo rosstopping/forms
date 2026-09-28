@@ -172,6 +172,37 @@ class GithubOAuthClient
         });
     }
 
+    /** @return list<array<string, mixed>> */
+    public function installations(GithubUserAuthorization $authorization): array
+    {
+        return $this->paginatedUserResources($authorization, 'user/installations', 'installations');
+    }
+
+    /** @return list<array<string, mixed>> */
+    public function installationRepositories(GithubUserAuthorization $authorization, int $installationId): array
+    {
+        return $this->paginatedUserResources($authorization, "user/installations/{$installationId}/repositories", 'repositories');
+    }
+
+    /** @return list<array<string, mixed>> */
+    private function paginatedUserResources(GithubUserAuthorization $authorization, string $path, string $key): array
+    {
+        $resources = [];
+        $token = $this->accessToken($authorization);
+        for ($page = 1; $page <= 100; $page++) {
+            $items = $this->apiRequest($token)->get($path, ['per_page' => 100, 'page' => $page])->throw()->json($key);
+            if (! is_array($items) || ! array_is_list($items)) {
+                throw new RuntimeException('GitHub returned an invalid repository connection response.');
+            }
+            $resources = array_merge($resources, $items);
+            if (count($items) < 100) {
+                return $resources;
+            }
+        }
+
+        throw new RuntimeException('The GitHub account has too many results to list safely. Select fewer repositories for the App.');
+    }
+
     public function canAccessInstallation(GithubUserAuthorization $authorization, int $installationId): bool
     {
         $page = 1;

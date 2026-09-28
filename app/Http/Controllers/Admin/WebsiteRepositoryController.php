@@ -7,6 +7,8 @@ use App\Http\Requests\StoreWebsiteRepositoryRequest;
 use App\Models\GithubInstallation;
 use App\Models\Website;
 use App\Services\GithubAppClient;
+use App\Services\GithubCustomerRepositories;
+use App\Services\GithubRepositoryPilot;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,11 +19,30 @@ use Illuminate\View\View;
 
 class WebsiteRepositoryController extends Controller
 {
-    public function __construct(protected GithubAppClient $github) {}
+    public function __construct(protected GithubAppClient $github, protected GithubCustomerRepositories $customerRepositories, protected GithubRepositoryPilot $repositoryPilot) {}
 
     public function create(Request $request, Website $website): View|RedirectResponse
     {
         $this->authorizeWebsite($request, $website);
+
+        if ($this->repositoryPilot->enabledFor($request->user())) {
+            if (! $request->user()->githubAuthorization) {
+                return Redirect::route('admin.github.connect', $website);
+            }
+            try {
+                $repositories = $this->customerRepositories->available($request->user());
+            } catch (RequestException $exception) {
+                if (! in_array($exception->response->status(), [401, 403, 404], true)) {
+                    throw $exception;
+                }
+
+                return Redirect::route('admin.websites.section', [$website, 'content'])
+                    ->with('error', 'GitHub could not verify your repository access. Reconnect GitHub and try again.');
+            }
+            $unavailableInstallations = collect();
+
+            return view('admin.website-repositories.create', compact('website', 'repositories', 'unavailableInstallations'));
+        }
 
         $installations = GithubInstallation::query()
             ->where('status', GithubInstallation::STATUS_ACTIVE)
@@ -62,12 +83,16 @@ class WebsiteRepositoryController extends Controller
         $data = $request->validated();
         $installation = GithubInstallation::query()
             ->where('status', GithubInstallation::STATUS_ACTIVE)
-            ->when(! $request->user()->isAdmin(), fn ($query) => $query->where('installed_by', $request->user()->id))
+            ->when(! $this->repositoryPilot->enabledFor($request->user()) && ! $request->user()->isAdmin(), fn ($query) => $query->where('installed_by', $request->user()->id))
             ->findOrFail($data['github_installation_id']);
         try {
-            $repository = collect($this->github->repositories($installation->installation_id))
-                ->firstWhere('id', (int) $data['repository_id']);
+            $repository = $this->repositoryPilot->enabledFor($request->user())
+                ? $this->customerRepositories->selected($request->user(), $installation, (int) $data['repository_id'])
+                : collect($this->github->repositories($installation->installation_id))->firstWhere('id', (int) $data['repository_id']);
         } catch (RequestException $exception) {
+            if ($this->repositoryPilot->enabledFor($request->user())) {
+                throw ValidationException::withMessages(['repository' => 'GitHub could not verify your repository access. Reconnect GitHub and try again.']);
+            }
             if (! $this->markUnavailableWhenNotFound($installation, $exception)) {
                 throw $exception;
             }

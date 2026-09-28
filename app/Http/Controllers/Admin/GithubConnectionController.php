@@ -6,7 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\GithubInstallation;
 use App\Models\Website;
 use App\Services\GithubAppClient;
+use App\Services\GithubConnectionState;
+use App\Services\GithubCustomerRepositories;
 use App\Services\GithubOAuthClient;
+use App\Services\GithubRepositoryPilot;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
@@ -18,6 +21,9 @@ class GithubConnectionController extends Controller
     public function __construct(
         protected GithubAppClient $github,
         protected GithubOAuthClient $oauth,
+        protected GithubConnectionState $connectionState,
+        protected GithubCustomerRepositories $customerRepositories,
+        protected GithubRepositoryPilot $repositoryPilot,
     ) {}
 
     public function create(Request $request, Website $website): RedirectResponse
@@ -29,6 +35,12 @@ class GithubConnectionController extends Controller
         if ($slug === '') {
             return Redirect::route('admin.websites.show', $website)
                 ->with('error', 'The GitHub App has not been configured.');
+        }
+
+        if ($this->repositoryPilot->enabledFor($request->user())) {
+            $state = $this->connectionState->issue($request, ['website_id' => $website->id, 'stage' => 'installation']);
+
+            return Redirect::away("https://github.com/apps/{$slug}/installations/new?".http_build_query(['state' => $state]));
         }
 
         $state = Crypt::encryptString(json_encode([
@@ -53,9 +65,17 @@ class GithubConnectionController extends Controller
 
     public function callback(Request $request): RedirectResponse
     {
+        if (str_starts_with($request->string('state')->toString(), 'repository_')) {
+            abort_unless($this->repositoryPilot->enabledFor($request->user()), 403);
+
+            return $this->customerCallback($request);
+        }
+
         if ($request->filled('code')) {
             return $this->completeAuthorization($request);
         }
+
+        abort_if($this->repositoryPilot->enabledFor($request->user()), 403, 'Restart the GitHub connection.');
 
         $data = $request->validate([
             'installation_id' => ['required', 'integer'],
@@ -83,6 +103,32 @@ class GithubConnectionController extends Controller
         return Redirect::away($this->oauth->authorizationUrl($oauthState));
     }
 
+    private function customerCallback(Request $request): RedirectResponse
+    {
+        $request->validate(['state' => ['required', 'string'], 'code' => ['nullable', 'string'], 'installation_id' => ['nullable', 'integer', 'min:1']]);
+        $context = $this->connectionState->consume($request, $request->string('state')->toString());
+        $website = Website::query()->findOrFail($context['website_id']);
+        $this->authorizeWebsite($request, $website);
+        $installationId = $context['installation_id'] ?? $request->integer('installation_id');
+        abort_if($installationId < 1, 422, 'GitHub did not identify an installation. Restart the connection.');
+
+        if (! $request->filled('code')) {
+            abort_unless($context['stage'] === 'installation', 403);
+            $state = $this->connectionState->issue($request, [
+                'website_id' => $website->id, 'stage' => 'authorization', 'installation_id' => $installationId,
+            ]);
+
+            return Redirect::away($this->oauth->authorizationUrl($state));
+        }
+
+        $this->oauth->authorize($request->user(), $request->string('code')->toString());
+        $request->user()->unsetRelation('githubAuthorization');
+        $installation = $this->customerRepositories->verifyInstallation($request->user(), $installationId);
+
+        return Redirect::route('admin.website-repositories.create', $website)
+            ->with('status', "Repository access connected for {$installation->account_login}. No Copilot subscription is required to connect a repository.");
+    }
+
     protected function completeAuthorization(Request $request): RedirectResponse
     {
         $data = $request->validate([
@@ -104,6 +150,8 @@ class GithubConnectionController extends Controller
             return Redirect::route('admin.website-builder.create')
                 ->with('status', "GitHub reconnected as {$authorization->github_login}.");
         }
+
+        abort_if($this->repositoryPilot->enabledFor($request->user()), 403, 'Restart the GitHub connection.');
 
         $website = Website::query()->findOrFail(data_get($state, 'website_id'));
         $this->authorizeWebsite($request, $website);
