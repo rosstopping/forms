@@ -2,6 +2,7 @@
 
 use App\Services\CopilotSdkFixtureRunner;
 use Illuminate\Process\PendingProcess;
+use Illuminate\Support\Env;
 use Illuminate\Support\Facades\Process;
 
 function fakeSdkFixtureResult(PendingProcess $process, array $overrides = []): array
@@ -88,3 +89,36 @@ it('does not expose process errors or raw output', function (): void {
         ->expectsOutput('The SDK fixture worker could not finish. Check the worker installation and timeout.')
         ->doesntExpectOutputToContain('private-key')->assertFailed();
 });
+
+it('resolves the SDK key from the selected provider without crossing provider credentials', function (string $provider, ?string $override, ?string $expected): void {
+    $environment = Env::getRepository();
+    $values = ['COPILOT_SDK_PROVIDER' => $provider, 'COPILOT_SDK_API_KEY' => $override, 'OPENAI_API_KEY' => 'existing-openai-key'];
+    $originals = [];
+    foreach ($values as $key => $value) {
+        $originals[$key] = $environment->get($key);
+        if ($value === null) {
+            $environment->clear($key);
+        } else {
+            $environment->set($key, $value);
+        }
+    }
+    try {
+        $configuration = require config_path('copilot_sdk.php');
+        expect($configuration['provider'])->toBe($provider)
+            ->and($configuration['api_key'])->toBe($expected);
+    } finally {
+        foreach ($originals as $key => $value) {
+            if ($value === null) {
+                $environment->clear($key);
+            } else {
+                $environment->set($key, $value);
+            }
+        }
+    }
+})->with([
+    'existing OpenAI key' => ['openai', null, 'existing-openai-key'],
+    'empty optional override' => ['openai', '', 'existing-openai-key'],
+    'explicit OpenAI override' => ['openai', 'sdk-key', 'sdk-key'],
+    'Anthropic never receives OpenAI key' => ['anthropic', null, null],
+    'explicit Anthropic key' => ['anthropic', 'anthropic-key', 'anthropic-key'],
+]);

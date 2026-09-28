@@ -175,7 +175,7 @@ COPILOT_SDK_ENABLED=true php artisan copilot-sdk:verify --probe
 
 The runtime integration test opens a loopback-only server. The default Artisan command performs deterministic simulation and makes no SDK/model call. `--probe` starts and pings the real bundled runtime without requesting a model completion.
 
-For a real model fixture run, configure `COPILOT_SDK_ENABLED=true`, `COPILOT_SDK_PROVIDER=anthropic` or `openai`, `COPILOT_SDK_MODEL`, and `COPILOT_SDK_API_KEY` securely, then run:
+For a real model fixture run, configure `COPILOT_SDK_ENABLED=true`, `COPILOT_SDK_PROVIDER=anthropic` or `openai`, `COPILOT_SDK_MODEL`, and a model API key securely, then run. OpenAI reuses `OPENAI_API_KEY` when `COPILOT_SDK_API_KEY` is unset or empty; an explicit SDK key takes precedence:
 
 ```sh
 php artisan copilot-sdk:verify --live
@@ -249,7 +249,7 @@ php artisan migrate --force --no-interaction
 npm ci --prefix resources/copilot-worker --ignore-scripts
 ```
 
-Configure the existing SDK settings securely in Forge: `COPILOT_SDK_ENABLED=true`, `COPILOT_SDK_PROVIDER` (`anthropic` or `openai`), `COPILOT_SDK_MODEL`, and `COPILOT_SDK_API_KEY`. These are worker/model settings, not per-user or per-website rollout flags. Never paste the API key into a command or commit it. Refresh cached configuration using the site's normal deployment process.
+Configure the existing SDK settings securely in Forge: `COPILOT_SDK_ENABLED=true`, `COPILOT_SDK_PROVIDER` (`anthropic` or `openai`), `COPILOT_SDK_MODEL`, and the provider API key. When the provider is `openai`, the worker reuses the existing `OPENAI_API_KEY`; no duplicate key is needed. `COPILOT_SDK_API_KEY` remains an optional override and is required for Anthropic. These are worker/model settings, not per-user or per-website rollout flags. Never paste the API key into a command or commit it. Refresh cached configuration using the site's normal deployment process.
 
 Verify the runtime without a paid model request:
 
