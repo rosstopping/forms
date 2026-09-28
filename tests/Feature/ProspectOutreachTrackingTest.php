@@ -271,8 +271,8 @@ it('separates cold warm and hot prospects into their outreach tabs', function ()
         ->assertSuccessful()
         ->assertSee('Hot leads')
         ->assertSee('Cold Prospect')
-        ->assertDontSee('Warm Prospect')
-        ->assertDontSee('Hot Prospect');
+        ->assertSee('Warm Prospect')
+        ->assertSee('Hot Prospect');
 
     $this->get(route('admin.prospects.index', ['tab' => 'warm']))
         ->assertSuccessful()

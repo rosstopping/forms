@@ -41,6 +41,11 @@ Schedule::command('free-site-audits:dispatch-pending-emails')
     ->onOneServer()
     ->withoutOverlapping();
 
+Schedule::command('outreach:cool-inactive')
+    ->hourly()
+    ->onOneServer()
+    ->withoutOverlapping();
+
 Schedule::command('outreach:dispatch-due')
     ->everyMinute()
     ->onOneServer()

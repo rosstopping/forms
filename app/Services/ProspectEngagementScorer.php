@@ -129,6 +129,10 @@ class ProspectEngagementScorer
 
     private function applyEvent(Prospect $prospect, ProspectOutreachState $outreachState, ProspectEngagementEvent $event, ?User $actor = null): void
     {
+        if (in_array($event->source, config('outreach.ignored_engagement_sources', []), true)) {
+            return;
+        }
+
         $previousScore = $outreachState->engagement_score;
         $newScore = max(0, $previousScore + $event->score_delta);
         $previousTemperature = $prospect->lead_temperature;
@@ -137,7 +141,9 @@ class ProspectEngagementScorer
             : ($outreachState->temperature_override ?: $this->temperatureForScore($newScore));
         $attributes = [
             'engagement_score' => $newScore,
-            'last_engagement_at' => $event->occurred_at,
+            'last_engagement_at' => $outreachState->last_engagement_at?->gt($event->occurred_at)
+                ? $outreachState->last_engagement_at
+                : $event->occurred_at,
         ];
 
         if ($event->event_type === ProspectEngagementEventType::ReplyReceived) {

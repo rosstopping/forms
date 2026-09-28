@@ -91,6 +91,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Models/Website.php,Http/Controllers/Admin/**,Http/Requests/**} | .ai/rules/requests.md |
 | app/Services/SeoIntelligence/**,app/Models/SeoOpportunity.php | .ai/rules/seo-intelligence-models.md |
 | app/Services/SeoIntelligence/** | .ai/rules/seo-intelligence.md |
+| app/{Services,Console/Commands}/**/*Prospect*.php,routes/console.php | .ai/rules/services-console-commands.md |
 | app/{Services/Github*,Http/Controllers/**/*Github*,Models/{GithubInstallation,WebsiteRepository,RemediationRun}.php}, app/{Services/PixelUrlNormalizer.php,Services/PixelPayloadBuilder.php,Http/Controllers/PixelPayloadController.php,Models/Optimisation.php} | .ai/rules/services-controllers.md |
 | app/Services/BacklinkAuditService.php,tests/Feature/BacklinkAuditTest.php | .ai/rules/services-feature.md |
 | app/{Services,Jobs,Console/Commands}/**/*Competitor*.php | .ai/rules/services-jobs-console-commands.md |
