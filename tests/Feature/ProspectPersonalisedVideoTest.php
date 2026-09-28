@@ -253,7 +253,8 @@ it('renders the video test with direct links and the same video layout without e
         ->assertSeeInHtml('https://video.example/preview')
         ->assertSeeInHtml('https://cdn.loom.com/sessions/thumbnails/preview.jpg')
         ->assertSeeInHtml('Your website audit')
-        ->assertSeeInHtml('Book a call with Ross');
+        ->assertSeeInHtml('Book a call with Ross')
+        ->assertSeeInOrderInHtml(['Watch your video', 'Book a call with Ross', 'Your website audit']);
     $content = $mail->content()->with;
     expect($content['trackingOpenUrl'])->toBeNull()
         ->and($content['showcaseVideoUrl'])->toBe('https://video.example/preview')
