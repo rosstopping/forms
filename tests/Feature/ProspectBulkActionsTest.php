@@ -193,9 +193,9 @@ it('applies a bulk action to a long pasted list of escaped email addresses witho
         'action' => 'delete', 'selection_scope' => 'all', 'search' => $search,
     ])->assertRedirect()->assertSessionHas('status', '3 prospects deleted.');
 
-    $this->assertModelMissing($firstMatch);
-    $this->assertModelMissing($secondMatch);
-    $this->assertModelMissing($thirdMatch);
+    $this->assertSoftDeleted($firstMatch);
+    $this->assertSoftDeleted($secondMatch);
+    $this->assertSoftDeleted($thirdMatch);
     $this->assertModelExists($unrelated);
 });
 

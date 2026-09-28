@@ -15,6 +15,8 @@ class ProspectOutreachOpenController extends Controller
      */
     public function __invoke(Request $request, ProspectOutreachDelivery $delivery, ProspectOutreachTracker $tracker, ProspectEngagementSourceClassifier $sourceClassifier): Response
     {
+        abort_unless($delivery->prospect, 404);
+
         $tracker->recordOpen($delivery, $sourceClassifier->classify($request));
 
         return response(base64_decode('R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=='), 200, [

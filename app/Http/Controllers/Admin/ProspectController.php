@@ -12,6 +12,7 @@ use App\Jobs\AnalyzeProspect;
 use App\Models\Prospect;
 use App\Models\ProspectOutreachState;
 use App\Services\LoomVideoThumbnail;
+use App\Services\ProspectDeletion;
 use App\Services\ProspectLifecycleManager;
 use App\Services\ProspectOutreachDashboard;
 use App\Services\ProspectOutreachPlan;
@@ -65,13 +66,14 @@ class ProspectController extends Controller
                 ->limit(1))
             ->limit(12)
             ->get();
+        $showingDeleted = $request->string('status')->toString() === 'deleted';
+        if ($showingDeleted) {
+            $query->onlyTrashed();
+        }
         $emailStatus = $request->string('email_status')->toString();
-        $query->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')))
-            ->when($activeTab === 'dashboard', fn ($query) => $query
-                ->whereNotIn('lead_temperature', ['hot', 'warm'])
-                ->whereDoesntHave('outreachState', fn ($query) => $query->where('lifecycle_state', ProspectLifecycleState::Replied)))
-            ->when(in_array($activeTab, ['hot', 'warm'], true), fn ($query) => $query->where('lead_temperature', $activeTab))
-            ->when($activeTab === 'replies', fn ($query) => $query->whereHas('outreachState', fn ($query) => $query->where('lifecycle_state', ProspectLifecycleState::Replied)))
+        $query->when($request->filled('status') && ! $showingDeleted, fn ($query) => $query->where('status', $request->string('status')))
+            ->when(in_array($activeTab, ['hot', 'warm'], true) && ! $showingDeleted, fn ($query) => $query->where('lead_temperature', $activeTab))
+            ->when($activeTab === 'replies' && ! $showingDeleted, fn ($query) => $query->whereHas('outreachState', fn ($query) => $query->where('lifecycle_state', ProspectLifecycleState::Replied)))
             ->when($emailStatus === 'missing', fn ($query) => $query->where(fn ($query) => $query->whereNull('email')->orWhere('email', '')))
             ->when($emailStatus === 'present', fn ($query) => $query->whereNotNull('email')->where('email', '!=', ''))
             ->when($request->filled('search'), fn ($query) => $query->matchingSearchTerms($request->string('search')->toString()));
@@ -80,13 +82,13 @@ class ProspectController extends Controller
             ->select([
                 'id', 'business_name', 'contact_name', 'email', 'website_url',
                 'status', 'lead_temperature', 'scheduled_send_at',
-                'opportunity_score', 'analysis_status', 'created_at',
+                'opportunity_score', 'analysis_status', 'created_at', 'deleted_at',
             ])
             ->orderByRaw("case lead_temperature when 'hot' then 1 when 'warm' then 2 else 3 end")
             ->latest()->orderByDesc('id')->paginate(20)->withQueryString();
 
         return view('admin.prospects.index', array_merge(
-            compact('activeTab', 'prospects', 'summary', 'temperatureSummary', 'matchingProspectsCount', 'hotVideoProspects', 'hotVideoProspectsCount', 'manualFollowUpProspects', 'manualFollowUpProspectsCount'),
+            compact('showingDeleted', 'activeTab', 'prospects', 'summary', 'temperatureSummary', 'matchingProspectsCount', 'hotVideoProspects', 'hotVideoProspectsCount', 'manualFollowUpProspects', 'manualFollowUpProspectsCount'),
             $dashboard->for($request->user()),
         ));
     }
@@ -192,10 +194,10 @@ class ProspectController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Request $request, Prospect $prospect): RedirectResponse
+    public function destroy(Request $request, Prospect $prospect, ProspectDeletion $deletion): RedirectResponse
     {
         abort_unless($prospect->isAccessibleBy($request->user()), 403);
-        $prospect->delete();
+        $deletion->delete($prospect, $request->user());
 
         return redirect()->route('admin.prospects.index')->with('status', 'Prospect deleted.');
     }

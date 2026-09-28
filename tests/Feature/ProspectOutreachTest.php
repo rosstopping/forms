@@ -97,7 +97,7 @@ it('allows an administrator to delete a prospect after confirmation in the inter
         ->assertRedirectToRoute('admin.prospects.index')
         ->assertSessionHas('status', 'Prospect deleted.');
 
-    $this->assertModelMissing($prospect);
+    $this->assertSoftDeleted($prospect);
 });
 
 it('shows discovered public contact details with their source', function () {

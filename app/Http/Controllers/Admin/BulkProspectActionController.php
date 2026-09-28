@@ -8,6 +8,7 @@ use App\Http\Requests\BulkProspectActionRequest;
 use App\Jobs\AnalyzeProspect;
 use App\Jobs\SendScheduledProspectOutreach;
 use App\Models\Prospect;
+use App\Services\ProspectDeletion;
 use App\Services\ProspectLifecycleManager;
 use App\Services\ProspectOutreachSender;
 use Carbon\CarbonImmutable;
@@ -21,7 +22,7 @@ class BulkProspectActionController extends Controller
     /**
      * Handle the incoming request.
      */
-    public function __invoke(BulkProspectActionRequest $request, ProspectOutreachSender $sender, ProspectLifecycleManager $lifecycleManager): RedirectResponse
+    public function __invoke(BulkProspectActionRequest $request, ProspectOutreachSender $sender, ProspectLifecycleManager $lifecycleManager, ProspectDeletion $deletion): RedirectResponse
     {
         $data = $request->validated();
         $prospects = $this->selectedProspects($request, $data);
@@ -32,7 +33,7 @@ class BulkProspectActionController extends Controller
             $wasProcessed = match ($data['action']) {
                 'approve' => $this->approve($prospect, $request, $lifecycleManager),
                 'research_again' => $this->researchAgain($prospect, $request),
-                'delete' => $this->delete($prospect),
+                'delete' => $deletion->delete($prospect, $request->user()),
                 'schedule_approved_email' => $this->schedule($prospect, $data['scheduled_send_at'], $request, $sender, $lifecycleManager),
                 'cancel_scheduled_email' => $this->cancelSchedule($prospect, $request, $lifecycleManager),
                 'mark_as_draft' => $this->markAsDraft($prospect, $request, $lifecycleManager),
@@ -113,11 +114,6 @@ class BulkProspectActionController extends Controller
         AnalyzeProspect::dispatch($prospect);
 
         return true;
-    }
-
-    private function delete(Prospect $prospect): bool
-    {
-        return (bool) $prospect->delete();
     }
 
     private function schedule(Prospect $prospect, string $scheduledSendAt, BulkProspectActionRequest $request, ProspectOutreachSender $sender, ProspectLifecycleManager $lifecycleManager): bool

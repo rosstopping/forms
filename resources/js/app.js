@@ -642,7 +642,7 @@ document.querySelectorAll('[data-bulk-prospects-form]').forEach((form) => {
     form.addEventListener('submit', (event) => {
         const selected = scope.value === 'all' ? total : checkboxes.filter((checkbox) => checkbox.checked).length;
         const confirmations = {
-            delete: `Permanently delete ${selected} selected prospect${selected === 1 ? '' : 's'}?`,
+            delete: `Move ${selected} selected prospect${selected === 1 ? '' : 's'} to Deleted and cancel pending outreach?`,
             send_approved_email: `Send every eligible approved email for ${selected} selected prospect${selected === 1 ? '' : 's'} now?`,
             stop: `Stop outreach for ${selected} selected prospect${selected === 1 ? '' : 's'}?`,
             mark_replied: `Mark ${selected} selected prospect${selected === 1 ? '' : 's'} as replied and stop automated outreach?`,

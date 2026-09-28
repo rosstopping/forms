@@ -17,6 +17,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Services/Content*,Jobs/StartContentGeneration.php,Console/Commands/*Content*,Http/Controllers/Admin/ContentPlanController.php,Http/Requests/UpdateContentPlanRequest.php} | .ai/rules/admin-requests.md |
 | app/{Http/Controllers/Admin,Services,Jobs}/**/*Pixel*.php,resources/views/admin/{websites/**,website-health-reports/**},routes/web.php | .ai/rules/admin-services-jobs-views-adminwebsites.md |
 | app/{Http/Controllers/Admin,Services,Jobs}/**/*SeoProspect*.php | .ai/rules/admin-services-jobs.md |
+| app/Http/Controllers/Admin/ProspectController.php,resources/views/admin/prospects/** | .ai/rules/admin-views-admin-prospects.md |
 | {app/Support/MembershipPlan.php,app/Http/Middleware/EnsureMembershipFeature.php,app/Http/Controllers/Admin/{WebsiteController.php,WebsiteHealthReportController.php,SearchConsoleController.php},resources/views/admin/websites/**,routes/web.php} | .ai/rules/admin-views-admin-websites.md |
 | {app/{Models/WebsiteSetup.php,Services/WebsiteSetupService.php,Http/Controllers/Admin/WebsiteSetupController.php,Http/Requests/*WebsiteSetupRequest.php},resources/views/admin/websites/{setup.blade.php,partials/setup-*.blade.php},tests/Feature/WebsiteSetupTest.php} | .ai/rules/admin-websites-feature.md |
 | app/{Services,Jobs,Console/Commands,Http/Controllers/Admin}/**/*BusinessProfile*.php,resources/views/admin/websites/partials/business-profile*.blade.php | .ai/rules/admin-websites-partials.md |
@@ -37,6 +38,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Http/Controllers/Admin/SearchConsoleController.php,Services/SearchConsolePropertyMatcher.php,Actions/VerifyWebsiteDomainFromSearchConsole.php},resources/views/admin/websites/search-console-property.blade.php | .ai/rules/controllers-admin-views-admin-websites.md |
 | app/{Services/OptimisationValueSanitizer.php,Services/PixelDeploymentDriver.php,Http/Requests/*Optimisation*.php,Http/Controllers/Admin/Optimisation*.php} | .ai/rules/controllers-admin.md |
 | {app/Http/Controllers/MarketingController.php,wordpress-plugin/sitewell-by-digizu/**} | .ai/rules/controllers-sitewell-by-digizu.md |
+| app/{Models,Services,Jobs,Http/Controllers}/**/*Prospect*.php,resources/views/admin/prospects/** | .ai/rules/controllers-views-admin-prospects.md |
 | app/{Models/Website.php,Http/Controllers/FormSubmissionController.php},resources/views/admin/websites/show.blade.php | .ai/rules/controllers-views-admin-websites.md |
 | {config/seo_library.php,config/marketing.php,app/Http/Controllers/MarketingController.php,resources/views/marketing/**} | .ai/rules/controllers-views-marketing.md |
 | app/{Http/Controllers/FormSubmissionController.php,Services/SpamDetector.php}, app/{Http/Controllers/FormSubmissionController.php,Services/RedirectResolver.php} | .ai/rules/controllers.md |

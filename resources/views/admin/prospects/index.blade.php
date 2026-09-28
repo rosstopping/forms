@@ -106,17 +106,33 @@
     <form method="GET" class="ui-panel flex flex-wrap gap-3 p-4">
         @if ($activeTab !== 'dashboard')<input type="hidden" name="tab" value="{{ $activeTab }}">@endif
         <input name="search" value="{{ request('search') }}" placeholder="Search businesses or emails, separated by commas" aria-label="Search businesses or emails, separated by commas" class="ui-input min-w-64 flex-1">
-        <select name="status" class="ui-input"><option value="">All stages</option>@foreach (\App\Models\Prospect::STATUSES as $status)<option value="{{ $status }}" @selected(request('status') === $status)>{{ str($status)->replace('_', ' ')->title() }}</option>@endforeach</select>
+        <select name="status" aria-label="Prospect status" class="ui-input"><option value="">All stages</option>@foreach (\App\Models\Prospect::STATUSES as $status)<option value="{{ $status }}" @selected(request('status') === $status)>{{ str($status)->replace('_', ' ')->title() }}</option>@endforeach<option value="deleted" @selected(request('status') === 'deleted')>Deleted</option></select>
         <select name="email_status" aria-label="Email address" class="ui-input"><option value="">All email statuses</option><option value="missing" @selected(request('email_status') === 'missing')>Without email address</option><option value="present" @selected(request('email_status') === 'present')>With email address</option></select>
         <button type="submit" class="ui-button ui-button-primary">Filter</button>
     </form>
+    @if ($showingDeleted)
+        <section class="ui-panel ui-section">
+            <h2 class="text-lg font-semibold">Deleted prospects</h2>
+            <p class="mt-1 text-base text-slate-500 sm:text-sm">{{ $matchingProspectsCount }} matching deleted {{ str('prospect')->plural($matchingProspectsCount) }}. These records are read-only and cannot send outreach.</p>
+            <ul role="list" class="mt-4 divide-y divide-slate-950/10">
+                @forelse ($prospects as $prospect)
+                    <li class="flex flex-wrap items-start justify-between gap-3 py-4">
+                        <div class="min-w-0"><p class="break-words font-semibold">{{ $prospect->business_name }}</p><p class="break-all text-base text-slate-500 sm:text-sm">{{ $prospect->contact_name ?: 'No contact' }} · {{ $prospect->email ?: 'No email address' }}</p>@if ($prospect->website_url)<p class="break-all text-base text-slate-500 sm:text-sm">{{ $prospect->website_url }}</p>@endif</div>
+                        <p class="text-base text-slate-500 tabular-nums sm:text-sm">Deleted {{ $prospect->deleted_at->setTimezone('Europe/London')->format('j M Y, H:i') }} UK</p>
+                    </li>
+                @empty
+                    <li class="py-6 text-base text-slate-500 sm:text-sm">No deleted prospects match your search.</li>
+                @endforelse
+            </ul>
+        </section>
+    @else
     <form method="POST" action="{{ route('admin.prospects.bulk') }}" data-bulk-prospects-form data-bulk-prospects-total="{{ $matchingProspectsCount }}" class="ui-panel overflow-hidden">
         @csrf
         <input type="hidden" name="selection_scope" value="page" data-bulk-prospects-scope>
         <input type="hidden" name="tab" value="{{ $activeTab }}">
         <input type="hidden" name="search" value="{{ request('search') }}">
         <input type="hidden" name="status" value="{{ request('status') }}">
-        <input type="hidden" name="temperature" value="{{ $activeTab === 'dashboard' ? 'cold' : (in_array($activeTab, ['hot', 'warm'], true) ? $activeTab : '') }}">
+        <input type="hidden" name="temperature" value="{{ in_array($activeTab, ['hot', 'warm'], true) ? $activeTab : '' }}">
         <input type="hidden" name="lifecycle_state" value="{{ $activeTab === 'replies' ? \App\Enums\ProspectLifecycleState::Replied->value : '' }}">
         <input type="hidden" name="email_status" value="{{ request('email_status') }}">
         <div class="flex flex-col gap-3 border-b border-slate-950/10 bg-slate-50 p-3 lg:flex-row lg:items-center">
@@ -179,6 +195,7 @@
             @endforelse
         </div>
     </form>
+    @endif
     {{ $prospects->links() }}
 </div>
 @endsection

@@ -80,8 +80,8 @@
     @else
         @include('admin.prospects.partials.controls')
         <div class="flex flex-wrap items-center justify-between gap-4 border-t border-slate-950/10 pt-5">
-            <div><h2 class="font-semibold text-balance">Delete prospect</h2><p class="mt-1 text-base text-slate-500 sm:text-sm">Permanently removes this prospect and their outreach history.</p></div>
-            <form method="POST" action="{{ route('admin.prospects.destroy', $prospect) }}" data-confirm-action-form>@csrf @method('DELETE')<button type="button" data-confirm-action data-confirm-title="Delete this prospect?" data-confirm-message="The prospect, website research, outreach draft, and activity history will be permanently deleted. This cannot be undone." data-confirm-label="Delete prospect" data-confirm-danger class="ui-button ui-button-danger">Delete</button></form>
+            <div><h2 class="font-semibold text-balance">Delete prospect</h2><p class="mt-1 text-base text-slate-500 sm:text-sm">Moves this prospect to Deleted and cancels pending outreach.</p></div>
+            <form method="POST" action="{{ route('admin.prospects.destroy', $prospect) }}" data-confirm-action-form>@csrf @method('DELETE')<button type="button" data-confirm-action data-confirm-title="Delete this prospect?" data-confirm-message="This prospect will move to Deleted and pending outreach will be cancelled. You can still find the record using the Deleted filter." data-confirm-label="Delete prospect" data-confirm-danger class="ui-button ui-button-danger">Delete</button></form>
         </div>
     @endif
 

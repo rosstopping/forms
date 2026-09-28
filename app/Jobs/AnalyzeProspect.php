@@ -27,6 +27,10 @@ class AnalyzeProspect implements ShouldQueue
      */
     public function handle(ProspectWebsiteAnalyzer $analyzer, ProspectLifecycleManager $lifecycleManager, InitialProspectOutreachGenerator $outreachGenerator): void
     {
+        if (! Prospect::query()->whereKey($this->prospect->id)->exists()) {
+            return;
+        }
+
         $this->prospect->update(['analysis_status' => 'running', 'analysis_error' => null]);
 
         try {

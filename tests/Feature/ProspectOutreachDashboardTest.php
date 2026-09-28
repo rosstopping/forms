@@ -8,7 +8,7 @@ use App\Models\ProspectEngagementEvent;
 use App\Models\ProspectOutreachDelivery;
 use App\Models\User;
 
-it('keeps daily priorities on the dashboard and moves lead queues into temperature tabs', function (): void {
+it('keeps all prospects on the dashboard alongside dedicated lead queue tabs', function (): void {
     $this->travelTo('2026-08-28 10:35:00 Europe/London');
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     $warm = Prospect::factory()->for($admin, 'owner')->create(['business_name' => 'Warm Roofing', 'lead_temperature' => 'warm']);
@@ -31,9 +31,9 @@ it('keeps daily priorities on the dashboard and moves lead queues into temperatu
         ->assertSee('Today’s priorities')
         ->assertSee('Hot Leads')
         ->assertSee('Warm Leads')
-        ->assertDontSee('Warm Roofing')
+        ->assertSee('Warm Roofing')
         ->assertSee('Recent Replies')
-        ->assertDontSee('Reply Plumbing')
+        ->assertSee('Reply Plumbing')
         ->assertSee('automatically followed up today')
         ->assertSee('moved to nurture today');
 
@@ -69,7 +69,7 @@ it('shows hot leads in their own tab', function (): void {
     $this->actingAs($admin)->get(route('admin.prospects.index'))
         ->assertSuccessful()
         ->assertDontSee('Needs Personalised Video')
-        ->assertDontSee('Hot Electric');
+        ->assertSee('Hot Electric');
 
     $this->actingAs($admin)->get(route('admin.prospects.index', ['tab' => 'hot']))
         ->assertSuccessful()
@@ -116,13 +116,13 @@ it('paginates prospect summaries without sorting research payloads', function ()
         'findings' => ['evidence' => str_repeat('Research evidence ', 20000)],
         'outreach_body' => str_repeat('Draft email ', 20000),
     ]);
-    Prospect::factory()->for($admin, 'owner')->create(['lead_temperature' => 'hot']);
-    $expectedIds = $prospects->sortByDesc('id')->modelKeys();
+    $hot = Prospect::factory()->for($admin, 'owner')->create(['lead_temperature' => 'hot']);
+    $expectedIds = [$hot->id, ...$prospects->sortByDesc('id')->modelKeys()];
 
     $this->actingAs($admin)->get(route('admin.prospects.index'))
         ->assertSuccessful()
         ->assertViewHas('prospects', function ($page) use ($expectedIds): bool {
-            return $page->total() === 21
+            return $page->total() === 22
                 && $page->getCollection()->modelKeys() === array_slice($expectedIds, 0, 20)
                 && ! array_key_exists('findings', $page->first()->getAttributes())
                 && ! array_key_exists('outreach_body', $page->first()->getAttributes());
@@ -132,3 +132,23 @@ it('paginates prospect summaries without sorting research payloads', function ()
         ->assertSuccessful()
         ->assertViewHas('prospects', fn ($page): bool => $page->getCollection()->modelKeys() === array_slice($expectedIds, 20));
 });
+
+it('finds contacted and replied prospects in the main list regardless of temperature', function (string $temperature, string $status): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $prospect = Prospect::factory()->for($admin, 'owner')->create([
+        'business_name' => 'Find This Lead',
+        'email' => 'find-me@example.com',
+        'lead_temperature' => $temperature,
+        'status' => $status,
+    ]);
+    if ($status === 'replied') {
+        $prospect->outreachState()->update(['lifecycle_state' => ProspectLifecycleState::Replied]);
+    }
+
+    foreach ([[], ['search' => 'find-me@example.com'], ['status' => $status]] as $filters) {
+        $this->actingAs($admin)->get(route('admin.prospects.index', $filters))
+            ->assertSuccessful()
+            ->assertViewHas('prospects', fn ($prospects): bool => $prospects->pluck('id')->all() === [$prospect->id])
+            ->assertSee('name="temperature" value=""', false);
+    }
+})->with(['cold', 'warm', 'hot'])->with(['contacted', 'replied']);
