@@ -229,3 +229,50 @@ Acceptance steps:
 Rollback uses a code deployment restoring the previous connection behaviour; there is no connection environment toggle. Already saved repository connections remain unless explicitly disconnected.
 
 Isolated customer-code execution, paid model benchmarking and SDK pull-request publishing remain future milestones. The agency marketing work on main should be revisited after this Copilot milestone.
+
+## Implementation progress — constrained live repository test
+
+The first repository test is now available as an operator command, `copilot-sdk:test-repository`. It does not change the engine used by the Content workspace or audit buttons. The approved live target is `sitewellross/test`, with `index.html`'s title changed to `Sitewell SDK test`.
+
+This slice deliberately does not execute repository code. It reads one existing regular `.html` Git blob (at most 8 KB) at a captured commit, exposes that document through three in-memory SDK tools, and independently validates the exact title-only replacement in PHP before publishing. Symlinks, submodules, traversal, incomplete trees and files outside the connected project directory are rejected. The pinned SDK starts in empty mode without ambient GitHub authentication, built-in tools or repository instructions. Docker is not needed for this constrained test; this is **not** proof of an OS sandbox or support for arbitrary coding/build tasks.
+
+A separate GitHub publisher rechecks the requesting admin's live repository access and connection identity, obtains a repository-scoped installation token, writes a dedicated branch and opens a **draft PR**. It never merges or updates the default branch. The base tree is preserved; only the approved file is replaced. Model credentials and GitHub credentials are not provided to repository tools. Each run records the snapshot, exact change, reported token usage, branch, commit and PR URL in `copilot_sdk_test_runs`; file snapshots are encrypted. Token counts are reactive limits, not a guaranteed monetary cap. Set an appropriate spend limit with the chosen model provider.
+
+Publication can be resumed by run UUID after network errors without another SDK/model call. Existing branch heads must match the persisted commit; changed branches are never overwritten. An advanced base branch blocks new publication. A previously created PR can still be reconciled. If the SDK run itself fails, it is not automatically retried or sent to the hosted engine.
+
+### Forge preparation
+
+The production connection lives on Forge; no live repository/model acceptance test has been run from the local workspace. Run these in the deployed Sitewell application directory, with Node 22.12+ and PHP 8.4:
+
+```sh
+php artisan migrate --force --no-interaction
+npm ci --prefix resources/copilot-worker --ignore-scripts
+```
+
+Configure the existing SDK settings securely in Forge: `COPILOT_SDK_ENABLED=true`, `COPILOT_SDK_PROVIDER` (`anthropic` or `openai`), `COPILOT_SDK_MODEL`, and `COPILOT_SDK_API_KEY`. These are worker/model settings, not per-user or per-website rollout flags. Never paste the API key into a command or commit it. Refresh cached configuration using the site's normal deployment process.
+
+Verify the runtime without a paid model request:
+
+```sh
+php artisan copilot-sdk:verify --probe
+```
+
+Replace `WEBSITE_ID` and `ADMIN_ID` with the connected test website and the Sitewell admin who completed GitHub consent. The readiness command verifies access and the file without a paid SDK call or repository write:
+
+```sh
+php artisan copilot-sdk:test-repository WEBSITE_ID --user=ADMIN_ID
+```
+
+The defaults are `--path=index.html` and `--title='Sitewell SDK test'`. Once ready, the explicit publish option runs the paid SDK test and opens the draft PR:
+
+```sh
+php artisan copilot-sdk:test-repository WEBSITE_ID --user=ADMIN_ID --publish
+```
+
+Review the printed PR URL and confirm the diff contains only the title. No merge is required to verify the SDK integration. If publishing is interrupted, use the printed run UUID:
+
+```sh
+php artisan copilot-sdk:test-repository WEBSITE_ID --user=ADMIN_ID --resume=RUN_UUID --publish
+```
+
+Automated verification covers the real bundled SDK against a local model stub, restricted tools, independent output validation, access revocation, stale bases, scoped tokens and unknown PR outcomes. A successful model-stub test is not a paid model benchmark. Disposable execution hosting, shell/build support, website UI controls and general remediation/content integration remain subsequent work.

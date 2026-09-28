@@ -128,3 +128,36 @@ test('SDK adapter isolates runtime state, disables ambient auth and exposes only
     assert.equal(stopped, true);
     assert.equal(existsSync(options.workingDirectory), false);
 });
+
+const repositoryRequest = () => ({ ...request('live'), fixture: 'repository-title', document: { path: 'public/index.html', original: '<title>Old</title><p>Keep every byte</p>', title: 'Sitewell & SDK test' } });
+
+test('repository document tools edit only the approved in-memory document', async () => {
+    const input = repositoryRequest();
+    const result = await runFixture(input, { env, adapterFactory: async () => ({
+        run: async ({ tools }) => {
+            assert.throws(() => tools[0].handler({ path: '/etc/passwd' }), /path_not_allowed/);
+            const content = tools[0].handler({ path: input.document.path });
+            tools[1].handler({ path: input.document.path, content: content.replace('Old', 'Sitewell &amp; SDK test') });
+        }, close: async () => {},
+    }) });
+    assert.equal(result.status, 'validated');
+    assert.deepEqual(result.changes, [{ path: input.document.path, before: input.document.original, after: '<title>Sitewell &amp; SDK test</title><p>Keep every byte</p>' }]);
+});
+
+test('repository contract rejects simulation, traversal, invalid documents and extra parameters', () => {
+    const input = repositoryRequest();
+    for (const changes of [{ mode: 'dry-run' }, { mode: 'probe' }, { document: { ...input.document, path: '../index.html' } },
+        { document: { ...input.document, original: 'a'.repeat(8193) } }, { document: { ...input.document, original: '<title>One</title><title>Two</title>' } },
+        { document: { ...input.document, command: 'sh' } }, { document: { ...input.document, title: '' } }]) {
+        assert.throws(() => validateRequest({ ...input, ...changes }));
+    }
+});
+
+test('repository output cannot pass by claiming success or editing other content', async () => {
+    const input = repositoryRequest();
+    const result = await runFixture(input, { env, adapterFactory: async () => ({
+        run: async ({ tools }) => tools[1].handler({ path: input.document.path, content: '<title>Sitewell &amp; SDK test</title><script>bad()</script>' }),
+        close: async () => {},
+    }) });
+    assert.equal(result.status, 'validation_failed');
+});

@@ -1,11 +1,12 @@
 import { WorkerError } from './contract.mjs';
 
-const original = '<!doctype html>\n<html><head><title>Home</title></head><body><h1>Acme Plumbing</h1></body></html>\n';
-const expected = original.replace('<title>Home</title>', '<title>Acme Plumbing | Doncaster</title>');
-
 export const prompt = 'Use sitewell_fixture_read to inspect index.html. Replace only its title with Acme Plumbing | Doncaster using sitewell_fixture_write. Preserve every other byte. Use sitewell_fixture_check to verify the result. Do not use other tools.';
 
-export function createFixture(maxToolCalls, signal) {
+export function createFixture(maxToolCalls, signal, document) {
+    const original = document?.original ?? '<!doctype html>\n<html><head><title>Home</title></head><body><h1>Acme Plumbing</h1></body></html>\n';
+    const path = document?.path ?? 'index.html';
+    const title = (document?.title ?? 'Acme Plumbing | Doncaster').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+    const expected = original.replace(/<title>[^<]*<\/title>/, () => `<title>${title}</title>`);
     let content = original;
     let calls = 0;
     const guard = (args, keys) => {
@@ -13,20 +14,20 @@ export function createFixture(maxToolCalls, signal) {
         if (++calls > maxToolCalls) throw new WorkerError('tool_limit');
         if (!args || Object.keys(args).some(key => !keys.includes(key))) throw new WorkerError('invalid_tool_arguments');
     };
-    const checkPath = path => {
-        if (path !== 'index.html') throw new WorkerError('path_not_allowed');
+    const checkPath = requestedPath => {
+        if (requestedPath !== path) throw new WorkerError('path_not_allowed');
     };
     const verification = () => ({ name: 'title-only-change', passed: content === expected });
     return {
         tools: [
             {
-                name: 'sitewell_fixture_read', skipPermission: true, defer: 'never', description: 'Read the synthetic index.html file.',
-                parameters: { type: 'object', properties: { path: { type: 'string', enum: ['index.html'] } }, required: ['path'], additionalProperties: false },
+                name: 'sitewell_fixture_read', skipPermission: true, defer: 'never', description: 'Read the approved HTML document held in memory.',
+                parameters: { type: 'object', properties: { path: { type: 'string', enum: [path] } }, required: ['path'], additionalProperties: false },
                 handler: args => { guard(args, ['path']); checkPath(args.path); return content; },
             },
             {
-                name: 'sitewell_fixture_write', skipPermission: true, defer: 'never', description: 'Replace the synthetic index.html contents.',
-                parameters: { type: 'object', properties: { path: { type: 'string', enum: ['index.html'] }, content: { type: 'string', maxLength: 8192 } }, required: ['path', 'content'], additionalProperties: false },
+                name: 'sitewell_fixture_write', skipPermission: true, defer: 'never', description: 'Replace the approved HTML document held in memory.',
+                parameters: { type: 'object', properties: { path: { type: 'string', enum: [path] }, content: { type: 'string', maxLength: 8192 } }, required: ['path', 'content'], additionalProperties: false },
                 handler: args => {
                     guard(args, ['path', 'content']); checkPath(args.path);
                     if (typeof args.content !== 'string' || Buffer.byteLength(args.content) > 8192) throw new WorkerError('file_limit');
@@ -42,7 +43,7 @@ export function createFixture(maxToolCalls, signal) {
         ],
         result: () => ({
             verification: [verification()],
-            changes: content === original ? [] : [{ path: 'index.html', before: original, after: content }],
+            changes: content === original ? [] : [{ path, before: original, after: content }],
             toolCalls: calls,
         }),
     };

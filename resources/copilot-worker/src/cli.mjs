@@ -9,7 +9,7 @@ try {
     let input = '';
     for await (const chunk of process.stdin) {
         input += chunk;
-        if (Buffer.byteLength(input) > 4096) throw new WorkerError('input_limit');
+        if (Buffer.byteLength(input) > 65536) throw new WorkerError('input_limit');
     }
     const result = await runFixture(JSON.parse(input), { signal: controller.signal });
     process.stdout.write(`${JSON.stringify(result)}\n`);

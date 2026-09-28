@@ -12,8 +12,23 @@ export class WorkerError extends Error {
 export function validateRequest(request) {
     if (!request || request.protocolVersion !== protocolVersion
         || !/^[a-f0-9-]{36}$/i.test(request.runId ?? '')
-        || request.fixture !== fixtureName || !modes.includes(request.mode)
-        || Object.keys(request).some(key => !['protocolVersion', 'runId', 'fixture', 'mode', 'limits'].includes(key))) {
+        || ![fixtureName, 'repository-title'].includes(request.fixture) || !modes.includes(request.mode)
+        || Object.keys(request).some(key => !['protocolVersion', 'runId', 'fixture', 'mode', 'limits', 'document'].includes(key))) {
+        throw new WorkerError('invalid_request');
+    }
+
+    if (request.fixture === 'repository-title') {
+        const document = request.document;
+        if (request.mode !== 'live' || !document
+            || Object.keys(document).some(key => !['path', 'original', 'title'].includes(key))
+            || !/^(?:[a-zA-Z0-9_-]+\/)*[a-zA-Z0-9_-]+\.html$/.test(document.path ?? '')
+            || typeof document.original !== 'string' || Buffer.byteLength(document.original) > 8192
+            || (document.original.match(/<title>[^<]*<\/title>/g) ?? []).length !== 1
+            || typeof document.title !== 'string' || !document.title.trim() || document.title.length > 200
+            || /[\x00-\x1f\x7f]/.test(document.title)) {
+            throw new WorkerError('invalid_document');
+        }
+    } else if (request.document !== undefined) {
         throw new WorkerError('invalid_request');
     }
 
