@@ -13,3 +13,6 @@ The pinned Copilot runtime reports OpenAI inputTokens inclusive of cacheReadToke
 
 ## Use a compact title argument for the SDK smoke test
 The title-only worker write tool takes the approved plain-text title, not a regenerated HTML document. Trusted code escapes and replaces the title while PHP independently validates the full result before publishing. This tests SDK tool dispatch and the draft PR pipeline, not general-purpose model-authored code editing; do not expand its scope implicitly.
+
+## Run general SDK repository work on a separate worker
+Ross chose a separate worker server for general SDK content/build execution, away from the production Sitewell Forge app. Digizu (rosstopping/digizu) is the first intended content-queue pilot; the title-only UI does not enable it. Provision and verify isolation before switching that website’s engine. Resume context and rollout steps are in docs/copilot-sdk-repository-plan.md.

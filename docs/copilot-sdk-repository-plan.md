@@ -1,8 +1,42 @@
 # Customer-owned repositories with Copilot SDK
 
-Status: fixture runner and customer GitHub connection flow implemented and tested locally; live external-account acceptance, real-model benchmark, isolated repository execution and PR publishing remain pending.
+Status: paused at Ross’s request on 28 September 2026. Production title-only SDK execution and draft PR publishing work, including the admin Content workspace. General content-queue execution and a separate isolated worker remain to implement.
 Date: 28 September 2026.
-Branch: `feature/copilot-sdk-repositories`.
+Branch: `main` (SDK pilot merged and pushed; latest implementation commit `3343091`).
+
+## Resume here — 29 September 2026
+
+Ross chose a **separate worker server** for general repository execution. No worker has been provisioned, and nothing was installed on the production Forge server. Pause work until Ross resumes tomorrow; no paid runs or queue switch have been requested in the meantime.
+
+### Confirmed working
+
+- GitHub App: DigizuAudit. Customer-connected repository: `sitewellross/test`.
+- Production run `04fe95ac-b1d7-4362-ab2e-8ecd36b18834` passed independent title-only validation and opened https://github.com/sitewellross/test/pull/1. Reported usage: 3,064 input / 631 output tokens (3,695 total). PR merge/deployment has not been confirmed.
+- OpenAI uses the existing `OPENAI_API_KEY` fallback with `COPILOT_SDK_PROVIDER=openai`; the advised model is `gpt-5-mini`. The production pilot used a 120-second timeout. Do not request or copy API keys into notes.
+- OpenAI cached input was previously counted twice; fixed in `c2dd5e9`. Full-file regeneration was replaced by a compact, approved title argument in `398afee`. Keep the 30,000-token limit; do not raise it to hide inefficient execution.
+- Admin-only **Content → SDK test** shipped in `3343091`. Ross confirmed it works. It queues a title change, shows progress/usage/errors/PR links, blocks duplicate active work, and retries publishing from saved validated output without another model call. Validation: 93 PHP tests and frontend build passed.
+- This is a constrained in-memory title tool, not general model-authored repository editing. Existing content automation still uses hosted GitHub Copilot.
+
+### First content-queue pilot
+
+- Ross wants **digizu.co.uk** to use the SDK for queued content instead of his hosted GitHub Copilot.
+- Local connection lookup identifies `rosstopping/digizu` (local website ID 1, no project subdirectory). Verify production identity rather than assuming the same database ID.
+- The repository was inspected read-only via GitHub. Its build script runs sitemap generation, Tailwind, `static build`, and `python3 scripts/check_site.py`. Determine how the `static` executable is provisioned before defining the worker image; it is not listed in the inspected package.json devDependencies.
+- Local content-request data is historical and already picked up; the current production queue has **not** been inspected. Ross still runs Forge commands manually; this session has no Forge/SSH connection.
+- Forge reported `docker: command not found`. Installing Docker alone would not supply the missing general content runner. Ross agreed to a separate worker rather than installing execution tooling on the production application server.
+- **Digizu has not been switched to the SDK.** No website setting, schedule, queue item, or repository content was changed during this investigation.
+
+### Start tomorrow
+
+1. Agree the separate worker host/provider and provision it. Give concrete setup steps after its OS and access method are known; no new provider/dependency has been selected or purchased.
+2. Implement and verify disposable workspaces, resource/time limits, cleanup and restricted credential access. Keep Sitewell/GitHub publishing credentials outside repository build processes. Rootless Docker was discussed as an option, not configured or proven.
+3. Add the full SDK content runner: repository inspection/editing, Digizu’s build/check tooling, patch validation, usage reporting, cancellation/failure handling, and controlled draft PR publishing. Reuse current request selection, prompt/evidence, SEO protections and history.
+4. Add an explicit admin-controlled per-website engine selection and snapshot it per run. Pilot on Digizu only; preserve hosted Copilot elsewhere. Never silently fall back or replay a failed paid run.
+5. Inspect the production queue and test one selected request manually through to a draft PR. Verify the diff, checks and cost before enabling scheduled SDK content runs.
+
+## Original plan and implementation history
+
+The sections below record the earlier design and implementation stages. The resume note above supersedes older pending-status statements.
 
 ## Outcome
 
