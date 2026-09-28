@@ -12,8 +12,8 @@
                 <p class="mt-6 max-w-[48ch] text-pretty text-lg text-ink/65 sm:text-base">Tell us about your business and your website. One of our specialists will assess what needs attention and explain how we can manage its website health, SEO, and enquiries for you.</p>
                 <div class="mt-8 border-y border-ink/15 py-5">
                     <p class="font-mono text-sm uppercase tracking-wide text-garden">Prefer to talk?</p>
-                    <a href="tel:+441484501086" class="group mt-3 inline-flex items-center gap-3 focus-visible:outline-offset-4">
-                        <p class="font-display text-3xl font-semibold tracking-tight tabular-nums underline decoration-ink/20 underline-offset-8 group-hover:decoration-ink sm:text-4xl">01484 501 086</p>
+                    <a href="tel:+441302248374" class="group mt-3 inline-flex items-center gap-3 focus-visible:outline-offset-4">
+                        <p class="font-display text-3xl font-semibold tracking-tight tabular-nums underline decoration-ink/20 underline-offset-8 group-hover:decoration-ink sm:text-4xl">01302 248 374</p>
                         <span class="text-garden" aria-hidden="true">→</span>
                     </a>
                     <p class="mt-3 text-pretty text-base text-ink/55 sm:text-sm">Call our UK team for a straightforward conversation about your website.</p>

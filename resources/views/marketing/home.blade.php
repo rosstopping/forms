@@ -102,7 +102,7 @@
                 <p class="mt-4 max-w-[52ch] text-pretty text-base leading-7 text-ink/75">Tell me about your business and your website. We’ll work out what needs doing.</p>
                 <div class="mt-6 flex flex-wrap items-center gap-6 font-medium">
                     <a href="{{ config('marketing.booking_url') }}" class="inline-flex min-h-12 items-center underline decoration-ink/30 underline-offset-4 hover:decoration-ink">Book a call with Ross →</a>
-                    <a href="tel:+441484501086" class="inline-flex min-h-12 items-center tabular-nums underline decoration-ink/30 underline-offset-4 hover:decoration-ink">01484 501 086</a>
+                    <a href="tel:+441302248374" class="inline-flex min-h-12 items-center tabular-nums underline decoration-ink/30 underline-offset-4 hover:decoration-ink">01302 248 374</a>
                 </div>
             </div>
         </div>
