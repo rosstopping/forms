@@ -199,7 +199,7 @@ it('keeps forms and submissions inside the website workspace', function (): void
         ->assertSee('data-tab-panel="content"', false)
         ->assertDontSee('Connect GitHub')
         ->assertDontSee('href="'.route('admin.github.connect', $website).'"', false)
-        ->assertSee('Content queue')
+        ->assertSee('Content connections')
         ->assertSee('href="'.route('admin.websites.section', [$website, 'forms']).'"', false)
         ->assertSee('aria-label="Website sections"', false)
         ->assertSee('data-tab-panel="health"', false)

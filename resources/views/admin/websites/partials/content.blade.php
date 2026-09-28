@@ -15,9 +15,13 @@
     $canSubmitContentRequest = $website->repository || (config('forms.pixel_ui_enabled') && $website->pixel_enabled);
 @endphp
 <div id="website-panel-content" class="space-y-6" role="region" aria-labelledby="website-tab-content" data-tab-panel="content" @if ($currentWebsiteSection !== 'content') hidden @endif>
-    @unless ($canUseGrowthFeatures)
+    @if (! $canUseGrowthFeatures)
         <x-feature-upgrade-banner tier="Growth" title="Plan and request new content" description="Upgrade to Growth to submit content requests, plan improvements, and prepare reviewable website changes." />
         @include('admin.websites.partials.content-preview')
+    @elseif (! $hasContentDeliveryConnection)
+        <div class="space-y-5">
+            @include('admin.websites.partials.content-connections')
+        </div>
     @else
         <header class="flex flex-wrap items-start justify-between gap-4">
             <div class="min-w-0"><h2 class="text-xl font-semibold text-balance text-slate-950">Content workspace</h2><p class="mt-1 text-base text-pretty text-slate-600 sm:text-sm">Plan the work, follow its progress, and review changes before they go live.</p></div>
@@ -38,9 +42,6 @@
             </div>
         </nav>
         <div id="content-section-queue" role="region" aria-labelledby="content-section-tab-queue" @if ($currentContentSection !== 'queue') hidden @endif>
-            @if (! $hasContentDeliveryConnection)
-                <div class="mb-5 rounded-lg border border-amber-950/10 bg-amber-50 p-4"><p class="font-medium text-amber-950">Set up your content connection</p><p class="mt-1 text-base text-pretty text-amber-900 sm:text-sm">Choose Sitewell Pixel, WordPress, or GitHub to prepare website changes. <a href="{{ route('admin.websites.section', [$website, 'content', 'content_section' => 'connections']) }}" class="font-medium underline">View setup options</a> or <a href="{{ $contentSupportCallUrl }}" target="_blank" rel="noreferrer" class="font-medium underline">book a call with support</a>.</p></div>
-            @endif
             @include('admin.websites.partials.content-queue')
         </div>
         <div id="content-section-activity" role="region" aria-labelledby="content-section-tab-activity" @if ($currentContentSection !== 'activity') hidden @endif>
@@ -54,5 +55,5 @@
         <div id="content-section-connections" class="space-y-5" role="region" aria-labelledby="content-section-tab-connections" @if ($currentContentSection !== 'connections') hidden @endif>
             @include('admin.websites.partials.content-connections')
         </div>
-    @endunless
+    @endif
 </div>

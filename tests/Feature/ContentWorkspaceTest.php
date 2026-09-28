@@ -23,6 +23,22 @@ function contentWorkspaceDocument(string $html): DOMXPath
     return new DOMXPath($document);
 }
 
+test('unconnected websites show only connection setup for every content section', function (string $section, string $role) {
+    $this->website->repository()->delete();
+    $this->owner->update(['role' => $role]);
+
+    $response = $this->get($this->contentUrl.'?content_section='.$section)->assertSuccessful()
+        ->assertSee('Choose how Sitewell prepares website changes')
+        ->assertSee('Book a call with support')
+        ->assertDontSee('Content workspace')
+        ->assertDontSee('Waiting in the queue')
+        ->assertDontSee('Set up your content connection');
+
+    $xpath = contentWorkspaceDocument($response->getContent());
+    expect($xpath->query('//*[@id="content-connection-title" and not(ancestor::*[@hidden])]')->length)->toBe(1)
+        ->and($xpath->query('//*[starts-with(@id, "content-section-")]')->length)->toBe(0);
+})->with(['queue', 'activity', 'automation', 'connections'])->with([User::ROLE_ADMIN, User::ROLE_USER]);
+
 test('content opens the queue first and keeps settings and history out of the visible layout', function () {
     $response = $this->get($this->contentUrl)->assertSuccessful();
     $xpath = contentWorkspaceDocument($response->getContent());
