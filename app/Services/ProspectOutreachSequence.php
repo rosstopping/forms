@@ -18,6 +18,7 @@ class ProspectOutreachSequence
         private ProspectOutreachSender $sender,
         private ProspectManualFollowUpAdvisor $manualFollowUpAdvisor,
         private ProspectLifecycleManager $lifecycleManager,
+        private ProspectOutreachContent $content,
     ) {}
 
     public function evaluate(Prospect $prospect): void
@@ -96,17 +97,14 @@ class ProspectOutreachSequence
         ProspectOutreachMessageType $messageType,
         ProspectSequenceStep $sequenceStep,
     ): void {
-        $template = config('outreach.templates.'.$messageType->value, []);
-        $subject = filled($template['subject'] ?? null) ? (string) $template['subject'] : (string) $prospect->outreach_subject;
-        $configuredBody = $template['body'] ?? null;
-        $body = filled($configuredBody) ? $this->renderTemplate((string) $configuredBody, $prospect) : (string) $prospect->outreach_body;
+        $message = $this->content->followUp($prospect, $messageType);
         $attempt = $state->follow_up_attempts + 1;
 
         $delivery = $this->sender->sendAutomated(
             $prospect,
             $messageType,
-            $subject,
-            $body,
+            $message['subject'],
+            $message['body'],
             'prospect:'.$prospect->getKey().':'.$messageType->value.':'.$attempt,
         );
 
@@ -149,13 +147,5 @@ class ProspectOutreachSequence
             ProspectSequenceStep::ColdFollowUp,
             ProspectSequenceStep::FinalFollowUp,
         ], true);
-    }
-
-    private function renderTemplate(string $template, Prospect $prospect): string
-    {
-        return strtr($template, [
-            '{contact_name}' => filled($prospect->contact_name) ? $prospect->contact_name : 'there',
-            '{company_name}' => $prospect->business_name,
-        ]);
     }
 }

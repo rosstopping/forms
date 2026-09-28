@@ -48,6 +48,10 @@ return [
             'subject' => null,
             'body' => null,
         ],
+        'cold_follow_up_with_video' => [
+            'subject' => null,
+            'body' => "Hi there,\n\nJust checking you got my last email and had a chance to watch the quick video.\n\nLet me know what you think!\n\nCheers,\nRoss",
+        ],
         'final_follow_up' => [
             'subject' => null,
             'body' => "Hi {contact_name},\n\nJust wanted to quickly follow up on the website audit I sent over.\n\nNo worries if the timing is not right.\n\nCheers,\nRoss",

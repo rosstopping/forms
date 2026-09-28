@@ -1,6 +1,63 @@
 # Outreach Automation Progress
 
-Last updated: 24 August 2026
+Last updated: 28 September 2026
+
+## Current operator workflow (28 September 2026)
+
+This section supersedes historical phase descriptions below, especially Phase 6's automatic post-video email.
+
+The prospect workspace has four sections: **Emails & schedule** (drafting, testing, approval, scheduling and message previews), **Prospect & research** (contacts, notes and audit evidence), **Activity** (delivery/engagement history), and **Controls** (pause, resume, outcomes, future opportunities, score corrections and deletion).
+
+### Initial outreach and cold follow-ups
+
+| Step | Timing | Message |
+| --- | --- | --- |
+| Initial email | Explicit admin send or an approved schedule | The saved subject/body. Optional video; opt-in available site audit immediately after the video; contact block when a video is included; compact Digizu footer. |
+| First follow-up | 4 days after successful initial delivery by default | If the **sent initial delivery** has a video tracking link, use the video reminder below. Otherwise reuse the saved initial subject/body. |
+| Final follow-up | 6 days after successful first follow-up by default | Configured final message referring to the website audit and saying there is no problem if the timing is wrong. |
+| Completion check | 6 days after the final follow-up by default | No email. Mark the cold sequence exhausted. |
+
+The video reminder is:
+
+> Hi there,
+>
+> Just checking you got my last email and had a chance to watch the quick video.
+>
+> Let me know what you think!
+>
+> Cheers,
+> Ross
+
+The subject remains the saved initial subject unless a template overrides it. The video condition uses the first successfully sent initial delivery and its snapshotted `showcase_video` link, **not** the current editable URL, a test, a failed send, or a later personalised-video email. Legacy sends without that evidence use the non-video fallback. Before the initial send, the page previews the choice from the saved draft and labels it as a draft.
+
+Follow-up bodies and subjects come from the same resolver used by the sender and prospect page. Sent emails and reserved delivery messages display their saved subject/body; draft edits never rewrite their history. Follow-up blocks currently include an available video, contact block, an available audit and Digizu footer. The initial-email audit checkbox only controls the initial email. The final template still mentions an audit; review this wording for prospects without an audit.
+
+The delays and maximum two automatic follow-up attempts are configurable in `config/outreach.php`. The page reads this configuration. An exact UK timestamp is shown only for a recorded send/schedule or the current due action; subsequent steps show relative, conditional timing. Queue delays can postpone delivery. A completion check must never be labelled as another email.
+
+### Eligibility, approval and tests
+
+- Save the draft before testing or approving it. Changing initial copy, video URL or audit inclusion clears approval and the initial schedule.
+- Admin tests use direct links and go only to the acting admin; they do not create live deliveries, affect scores or advance the sequence.
+- Automatic cold follow-ups require approval, an eligible recipient and active automation. Suppression, a recorded reply, stopped/terminal outcomes, meaningful engagement, the global follow-up switch and attempt limits prevent sends.
+- Meaningful engagement pauses cold advancement at the configured warm threshold (currently 3 points). Hot prospects enter the manual personalised-video queue. Opens are weak signals; scored clicks provide stronger evidence.
+- Replies must be recorded in Sitewell to stop the sequence. Use **Mark replied** if a mailbox reply has not been recorded automatically.
+- **Pause automation** is temporary. **Stop outreach** and outcome actions stop normal outreach. **Contact later** stores a future opportunity date without restarting emails automatically.
+- The reference follow-up date in prospect details is not the automatic schedule. The authoritative next action is shown under Emails & schedule.
+- The existing manual resend of an approved initial draft remains available when due. It is distinct from the automatic follow-up and resets the next evaluation to the initial delay.
+
+### Separate personalised-video workflow
+
+A video included in the initial email does not change that email into the separate personalised-video action. The latter remains operator-initiated from the hot-lead form and pauses cold follow-ups.
+
+Save a separate video draft, send yourself a test, then explicitly send or schedule it. Saving/testing never changes a reserved scheduled video. The scheduled delivery snapshot is what will send; scheduling again replaces it, while Send video now sends immediately. Approval and suppression/terminal safeguards still apply, although the paused cold sequence does not itself block an explicitly scheduled video.
+
+After successful personalised-video delivery, both next-action dates are cleared. **No automatic post-video email is sent**, including legacy due actions. Positive scored clicks can immediately recommend a manual follow-up; engagement tracking continues. Historical post-video deliveries are retained.
+
+### Operational notes
+
+The scheduler runs `outreach:dispatch-due`; unique evaluation jobs and delivery idempotency keys prevent repeated automatic messages. Eligibility is checked again at send time. Use the message previews and activity history to distinguish drafts, future conditional steps, scheduled reservations, successful sends and failures.
+
+The 28 September migration adding `prospects.include_site_audit` must be deployed with the email checkbox changes. Production needs the current code, compiled assets, refreshed configuration and restarted long-running queue workers to use the updated sequence.
 
 ## Status
 

@@ -83,19 +83,19 @@ it('shows a detailed queryable activity timeline', function (): void {
     $prospect = Prospect::factory()->for($admin, 'owner')->create();
     $prospect->recordActivity('engagement_score_changed', 'Engagement score changed from 1 to 6.');
 
-    $this->actingAs($admin)->get(route('admin.prospects.show', $prospect))
+    $this->actingAs($admin)->get(route('admin.prospects.show', [$prospect, 'section' => 'activity']))
         ->assertSuccessful()
         ->assertSee('Activity timeline')
         ->assertSee('Engagement Score Changed')
         ->assertSee('Engagement score changed from 1 to 6.')
-        ->assertSee($prospect->activities()->latest()->first()->created_at->format('j M Y, H:i'));
+        ->assertSee($prospect->activities()->latest()->first()->created_at->setTimezone('Europe/London')->format('j M Y, H:i'));
 });
 
-it('explains lifecycle controls and places website opportunities last in a collapsed panel', function (): void {
+it('separates lifecycle controls from collapsed website research', function (): void {
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     $prospect = Prospect::factory()->for($admin, 'owner')->create();
 
-    $this->actingAs($admin)->get(route('admin.prospects.show', $prospect))
+    $this->actingAs($admin)->get(route('admin.prospects.show', [$prospect, 'section' => 'controls']))
         ->assertSuccessful()
         ->assertSee('Temporarily prevents scheduled sequence actions')
         ->assertSee('Restarts due sequence actions')
@@ -103,9 +103,10 @@ it('explains lifecycle controls and places website opportunities last in a colla
         ->assertSee('Records a reply, cancels future automated messages')
         ->assertSee('It will not automatically restart outreach')
         ->assertSee('Add or subtract points to correct the automated score')
-        ->assertSee('Returns the score to zero')
-        ->assertSee('<details', false)
-        ->assertSeeInOrder(['Activity timeline', 'Website opportunities']);
+        ->assertSee('Returns the score to zero');
+
+    $this->get(route('admin.prospects.show', [$prospect, 'section' => 'details']))
+        ->assertSuccessful()->assertSee('<details', false)->assertSee('Website opportunities');
 });
 
 it('paginates prospect summaries without sorting research payloads', function (): void {

@@ -252,12 +252,12 @@ it('shows email engagement timing and clicked destinations on the outreach lead'
         'click_count' => 1,
     ]);
 
-    $this->actingAs($admin)->get(route('admin.prospects.show', $prospect))
+    $this->actingAs($admin)->get(route('admin.prospects.show', [$prospect, 'section' => 'activity']))
         ->assertSuccessful()
         ->assertSee('Hot lead')
         ->assertSee('Email engagement')
-        ->assertSee('18 Aug 2026, 09:15')
-        ->assertSee('18 Aug 2026, 09:20')
+        ->assertSee('18 Aug 2026, 10:15')
+        ->assertSee('18 Aug 2026, 10:20')
         ->assertSee('Website video');
 });
 

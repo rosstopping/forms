@@ -86,7 +86,7 @@ it('allows an administrator to delete a prospect after confirmation in the inter
     $user = User::factory()->create(['role' => User::ROLE_ADMIN]);
     $prospect = Prospect::factory()->for($user, 'owner')->create();
 
-    $this->actingAs($user)->get(route('admin.prospects.show', $prospect))
+    $this->actingAs($user)->get(route('admin.prospects.show', [$prospect, 'section' => 'controls']))
         ->assertSuccessful()
         ->assertSee('Delete this prospect?')
         ->assertSee('data-confirm-action-form', false)
@@ -112,7 +112,7 @@ it('shows discovered public contact details with their source', function () {
         ],
     ]);
 
-    $this->actingAs($user)->get(route('admin.prospects.show', $prospect))
+    $this->actingAs($user)->get(route('admin.prospects.show', [$prospect, 'section' => 'details']))
         ->assertSuccessful()
         ->assertSee('Public contact details')
         ->assertSee('hello@example.com')
