@@ -26,8 +26,8 @@ class SendProspectPersonalisedVideoRequest extends FormRequest
             'video_url' => ['required', 'url:http,https', 'max:2048'],
             'subject' => ['required', 'string', 'max:255'],
             'body' => ['required', 'string', 'max:10000'],
-            'action' => ['required', Rule::in(['send_now', 'schedule'])],
-            'scheduled_send_at' => ['nullable', Rule::requiredIf($this->string('action')->toString() === 'schedule'), 'date', 'after:now'],
+            'action' => ['required', Rule::in(['save_draft', 'send_test', 'send_now', 'schedule'])],
+            'scheduled_send_at' => ['exclude_unless:action,schedule', 'required', 'date', 'after:now'],
         ];
     }
 }

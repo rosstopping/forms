@@ -257,7 +257,7 @@ it('shows email engagement timing and clicked destinations on the outreach lead'
         ->assertSee('Website video');
 });
 
-it('shows hot leads first and supports filtering by engagement', function (): void {
+it('separates cold warm and hot prospects into their outreach tabs', function (): void {
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     Prospect::factory()->for($admin, 'owner')->create(['business_name' => 'Cold Prospect', 'lead_temperature' => 'cold']);
     Prospect::factory()->for($admin, 'owner')->create(['business_name' => 'Warm Prospect', 'lead_temperature' => 'warm']);
@@ -266,9 +266,17 @@ it('shows hot leads first and supports filtering by engagement', function (): vo
     $this->actingAs($admin)->get(route('admin.prospects.index'))
         ->assertSuccessful()
         ->assertSee('Hot leads')
-        ->assertSeeInOrder(['Hot Prospect', 'Warm Prospect', 'Cold Prospect']);
+        ->assertSee('Cold Prospect')
+        ->assertDontSee('Warm Prospect')
+        ->assertDontSee('Hot Prospect');
 
-    $this->get(route('admin.prospects.index', ['temperature' => 'hot']))
+    $this->get(route('admin.prospects.index', ['tab' => 'warm']))
+        ->assertSuccessful()
+        ->assertSee('Warm Prospect')
+        ->assertDontSee('Cold Prospect')
+        ->assertDontSee('Hot Prospect');
+
+    $this->get(route('admin.prospects.index', ['tab' => 'hot']))
         ->assertSuccessful()
         ->assertSee('Hot Prospect')
         ->assertDontSee('Warm Prospect')

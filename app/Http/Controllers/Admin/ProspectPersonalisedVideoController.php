@@ -21,6 +21,18 @@ class ProspectPersonalisedVideoController extends Controller
         $data = $request->validated();
 
         try {
+            if (in_array($data['action'], ['save_draft', 'send_test'], true)) {
+                $personalisedVideo->saveDraft($prospect, $data['video_url'], $data['subject'], $data['body'], $request->user());
+
+                if ($data['action'] === 'send_test') {
+                    $personalisedVideo->sendTest($prospect, $request->user());
+
+                    return back()->with('status', 'Video draft saved. Test email sent to '.$request->user()->email.'.');
+                }
+
+                return back()->with('status', 'Personalised video draft saved.');
+            }
+
             if ($data['action'] === 'schedule') {
                 $scheduledFor = CarbonImmutable::parse($data['scheduled_send_at'], 'Europe/London')->utc();
                 $personalisedVideo->schedule($prospect, $data['video_url'], $data['subject'], $data['body'], $scheduledFor, $request->user());

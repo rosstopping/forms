@@ -65,7 +65,7 @@ it('surfaces hot prospects in the personalised video queue with their reasons', 
     $prospect = prospectNeedingVideo($admin);
     app(ProspectEngagementScorer::class)->adjust($prospect, 5, 'Audit revisited', $admin);
 
-    $this->actingAs($admin)->get(route('admin.prospects.index'))
+    $this->actingAs($admin)->get(route('admin.prospects.index', ['tab' => 'hot']))
         ->assertSuccessful()
         ->assertSee('Needs Personalised Video')
         ->assertSee('Acme Heating')
@@ -163,3 +163,142 @@ it('never sends a second personalised video through the initial video action', f
     expect($prospect->outreachDeliveries()->count())->toBe(1);
     Mail::assertSent(ProspectOutreach::class, 1);
 });
+
+it('saves a video draft and reloads it without reserving or sending outreach', function (): void {
+    Mail::fake();
+    Queue::fake();
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $prospect = prospectNeedingVideo($admin);
+    $originalState = $prospect->outreachState->getAttributes();
+    $originalProspect = $prospect->getAttributes();
+
+    $this->actingAs($admin)->post(route('admin.prospects.personalised-video', $prospect), [
+        'video_url' => 'https://video.example/draft',
+        'subject' => 'Saved video subject',
+        'body' => 'Saved video message for Alex.',
+        'action' => 'save_draft',
+        'scheduled_send_at' => '2020-01-01T12:00',
+    ])->assertRedirect()->assertSessionHas('status', 'Personalised video draft saved.');
+
+    $prospect->refresh();
+    expect($prospect->outreachState->personalised_video_draft)->toMatchArray([
+        'video_url' => 'https://video.example/draft',
+        'subject' => 'Saved video subject',
+        'body' => 'Saved video message for Alex.',
+    ])->and($prospect->getAttributes())->toBe($originalProspect)
+        ->and(collect($prospect->outreachState->getAttributes())->except(['personalised_video_draft', 'updated_at'])->all())
+        ->toBe(collect($originalState)->except(['personalised_video_draft', 'updated_at'])->all())
+        ->and($prospect->outreachDeliveries()->count())->toBe(0);
+    Mail::assertNothingSent();
+    Queue::assertNothingPushed();
+
+    $this->get(route('admin.prospects.show', $prospect))->assertSuccessful()
+        ->assertSee('Saved video subject')->assertSee('Saved video message for Alex.')
+        ->assertSee('https://video.example/draft')->assertSee('Save video draft')
+        ->assertSee('Save &amp; send me a test', false)->assertSee($admin->email);
+});
+
+it('saves the current video message and sends an untracked test only to the signed in admin', function (): void {
+    Mail::fake();
+    Queue::fake();
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $prospect = prospectNeedingVideo($admin);
+    app(ProspectPersonalisedVideo::class)->saveDraft($prospect, 'https://video.example/old', 'Old subject', 'Old body', $admin);
+
+    $this->actingAs($admin)->post(route('admin.prospects.personalised-video', $prospect), [
+        'video_url' => 'https://video.example/revised',
+        'subject' => 'Revised video subject',
+        'body' => 'The current video email.',
+        'action' => 'send_test',
+        'email' => $prospect->email,
+        'scheduled_send_at' => '2020-01-01T12:00',
+    ])->assertRedirect()->assertSessionHas('status', 'Video draft saved. Test email sent to '.$admin->email.'.');
+
+    Mail::assertSent(ProspectOutreach::class, function (ProspectOutreach $mail) use ($admin, $prospect): bool {
+        return $mail->hasTo($admin->email) && ! $mail->hasTo($prospect->email)
+            && $mail->delivery === null
+            && $mail->previewMessageType === ProspectOutreachMessageType::PersonalisedVideo
+            && $mail->envelope()->subject === 'Revised video subject'
+            && $mail->prospect->outreach_body === 'The current video email.'
+            && $mail->prospect->showcase_video_url === 'https://video.example/revised';
+    });
+    Mail::assertSentCount(1);
+    Queue::assertNothingPushed();
+    $prospect->refresh();
+    expect($prospect->outreach_subject)->toBe('Website opportunities for Acme Heating')
+        ->and($prospect->outreach_body)->toBe('Initial approved message.')
+        ->and($prospect->outreachState->personalised_video_draft['subject'])->toBe('Revised video subject')
+        ->and($prospect->outreachState->video_sent_at)->toBeNull()
+        ->and($prospect->outreachState->lifecycle_state)->toBe(ProspectLifecycleState::NeedsPersonalisedVideo)
+        ->and($prospect->outreachState->automation_status)->toBe(ProspectAutomationStatus::Paused)
+        ->and($prospect->outreachState->next_action_at)->toBeNull()
+        ->and($prospect->outreachDeliveries()->count())->toBe(0)
+        ->and($prospect->engagementEvents()->count())->toBe(0)
+        ->and($prospect->activities()->where('type', 'personalised_video_test_sent')->exists())->toBeTrue();
+});
+
+it('renders the video test with direct links and the same video layout without engagement tracking', function (): void {
+    $prospect = prospectNeedingVideo();
+    $prospect->forceFill([
+        'website_url' => 'https://acme.example',
+        'analysed_at' => now(),
+        'showcase_video_url' => 'https://video.example/preview',
+        'showcase_video_thumbnail_url' => 'https://cdn.loom.com/sessions/thumbnails/preview.jpg',
+        'outreach_subject' => 'Video preview',
+        'outreach_body' => 'This is the video message, not the initial email.',
+    ]);
+    $mail = new ProspectOutreach($prospect, previewMessageType: ProspectOutreachMessageType::PersonalisedVideo);
+    $mail->assertSeeInHtml('This is the video message, not the initial email.')
+        ->assertSeeInHtml('Watch your video')
+        ->assertSeeInHtml('https://video.example/preview')
+        ->assertSeeInHtml('https://cdn.loom.com/sessions/thumbnails/preview.jpg')
+        ->assertSeeInHtml('Your website audit')
+        ->assertSeeInHtml('Book a call with Ross');
+    $content = $mail->content()->with;
+    expect($content['trackingOpenUrl'])->toBeNull()
+        ->and($content['showcaseVideoUrl'])->toBe('https://video.example/preview')
+        ->and($content['auditReportUrl'])->not->toContain('outreach_link')
+        ->and($content['bookingUrl'])->toBe('https://cal.com/ross');
+});
+
+it('leaves an existing scheduled video unchanged when saving and testing newer copy', function (): void {
+    Mail::fake();
+    Queue::fake();
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $prospect = prospectNeedingVideo($admin);
+    $service = app(ProspectPersonalisedVideo::class);
+    $delivery = $service->schedule($prospect, 'https://video.example/scheduled', 'Scheduled subject', 'Scheduled body', CarbonImmutable::now()->addDay(), $admin);
+    $snapshot = $delivery->getAttributes();
+    $state = $prospect->outreachState()->first()->getAttributes();
+    Queue::fake();
+
+    $this->actingAs($admin)->post(route('admin.prospects.personalised-video', $prospect), [
+        'video_url' => 'https://video.example/draft-change', 'subject' => 'New subject',
+        'body' => 'New body', 'action' => 'send_test',
+    ])->assertRedirect();
+
+    expect($delivery->fresh()->getAttributes())->toBe($snapshot)
+        ->and($prospect->fresh()->showcase_video_url)->toBe('https://video.example/scheduled')
+        ->and(collect($prospect->outreachState()->first()->getAttributes())->except(['personalised_video_draft', 'updated_at'])->all())
+        ->toBe(collect($state)->except(['personalised_video_draft', 'updated_at'])->all());
+    Queue::assertNothingPushed();
+    $this->get(route('admin.prospects.show', $prospect))->assertSuccessful()
+        ->assertSee('leaves this scheduled email unchanged')
+        ->assertSee('New subject');
+});
+
+it('validates video drafts and tests and restricts them to administrators', function (string $action): void {
+    Mail::fake();
+    Queue::fake();
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $prospect = prospectNeedingVideo($admin);
+    $this->actingAs($admin)->post(route('admin.prospects.personalised-video', $prospect), [
+        'action' => $action, 'video_url' => 'javascript:alert(1)', 'subject' => '', 'body' => '',
+    ])->assertSessionHasErrors(['video_url', 'subject', 'body']);
+    $this->actingAs(User::factory()->create())->post(route('admin.prospects.personalised-video', $prospect), [
+        'action' => $action, 'video_url' => 'https://video.example/test', 'subject' => 'Test', 'body' => 'Test message',
+    ])->assertForbidden();
+    expect($prospect->outreachState->fresh()->personalised_video_draft)->toBeNull();
+    Mail::assertNothingSent();
+    Queue::assertNothingPushed();
+})->with(['save_draft', 'send_test']);

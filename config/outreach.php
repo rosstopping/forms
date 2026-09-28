@@ -55,7 +55,7 @@ return [
         ],
         'personalised_video' => [
             'subject' => null,
-            'body' => "Hi {contact_name},\n\nJust following on from my last email to you, I’ve recorded a quick video showing what we’d work on straight away to improve your website and its rankings.\n\nTake a look and let me know what you think!\n\nCheers,\nRoss",
+            'body' => "Hi there,\n\nJust following up from the website audit I sent over a little while ago.\n\nWanted to send you a really quick video to introduce myself and explain a little more about what we do.\n\nLet me know if it's something you'd be interested in!\n\nCheers,\nRoss",
         ],
         'post_video_follow_up' => [
             'subject' => null,

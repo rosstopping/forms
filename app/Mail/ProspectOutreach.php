@@ -21,7 +21,11 @@ class ProspectOutreach extends Mailable
     /**
      * Create a new message instance.
      */
-    public function __construct(public Prospect $prospect, public ?ProspectOutreachDelivery $delivery = null) {}
+    public function __construct(
+        public Prospect $prospect,
+        public ?ProspectOutreachDelivery $delivery = null,
+        public ?ProspectOutreachMessageType $previewMessageType = null,
+    ) {}
 
     /**
      * Get the message envelope.
@@ -39,7 +43,8 @@ class ProspectOutreach extends Mailable
      */
     public function content(): Content
     {
-        $isInitialOutreach = $this->delivery === null || $this->delivery->message_type === ProspectOutreachMessageType::Initial;
+        $messageType = $this->delivery?->message_type ?? $this->previewMessageType ?? ProspectOutreachMessageType::Initial;
+        $isInitialOutreach = $messageType === ProspectOutreachMessageType::Initial;
         $showcaseVideoUrl = $isInitialOutreach ? null : $this->prospect->showcase_video_url;
         $auditReportUrl = $isInitialOutreach ? null : $this->auditReportUrl();
         $bookingUrl = $isInitialOutreach ? null : 'https://cal.com/ross';

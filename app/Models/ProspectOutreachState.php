@@ -22,6 +22,7 @@ class ProspectOutreachState extends Model
         'last_engagement_at', 'video_sent_at', 'video_sent_engagement_score', 'post_video_follow_up_sent_at', 'next_action_at',
         'future_opportunity_at', 'manual_follow_up_required_at', 'manual_follow_up_reason',
         'stopped_at', 'stop_reason',
+        'personalised_video_draft',
     ];
 
     protected $attributes = [
@@ -48,6 +49,7 @@ class ProspectOutreachState extends Model
             'future_opportunity_at' => 'datetime',
             'manual_follow_up_required_at' => 'datetime',
             'manual_follow_up_reason' => 'array',
+            'personalised_video_draft' => 'array',
             'stopped_at' => 'datetime',
         ];
     }

@@ -117,7 +117,7 @@ it('recommends manual follow up after strong engagement before the automatic fol
         ->and($prospect->activities()->where('type', 'manual_follow_up_recommended')->count())->toBe(1);
     Mail::assertSent(ProspectOutreach::class, 1);
 
-    $this->actingAs($admin)->get(route('admin.prospects.index'))
+    $this->actingAs($admin)->get(route('admin.prospects.index', ['tab' => 'replies']))
         ->assertSuccessful()
         ->assertSee('Manual Follow-up Recommended')
         ->assertSee('Video viewed 1 time')

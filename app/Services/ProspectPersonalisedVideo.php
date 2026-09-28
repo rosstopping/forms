@@ -5,11 +5,13 @@ namespace App\Services;
 use App\Enums\ProspectLifecycleState;
 use App\Enums\ProspectOutreachMessageType;
 use App\Jobs\SendScheduledProspectPersonalisedVideo;
+use App\Mail\ProspectOutreach;
 use App\Models\Prospect;
 use App\Models\ProspectOutreachDelivery;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use LogicException;
 
 class ProspectPersonalisedVideo
@@ -21,6 +23,53 @@ class ProspectPersonalisedVideo
         private ProspectLifecycleManager $lifecycleManager,
         private ProspectOutreachEligibility $eligibility,
     ) {}
+
+    public function saveDraft(Prospect $prospect, string $videoUrl, string $subject, string $body, User $actor): void
+    {
+        $thumbnailUrl = $this->loomVideoThumbnail->fetch($videoUrl);
+
+        DB::transaction(function () use ($prospect, $videoUrl, $thumbnailUrl, $subject, $body, $actor): void {
+            $prospect = Prospect::query()->lockForUpdate()->findOrFail($prospect->id);
+            $state = $this->lifecycleManager->stateFor($prospect);
+
+            if ($state->video_sent_at !== null) {
+                throw new LogicException('A personalised video has already been sent to this prospect.');
+            }
+
+            if ($prospect->lead_temperature !== 'hot' && ! in_array($state->lifecycle_state, [ProspectLifecycleState::Hot, ProspectLifecycleState::NeedsPersonalisedVideo], true)) {
+                throw new LogicException('Only a hot prospect can have a personalised video draft through this workflow.');
+            }
+
+            $state->update(['personalised_video_draft' => [
+                'video_url' => $videoUrl,
+                'thumbnail_url' => $thumbnailUrl,
+                'subject' => $subject,
+                'body' => $body,
+            ]]);
+            $prospect->recordActivity('personalised_video_draft_saved', 'Personalised video email saved as a draft.', $actor);
+        });
+    }
+
+    public function sendTest(Prospect $prospect, User $actor): void
+    {
+        $prospect->refresh();
+        $draft = $prospect->outreachState->personalised_video_draft;
+
+        if ($draft === null) {
+            throw new LogicException('Save the personalised video draft before sending a test.');
+        }
+
+        $preview = clone $prospect;
+        $preview->forceFill([
+            'showcase_video_url' => $draft['video_url'],
+            'showcase_video_thumbnail_url' => $draft['thumbnail_url'],
+            'outreach_subject' => $draft['subject'],
+            'outreach_body' => $draft['body'],
+        ]);
+
+        Mail::to($actor->email)->send(new ProspectOutreach($preview, previewMessageType: ProspectOutreachMessageType::PersonalisedVideo));
+        $prospect->recordActivity('personalised_video_test_sent', 'Personalised video test email sent to '.$actor->email.'.', $actor);
+    }
 
     public function sendNow(Prospect $prospect, string $videoUrl, string $subject, string $body, User $actor): ProspectOutreachDelivery
     {
@@ -89,6 +138,7 @@ class ProspectPersonalisedVideo
                 'showcase_video_url' => $videoUrl,
                 'showcase_video_thumbnail_url' => $thumbnailUrl,
             ]);
+            $state->update(['personalised_video_draft' => null]);
             $this->lifecycleManager->markPersonalisedVideoQueued($prospect, $actor);
             $delivery = $this->tracker->createDelivery(
                 $prospect,
