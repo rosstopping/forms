@@ -30,7 +30,7 @@ for (const fixture of ['website-title', 'repository-title']) {
                 role: 'assistant', content: null,
                 tool_calls: [{ id: `call_${calls}`, type: 'function', function: { name: toolName, arguments: JSON.stringify(action[1]) } }],
             } : { role: 'assistant', content: 'Fixture updated and checked.' };
-            const usage = { prompt_tokens: 100, completion_tokens: 20, total_tokens: 120 };
+            const usage = { prompt_tokens: 100, completion_tokens: 20, total_tokens: 120, prompt_tokens_details: { cached_tokens: 40 } };
             const base = { id: `stub-${calls}`, created: Math.floor(Date.now() / 1000), model: 'fixture-model' };
             if (body.stream) {
                 res.writeHead(200, { 'Content-Type': 'text/event-stream' });
@@ -45,7 +45,7 @@ for (const fixture of ['website-title', 'repository-title']) {
         });
         await new Promise((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve); });
         try {
-            const result = await runFixture({ protocolVersion: 1, runId: randomUUID(), fixture, ...(fixture === 'repository-title' ? { document: { path: 'index.html', original: '<!doctype html>\n<html><head><title>Home</title></head><body><h1>Acme Plumbing</h1></body></html>\n', title: 'Acme Plumbing | Doncaster' } } : {}), mode: 'live', limits: { timeoutSeconds: 20, maxToolCalls: 10, maxTokens: 10000 } }, {
+            const result = await runFixture({ protocolVersion: 1, runId: randomUUID(), fixture, ...(fixture === 'repository-title' ? { document: { path: 'index.html', original: '<!doctype html>\n<html><head><title>Home</title></head><body><h1>Acme Plumbing</h1></body></html>\n', title: 'Acme Plumbing | Doncaster' } } : {}), mode: 'live', limits: { timeoutSeconds: 20, maxToolCalls: 10, maxTokens: 480 } }, {
                 env: { SITEWELL_MODEL_PROVIDER: 'openai', SITEWELL_MODEL_NAME: 'fixture-model', SITEWELL_MODEL_API_KEY: 'local-test-only' },
                 adapterFactory: async () => {
                     const adapter = await createSdkAdapter();
@@ -56,6 +56,8 @@ for (const fixture of ['website-title', 'repository-title']) {
             assert.equal(result.toolCalls, 3);
             assert.equal(calls, 4);
             assert.ok(result.usage.events > 0);
+            assert.equal(result.usage.inputTokens, 400);
+            assert.equal(result.usage.cacheReadTokens, 160);
         } finally {
             server.closeAllConnections();
             await new Promise(resolve => server.close(resolve));

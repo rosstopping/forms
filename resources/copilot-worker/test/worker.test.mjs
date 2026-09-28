@@ -77,6 +77,33 @@ test('token threshold cancels work and closes adapter', async () => {
     assert.equal(closed, true);
 });
 
+test('OpenAI cached input is counted once while the total token limit remains enforced', async () => {
+    for (const [outputTokens, expectedStatus] of [[5621, 'validated'], [11294, 'validated'], [11295, 'failed']]) {
+        const input = request('live');
+        input.limits.maxTokens = 30000;
+        const result = await runFixture(input, { env: { ...env, SITEWELL_MODEL_PROVIDER: 'openai' }, adapterFactory: async () => ({
+            run: async ({ tools, onUsage }) => {
+                onUsage({ apiCallId: 'cached-call', inputTokens: 18706, outputTokens, cacheReadTokens: 12672 });
+                if (expectedStatus === 'failed') await new Promise(() => {});
+                await simulateFixture(tools);
+            }, close: async () => {},
+        }) });
+        assert.equal(result.status, expectedStatus);
+        assert.equal(result.usage.cacheReadTokens, 12672);
+        if (expectedStatus === 'failed') assert.equal(result.error, 'token_limit');
+    }
+});
+
+test('Anthropic separate cache counters still contribute to the token limit', async () => {
+    const result = await runFixture(request('live'), { env, adapterFactory: async () => ({
+        run: async ({ onUsage }) => {
+            onUsage({ inputTokens: 600, outputTokens: 100, cacheReadTokens: 200, cacheWriteTokens: 101 });
+            await new Promise(() => {});
+        }, close: async () => {},
+    }) });
+    assert.equal(result.error, 'token_limit');
+});
+
 test('timeout shuts down a stalled SDK', async () => {
     let closed = false;
     const result = await runFixture(request('live'), { env, adapterFactory: async () => ({

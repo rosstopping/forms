@@ -30,7 +30,9 @@ export async function runFixture(raw, { env = process.env, adapterFactory = crea
         for (const field of ['inputTokens', 'outputTokens', 'cacheReadTokens', 'cacheWriteTokens']) {
             if (Number.isFinite(data[field]) && data[field] >= 0) usage[field] += data[field];
         }
-        if (usage.inputTokens + usage.outputTokens + usage.cacheReadTokens + usage.cacheWriteTokens > request.limits.maxTokens) stop('token_limit');
+        // OpenAI input tokens already include cached input; retain cache counters for diagnostics.
+        const additionalCacheTokens = provider?.type === 'openai' ? 0 : usage.cacheReadTokens + usage.cacheWriteTokens;
+        if (usage.inputTokens + usage.outputTokens + additionalCacheTokens > request.limits.maxTokens) stop('token_limit');
     };
     try {
         externalSignal?.addEventListener('abort', cancel, { once: true });
