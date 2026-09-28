@@ -1,10 +1,13 @@
 <?php
 
+$seoLibrary = require __DIR__.'/seo_library.php';
+
 return [
     'booking_url' => env('MARKETING_BOOKING_URL', 'https://cal.com/ross'),
     'contact_website_id' => env('MARKETING_CONTACT_WEBSITE_ID'),
 
     'landing_pages' => [
+        ...$seoLibrary['landing_pages'],
         'website-management-services' => [
             'seo_title' => 'Website management services UK',
             'meta_description' => 'Website management services for UK small businesses, including website maintenance, SEO, content updates, lead handling and specialist support.',
@@ -538,6 +541,7 @@ return [
     ],
 
     'industries' => [
+        ...$seoLibrary['industries'],
         'travel-and-hospitality' => [
             'eyebrow' => 'Travel & hospitality',
             'title' => 'Turn inspiration into confident enquiries and bookings',

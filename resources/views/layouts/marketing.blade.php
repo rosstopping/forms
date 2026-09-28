@@ -6,7 +6,13 @@
     <meta name="theme-color" content="#f4f1e8">
     <meta name="description" content="@yield('meta_description', 'Sitewell keeps your website healthy, visible, and ready to turn visitors into customers.')">
     <link rel="canonical" href="{{ request()->url() }}">
-    <title>@yield('title', 'Sitewell') · Your website, well looked after</title>
+    <meta property="og:site_name" content="Sitewell">
+    <meta property="og:locale" content="en_GB">
+    <meta property="og:type" content="@yield('og_type', 'website')">
+    <meta property="og:title" content="@yield('title', 'Sitewell')">
+    <meta property="og:description" content="@yield('meta_description', 'Sitewell keeps your website healthy, visible, and ready to turn visitors into customers.')">
+    <meta property="og:url" content="{{ request()->url() }}">
+    <title>@yield('title', 'Sitewell'){{ $__env->hasSection('concise_title') ? '' : ' · Your website, well looked after' }}</title>
     @yield('structured_data')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
@@ -21,7 +27,7 @@
                     <a href="{{ route('marketing.home') }}" aria-label="Homepage" class="font-display text-2xl font-semibold tracking-tight text-ink">Sitewell</a>
                 </div>
                 <nav class="hidden items-center gap-8 text-sm text-ink/65 lg:flex" aria-label="Main navigation">
-                    @foreach ([['route' => 'marketing.how-it-works', 'label' => 'How it works'], ['route' => 'marketing.features', 'label' => 'Services'], ['route' => 'marketing.pricing', 'label' => 'Pricing'], ['route' => 'marketing.about', 'label' => 'About']] as $item)
+                    @foreach ([['route' => 'marketing.how-it-works', 'label' => 'How it works'], ['route' => 'marketing.features', 'label' => 'Services'], ['route' => 'marketing.pricing', 'label' => 'Pricing'], ['route' => 'marketing.journal', 'label' => 'Guides'], ['route' => 'marketing.about', 'label' => 'About']] as $item)
                         <a href="{{ route($item['route']) }}" @class(['hover:text-ink', 'text-ink' => request()->routeIs($item['route'])])>{{ $item['label'] }}</a>
                     @endforeach
                 </nav>

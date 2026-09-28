@@ -153,7 +153,7 @@ it('uses shorter SEO page titles for flagged marketing pages', function (string 
         ->assertSuccessful()
         ->assertSee('<title>'.$fullTitle.'</title>', false);
 
-    expect(strlen($fullTitle))->toBeLessThanOrEqual(65);
+    expect(mb_strlen($fullTitle))->toBeLessThanOrEqual(65);
 })->with([
     'home' => ['marketing.home', [], 'Managed business websites'],
     'clean handover article' => ['marketing.article', ['a-clean-website-handover'], 'A clean website handover'],

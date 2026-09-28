@@ -38,6 +38,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Services/OptimisationValueSanitizer.php,Services/PixelDeploymentDriver.php,Http/Requests/*Optimisation*.php,Http/Controllers/Admin/Optimisation*.php} | .ai/rules/controllers-admin.md |
 | {app/Http/Controllers/MarketingController.php,wordpress-plugin/sitewell-by-digizu/**} | .ai/rules/controllers-sitewell-by-digizu.md |
 | app/{Models/Website.php,Http/Controllers/FormSubmissionController.php},resources/views/admin/websites/show.blade.php | .ai/rules/controllers-views-admin-websites.md |
+| {config/seo_library.php,config/marketing.php,app/Http/Controllers/MarketingController.php,resources/views/marketing/**} | .ai/rules/controllers-views-marketing.md |
 | app/{Http/Controllers/FormSubmissionController.php,Services/SpamDetector.php}, app/{Http/Controllers/FormSubmissionController.php,Services/RedirectResolver.php} | .ai/rules/controllers.md |
 | app/{Services/AutoresponderHtmlSanitizer.php,Services/FormSettingsResolver.php,Mail/FormSubmissionAcknowledgement.php},resources/{js/app.js,css/app.css,views/components/trix-editor.blade.php,views/admin/forms/show.blade.php,views/admin/websites/show.blade.php,views/emails/form-submission-acknowledgement*.blade.php} | .ai/rules/emails.md |
 | app/{Http/Controllers/Admin/{WebsiteController.php,WebsiteMemberController.php},Models/Website.php},resources/views/admin/websites/show.blade.php,tests/Feature/{WebsiteMembershipTest.php,WebsiteCreationTest.php} | .ai/rules/feature.md |

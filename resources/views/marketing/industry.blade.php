@@ -12,5 +12,26 @@
 
     <section class="border-t border-ink/10 bg-[#fffefa] py-16 sm:py-20"><div class="mx-auto grid max-w-7xl gap-8 px-5 sm:px-8 lg:grid-cols-[2fr_3fr] lg:items-center lg:px-10"><div><p class="font-mono text-sm uppercase tracking-wide text-garden">Active clients in this sector</p><h2 class="mt-4 font-display text-3xl font-semibold tracking-tight text-balance">Experience grounded in working websites</h2></div><div class="flex flex-wrap gap-3">@foreach ($industry['clients'] as $client)<span class="rounded-full bg-lichen px-4 py-2 text-base font-medium text-moss ring-1 ring-moss/10 sm:text-sm">{{ $client }}</span>@endforeach</div></div></section>
 
+    @php
+        $sectorGuides = match (request()->route('industry')) {
+            'travel-and-hospitality' => ['hotels-and-holiday-accommodation', 'restaurants'],
+            'events-and-experiences' => ['wedding-venues'],
+            'training-and-professional-services' => ['solicitors', 'accountants', 'personal-trainers', 'online-coaches'],
+            default => [],
+        };
+    @endphp
+    @if ($sectorGuides !== [])
+        <section class="border-t border-ink/10 py-16 sm:py-20">
+            <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
+                <h2 class="font-display text-3xl font-semibold tracking-tight text-balance">A closer look at your search journey</h2>
+                <p class="mt-5 max-w-[56ch] text-pretty text-base text-ink/65">These guides explain the service information and customer decisions that shape SEO in each business.</p>
+                <ul role="list" class="mt-8 grid gap-5 sm:grid-cols-2">
+                    @foreach ($sectorGuides as $slug)
+                        <li><a class="text-garden underline decoration-garden/30 underline-offset-4 hover:text-moss" href="{{ route('marketing.industry', $slug) }}">{{ config("marketing.industries.{$slug}.title") }}</a></li>
+                    @endforeach
+                </ul>
+            </div>
+        </section>
+    @endif
     <x-marketing.cta />
 @endsection

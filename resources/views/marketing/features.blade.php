@@ -42,16 +42,8 @@
             <p class="mt-5 max-w-[48ch] text-pretty text-lg text-ink/60 sm:text-base">Explore Sitewell by the outcome you are looking for, from dependable management to stronger search visibility and more useful enquiries.</p>
             <nav class="mt-12" aria-label="Website and SEO services">
                 <ul class="grid gap-8 md:grid-cols-2 lg:grid-cols-3" role="list">
-                    @foreach ([
-                        ['website-management-services', 'Website management services', 'Put one specialist team in charge of website health, content, search and enquiries.'],
-                        ['website-maintenance-packages', 'Website maintenance packages', 'Understand what ongoing website care should include for a small business website.'],
-                        ['small-business-website-support', 'Small business website support', 'Get dependable help with updates, problems and ongoing website decisions.'],
-                        ['managed-seo-services', 'Managed SEO services', 'Turn search performance into stronger pages and useful new content.'],
-                        ['seo-for-small-businesses', 'SEO for small businesses', 'Focus affordable ongoing SEO work on the pages and searches most likely to matter.'],
-                        ['local-seo-services', 'Local SEO services', 'Improve visibility with local page optimisation, stronger Google signals and practical content updates.'],
-                        ['website-lead-generation', 'Get more website leads', 'Improve the path from relevant visitor to visible, followed-up enquiry.'],
-                        ['improve-my-website', 'Improve my website', 'Find and prioritise the changes most likely to make your existing website work harder.'],
-                    ] as [$slug, $title, $description])
+                    @foreach (config('marketing.landing_pages') as $slug => $landing)
+                        @php([$title, $description] = [$landing['eyebrow'], $landing['meta_description']])
                         <li class="border-t border-ink/15 pt-5">
                             <a href="{{ route('marketing.landing', $slug) }}" class="group">
                                 <h3 class="font-display text-2xl font-semibold tracking-tight text-balance">{{ $title }}</h3>
@@ -72,5 +64,19 @@
         </div>
     </section>
 
+    <section class="border-t border-ink/10 py-16 sm:py-20">
+        <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
+            <h2 class="font-display text-4xl font-semibold tracking-tight text-balance">SEO for the way your customers choose</h2>
+            <p class="mt-5 max-w-[56ch] text-pretty text-base text-ink/65">Explore the search questions, service pages and enquiry journeys that matter in your industry.</p>
+            <nav aria-label="Industry SEO guides" class="mt-10">
+                <ul role="list" class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                    @foreach (config('marketing.industries') as $slug => $industry)
+                        <li><a class="text-garden underline decoration-garden/30 underline-offset-4 hover:text-moss" href="{{ route('marketing.industry', $slug) }}">{{ $industry['seo_title'] ?? $industry['eyebrow'] }}</a></li>
+                    @endforeach
+                </ul>
+            </nav>
+            <p class="mt-10 text-base">Investigating a problem first? <a class="text-garden underline underline-offset-4" href="{{ route('marketing.journal') }}">Browse the practical SEO guides</a>.</p>
+        </div>
+    </section>
     <x-marketing.cta />
 @endsection

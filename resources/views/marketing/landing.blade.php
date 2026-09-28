@@ -114,5 +114,12 @@
         </div>
     </section>
 
+    @if ($supplements !== [])
+        <section class="border-t border-ink/10 py-16 sm:py-20">
+            <div class="prose mx-auto max-w-[70ch] px-5 sm:px-8 lg:px-10">
+                <x-marketing.content-sections :sections="$supplements" />
+            </div>
+        </section>
+    @endif
     <x-marketing.cta />
 @endsection

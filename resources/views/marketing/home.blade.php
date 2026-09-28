@@ -114,5 +114,6 @@
             <h2 class="max-w-[30ch] font-display text-2xl font-semibold tracking-tight text-balance sm:text-3xl">Start with a look at your website.</h2>
             <p class="font-medium"><a href="{{ route('marketing.free-site-audit') }}" class="inline-flex min-h-12 items-center underline decoration-ink/30 underline-offset-4 hover:decoration-ink">Get your free website audit →</a></p>
         </div>
+        <p class="mx-auto mt-6 max-w-7xl px-5 text-base text-ink/70 sm:px-8 lg:px-10">Explore <a href="{{ route('marketing.landing', 'website-management-services') }}" class="text-garden underline underline-offset-4">ongoing website management</a>, or use our guide to <a href="{{ route('marketing.article', 'how-to-find-seo-problems') }}" class="text-garden underline underline-offset-4">find the SEO problems worth fixing first</a>.</p>
     </section>
 @endsection

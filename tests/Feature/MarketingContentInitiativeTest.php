@@ -1,13 +1,13 @@
 <?php
 
 it('positions the home page around ongoing website management and a free website audit', function (): void {
-    $metaDescription = 'Ongoing website management and SEO for UK small businesses, with dependable website care, lead handling, and a free website audit to show what needs attention.';
+    $metaDescription = 'Website care and managed SEO for UK small businesses. We fix problems, update pages and keep your enquiries organised.';
 
     $this->get(route('marketing.home'))
         ->assertSuccessful()
-        ->assertSee('Website management for UK small businesses')
-        ->assertSee('Ongoing website management and SEO for UK small businesses')
-        ->assertSee('Start your free website audit')
+        ->assertSee('UK website management &amp; SEO', false)
+        ->assertSee('Website care and managed SEO for UK small businesses')
+        ->assertSee('Get your free website audit')
         ->assertSee('href="'.route('marketing.free-site-audit').'"', false)
         ->assertSee('href="'.route('marketing.landing', 'website-management-services').'"', false)
         ->assertSee($metaDescription);

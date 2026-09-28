@@ -55,9 +55,14 @@ class MarketingController extends Controller
             ])->all(),
         ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR);
 
+        if (isset($landingPage['sections'])) {
+            return view('marketing.resource', ['page' => $landingPage, 'faqSchema' => $faqSchema]);
+        }
+
         return view('marketing.landing', [
             'landing' => $landingPage,
             'faqSchema' => $faqSchema,
+            'supplements' => config("seo_library.supplements.{$landing}", []),
         ]);
     }
 
@@ -92,6 +97,10 @@ class MarketingController extends Controller
 
         abort_unless(is_array($industryPage), 404);
 
+        if (isset($industryPage['sections'])) {
+            return view('marketing.resource', ['page' => $industryPage]);
+        }
+
         return view('marketing.industry', ['industry' => $industryPage]);
     }
 
@@ -104,6 +113,12 @@ class MarketingController extends Controller
     {
         $article = collect($this->articles())->firstWhere('slug', $slug);
         abort_unless($article, 404);
+
+        $supplements = config("seo_library.supplements.{$slug}", []);
+        $article['sections'] = [...$article['sections'], ...$supplements];
+        if ($supplements !== []) {
+            $article['date_modified'] = '2026-09-28';
+        }
 
         return view('marketing.article', compact('article'));
     }
@@ -229,6 +244,7 @@ class MarketingController extends Controller
     protected function articles(): array
     {
         return [
+            ...config('seo_library.articles', []),
             [
                 'slug' => 'how-often-should-i-update-my-website',
                 'category' => 'Website care',
