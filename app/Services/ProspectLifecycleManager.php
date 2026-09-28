@@ -252,7 +252,6 @@ class ProspectLifecycleManager
     {
         return DB::transaction(function () use ($prospect, $sentAt, $actor): ProspectOutreachState {
             $outreachState = $this->lockedState($prospect);
-            $nextActionAt = now()->addDays((int) config('outreach.timing.post_video_follow_up_days', 3));
             $outreachState->update([
                 'lifecycle_state' => ProspectLifecycleState::VideoSent,
                 'automation_status' => ProspectAutomationStatus::Active,
@@ -260,9 +259,9 @@ class ProspectLifecycleManager
                 'video_sent_at' => $sentAt,
                 'video_sent_engagement_score' => $outreachState->engagement_score,
                 'last_outreach_at' => $sentAt,
-                'next_action_at' => $nextActionAt,
+                'next_action_at' => null,
             ]);
-            $prospect->update(['next_follow_up_at' => $nextActionAt]);
+            $prospect->update(['next_follow_up_at' => null]);
             $prospect->recordActivity('personalised_video_sent', 'Personalised video email sent; engagement tracking continues.', $actor);
 
             return $outreachState->refresh();

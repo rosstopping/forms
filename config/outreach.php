@@ -6,7 +6,6 @@ return [
     'timing' => [
         'cold_retry_days' => 4,
         'final_follow_up_days' => 6,
-        'post_video_follow_up_days' => 3,
     ],
 
     'maximum_follow_up_attempts' => 2,
@@ -56,10 +55,6 @@ return [
         'personalised_video' => [
             'subject' => 'Quick introduction from me',
             'body' => "Hi there,\n\nJust following up from the website audit I sent over a little while ago.\n\nWanted to send you a really quick video to introduce myself and explain a little more about what we do.\n\nLet me know if it's something you'd be interested in!\n\nCheers,\nRoss",
-        ],
-        'post_video_follow_up' => [
-            'subject' => null,
-            'body' => "Hi {contact_name},\n\nJust wanted to follow up on the video I sent over.\n\nHopefully it gave you a better idea of what I’d work on first.\n\nIs improving the website / Google rankings something you’re looking at at the moment?\n\nCheers,\nRoss",
         ],
     ],
 ];

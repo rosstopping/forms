@@ -98,7 +98,8 @@ it('sends a manually supplied personalised video and records its lifecycle', fun
         ->and($state->automation_status)->toBe(ProspectAutomationStatus::Active)
         ->and($state->sequence_step)->toBe(ProspectSequenceStep::PersonalisedVideo)
         ->and($state->video_sent_at)->not->toBeNull()
-        ->and($state->next_action_at->equalTo(now()->addDays(3)->startOfSecond()))->toBeTrue();
+        ->and($state->next_action_at)->toBeNull()
+        ->and($prospect->fresh()->next_follow_up_at)->toBeNull();
     Mail::assertSent(ProspectOutreach::class, fn (ProspectOutreach $mail): bool => $mail->hasTo('alex@acme.example'));
 });
 
@@ -150,6 +151,42 @@ it('validates scheduling details and blocks non administrators', function (): vo
         'video_url' => 'https://video.example/acme', 'subject' => 'Video', 'body' => 'Message', 'action' => 'send_now',
     ])->assertForbidden();
 });
+
+it('returns unapproved video sends to the form with the reason and edited content', function (string $action): void {
+    Mail::fake();
+    Queue::fake();
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $prospect = prospectNeedingVideo($admin);
+    $prospect->update(['approved_at' => null, 'approved_by' => null]);
+    $formUrl = route('admin.prospects.show', $prospect);
+    $message = 'The initial outreach must remain approved before sending a personalised video.';
+    $data = [
+        'video_url' => 'https://video.example/acme',
+        'subject' => 'My edited video subject',
+        'body' => 'My edited video message.',
+        'action' => $action,
+        'scheduled_send_at' => now('Europe/London')->addDay()->format('Y-m-d\TH:i'),
+    ];
+
+    $this->actingAs($admin)->from($formUrl)
+        ->post(route('admin.prospects.personalised-video', $prospect), $data)
+        ->assertRedirect($formUrl)
+        ->assertSessionHasErrors(['action' => $message])
+        ->assertSessionHasInput('video_url', $data['video_url'])
+        ->assertSessionHasInput('subject', $data['subject'])
+        ->assertSessionHasInput('body', $data['body']);
+
+    $this->withCookie(config('session.cookie'), session()->getId())
+        ->get($formUrl)->assertSuccessful()
+        ->assertSee($message)
+        ->assertSee($data['subject'])
+        ->assertSee($data['body']);
+
+    expect($prospect->outreachDeliveries()->count())->toBe(0)
+        ->and($prospect->outreachState->fresh()->video_sent_at)->toBeNull();
+    Mail::assertNothingSent();
+    Queue::assertNothingPushed();
+})->with(['send_now', 'schedule']);
 
 it('never sends a second personalised video through the initial video action', function (): void {
     Mail::fake();

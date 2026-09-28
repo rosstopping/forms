@@ -40,16 +40,16 @@ class ProspectOutreachTracker
                 return $delivery->load('links');
             }
 
-            if ($messageType === ProspectOutreachMessageType::Initial) {
-                return $delivery->load('links');
-            }
-
             if ($messageType !== ProspectOutreachMessageType::PostVideoFollowUp && filled($prospect->showcase_video_url)) {
                 $delivery->links()->create([
                     'kind' => 'showcase_video',
                     'label' => 'Website video',
                     'destination_url' => $prospect->showcase_video_url,
                 ]);
+            }
+
+            if ($messageType === ProspectOutreachMessageType::Initial) {
+                return $delivery->load('links');
             }
 
             if ($messageType !== ProspectOutreachMessageType::PostVideoFollowUp && filled($prospect->website_url) && $prospect->analysed_at !== null) {

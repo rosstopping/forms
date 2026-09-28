@@ -3,8 +3,6 @@
 namespace App\Services;
 
 use App\Enums\ProspectAutomationStatus;
-use App\Enums\ProspectLifecycleState;
-use App\Enums\ProspectSequenceStep;
 use App\Models\Prospect;
 
 class ProspectOutreachEligibility
@@ -57,21 +55,6 @@ class ProspectOutreachEligibility
 
     public function postVideoFollowUpError(Prospect $prospect): ?string
     {
-        $error = $this->manualMessageError($prospect);
-
-        if ($error !== null) {
-            return $error;
-        }
-
-        $outreachState = $prospect->outreachState()->first();
-
-        return match (true) {
-            $outreachState?->automation_status !== ProspectAutomationStatus::Active => 'Post-video automation is not active for this prospect.',
-            $outreachState->lifecycle_state !== ProspectLifecycleState::VideoSent => 'The prospect is not awaiting a post-video follow-up.',
-            $outreachState->sequence_step !== ProspectSequenceStep::PersonalisedVideo => 'The post-video follow-up has already been handled.',
-            $outreachState->video_sent_at === null => 'No personalised video delivery has been recorded.',
-            $outreachState->post_video_follow_up_sent_at !== null => 'The post-video follow-up has already been sent.',
-            default => null,
-        };
+        return 'Automatic post-video follow-up emails are disabled.';
     }
 }

@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\URL;
 
 afterEach(fn () => CarbonImmutable::setTestNow());
 
-it('adds signed open tracking without click links to a live initial email', function (): void {
+it('includes a tracked optional video in a live initial email', function (): void {
     Mail::fake();
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     $prospect = Prospect::factory()->for($admin, 'owner')->create([
@@ -34,11 +34,14 @@ it('adds signed open tracking without click links to a live initial email', func
     $delivery = $prospect->outreachDeliveries()->with('links')->sole();
     expect($delivery->sent_at)->not->toBeNull()
         ->and($delivery->recipient_email)->toBe($prospect->email)
-        ->and($delivery->links)->toBeEmpty();
+        ->and($delivery->links)->toHaveCount(1)
+        ->and($delivery->links->sole()->kind)->toBe('showcase_video')
+        ->and($delivery->links->sole()->destination_url)->toBe($prospect->showcase_video_url);
 
     Mail::assertSent(ProspectOutreach::class, function (ProspectOutreach $mail) use ($delivery): bool {
         $mail->assertSeeInHtml('/outreach/open/'.$delivery->uuid)
-            ->assertDontSeeInHtml('/outreach/click/')
+            ->assertSeeInHtml('/outreach/click/')
+            ->assertSeeInHtml('Watch your video')
             ->assertDontSeeInHtml('View your website audit')
             ->assertSeeInHtml('signature=');
 

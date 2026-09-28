@@ -192,7 +192,7 @@ class ProspectEngagementScorer
         $updatedState = $outreachState->fresh();
 
         if ($event->score_delta > 0
-            && $updatedState->post_video_follow_up_sent_at !== null
+            && $updatedState->video_sent_at !== null
             && in_array($event->event_type, [
                 ProspectEngagementEventType::AuditClicked,
                 ProspectEngagementEventType::SitewellClicked,

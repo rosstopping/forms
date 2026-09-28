@@ -295,7 +295,10 @@ it('sends the exact saved draft as a test to the administrator without contactin
 
     Mail::assertSent(ProspectOutreach::class, function (ProspectOutreach $mail) use ($admin, $prospect): bool {
         $mail->assertHasSubject($prospect->outreach_subject)
-            ->assertDontSeeInHtml('https://video.example.com/acme-plumbing')
+            ->assertSeeInHtml('https://video.example.com/acme-plumbing')
+            ->assertSeeInHtml('Watch your video')
+            ->assertDontSeeInHtml('/outreach/click/')
+            ->assertDontSeeInHtml('/outreach/open/')
             ->assertDontSeeInHtml('Your website video')
             ->assertDontSeeInHtml('https://cal.com/ross');
 
@@ -432,6 +435,10 @@ it('sends approved test and live outreach without a prospect showcase video', fu
     $this->post(route('admin.prospects.send', $prospect))->assertRedirect();
 
     Mail::assertSent(ProspectOutreach::class, 2);
+    foreach (Mail::sent(ProspectOutreach::class) as $mail) {
+        $mail->assertDontSeeInHtml('Watch your video');
+    }
+    expect($prospect->outreachDeliveries()->with('links')->sole()->links)->toBeEmpty();
 });
 
 it('still requires a showcase video for website opportunities', function () {
@@ -474,7 +481,7 @@ it('shares a time-limited website review with the prospect', function () {
     $this->get(route('prospect-reports.show', $prospect))->assertForbidden();
 });
 
-it('renders initial outreach without links or sales extras', function () {
+it('renders the optional video and thumbnail in initial outreach', function () {
     $prospect = Prospect::factory()->create([
         'business_name' => 'Acme Plumbing',
         'outreach_subject' => 'Quick one for Acme Plumbing',
@@ -487,6 +494,9 @@ it('renders initial outreach without links or sales extras', function () {
         ->assertFrom(config('mail.from.address'), 'Ross')
         ->assertHasSubject('Quick one for Acme Plumbing')
         ->assertSeeInHtml('quick video below')
+        ->assertSeeInHtml('Watch your video')
+        ->assertSeeInHtml('https://video.example.com/acme-plumbing')
+        ->assertSeeInHtml('https://cdn.loom.com/acme-plumbing.jpg')
         ->assertDontSeeInHtml('Your website video')
         ->assertDontSeeInHtml('Book a call with Ross')
         ->assertDontSeeInHtml('Full disclosure')
@@ -508,7 +518,7 @@ it('does not include a private website audit link in initial outreach', function
         ->assertDontSeeInHtml('signature=');
 });
 
-it('does not include the showcase video when offering a prospect a new website', function () {
+it('includes the showcase video when offering a prospect a new website', function () {
     $prospect = Prospect::factory()->create([
         'website_url' => null,
         'outreach_subject' => 'Quick one for Acme Plumbing',
@@ -519,7 +529,8 @@ it('does not include the showcase video when offering a prospect a new website',
     (new ProspectOutreach($prospect))
         ->assertHasSubject('Quick one for Acme Plumbing')
         ->assertDontSeeInHtml('Your website video')
-        ->assertDontSeeInHtml('https://video.example.com/new-website')
+        ->assertSeeInHtml('https://video.example.com/new-website')
+        ->assertSeeInHtml('Watch your video')
         ->assertDontSeeInHtml('Book a call with Ross')
         ->assertDontSeeInHtml('signature=');
 });

@@ -33,6 +33,12 @@ class ProspectOutreachSequence
                     return;
                 }
 
+                if ($state->sequence_step === ProspectSequenceStep::PersonalisedVideo) {
+                    $this->finishVideoSequence($prospect, $state);
+
+                    return;
+                }
+
                 if ($this->isColdSequenceStep($state->sequence_step)
                     && $state->engagement_score >= (int) config('outreach.temperature_thresholds.warm', 3)) {
                     $state->update(['next_action_at' => null]);
@@ -57,7 +63,6 @@ class ProspectOutreachSequence
                     ProspectSequenceStep::InitialEmail => $this->sendColdFollowUp($prospect, $state),
                     ProspectSequenceStep::ColdFollowUp => $this->sendFinalFollowUp($prospect, $state),
                     ProspectSequenceStep::FinalFollowUp => $this->exhaust($prospect, $state),
-                    ProspectSequenceStep::PersonalisedVideo => $this->sendPostVideoFollowUp($prospect, $state),
                     default => null,
                 };
             });
@@ -74,22 +79,10 @@ class ProspectOutreachSequence
         $this->sendFollowUp($prospect, $state, ProspectOutreachMessageType::FinalFollowUp, ProspectSequenceStep::FinalFollowUp);
     }
 
-    private function sendPostVideoFollowUp(Prospect $prospect, ProspectOutreachState $state): void
+    private function finishVideoSequence(Prospect $prospect, ProspectOutreachState $state): void
     {
-        $template = config('outreach.templates.post_video_follow_up', []);
-        $subject = filled($template['subject'] ?? null)
-            ? $this->renderTemplate((string) $template['subject'], $prospect)
-            : (string) $prospect->outreach_subject;
-        $body = $this->renderTemplate((string) ($template['body'] ?? ''), $prospect);
-        $delivery = $this->sender->sendPostVideoFollowUp($prospect, $subject, $body);
-        $state->update([
-            'sequence_step' => ProspectSequenceStep::PostVideoFollowUp,
-            'post_video_follow_up_sent_at' => $delivery->sent_at,
-            'last_outreach_at' => $delivery->sent_at,
-            'next_action_at' => null,
-        ]);
+        $state->update(['next_action_at' => null]);
         $prospect->update(['next_follow_up_at' => null]);
-        $prospect->recordActivity('post_video_follow_up_sent', 'The single automatic post-video follow-up was sent.');
         $reasons = $this->manualFollowUpAdvisor->reasonsFor($prospect);
 
         if ($reasons !== []) {

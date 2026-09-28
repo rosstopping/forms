@@ -8,6 +8,7 @@ use App\Models\Prospect;
 use App\Services\ProspectPersonalisedVideo;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Validation\ValidationException;
 use LogicException;
 
 class ProspectPersonalisedVideoController extends Controller
@@ -42,7 +43,7 @@ class ProspectPersonalisedVideoController extends Controller
 
             $personalisedVideo->sendNow($prospect, $data['video_url'], $data['subject'], $data['body'], $request->user());
         } catch (LogicException $exception) {
-            abort(422, $exception->getMessage());
+            throw ValidationException::withMessages(['action' => $exception->getMessage()]);
         }
 
         return back()->with('status', 'Personalised video sent. Engagement tracking is active.');
