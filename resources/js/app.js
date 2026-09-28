@@ -658,3 +658,22 @@ document.querySelectorAll('[data-bulk-prospects-form]').forEach((form) => {
 
     update();
 });
+
+// Poll only the small SDK status fragment; leave the title form untouched.
+document.querySelectorAll('[data-sdk-runs]').forEach((container) => {
+    const refresh = async () => {
+        if (!container.querySelector('[data-sdk-active="true"]')) return;
+        if (!document.hidden && !container.closest('[hidden]')) {
+            try {
+                const response = await fetch(container.dataset.sdkStatusUrl, { headers: { Accept: 'text/html' }, redirect: 'error' });
+                if (!response.ok) return;
+                const html = await response.text();
+                if (!container.contains(document.activeElement)) container.innerHTML = html;
+            } catch {
+                return;
+            }
+        }
+        window.setTimeout(refresh, 5000);
+    };
+    window.setTimeout(refresh, 5000);
+});

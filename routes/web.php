@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\ContentPlanController;
 use App\Http\Controllers\Admin\ContentRequestController;
 use App\Http\Controllers\Admin\ContentRequestPixelController;
 use App\Http\Controllers\Admin\ContentSuggestionController;
+use App\Http\Controllers\Admin\CopilotSdkRunController;
 use App\Http\Controllers\Admin\CurrentWebsiteController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DeployPageOptimisationsController;
@@ -361,6 +362,9 @@ Route::middleware(['web', 'auth', ResolveCurrentWebsite::class])->prefix('admin'
     Route::put('websites/{website}/business-profile/posts/{post}', [BusinessProfilePostController::class, 'update'])->middleware('membership:complete')->name('business-profile.posts.update');
     Route::post('websites/{website}/business-profile/reviews/{review}/draft', [BusinessProfileReviewController::class, 'store'])->middleware('membership:complete')->name('business-profile.reviews.draft');
     Route::put('websites/{website}/business-profile/reviews/{review}', [BusinessProfileReviewController::class, 'update'])->middleware('membership:complete')->name('business-profile.reviews.update');
+    Route::post('websites/{website}/sdk-runs', [CopilotSdkRunController::class, 'store'])->middleware('throttle:6,1')->name('sdk-runs.store');
+    Route::get('websites/{website}/sdk-runs/status', [CopilotSdkRunController::class, 'status'])->name('sdk-runs.status');
+    Route::post('websites/{website}/sdk-runs/{run}/resume', [CopilotSdkRunController::class, 'resume'])->middleware('throttle:6,1')->name('sdk-runs.resume');
     Route::put('websites/{website}/content-plan', [ContentPlanController::class, 'update'])->middleware('membership:growth')->name('content-plans.update');
     Route::post('websites/{website}/content-generations', [ContentPlanController::class, 'generate'])->middleware('membership:growth')->name('content-generations.store');
     Route::post('websites/{website}/content-generations/{contentGeneration}/sync', [ContentPlanController::class, 'syncGeneration'])->middleware('membership:growth')->name('content-generations.sync');

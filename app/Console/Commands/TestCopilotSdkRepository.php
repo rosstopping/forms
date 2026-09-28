@@ -46,6 +46,10 @@ class TestCopilotSdkRepository extends Command
                     return self::SUCCESS;
                 }
             } else {
+                if (CopilotSdkTestRun::query()->where('repository_id', $repository->repository_id)
+                    ->whereIn('status', ['queued', 'publish_queued', 'running', 'validated', 'publishing'])->exists()) {
+                    throw new DomainException('Another SDK run is already active for this repository.');
+                }
                 $path = (string) $this->option('path');
                 $title = (string) $this->option('title');
                 $snapshot = $publisher->snapshot($repository, $path);

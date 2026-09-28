@@ -4,6 +4,9 @@
     if ($canManageWebsite) {
         $contentSections['automation'] = 'Automation';
     }
+    if ($canUseSdk) {
+        $contentSections['sdk'] = 'SDK test';
+    }
     $contentSections['connections'] = 'Connections';
     $requestedContentSection = request('content_section', 'queue');
     $currentContentSection = is_string($requestedContentSection) && array_key_exists($requestedContentSection, $contentSections) ? $requestedContentSection : 'queue';
@@ -50,6 +53,11 @@
         @if ($canManageWebsite)
             <div id="content-section-automation" role="region" aria-labelledby="content-section-tab-automation" @if ($currentContentSection !== 'automation') hidden @endif>
                 @include('admin.websites.partials.content-automation')
+            </div>
+        @endif
+        @if ($canUseSdk)
+            <div id="content-section-sdk" role="region" aria-labelledby="content-section-tab-sdk" @if ($currentContentSection !== 'sdk') hidden @endif>
+                @include('admin.websites.partials.content-sdk')
             </div>
         @endif
         <div id="content-section-connections" class="space-y-5" role="region" aria-labelledby="content-section-tab-connections" @if ($currentContentSection !== 'connections') hidden @endif>

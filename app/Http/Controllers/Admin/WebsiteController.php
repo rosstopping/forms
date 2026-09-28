@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\CopilotSdkTestRun;
 use App\Models\SeoImpact;
 use App\Models\User;
 use App\Models\Website;
@@ -192,6 +193,10 @@ class WebsiteController extends Controller
                 ->paginate(20, pageName: 'content_activity_page')
                 ->withQueryString()->appends(['content_section' => 'activity'])->fragment('content-activity-title');
         }
+        $canUseSdk = $user?->isAdmin() === true && $website->repository !== null;
+        $sdkRuns = $canUseSdk
+            ? CopilotSdkTestRun::query()->where('website_repository_id', $website->repository->id)->latest('id')->limit(10)->get()
+            : collect();
         $hasContentDeliveryConnection = $website->pixel_last_seen_at !== null
             || $website->wordpressConnection?->isConnected() === true
             || $website->repository !== null;
@@ -373,7 +378,7 @@ class WebsiteController extends Controller
             'dataForSeoConfigured', 'outreachProspect', 'pixelInstallationSnippet', 'canUseGrowthFeatures', 'canUseCompleteFeatures', 'canUseAutoresponders',
             'websiteAiQuestions', 'websiteAiQuestionsUsed', 'websiteAiWeeklyLimit', 'pixelOptimisations', 'websiteUsers', 'soleManagerId',
             'hasContentDeliveryConnection', 'contentSupportCallUrl', 'contentWeeklyLimit', 'contentScheduleReason', 'nextContentRun',
-            'pendingContentRequests', 'actionedContentRequests', 'impacts', 'seoImpact', 'unifiedActions', 'pageWorkspace',
+            'canUseSdk', 'sdkRuns', 'pendingContentRequests', 'actionedContentRequests', 'impacts', 'seoImpact', 'unifiedActions', 'pageWorkspace',
             'businessPostSuggestions', 'businessQueuedTopics', 'businessPosts', 'businessReviews', 'businessPostCounts', 'businessReviewCounts', 'businessPostFilter', 'businessReviewFilter',
         ));
     }

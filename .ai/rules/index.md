@@ -89,6 +89,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Mail,Models,Services,Http/Controllers}/**/*ProspectOutreach*.php,resources/views/mail/prospects/outreach.blade.php,resources/views/admin/prospects/**,routes/web.php | .ai/rules/prospects.md |
 | public/pixel.js | .ai/rules/public.md |
 | app/{Models,Services,Jobs,Http/Controllers/Admin,Http/Requests}/**/*SeoImpact*.php,app/Services/{ContentWorkSelector,ContentGenerationPromptGenerator,ContentOpportunityQueuer}.php | .ai/rules/requests-services.md |
+| app/{Jobs/RunCopilotSdkTitle.php,Http/Controllers/Admin/CopilotSdkRunController.php,Http/Requests/StoreCopilotSdkRunRequest.php},resources/views/admin/websites/partials/content-sdk*.blade.php | .ai/rules/requests-views-admin-websites-partials.md |
 | app/{Models/Website.php,Policies/WebsitePolicy.php,Http/Controllers/Admin/WebsiteMemberController.php,Http/Requests/*WebsiteMemberRequest.php},resources/views/admin/websites/**,routes/web.php | .ai/rules/requests-views-admin-websites.md |
 | app/{Models/Website.php,Http/Controllers/Admin/**,Http/Requests/**} | .ai/rules/requests.md |
 | app/Services/SeoIntelligence/**,app/Models/SeoOpportunity.php | .ai/rules/seo-intelligence-models.md |
