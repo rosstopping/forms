@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\CopilotSdkTestRun;
 use DomainException;
+use Illuminate\Process\Exceptions\ProcessTimedOutException;
 use Illuminate\Support\Facades\Process;
 use Throwable;
 
@@ -55,16 +56,41 @@ class CopilotSdkTitleRunner
                 ])->input(json_encode($request, JSON_THROW_ON_ERROR))
                 ->run([(string) config('copilot_sdk.node_binary'), resource_path('copilot-worker/src/cli.mjs')]);
             $result = json_decode($process->output(), true, 32, JSON_THROW_ON_ERROR);
-            $valid = $process->successful() && ($result['protocolVersion'] ?? null) === 1
-                && ($result['runId'] ?? null) === $run->run_id && ($result['fixture'] ?? null) === 'repository-title'
-                && ($result['mode'] ?? null) === 'live' && ($result['status'] ?? null) === 'validated'
-                && data_get($result, 'verification.0.passed') === true
-                && ($result['changes'] ?? null) === [['path' => $run->path, 'before' => $run->original, 'after' => $expected]];
+        } catch (ProcessTimedOutException) {
+            throw new DomainException('SDK worker exceeded its process timeout; no branch was published.');
         } catch (Throwable) {
             throw new DomainException('SDK worker failed. Check installation and model configuration; no branch was published.');
         }
+        $validIdentity = is_array($result) && ($result['protocolVersion'] ?? null) === 1
+                && ($result['runId'] ?? null) === $run->run_id && ($result['fixture'] ?? null) === 'repository-title'
+                && ($result['mode'] ?? null) === 'live';
+        if (! $validIdentity) {
+            throw new DomainException('SDK worker returned an invalid result identity; no branch was published.');
+        }
+        $diagnostics = ' Elapsed: '.max(0, min(3600000, (int) ($result['elapsedMs'] ?? 0))).' ms; tool calls: '.max(0, min(1000, (int) ($result['toolCalls'] ?? 0))).'.';
+        if (($result['status'] ?? null) === 'failed') {
+            $reason = match ($result['error'] ?? null) {
+                'time_limit' => 'SDK reached the '.$request['limits']['timeoutSeconds'].'-second time limit before completing.',
+                'token_limit' => 'SDK reached its reported token limit.',
+                'tool_limit' => 'SDK reached its tool-call limit.',
+                'cancelled' => 'SDK execution was cancelled.',
+                'provider_authentication' => 'The model provider rejected the API key.',
+                'provider_authorization' => 'The API key lacks permission for the requested model.',
+                'provider_quota' => 'The model provider reported exhausted quota or missing billing.',
+                'provider_rate_limit' => 'The model provider rate-limited the request.',
+                'provider_model_unavailable' => 'The model provider could not find the requested model or endpoint.',
+                'provider_request_invalid' => 'The model provider rejected the request format or context size.',
+                'provider_unavailable' => 'The model provider reported a server error.',
+                default => 'SDK execution failed before validation.',
+            };
+            throw new DomainException($reason.$diagnostics.' No branch was published.');
+        }
+        $valid = $process->successful() && ($result['status'] ?? null) === 'validated'
+                && data_get($result, 'verification.0.passed') === true
+                && ($result['changes'] ?? null) === [['path' => $run->path, 'before' => $run->original, 'after' => $expected]];
         if (! $valid) {
-            throw new DomainException('SDK output failed independent title-only validation; no branch was published.');
+            $reason = ($result['changes'] ?? null) === [] ? 'SDK finished without editing the file.' : 'SDK output failed independent title-only validation.';
+            throw new DomainException($reason.$diagnostics.' No branch was published.');
         }
         $usage = [];
         foreach (['inputTokens', 'outputTokens', 'cacheReadTokens', 'cacheWriteTokens', 'events'] as $key) {

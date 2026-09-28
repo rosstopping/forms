@@ -51,7 +51,7 @@ export async function runFixture(raw, { env = process.env, adapterFactory = crea
             : fixtureResult.verification.every(check => check.passed) ? 'validated' : 'validation_failed';
         return { ...result, status, ...fixtureResult, usage, elapsedMs: Date.now() - startedAt };
     } catch (error) {
-        return { ...result, status: 'failed', error: error instanceof WorkerError ? error.code : 'sdk_execution_failed', usage, elapsedMs: Date.now() - startedAt };
+        return { ...result, status: 'failed', error: error instanceof WorkerError ? error.code : 'sdk_execution_failed', toolCalls: fixture.result().toolCalls, usage, elapsedMs: Date.now() - startedAt };
     } finally {
         clearTimeout(timer);
         controller.abort();

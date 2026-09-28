@@ -8,6 +8,7 @@ export async function createSdkAdapter({ CopilotClient } = {}) {
     const directory = await mkdtemp(join(tmpdir(), 'sitewell-sdk-'));
     let client;
     let session;
+    let failureCode;
     return {
         async run({ request, provider, tools, prompt, onUsage, signal }) {
             client = new CopilotClient({
@@ -38,7 +39,12 @@ export async function createSdkAdapter({ CopilotClient } = {}) {
             });
             if (signal.aborted) throw new WorkerError('cancelled');
             session.on('assistant.usage', event => onUsage(event.data));
-            await session.sendAndWait({ prompt }, request.limits.timeoutSeconds * 1000);
+            session.on('session.error', event => { failureCode = classifyProviderError(event.data); });
+            try {
+                await session.sendAndWait({ prompt }, request.limits.timeoutSeconds * 1000);
+            } catch {
+                throw new WorkerError(failureCode ?? 'sdk_execution_failed');
+            }
         },
         async close() {
             if (client) {
@@ -48,4 +54,15 @@ export async function createSdkAdapter({ CopilotClient } = {}) {
             await rm(directory, { recursive: true, force: true });
         },
     };
+}
+
+export function classifyProviderError(data) {
+    if (data?.errorType === 'quota' || data?.errorCode === 'insufficient_quota') return 'provider_quota';
+    if (data?.statusCode === 401 || data?.errorType === 'authentication') return 'provider_authentication';
+    if (data?.statusCode === 403 || data?.errorType === 'authorization') return 'provider_authorization';
+    if (data?.statusCode === 429 || data?.errorType === 'rate_limit') return 'provider_rate_limit';
+    if (data?.statusCode === 404) return 'provider_model_unavailable';
+    if (data?.statusCode === 400 || data?.errorType === 'context_limit') return 'provider_request_invalid';
+    if (Number.isInteger(data?.statusCode) && data.statusCode >= 500 && data.statusCode <= 599) return 'provider_unavailable';
+    return 'sdk_execution_failed';
 }

@@ -161,3 +161,32 @@ test('repository output cannot pass by claiming success or editing other content
     }) });
     assert.equal(result.status, 'validation_failed');
 });
+
+test('SDK provider errors become safe categories without raw provider details', async () => {
+    for (const [data, expected] of [
+        [{ statusCode: 401 }, 'provider_authentication'],
+        [{ statusCode: 403 }, 'provider_authorization'],
+        [{ statusCode: 429 }, 'provider_rate_limit'],
+        [{ errorType: 'quota' }, 'provider_quota'],
+        [{ statusCode: 400 }, 'provider_request_invalid'],
+        [{ statusCode: 404 }, 'provider_model_unavailable'],
+        [{ statusCode: 503 }, 'provider_unavailable'],
+        [{ errorType: 'secret-provider-error' }, 'sdk_execution_failed'],
+    ]) {
+        class FailedClient {
+            async start() {}
+            async createSession() {
+                const handlers = {};
+                return { on: (name, fn) => { handlers[name] = fn; }, async sendAndWait() {
+                    handlers['session.error']({ data: { ...data, message: 'private-key response' } });
+                    throw new Error('private-key response');
+                } };
+            }
+            async forceStop() {}
+        }
+        const result = await runFixture(request('live'), { env, adapterFactory: () => createSdkAdapter({ CopilotClient: FailedClient }) });
+        assert.equal(result.error, expected);
+        assert.equal(result.toolCalls, 0);
+        assert.doesNotMatch(JSON.stringify(result), /private-key|secret-provider-error/);
+    }
+});

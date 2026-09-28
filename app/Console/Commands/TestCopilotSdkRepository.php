@@ -79,8 +79,9 @@ class TestCopilotSdkRepository extends Command
         } catch (Throwable $exception) {
             if ($run?->exists) {
                 $publishFailed = $run->replacement !== null;
-                $run->update(['status' => $publishFailed ? 'publish_failed' : 'failed', 'error' => $publishFailed ? 'Publishing did not finish. Resume this run to reconcile the branch and draft PR.' : 'SDK test did not finish or pass independent validation.']);
-                $this->error($exception instanceof DomainException ? $exception->getMessage().' '.$run->error : $run->error);
+                $reason = $exception instanceof DomainException ? $exception->getMessage() : 'SDK test did not finish or pass independent validation.';
+                $run->update(['status' => $publishFailed ? 'publish_failed' : 'failed', 'error' => $publishFailed ? 'Publishing did not finish. Resume this run to reconcile the branch and draft PR.' : $reason]);
+                $this->error($publishFailed && $exception instanceof DomainException ? $reason.' '.$run->error : $run->error);
                 $this->line('Run: '.$run->run_id);
             } else {
                 $this->error($exception instanceof DomainException ? $exception->getMessage() : 'Readiness check failed. Check the admin ID, repository access, HTML path and SDK model configuration.');

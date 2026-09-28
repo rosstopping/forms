@@ -63,3 +63,27 @@ for (const fixture of ['website-title', 'repository-title']) {
     });
 
 }
+
+test('real SDK reports provider authentication failures without exposing the response', { timeout: 30000 }, async () => {
+    const server = createServer(async (req, res) => {
+        for await (const chunk of req) { /* Drain the request before responding. */ }
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: { message: 'private-test-key was rejected', type: 'invalid_request_error', code: 'invalid_api_key' } }));
+    });
+    await new Promise((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve); });
+    try {
+        const result = await runFixture({ protocolVersion: 1, runId: randomUUID(), fixture: 'website-title', mode: 'live', limits: { timeoutSeconds: 20, maxToolCalls: 10, maxTokens: 10000 } }, {
+            env: { SITEWELL_MODEL_PROVIDER: 'openai', SITEWELL_MODEL_NAME: 'fixture-model', SITEWELL_MODEL_API_KEY: 'local-test-only' },
+            adapterFactory: async () => {
+                const adapter = await createSdkAdapter();
+                return { close: () => adapter.close(), run: args => adapter.run({ ...args, provider: { ...args.provider, baseUrl: `http://127.0.0.1:${server.address().port}/v1`, wireApi: 'completions' } }) };
+            },
+        });
+        assert.equal(result.status, 'failed');
+        assert.equal(result.error, 'provider_authentication');
+        assert.doesNotMatch(JSON.stringify(result), /private-test-key|invalid_api_key/);
+    } finally {
+        server.closeAllConnections();
+        await new Promise(resolve => server.close(resolve));
+    }
+});

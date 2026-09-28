@@ -242,3 +242,39 @@ it('reconciles a closed PR without reopening or duplicating it', function (): vo
     Process::assertRanTimes(fn (PendingProcess $process): bool => true, 1);
     expect(Http::recorded(fn (Request $request) => $request->method() === 'POST' && str_ends_with($request->url(), '/pulls')))->toHaveCount(1);
 });
+
+it('reports and persists safe worker failures instead of calling them title mismatches', function (string $code, string $message): void {
+    Process::fake(function (PendingProcess $process) use ($code) {
+        $request = json_decode($process->input, true);
+
+        return Process::result(output: json_encode([
+            'protocolVersion' => 1, 'runId' => $request['runId'], 'fixture' => 'repository-title', 'mode' => 'live',
+            'status' => 'failed', 'error' => $code, 'elapsedMs' => 60000, 'toolCalls' => 2,
+            'message' => 'private-provider-key',
+        ]), exitCode: 1);
+    });
+    $this->artisan('copilot-sdk:test-repository', [...$this->commands, '--publish' => true])
+        ->expectsOutputToContain($message)
+        ->doesntExpectOutputToContain('private-provider-key')->assertFailed();
+    expect(CopilotSdkTestRun::sole()->error)->toContain($message)->toContain('Elapsed: 60000 ms; tool calls: 2.')->not->toContain('private-provider-key');
+    Http::assertNotSent(fn (Request $request) => $request->method() === 'POST' && str_contains($request->url(), '/repos/'));
+})->with([
+    'time limit' => ['time_limit', '60-second time limit'],
+    'token limit' => ['token_limit', 'reported token limit'],
+    'rate limit' => ['provider_rate_limit', 'rate-limited'],
+    'authentication' => ['provider_authentication', 'rejected the API key'],
+    'unknown error is never echoed' => ['private-provider-key', 'execution failed before validation'],
+]);
+
+it('distinguishes a model that made no edits from an invalid title change', function (): void {
+    Process::fake(function (PendingProcess $process) {
+        $request = json_decode($process->input, true);
+
+        return Process::result(output: json_encode([
+            'protocolVersion' => 1, 'runId' => $request['runId'], 'fixture' => 'repository-title', 'mode' => 'live',
+            'status' => 'validation_failed', 'changes' => [], 'elapsedMs' => 2000, 'toolCalls' => 1,
+        ]), exitCode: 1);
+    });
+    $this->artisan('copilot-sdk:test-repository', [...$this->commands, '--publish' => true])
+        ->expectsOutputToContain('SDK finished without editing the file.')->assertFailed();
+});
