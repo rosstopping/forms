@@ -26,12 +26,13 @@ test('contract rejects arbitrary files, commands, modes and excessive limits', (
     assert.throws(() => validateProvider({ ...env, SITEWELL_MODEL_API_KEY: '' }));
 });
 
-test('fixture tools reject host paths and oversized files', () => {
+test('fixture tools reject host paths, unapproved titles and full-document writes', () => {
     const { tools } = createFixture(20, new AbortController().signal);
     for (const path of ['../.env', '/etc/passwd', 'index.html/../.env', 'index.html\0', 'https://example.com']) {
         assert.throws(() => tools[0].handler({ path }), /path_not_allowed/);
     }
-    assert.throws(() => tools[1].handler({ path: 'index.html', content: 'a'.repeat(8193) }), /file_limit/);
+    assert.throws(() => tools[1].handler({ path: 'index.html', content: 'a'.repeat(8193) }), /invalid_tool_arguments/);
+    assert.throws(() => tools[1].handler({ path: 'index.html', title: 'Unapproved title' }), /title_not_allowed/);
     assert.throws(() => tools[2].handler({ command: 'node evil.js' }), /invalid_tool_arguments/);
 });
 
@@ -158,13 +159,22 @@ test('SDK adapter isolates runtime state, disables ambient auth and exposes only
 
 const repositoryRequest = () => ({ ...request('live'), fixture: 'repository-title', document: { path: 'public/index.html', original: '<title>Old</title><p>Keep every byte</p>', title: 'Sitewell & SDK test' } });
 
+test('compact title writes preserve a large document and escape the approved title', () => {
+    const original = '<title>Old</title>' + '<p>Untouched &amp; content</p>'.repeat(250);
+    const title = 'Sitewell & <SDK>';
+    const fixture = createFixture(3, new AbortController().signal, { path: 'index.html', original, title });
+    assert.equal(fixture.tools[0].handler({ path: 'index.html' }), original);
+    assert.deepEqual(fixture.tools[1].handler({ path: 'index.html', title }), { name: 'title-only-change', passed: true });
+    assert.equal(fixture.result().changes[0].after, original.replace('<title>Old</title>', '<title>Sitewell &amp; &lt;SDK&gt;</title>'));
+});
+
 test('repository document tools edit only the approved in-memory document', async () => {
     const input = repositoryRequest();
     const result = await runFixture(input, { env, adapterFactory: async () => ({
         run: async ({ tools }) => {
             assert.throws(() => tools[0].handler({ path: '/etc/passwd' }), /path_not_allowed/);
-            const content = tools[0].handler({ path: input.document.path });
-            tools[1].handler({ path: input.document.path, content: content.replace('Old', 'Sitewell &amp; SDK test') });
+            tools[0].handler({ path: input.document.path });
+            tools[1].handler({ path: input.document.path, title: input.document.title });
         }, close: async () => {},
     }) });
     assert.equal(result.status, 'validated');
@@ -180,13 +190,14 @@ test('repository contract rejects simulation, traversal, invalid documents and e
     }
 });
 
-test('repository output cannot pass by claiming success or editing other content', async () => {
+test('repository write tool rejects attempts to edit other content', async () => {
     const input = repositoryRequest();
     const result = await runFixture(input, { env, adapterFactory: async () => ({
         run: async ({ tools }) => tools[1].handler({ path: input.document.path, content: '<title>Sitewell &amp; SDK test</title><script>bad()</script>' }),
         close: async () => {},
     }) });
-    assert.equal(result.status, 'validation_failed');
+    assert.equal(result.status, 'failed');
+    assert.equal(result.error, 'invalid_tool_arguments');
 });
 
 test('SDK provider errors become safe categories without raw provider details', async () => {

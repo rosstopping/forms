@@ -16,7 +16,7 @@ for (const fixture of ['website-title', 'repository-title']) {
             assert.deepEqual(body.tools.map(tool => tool.function.name).sort(), ['sitewell_fixture_check', 'sitewell_fixture_read', 'sitewell_fixture_write']);
             const actions = [
                 ['sitewell_fixture_read', { path: 'index.html' }],
-                ['sitewell_fixture_write', { path: 'index.html', content: '<!doctype html>\n<html><head><title>Acme Plumbing | Doncaster</title></head><body><h1>Acme Plumbing</h1></body></html>\n' }],
+                ['sitewell_fixture_write', { path: 'index.html', title: 'Acme Plumbing | Doncaster' }],
                 ['sitewell_fixture_check', {}],
             ];
             const action = actions[calls++];

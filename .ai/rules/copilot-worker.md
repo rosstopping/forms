@@ -10,3 +10,6 @@ The admin-only copilot-sdk:test-repository command is an explicit title-only pil
 
 ## Count OpenAI cached input once in SDK budgets
 The pinned Copilot runtime reports OpenAI inputTokens inclusive of cacheReadTokens (verified against the real runtime with a local completions stub). Enforce the OpenAI budget using inputTokens + outputTokens; retain cache counters as diagnostics, not additional tokens. Keep a nonzero-cache runtime regression when upgrading the SDK; other providers may report separate cache input.
+
+## Use a compact title argument for the SDK smoke test
+The title-only worker write tool takes the approved plain-text title, not a regenerated HTML document. Trusted code escapes and replaces the title while PHP independently validates the full result before publishing. This tests SDK tool dispatch and the draft PR pipeline, not general-purpose model-authored code editing; do not expand its scope implicitly.
