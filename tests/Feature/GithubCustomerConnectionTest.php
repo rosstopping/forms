@@ -10,7 +10,6 @@ use Illuminate\Support\Facades\Http;
 
 beforeEach(function (): void {
     config([
-        'copilot_sdk.customer_repositories_enabled' => true,
         'services.github.app_id' => '123',
         'services.github.app_slug' => 'sitewell-test',
         'services.github.client_id' => 'client',

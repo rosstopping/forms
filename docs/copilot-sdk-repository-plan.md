@@ -185,7 +185,7 @@ This last command incurs provider usage and edits only the synthetic fixture. No
 
 ## Implementation progress — customer GitHub connections
 
-Implemented behind `COPILOT_SDK_CUSTOMER_REPOSITORIES_ENABLED=false`:
+Implemented for all Sitewell administrators automatically; ordinary customers retain the existing flow:
 
 - Customer GitHub authorisation verifies identity and repository access without starting a hosted Copilot task or checking a Copilot subscription. Model billing remains separate. This uses the existing GitHub App and OAuth configuration; a new minimal-permission App has not been provisioned.
 - Repository discovery uses GitHub's user-to-installation APIs, intersecting App access with the signed-in customer's current access. Only writable repositories from active installations of this App with contents/PR write permission are selectable.
@@ -193,7 +193,7 @@ Implemented behind `COPILOT_SDK_CUSTOMER_REPOSITORIES_ENABLED=false`:
 - Installation and OAuth callback states are single-use, expire after 15 minutes, and bind to the authenticated user and browser session. Website management access is checked again on return. Installation IDs are verified through GitHub before being persisted.
 - Repository pagination, revoked-access recovery, foreign/suspended installations, read-only repositories, callback replay/expiry, changed website ownership and shared installations have automated coverage.
 
-No schema migration is required. The connection flag remains off, and the existing hosted task engine remains unchanged. Enabling repository connections does not enable SDK remediation execution. Production needs a persistent cache shared across application instances, supporting atomic locks, for connection state.
+No schema migration is required. The new connection flow is admin-only, and the existing hosted task engine remains unchanged. Enabling repository connections does not enable SDK remediation execution. Production needs a persistent cache shared across application instances, supporting atomic locks, for connection state.
 
 Verification: 67 PHP tests passed (255 assertions), covering the new flow, existing GitHub integration, fixture runner and remediation completion. Pint and diff checks are also required before review.
 
@@ -212,28 +212,20 @@ GitHub responses are faked in these tests. Live installation settings, external-
 
 ## Forge admin connection pilot
 
-The customer repository flow now requires both the feature flag and an explicit allowlist of Sitewell admin user IDs. Empty allowlists enable nobody. Non-admin users remain on the existing connection flow even if their ID is listed. All new-flow callbacks and repository listing/saving use the same check; removing access during consent rejects the callback.
+The customer repository flow is enabled automatically for every Sitewell admin. No connection feature flag, environment variable or user-ID allowlist is required. Non-admin users remain on the existing connection flow. All new-flow callbacks and repository listing/saving use the same role check; losing the admin role during consent rejects the callback. This supersedes the original opt-in flag and allowlist design.
 
-After deploying this branch's merged code, configure these values in the Forge site's environment (replace `123` with the intended **Sitewell admin user ID**, not a GitHub ID):
-
-```dotenv
-COPILOT_SDK_CUSTOMER_REPOSITORIES_ENABLED=true
-COPILOT_SDK_CUSTOMER_REPOSITORY_ADMIN_IDS=123
-COPILOT_SDK_ENABLED=false
-```
-
-Multiple admin IDs can be comma-separated. Refresh Laravel's configuration cache after saving the environment. No database migration or worker-package installation is required for this connection-only test. SDK execution remains disabled, and existing hosted task execution has not been replaced. Do not launch remediation/content tasks as part of this connection test: those actions still use the existing hosted engine.
+Deploy the merged code using the normal Forge deployment process. No database migration or worker-package installation is required for this connection-only test. SDK execution remains disabled by default and needs no environment entry to stay disabled. Existing hosted task execution has not been replaced. Do not launch remediation/content tasks as part of this connection test: those actions still use the existing hosted engine.
 
 Test target: private `sitewellross/test`, using DigizuAudit. The App's public API now reports contents and pull_requests write permission; an existing installation must also accept the permission update. The `rosstopping` CLI login received 404 for this repository, which is consistent with lack of access but does not establish private-repository existence.
 
 Acceptance steps:
 
-1. Sign into Sitewell as an allowlisted admin and use a dedicated test website's Content repository connection controls.
+1. Sign into Sitewell as an admin and use a dedicated test website's Content repository connection controls.
 2. Complete GitHub consent as `sitewellross`, selecting only the private `test` repository for the App. Start from Sitewell so the callback includes its bound state; do not start this test from a bare App installation link.
 3. Confirm `sitewellross/test` appears and can be saved. Confirm it does not need to be shared with `rosstopping`.
 4. Reconnect or refresh permissions to verify the shared installation retains its original installer. Verify read-only or inaccessible repositories cannot be selected.
-5. Confirm an ordinary customer and an unlisted admin still use the original flow. Admin testing does not replace the later normal-customer acceptance test.
+5. Confirm an ordinary customer still uses the original flow. Admin testing does not replace the later normal-customer acceptance test.
 
-Rollback: set `COPILOT_SDK_CUSTOMER_REPOSITORIES_ENABLED=false` and refresh the configuration cache. Pending pilot callbacks will be rejected and must be restarted. Already saved repository connections remain; turning off the pilot does not disconnect or delete them.
+Rollback uses a code deployment restoring the previous connection behaviour; there is no connection environment toggle. Already saved repository connections remain unless explicitly disconnected.
 
 Isolated customer-code execution, paid model benchmarking and SDK pull-request publishing remain future milestones. The agency marketing work on main should be revisited after this Copilot milestone.

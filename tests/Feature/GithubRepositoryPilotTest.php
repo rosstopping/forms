@@ -17,7 +17,7 @@ beforeEach(function (): void {
     config(['services.github.app_slug' => 'digizuaudit']);
 });
 
-it('uses the pilot only for explicitly selected administrators across connection listing and saving', function (bool $enabled, bool $admin, bool $listed, bool $pilot): void {
+it('uses the pilot for every admin regardless of obsolete configuration across connection listing and saving', function (bool $enabled, bool $admin, bool $listed, bool $pilot): void {
     $user = User::factory()->create(['role' => $admin ? User::ROLE_ADMIN : User::ROLE_USER]);
     $website = Website::factory()->for($user, 'owner')->create();
     $installation = GithubInstallation::factory()->for($user, 'installer')->create(['installation_id' => 9876]);
@@ -50,10 +50,10 @@ it('uses the pilot only for explicitly selected administrators across connection
     Http::assertNothingSent();
 })->with([
     'selected admin' => [true, true, true, true],
-    'unselected admin' => [true, true, false, false],
+    'admin without allowlist' => [true, true, false, true],
     'customer in list' => [true, false, true, false],
     'ordinary customer' => [true, false, false, false],
-    'flag disabled' => [false, true, true, false],
+    'admin with obsolete flag disabled' => [false, true, true, true],
 ]);
 
 it('rejects pilot callbacks if access is removed during consent', function (string $change): void {
@@ -65,17 +65,15 @@ it('rejects pilot callbacks if access is removed during consent', function (stri
     $this->withCookie(config('session.cookie'), session()->getId());
     if ($change === 'role') {
         $admin->update(['role' => User::ROLE_USER]);
-    } elseif ($change === 'allowlist') {
-        config(['copilot_sdk.customer_repository_admin_ids' => []]);
     } else {
-        config(['copilot_sdk.customer_repositories_enabled' => false]);
+        $this->actingAs(User::factory()->create());
     }
     $this->get(route('admin.github.callback', ['state' => $query['state'], 'installation_id' => 9876, 'code' => 'test-code']))->assertForbidden();
     expect(GithubInstallation::count())->toBe(0);
     Http::assertNothingSent();
-})->with(['role', 'allowlist', 'flag']);
+})->with(['role', 'different-user']);
 
-it('rejects pilot callbacks for an unselected user without invoking either OAuth flow', function (): void {
+it('rejects pilot callbacks for a non-admin user without invoking either OAuth flow', function (): void {
     $user = User::factory()->create();
     config(['copilot_sdk.customer_repositories_enabled' => true, 'copilot_sdk.customer_repository_admin_ids' => [(string) $user->id]]);
     $this->actingAs($user)->get(route('admin.github.callback', ['state' => 'repository_'.str_repeat('a', 64), 'code' => 'test-code', 'installation_id' => 9876]))->assertForbidden();

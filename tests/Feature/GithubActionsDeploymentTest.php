@@ -237,12 +237,13 @@ it('never downloads source with incomplete artifact settings', function (string 
 })->with(['wordpress_workflow_path', 'wordpress_artifact_name']);
 
 it('saves and displays separate source and artifact settings', function (): void {
-    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $customer = $this->repository->website->owner;
+    $this->repository->installation->update(['installed_by' => $customer->id]);
     mock(GithubAppClient::class)->shouldReceive('repositories')->andReturn([[
         'id' => $this->repository->repository_id, 'full_name' => $this->repository->full_name,
         'default_branch' => 'main', 'private' => true,
     ]]);
-    $this->actingAs($admin)->post(route('admin.website-repositories.store', $this->repository->website), [
+    $this->actingAs($customer)->post(route('admin.website-repositories.store', $this->repository->website), [
         'repository' => $this->repository->github_installation_id.':'.$this->repository->repository_id,
         'project_path' => 'src/site',
         'wordpress_workflow_path' => '.github/workflows/build-site.yml',

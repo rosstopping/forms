@@ -13,6 +13,7 @@ use App\Models\WebsiteHealthReportPage;
 use App\Models\WebsiteRepository;
 use App\Services\CopilotAgentClient;
 use App\Services\GithubAppClient;
+use App\Services\GithubCustomerRepositories;
 use App\Services\GithubOAuthClient;
 use App\Services\RemediationPromptGenerator;
 use App\Support\MembershipPlan;
@@ -74,31 +75,25 @@ it('retrieves every page of repositories available to an installation', function
     Http::assertSent(fn ($request): bool => $request->url() === 'https://api.github.test/installation/repositories?per_page=100&page=2');
 });
 
-it('opens existing installation repositories from the content connection link', function (): void {
+it('opens customer-visible repositories for an admin from the content connection link', function (): void {
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     $website = Website::factory()->create();
     $installation = GithubInstallation::factory()->create(['installation_id' => 9876]);
-
-    mock(GithubAppClient::class)
-        ->shouldReceive('repositories')
-        ->once()
-        ->with(9876)
-        ->andReturn([[
-            'id' => 456,
-            'full_name' => 'acme/marketing',
-            'default_branch' => 'main',
-            'private' => true,
-        ]]);
+    GithubUserAuthorization::factory()->for($admin)->create();
+    mock(GithubCustomerRepositories::class)
+        ->shouldReceive('available')->once()->withArgs(fn (User $user): bool => $user->is($admin))
+        ->andReturn(collect([[
+            'id' => 456, 'full_name' => 'acme/marketing', 'default_branch' => 'main', 'private' => true,
+            'github_installation_id' => $installation->id, 'account_login' => 'acme',
+        ]]));
 
     $this->actingAs($admin)
-        ->get(route('admin.websites.show', ['website' => $website, 'tab' => 'content']))
+        ->get(route('admin.websites.section', [$website, 'content']))
         ->assertOk()
         ->assertSee('href="'.route('admin.website-repositories.create', $website).'"', false)
         ->assertDontSee('href="'.route('admin.github.connect', $website).'"', false);
-
     $this->get(route('admin.website-repositories.create', $website))
-        ->assertOk()
-        ->assertSee('acme/marketing')
+        ->assertOk()->assertSee('acme/marketing')
         ->assertSee('value="'.$installation->id.':456"', false);
 });
 
@@ -151,12 +146,12 @@ it('returns to the website builder after GitHub reauthorization', function (): v
         ->assertSessionHas('status', 'GitHub reconnected as octocat.');
 });
 
-it('stores a verified GitHub App installation callback', function (): void {
-    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
-    $website = Website::factory()->create();
+it('stores a verified GitHub App installation callback for a customer', function (): void {
+    $customer = User::factory()->create();
+    $website = Website::factory()->for($customer, 'owner')->create();
     $state = Crypt::encryptString(json_encode([
         'website_id' => $website->id,
-        'user_id' => $admin->id,
+        'user_id' => $customer->id,
     ], JSON_THROW_ON_ERROR));
 
     mock(GithubAppClient::class)
@@ -174,14 +169,14 @@ it('stores a verified GitHub App installation callback', function (): void {
         ->once()
         ->andReturn('https://github.com/login/oauth/authorize?state=test');
 
-    $this->actingAs($admin)
+    $this->actingAs($customer)
         ->get(route('admin.github.callback', ['installation_id' => 9876, 'state' => $state]))
         ->assertRedirect('https://github.com/login/oauth/authorize?state=test');
 
     $installation = GithubInstallation::query()->sole();
     expect($installation->installation_id)->toBe(9876)
         ->and($installation->account_login)->toBe('acme')
-        ->and($installation->installed_by)->toBe($admin->id);
+        ->and($installation->installed_by)->toBe($customer->id);
 });
 
 it('exchanges the GitHub OAuth code and encrypts user tokens', function (): void {
@@ -211,13 +206,13 @@ it('exchanges the GitHub OAuth code and encrypts user tokens', function (): void
         ->and($authorization->getRawOriginal('refresh_token'))->not->toContain('ghr_secret_refresh');
 });
 
-it('completes OAuth requested during installation and keeps the website context', function (): void {
-    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
-    $website = Website::factory()->create();
-    $authorization = GithubUserAuthorization::factory()->for($admin)->create(['github_login' => 'octocat']);
+it('completes OAuth requested during installation and keeps the website context for a customer', function (): void {
+    $customer = User::factory()->create();
+    $website = Website::factory()->for($customer, 'owner')->create();
+    $authorization = GithubUserAuthorization::factory()->for($customer)->create(['github_login' => 'octocat']);
     $state = Crypt::encryptString(json_encode([
         'website_id' => $website->id,
-        'user_id' => $admin->id,
+        'user_id' => $customer->id,
     ], JSON_THROW_ON_ERROR));
 
     mock(GithubAppClient::class)
@@ -233,14 +228,14 @@ it('completes OAuth requested during installation and keeps the website context'
     $oauth = mock(GithubOAuthClient::class);
     $oauth->shouldReceive('authorize')
         ->once()
-        ->withArgs(fn (User $user, string $code) => $user->is($admin) && $code === 'temporary-code')
+        ->withArgs(fn (User $user, string $code) => $user->is($customer) && $code === 'temporary-code')
         ->andReturn($authorization);
     $oauth->shouldReceive('canAccessInstallation')
         ->once()
         ->withArgs(fn (GithubUserAuthorization $selectedAuthorization, int $installationId) => $selectedAuthorization->is($authorization) && $installationId === 9876)
         ->andReturnTrue();
 
-    $this->actingAs($admin)
+    $this->actingAs($customer)
         ->get(route('admin.github.callback', [
             'code' => 'temporary-code',
             'installation_id' => 9876,
@@ -278,10 +273,10 @@ it('rotates an expired GitHub user token before starting API work', function ():
         ->and($authorization->fresh()->refresh_token)->toBe('ghr_rotated_refresh');
 });
 
-it('binds only a repository returned by the selected installation', function (): void {
-    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
-    $website = Website::factory()->create();
-    $installation = GithubInstallation::factory()->create(['installation_id' => 9876]);
+it('binds only a repository returned by the selected installation for a customer', function (): void {
+    $customer = User::factory()->create();
+    $website = Website::factory()->for($customer, 'owner')->create();
+    $installation = GithubInstallation::factory()->for($customer, 'installer')->create(['installation_id' => 9876]);
 
     mock(GithubAppClient::class)
         ->shouldReceive('repositories')
@@ -295,7 +290,7 @@ it('binds only a repository returned by the selected installation', function ():
             'permissions' => ['admin' => true, 'push' => true, 'pull' => true],
         ]]);
 
-    $this->actingAs($admin)
+    $this->actingAs($customer)
         ->post(route('admin.website-repositories.store', $website), [
             'repository' => $installation->id.':456',
             'project_path' => '/apps/site/',
@@ -307,10 +302,10 @@ it('binds only a repository returned by the selected installation', function ():
         ->and($repository->project_path)->toBe('apps/site');
 });
 
-it('renders repository choices as a searchable select', function (): void {
-    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
-    $website = Website::factory()->create();
-    $installation = GithubInstallation::factory()->create([
+it('renders repository choices as a searchable select for a customer', function (): void {
+    $customer = User::factory()->create();
+    $website = Website::factory()->for($customer, 'owner')->create();
+    $installation = GithubInstallation::factory()->for($customer, 'installer')->create([
         'installation_id' => 9876,
         'account_login' => 'acme',
     ]);
@@ -327,7 +322,7 @@ it('renders repository choices as a searchable select', function (): void {
             'permissions' => ['admin' => true, 'push' => true, 'pull' => true],
         ]]);
 
-    $this->actingAs($admin)
+    $this->actingAs($customer)
         ->get(route('admin.website-repositories.create', $website))
         ->assertOk()
         ->assertSee('role="combobox"', false)
