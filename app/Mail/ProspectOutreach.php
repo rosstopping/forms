@@ -69,6 +69,10 @@ class ProspectOutreach extends Mailable
                 'auditReportUrl' => $auditReportUrl,
                 'bookingUrl' => $bookingUrl,
                 'trackingOpenUrl' => $trackingOpenUrl,
+                'unsubscribeUrl' => URL::signedRoute('prospects.unsubscribe.show', [
+                    'prospect' => $this->prospect,
+                    ...($this->delivery ? [] : ['preview' => '1']),
+                ]),
                 'showOutreachDisclosure' => ! $isInitialOutreach,
                 'messageBody' => $this->delivery?->body ?? $this->prospect->outreach_body,
             ],

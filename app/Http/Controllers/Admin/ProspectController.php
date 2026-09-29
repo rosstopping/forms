@@ -164,7 +164,7 @@ class ProspectController extends Controller
     {
         $previousStatus = $prospect->status;
         $data = $request->validated();
-        $data['suppressed_at'] = $request->boolean('suppressed') ? ($prospect->suppressed_at ?: now()) : null;
+        $data['suppressed_at'] = ($prospect->unsubscribed_at !== null || $request->boolean('suppressed')) ? ($prospect->suppressed_at ?: now()) : null;
         if ($data['suppressed_at']) {
             $data['scheduled_send_at'] = null;
         }

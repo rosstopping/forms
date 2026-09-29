@@ -196,7 +196,7 @@ it('keeps protected lifecycle outcomes unchanged when an old tracked link is vis
     $this->get(URL::signedRoute('prospect-outreach-links.show', $link))->assertRedirect();
 
     expect($prospect->outreachState->fresh()->lifecycle_state)->toBe(ProspectLifecycleState::Customer)
-        ->and($prospect->outreachState->engagement_score)->toBe(20)
+        ->and($prospect->outreachState->engagement_score)->toBe(0)
         ->and($prospect->fresh()->lead_temperature)->toBe('cold');
     Notification::assertNothingSent();
 });

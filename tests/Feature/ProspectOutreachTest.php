@@ -503,7 +503,9 @@ it('renders the optional video and thumbnail in initial outreach', function () {
         ->assertDontSeeInHtml('Your website video')
         ->assertSeeInOrderInHtml(['Watch your video', 'Book a call with Ross', '01302 248 374'])
         ->assertDontSeeInHtml('Full disclosure')
-        ->assertDontSeeInHtml('signature=');
+        ->assertDontSeeInHtml('/outreach/click/')
+        ->assertDontSeeInHtml('/outreach/open/')
+        ->assertSeeInHtml('Unsubscribe from outreach emails');
 });
 
 it('includes a compact Digizu footer in initial and video test and live emails', function (ProspectOutreachMessageType $type, bool $live): void {
@@ -544,7 +546,9 @@ it('does not include a private website audit link in initial outreach', function
     (new ProspectOutreach($prospect))
         ->assertDontSeeInHtml('Your website audit')
         ->assertDontSeeInHtml('/prospect-reports/'.$prospect->id)
-        ->assertDontSeeInHtml('signature=');
+        ->assertDontSeeInHtml('/outreach/click/')
+        ->assertDontSeeInHtml('/outreach/open/')
+        ->assertSeeInHtml('Unsubscribe from outreach emails');
 });
 
 it('includes the showcase video when offering a prospect a new website', function () {
@@ -561,7 +565,9 @@ it('includes the showcase video when offering a prospect a new website', functio
         ->assertSeeInHtml('https://video.example.com/new-website')
         ->assertSeeInHtml('Watch your video')
         ->assertSeeInOrderInHtml(['Watch your video', 'Book a call with Ross', '01302 248 374'])
-        ->assertDontSeeInHtml('signature=');
+        ->assertDontSeeInHtml('/outreach/click/')
+        ->assertDontSeeInHtml('/outreach/open/')
+        ->assertSeeInHtml('Unsubscribe from outreach emails');
 });
 
 it('saves the initial audit option and resets approval when it changes', function (): void {

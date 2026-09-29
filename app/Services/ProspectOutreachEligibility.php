@@ -12,6 +12,7 @@ class ProspectOutreachEligibility
         $outreachState = $prospect->outreachState()->first();
 
         return match (true) {
+            $prospect->unsubscribed_at !== null => 'This prospect has unsubscribed from outreach.',
             $prospect->suppressed_at !== null => 'This prospect is on the suppression list.',
             $outreachState?->automation_status === ProspectAutomationStatus::Paused => 'Outreach automation is paused for this prospect.',
             $outreachState?->automation_status === ProspectAutomationStatus::Stopped => 'Outreach has been stopped for this prospect.',
@@ -44,6 +45,7 @@ class ProspectOutreachEligibility
         $outreachState = $prospect->outreachState()->first();
 
         return match (true) {
+            $prospect->unsubscribed_at !== null => 'This prospect has unsubscribed from outreach.',
             $prospect->suppressed_at !== null => 'This prospect is on the suppression list.',
             $outreachState?->automation_status === ProspectAutomationStatus::Stopped => 'Outreach has been stopped for this prospect.',
             $outreachState?->lifecycle_state->stopsNormalOutreach() === true => 'This prospect is in a lifecycle state that stops normal outreach.',

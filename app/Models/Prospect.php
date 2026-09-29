@@ -25,7 +25,7 @@ class Prospect extends Model
 
     protected $attributes = ['lead_temperature' => 'cold'];
 
-    protected $casts = ['include_site_audit' => 'boolean', 'prospecting_context' => 'array', 'findings' => 'array', 'contact_details' => 'array', 'analysed_at' => 'datetime', 'approved_at' => 'datetime', 'sent_at' => 'datetime', 'scheduled_send_at' => 'datetime', 'next_follow_up_at' => 'datetime', 'replied_at' => 'datetime', 'converted_at' => 'datetime', 'suppressed_at' => 'datetime'];
+    protected $casts = ['include_site_audit' => 'boolean', 'prospecting_context' => 'array', 'findings' => 'array', 'contact_details' => 'array', 'analysed_at' => 'datetime', 'approved_at' => 'datetime', 'sent_at' => 'datetime', 'scheduled_send_at' => 'datetime', 'next_follow_up_at' => 'datetime', 'replied_at' => 'datetime', 'converted_at' => 'datetime', 'suppressed_at' => 'datetime', 'unsubscribed_at' => 'datetime'];
 
     protected static function booted(): void
     {

@@ -101,6 +101,7 @@ use App\Http\Controllers\OnboardingLifecycleClickController;
 use App\Http\Controllers\ProspectOutreachClickController;
 use App\Http\Controllers\ProspectOutreachOpenController;
 use App\Http\Controllers\ProspectReportController;
+use App\Http\Controllers\ProspectUnsubscribeController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\WebsiteAuditOnboardingController;
 use App\Http\Controllers\WebsiteHealthReportController as PublicWebsiteHealthReportController;
@@ -159,6 +160,11 @@ Route::post('/cal/webhook', CalWebhookController::class)
 Route::get('/onboarding/messages/{onboardingLifecycleMessage}/continue', OnboardingLifecycleClickController::class)
     ->middleware(['signed', 'throttle:60,1'])
     ->name('onboarding-lifecycle.click');
+
+Route::middleware(['signed', 'throttle:30,1'])->group(function () {
+    Route::get('/outreach/{prospect}/unsubscribe', [ProspectUnsubscribeController::class, 'show'])->name('prospects.unsubscribe.show');
+    Route::post('/outreach/{prospect}/unsubscribe', [ProspectUnsubscribeController::class, 'store'])->name('prospects.unsubscribe.store');
+});
 
 Route::redirect('/free-site-audit', '/get-started', 301);
 Route::get('/get-started', [FreeSiteAuditController::class, 'create'])->name('marketing.free-site-audit');

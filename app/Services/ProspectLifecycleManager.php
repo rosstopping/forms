@@ -74,6 +74,10 @@ class ProspectLifecycleManager
     public function resume(Prospect $prospect, ?User $actor = null): ProspectOutreachState
     {
         return DB::transaction(function () use ($prospect, $actor): ProspectOutreachState {
+            $prospect = Prospect::query()->lockForUpdate()->findOrFail($prospect->id);
+            if ($prospect->unsubscribed_at !== null) {
+                throw new InvalidArgumentException('An unsubscribed prospect cannot resume outreach.');
+            }
             $outreachState = $this->lockedState($prospect);
 
             if ($outreachState->lifecycle_state->stopsNormalOutreach()) {
@@ -257,7 +261,12 @@ class ProspectLifecycleManager
     public function markPersonalisedVideoSent(Prospect $prospect, DateTimeInterface $sentAt, ?User $actor = null): ProspectOutreachState
     {
         return DB::transaction(function () use ($prospect, $sentAt, $actor): ProspectOutreachState {
+            $prospect = Prospect::query()->lockForUpdate()->findOrFail($prospect->id);
             $outreachState = $this->lockedState($prospect);
+            if ($prospect->unsubscribed_at !== null) {
+                return $outreachState;
+            }
+
             $outreachState->update([
                 'lifecycle_state' => ProspectLifecycleState::VideoSent,
                 'automation_status' => ProspectAutomationStatus::Active,

@@ -129,7 +129,7 @@ class ProspectEngagementScorer
 
     private function applyEvent(Prospect $prospect, ProspectOutreachState $outreachState, ProspectEngagementEvent $event, ?User $actor = null): void
     {
-        if ($prospect->status === 'converted' || $outreachState->lifecycle_state === ProspectLifecycleState::Customer) {
+        if ($prospect->unsubscribed_at !== null || $prospect->status === 'converted' || $outreachState->lifecycle_state === ProspectLifecycleState::Customer) {
             return;
         }
 

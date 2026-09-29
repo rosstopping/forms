@@ -12,6 +12,7 @@ enum ProspectOutreachStopReason: string
     case Closed = 'closed';
     case Exhausted = 'exhausted';
     case Suppressed = 'suppressed';
+    case Unsubscribed = 'unsubscribed';
     case Manual = 'manual';
     case InboundLead = 'inbound_lead';
 }

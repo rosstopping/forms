@@ -31,6 +31,9 @@
     </header>
 
     @if (session('status'))<div role="status" class="rounded-lg bg-emerald-50 p-4 text-base text-emerald-800 sm:text-sm">{{ session('status') }}</div>@endif
+    @if ($prospect->unsubscribed_at)
+        <p role="status" class="ui-well p-4 text-base text-slate-700 sm:text-sm"><strong>Unsubscribed</strong> on {{ $prospect->unsubscribed_at->setTimezone('Europe/London')->format('j M Y, H:i') }} UK time. All outreach is stopped; pending emails and follow-ups were cancelled.</p>
+    @endif
     @if ($errors->any())
         <div role="alert" class="rounded-lg bg-red-50 p-4 text-base text-red-800 sm:text-sm"><p class="font-medium">Please check the following.</p><ul role="list" class="mt-2 space-y-1">@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>
     @endif
