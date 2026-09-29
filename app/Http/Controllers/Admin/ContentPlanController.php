@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateContentPlanRequest;
 use App\Jobs\StartContentGeneration;
+use App\Jobs\SyncContentGeneration;
 use App\Models\ContentGeneration;
 use App\Models\ContentPlan;
 use App\Models\Website;
@@ -81,6 +82,59 @@ class ContentPlanController extends Controller
         });
 
         return Redirect::route('admin.websites.section', [$website, 'section' => 'content', ...($request->input('content_section') === 'activity' ? ['content_section' => 'activity'] : [])])->with('status', $created ? 'Content generation queued.' : 'A content generation already exists today or is still running.');
+    }
+
+    public function retryGeneration(Request $request, Website $website, ContentGeneration $contentGeneration, ContentSchedule $schedule): RedirectResponse
+    {
+        $this->authorizeGeneration($request, $website, $contentGeneration);
+        $error = DB::transaction(function () use ($website, $contentGeneration, $schedule): ?string {
+            $plan = ContentPlan::query()->lockForUpdate()->findOrFail($contentGeneration->content_plan_id);
+            $generation = $plan->generations()->lockForUpdate()->findOrFail($contentGeneration->id);
+            if ($generation->status !== ContentGeneration::STATUS_FAILED) {
+                return 'Only failed content runs can be retried. This run may already have been retried.';
+            }
+            if ($generation->pull_request_number || $generation->pull_request_url || $generation->merged_at) {
+                return 'This run already has a pull request. Review it on GitHub before taking further action.';
+            }
+            if ($plan->generations()->whereKeyNot($generation->id)->whereIn('status', [ContentGeneration::STATUS_PENDING, ContentGeneration::STATUS_RUNNING])->exists()) {
+                return 'Another content run is queued or running. Wait for it to finish before retrying.';
+            }
+            if (! $generation->requester?->githubAuthorization || ! $website->isManageableBy($generation->requester)) {
+                return 'Reconnect GitHub for the original automation user before retrying this run.';
+            }
+            if (! $website->repository || $website->repository->id !== $generation->website_repository_id) {
+                return 'The connected repository has changed. This run cannot be retried against a different repository.';
+            }
+
+            if ($generation->copilot_task_id) {
+                $generation->update(['status' => ContentGeneration::STATUS_RUNNING, 'completed_at' => null, 'error' => null]);
+                SyncContentGeneration::dispatch($generation)->afterCommit();
+
+                return null;
+            }
+
+            if ($generation->scheduled_for->toDateString() !== now($plan->timezone)->toDateString()) {
+                return 'This run belongs to a different day. Use Generate now in Automation to prepare eligible work in today’s slot.';
+            }
+            if ($generation->trigger === 'scheduled' && ($reason = $schedule->pauseReason($plan))) {
+                return $reason;
+            }
+            if ($generation->trigger === 'scheduled' && ! in_array($generation->scheduled_for->dayOfWeek, $schedule->weekdays($plan), true)) {
+                return 'The scheduled day has changed. Restore the schedule before retrying this run.';
+            }
+            if ($generation->contentRequests()->exists() || ($generation->prompt !== null
+                && ! preg_match('/^HTTP request returned status code (400|401|403|404|422|429):/', $generation->error ?? ''))) {
+                return 'GitHub may already have accepted this run. Check GitHub for an existing task or pull request before retrying; automatic resubmission is blocked to avoid duplicates.';
+            }
+
+            $generation->update(['status' => ContentGeneration::STATUS_PENDING, 'started_at' => null, 'completed_at' => null, 'skip_reason' => null]);
+            StartContentGeneration::dispatch($generation)->afterCommit();
+
+            return null;
+        });
+
+        return Redirect::route('admin.websites.section', [$website, 'content', 'content_section' => 'activity'])
+            ->with($error ? 'error' : 'status', $error ?? 'Content run retry queued. Existing GitHub tasks will be checked without creating another task.');
     }
 
     public function syncGeneration(Request $request, Website $website, ContentGeneration $contentGeneration, GithubAppClient $github, CopilotAgentClient $copilot): RedirectResponse

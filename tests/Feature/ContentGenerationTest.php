@@ -479,6 +479,7 @@ test('website owners can queue and remove manual content requests', function () 
 test('managers can bump pending content requests into a deterministic website queue', function () {
     $owner = User::factory()->create();
     $website = Website::factory()->for($owner, 'owner')->create();
+    WebsiteRepository::factory()->for($website)->create();
     $manager = User::factory()->create();
     $website->members()->attach($manager, ['role' => Website::MEMBER_ROLE_MANAGER]);
     $requests = ContentRequest::factory()->count(21)->for($website)->for($manager, 'creator')->create();
@@ -856,4 +857,108 @@ test('search console reporting returns totals and top queries and pages', functi
     Http::assertSent(fn ($request): bool => $request['dimensions'] === ['query', 'page']
         && $request['rowLimit'] === 100
         && $request['startRow'] === 200);
+});
+
+describe('failed content retries', function () {
+    beforeEach(function () {
+        $this->travelTo(now('Europe/London')->setTime(10, 0));
+        Queue::fake();
+        $this->retryAdmin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+        GithubUserAuthorization::factory()->for($this->retryAdmin)->create(['github_login' => 'rosstopping']);
+        $this->retryWebsite = Website::factory()->create();
+        $repository = WebsiteRepository::factory()->for($this->retryWebsite)->create();
+        $this->retryPlan = ContentPlan::factory()->for($this->retryWebsite)->for($this->retryAdmin, 'creator')->create([
+            'weekday' => now('Europe/London')->dayOfWeek,
+        ]);
+        $this->retryGeneration = ContentGeneration::factory()->for($this->retryPlan, 'plan')->for($repository, 'repository')->for($this->retryAdmin, 'requester')->create([
+            'trigger' => 'scheduled',
+            'scheduled_for' => now('Europe/London')->toDateString(),
+            'status' => ContentGeneration::STATUS_FAILED,
+            'prompt' => 'Original content prompt.',
+            'error' => "HTTP request returned status code 404:\n{\"message\":\"not found\"}",
+            'started_at' => now()->subHours(2),
+            'completed_at' => now()->subHours(2)->addSecond(),
+        ]);
+        $this->retryUrl = route('admin.content-generations.retry', [$this->retryWebsite, $this->retryGeneration]);
+        $this->actingAs($this->retryAdmin);
+    });
+
+    test('requeues a rejected run once and starts it using the reconnected identity', function () {
+        $contentRequest = ContentRequest::factory()->for($this->retryWebsite)->for($this->retryAdmin, 'creator')->create();
+        $originalDate = $this->retryGeneration->scheduled_for->toDateString();
+        $this->actingAs(User::factory()->create(['role' => User::ROLE_ADMIN]));
+
+        $this->post($this->retryUrl)
+            ->assertRedirect(route('admin.websites.section', [$this->retryWebsite, 'content', 'content_section' => 'activity']))
+            ->assertSessionHas('status');
+        $this->post($this->retryUrl)->assertSessionHas('error');
+
+        Queue::assertPushed(StartContentGeneration::class, 1);
+        Queue::assertNotPushed(SyncContentGeneration::class);
+        expect($this->retryGeneration->fresh()->status)->toBe(ContentGeneration::STATUS_PENDING)
+            ->and($this->retryGeneration->fresh()->requested_by)->toBe($this->retryAdmin->id)
+            ->and($this->retryGeneration->fresh()->scheduled_for->toDateString())->toBe($originalDate)
+            ->and($this->retryPlan->generations()->count())->toBe(1)
+            ->and($contentRequest->fresh()->picked_up_at)->toBeNull();
+
+        $this->mock(ContentGenerationPromptGenerator::class)->shouldReceive('generate')->once()->andReturn('Retry content prompt.');
+        $this->mock(CopilotAgentClient::class)->shouldReceive('startTask')->once()
+            ->withArgs(fn ($authorization, $repository, $prompt): bool => $authorization->github_login === 'rosstopping'
+                && $repository->id === $this->retryGeneration->website_repository_id && $prompt === 'Retry content prompt.')
+            ->andReturn(['id' => '11111111-1111-4111-8111-111111111111', 'state' => 'queued']);
+        app()->call([new StartContentGeneration($this->retryGeneration->fresh()), 'handle']);
+
+        expect($this->retryGeneration->fresh()->copilot_task_id)->toBe('11111111-1111-4111-8111-111111111111')
+            ->and($this->retryGeneration->fresh()->error)->toBeNull()
+            ->and($contentRequest->fresh()->content_generation_id)->toBe($this->retryGeneration->id);
+    });
+
+    test('resumes an existing task without starting another even for an older run', function () {
+        $this->retryGeneration->update([
+            'scheduled_for' => now()->subWeek()->toDateString(),
+            'copilot_task_id' => '22222222-2222-4222-8222-222222222222',
+        ]);
+        $this->post($this->retryUrl)->assertSessionHas('status');
+        $this->post($this->retryUrl)->assertSessionHas('error');
+
+        Queue::assertPushed(SyncContentGeneration::class, 1);
+        Queue::assertNotPushed(StartContentGeneration::class);
+        expect($this->retryGeneration->fresh()->status)->toBe(ContentGeneration::STATUS_RUNNING)
+            ->and($this->retryGeneration->fresh()->copilot_task_id)->toBe('22222222-2222-4222-8222-222222222222');
+    });
+
+    test('blocks unsafe retries without changing the run', function (string $scenario) {
+        match ($scenario) {
+            'ambiguous timeout' => $this->retryGeneration->update(['error' => 'cURL error 28: operation timed out']),
+            'server error' => $this->retryGeneration->update(['error' => 'HTTP request returned status code 500:']),
+            'old slot' => $this->retryGeneration->update(['scheduled_for' => now()->subDay()->toDateString()]),
+            'existing PR' => $this->retryGeneration->update(['pull_request_number' => 42]),
+            'not failed' => $this->retryGeneration->update(['status' => ContentGeneration::STATUS_COMPLETED]),
+            'paused' => $this->retryPlan->update(['enabled' => false]),
+            'missing authorization' => $this->retryAdmin->githubAuthorization()->delete(),
+            'changed repository' => $this->retryGeneration->update(['website_repository_id' => WebsiteRepository::factory()->create()->id]),
+            'overlapping run' => ContentGeneration::factory()->for($this->retryPlan, 'plan')->create(['scheduled_for' => now()->subDay(), 'status' => ContentGeneration::STATUS_RUNNING]),
+        };
+        $original = $this->retryGeneration->fresh()->getAttributes();
+        $this->post($this->retryUrl)->assertRedirect()->assertSessionHas('error');
+        expect($this->retryGeneration->fresh()->getAttributes())->toBe($original);
+        Queue::assertNothingPushed();
+    })->with(['ambiguous timeout', 'server error', 'old slot', 'existing PR', 'not failed', 'paused', 'missing authorization', 'changed repository', 'overlapping run']);
+
+    test('rejects non admins and mismatched websites', function () {
+        $this->actingAs($this->retryWebsite->owner)->post($this->retryUrl)->assertForbidden();
+        $this->actingAs($this->retryAdmin)->post(route('admin.content-generations.retry', [Website::factory()->create(), $this->retryGeneration]))->assertNotFound();
+        Queue::assertNothingPushed();
+    });
+
+    test('shows failure details and retry controls only to admins', function () {
+        $url = route('admin.websites.section', [$this->retryWebsite, 'content', 'content_section' => 'activity']);
+        $this->get($url)->assertSuccessful()
+            ->assertSee('Retry failed run')
+            ->assertSee('HTTP request returned status code 404:')
+            ->assertSee($this->retryUrl, false);
+        $this->actingAs($this->retryWebsite->owner)->get($url)->assertSuccessful()
+            ->assertDontSee('Retry failed run')
+            ->assertDontSee('HTTP request returned status code 404:');
+    });
 });

@@ -126,11 +126,14 @@ class WebsiteRepositoryController extends Controller
     public function destroy(Request $request, Website $website): RedirectResponse
     {
         $this->authorizeWebsite($request, $website);
-        abort_if($website->repository?->remediationRuns()->exists(), 422, 'The repository has remediation history and cannot be disconnected.');
+        if ($website->repository?->remediationRuns()->exists()) {
+            return Redirect::route('admin.websites.section', [$website, 'content', 'content_section' => 'connections'])
+                ->with('error', 'This repository cannot be disconnected because it has website fix history. To change the GitHub account used for automation, reauthorize GitHub without disconnecting the repository.');
+        }
 
         $website->repository?->delete();
 
-        return Redirect::route('admin.websites.section', [$website, 'content'])
+        return Redirect::route('admin.websites.section', [$website, 'content', 'content_section' => 'connections'])
             ->with('status', 'The repository was disconnected.');
     }
 

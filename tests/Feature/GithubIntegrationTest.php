@@ -685,6 +685,23 @@ it('connects the same repository to multiple websites with independent settings'
     expect($production->repository()->exists())->toBeTrue()->and($staging->repository()->exists())->toBeFalse();
 });
 
+it('explains why a repository with fix history cannot be disconnected', function (): void {
+    $owner = User::factory()->create();
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $repository = WebsiteRepository::factory()->for($website)->create();
+    $run = RemediationRun::factory()->for($repository, 'repository')->create([
+        'status' => RemediationRun::STATUS_COMPLETED,
+    ]);
+
+    $this->actingAs($owner)
+        ->delete(route('admin.website-repositories.destroy', $website))
+        ->assertRedirect(route('admin.websites.section', [$website, 'content', 'content_section' => 'connections']))
+        ->assertSessionHas('error', 'This repository cannot be disconnected because it has website fix history. To change the GitHub account used for automation, reauthorize GitHub without disconnecting the repository.');
+
+    expect($repository->fresh())->not->toBeNull()
+        ->and($run->fresh())->not->toBeNull();
+});
+
 it('updates pull request activity on every matching website repository', function (): void {
     config(['services.github.webhook_secret' => 'test-secret']);
     $production = WebsiteRepository::factory()->create();
