@@ -5,7 +5,21 @@
     </summary>
     <div class="border-t border-slate-950/10 p-5 sm:p-6">
         <p class="text-base/6 text-slate-500 sm:text-sm/6">Editing the draft, video link or audit option resets approval. Save before testing or approving. Sent emails stay unchanged.</p>
-                <form method="POST" action="{{ route('admin.prospects.update', $prospect) }}" class="mt-4 space-y-4">@csrf @method('PUT')
+                <form method="POST" action="{{ route('admin.prospects.update', $prospect) }}" class="mt-4 space-y-4" data-outreach-draft-editor>@csrf @method('PUT')
+                    <div class="ui-well space-y-3 p-4">
+                        <label for="outreach_template" class="ui-label">Start from a template</label>
+                        <div class="flex flex-wrap gap-2">
+                            <select id="outreach_template" class="ui-input min-w-0 flex-1" data-outreach-template>
+                                <option value="">Choose a template</option>
+                                @foreach ($outreachDraftTemplates as $key => $template)
+                                    <option value="{{ $key }}" data-subject="{{ $template['subject'] }}" data-body="{{ $template['body'] }}">{{ $template['label'] }}</option>
+                                @endforeach
+                            </select>
+                            <button type="button" class="ui-button ui-button-secondary" data-outreach-template-apply disabled>Use template</button>
+                        </div>
+                        <p class="text-base text-slate-500 sm:text-sm">Replaces the subject and message below. Edit the wording for a first introduction, add your video URL if needed, then save the draft.</p>
+                        <p class="text-base text-slate-600 sm:text-sm" data-outreach-template-status role="status"></p>
+                    </div>
                     <input type="hidden" name="suppressed" value="{{ $prospect->suppressed_at ? 1 : 0 }}"><input type="hidden" name="business_name" value="{{ $prospect->business_name }}"><input type="hidden" name="contact_name" value="{{ $prospect->contact_name }}"><input type="hidden" name="email" value="{{ $prospect->email }}"><input type="hidden" name="website_url" value="{{ $prospect->website_url }}"><input type="hidden" name="status" value="{{ $prospect->status }}">
                     <div><label for="outreach_subject" class="ui-label">Subject</label><input id="outreach_subject" name="outreach_subject" value="{{ old('outreach_subject', $prospect->outreach_subject) }}" class="ui-input mt-1 w-full" placeholder="Waiting for research…"></div>
                     <div><label for="outreach_body" class="ui-label">Message</label><textarea id="outreach_body" name="outreach_body" rows="8" class="ui-input mt-1 w-full" placeholder="Waiting for research…">{{ old('outreach_body', $prospect->outreach_body) }}</textarea></div>

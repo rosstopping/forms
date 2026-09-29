@@ -14,6 +14,7 @@ use App\Models\ProspectOutreachState;
 use App\Services\LoomVideoThumbnail;
 use App\Services\ProspectDeletion;
 use App\Services\ProspectLifecycleManager;
+use App\Services\ProspectOutreachContent;
 use App\Services\ProspectOutreachDashboard;
 use App\Services\ProspectOutreachPlan;
 use App\Services\ProspectPersonalisedVideo;
@@ -125,7 +126,7 @@ class ProspectController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Request $request, Prospect $prospect, ProspectPersonalisedVideo $personalisedVideo, ProspectOutreachPlan $outreachPlan): View
+    public function show(Request $request, Prospect $prospect, ProspectPersonalisedVideo $personalisedVideo, ProspectOutreachPlan $outreachPlan, ProspectOutreachContent $outreachContent): View
     {
         abort_unless($prospect->isAccessibleBy($request->user()), 403);
 
@@ -137,6 +138,7 @@ class ProspectController extends Controller
 
         return view('admin.prospects.show', [
             'prospect' => $prospect,
+            'outreachDraftTemplates' => $outreachContent->draftTemplates($prospect),
             'outreachPlan' => $outreachPlan->forProspect($prospect),
             'prospectSection' => in_array($request->query('section'), ['details', 'activity', 'controls'], true) ? $request->query('section') : 'emails',
             'isFreeSiteAudit' => $prospect->activities->contains('type', 'free_audit_requested'),

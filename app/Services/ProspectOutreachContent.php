@@ -8,6 +8,30 @@ use App\Models\ProspectOutreachDelivery;
 
 class ProspectOutreachContent
 {
+    /** @return array<string, array{label: string, subject: string, body: string}> */
+    public function draftTemplates(Prospect $prospect): array
+    {
+        $templates = [
+            'saved' => ['label' => 'Saved draft', 'subject' => (string) $prospect->outreach_subject, 'body' => (string) $prospect->outreach_body],
+        ];
+        $initial = app(InitialProspectOutreachGenerator::class)->generate($prospect);
+        if ($initial !== null) {
+            $templates['initial'] = ['label' => 'Standard initial outreach', ...$initial];
+        }
+        foreach (config('outreach.templates', []) as $key => $template) {
+            if (blank($template['body'] ?? null)) {
+                continue;
+            }
+            $templates[$key] = [
+                'label' => str($key)->replace('_', ' ')->ucfirst()->toString(),
+                'subject' => filled($template['subject'] ?? null) ? $this->render($template['subject'], $prospect) : (string) $prospect->outreach_subject,
+                'body' => $this->render($template['body'], $prospect),
+            ];
+        }
+
+        return $templates;
+    }
+
     public function initialDelivery(Prospect $prospect): ?ProspectOutreachDelivery
     {
         $prospect->loadMissing('outreachDeliveries.links');

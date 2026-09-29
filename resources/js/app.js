@@ -1,4 +1,7 @@
 import 'trix';
+import { initializeOutreachDraftEditors } from './outreach-draft-editor';
+
+initializeOutreachDraftEditors(document);
 
 document.addEventListener('trix-file-accept', (event) => event.preventDefault());
 

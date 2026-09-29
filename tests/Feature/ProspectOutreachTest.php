@@ -614,3 +614,48 @@ it('omits an opted in audit when research is unavailable', function (): void {
     expect($delivery->links->firstWhere('kind', 'website_audit'))->toBeNull();
     (new ProspectOutreach($prospect, $delivery))->assertDontSeeInHtml('Your website audit');
 });
+
+it('offers personalised templates for the initial draft without changing delivery state', function () {
+    Mail::fake();
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $prospect = Prospect::factory()->for($admin, 'owner')->create([
+        'contact_name' => 'Alex',
+        'business_name' => 'Acme Plumbing',
+        'outreach_subject' => 'Saved subject',
+        'outreach_body' => 'Saved message',
+        'status' => 'approved',
+        'approved_at' => now(),
+        'scheduled_send_at' => now()->addDay(),
+    ]);
+    config(['outreach.templates.personalised_video' => [
+        'subject' => 'A video for {company_name}',
+        'body' => "Hi {contact_name},\n\nHere is a video for {company_name}.",
+    ]]);
+    $before = $prospect->fresh()->getAttributes();
+    $response = $this->actingAs($admin)->get(route('admin.prospects.show', $prospect));
+    $response->assertSuccessful()->assertSee('Start from a template')->assertSee('Use template')
+        ->assertViewHas('outreachDraftTemplates', fn (array $templates): bool => $templates['personalised_video'] === [
+            'label' => 'Personalised video', 'subject' => 'A video for Acme Plumbing', 'body' => "Hi Alex,\n\nHere is a video for Acme Plumbing.",
+        ] && $templates['saved']['body'] === 'Saved message' && ! isset($templates['cold_follow_up']));
+    expect($prospect->fresh()->getAttributes())->toBe($before)
+        ->and($prospect->outreachDeliveries()->count())->toBe(0);
+    Mail::assertNothingSent();
+
+    $template = $response->viewData('outreachDraftTemplates')['personalised_video'];
+    $this->put(route('admin.prospects.update', $prospect), [
+        'business_name' => $prospect->business_name,
+        'contact_name' => $prospect->contact_name,
+        'email' => $prospect->email,
+        'website_url' => $prospect->website_url,
+        'status' => $prospect->status,
+        'outreach_subject' => $template['subject'],
+        'outreach_body' => $template['body'],
+        'showcase_video_url' => 'https://video.example/intro',
+    ])->assertRedirect()->assertSessionHasNoErrors();
+    expect($prospect->fresh()->outreach_body)->toBe($template['body'])
+        ->and($prospect->fresh()->approved_at)->toBeNull()
+        ->and($prospect->fresh()->scheduled_send_at)->toBeNull()
+        ->and($prospect->fresh()->sent_at)->toBeNull()
+        ->and($prospect->outreachDeliveries()->count())->toBe(0);
+    Mail::assertNothingSent();
+});
