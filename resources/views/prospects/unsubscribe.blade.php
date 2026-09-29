@@ -19,7 +19,7 @@
                 <h1 class="text-2xl font-semibold">You’re unsubscribed</h1>
                 <p class="text-base text-slate-600">You won’t receive any more outreach emails from us. Your pending emails and follow-ups have been cancelled.</p>
             @else
-                <h1 class="text-2xl font-semibold">Unsubscribe from outreach</h1>
+                <h1 class="text-2xl font-semibold">Unsubscribe</h1>
                 <p class="text-base text-slate-600">Confirm below to stop receiving outreach emails from Digizu, including follow-ups and personalised videos.</p>
                 <form method="POST" action="{{ $confirmUrl }}">
                     @csrf

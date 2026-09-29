@@ -23,12 +23,16 @@ it('requires confirmation and records unsubscribe once while cancelling only uns
     $this->freezeTime();
     Mail::fake();
     $prospect = Prospect::factory()->create([
-        'approved_at' => now(), 'scheduled_send_at' => now()->addHour(), 'next_follow_up_at' => now()->addDay(),
+        'approved_at' => now(),
+        'scheduled_send_at' => now()->addHour(),
+        'next_follow_up_at' => now()->addDay(),
     ]);
     $prospect->outreachState->update(['next_action_at' => now()->addDay()]);
     $sent = ProspectOutreachDelivery::factory()->for($prospect)->create();
-    $pending = collect(['pending', 'scheduled', 'failed'])->map(fn (string $status) => ProspectOutreachDelivery::factory()->for($prospect)->create([
-        'status' => $status, 'sent_at' => null, 'scheduled_at' => now()->addHour(),
+    $pending = collect(['pending', 'scheduled', 'failed'])->map(fn(string $status) => ProspectOutreachDelivery::factory()->for($prospect)->create([
+        'status' => $status,
+        'sent_at' => null,
+        'scheduled_at' => now()->addHour(),
     ]));
     $url = URL::signedRoute('prospects.unsubscribe.show', $prospect);
     $this->get($url)->assertSuccessful()->assertSee('Confirm unsubscribe');
@@ -61,7 +65,7 @@ it('rejects unsigned and tampered unsubscribe requests', function () {
     $other = Prospect::factory()->create();
     $unsigned = route('prospects.unsubscribe.show', $prospect);
     $signed = URL::signedRoute('prospects.unsubscribe.show', $prospect);
-    $tampered = str_replace('/outreach/'.$prospect->id.'/', '/outreach/'.$other->id.'/', $signed);
+    $tampered = str_replace('/outreach/' . $prospect->id . '/', '/outreach/' . $other->id . '/', $signed);
     foreach ([$unsigned, $tampered] as $url) {
         $this->get($url)->assertForbidden();
         $this->post($url)->assertForbidden();
@@ -73,7 +77,7 @@ it('includes the unsubscribe footer in every live outreach message type', functi
     $prospect = Prospect::factory()->create();
     $delivery = ProspectOutreachDelivery::factory()->for($prospect)->create(['message_type' => $type]);
     $mail = new ProspectOutreach($prospect, $delivery);
-    $mail->assertSeeInHtml('Unsubscribe from outreach emails');
+    $mail->assertSeeInHtml('Unsubscribe');
     expect($mail->content()->with['unsubscribeUrl'])->toBe(URL::signedRoute('prospects.unsubscribe.show', $prospect));
 })->with(ProspectOutreachMessageType::cases());
 
@@ -81,7 +85,7 @@ it('makes test email unsubscribe links harmless previews', function () {
     $prospect = Prospect::factory()->create();
     $mail = new ProspectOutreach($prospect);
     $url = $mail->content()->with['unsubscribeUrl'];
-    $mail->assertSeeInHtml('Unsubscribe from outreach emails');
+    $mail->assertSeeInHtml('Unsubscribe');
     $this->get($url)->assertSuccessful()->assertSee('Unsubscribe preview')->assertDontSee('Confirm unsubscribe');
     $this->post($url)->assertForbidden();
     $this->post(str_replace('preview=1&', '', $url))->assertForbidden();
@@ -94,16 +98,18 @@ it('blocks queued sends and every live send path after unsubscribe', function ()
     $prospect = Prospect::factory()->create(['approved_at' => now(), 'scheduled_send_at' => $scheduledFor]);
     $delivery = ProspectOutreachDelivery::factory()->for($prospect)->create([
         'message_type' => ProspectOutreachMessageType::PersonalisedVideo,
-        'status' => 'scheduled', 'sent_at' => null, 'scheduled_at' => $scheduledFor,
+        'status' => 'scheduled',
+        'sent_at' => null,
+        'scheduled_at' => $scheduledFor,
     ]);
     app(ProspectUnsubscriber::class)->unsubscribe($prospect);
     app()->call([new SendScheduledProspectOutreach($prospect->id, $scheduledFor), 'handle']);
     app()->call([new SendScheduledProspectPersonalisedVideo($delivery->id, $scheduledFor), 'handle']);
     app(ProspectOutreachSequence::class)->evaluate($prospect->fresh());
     $sender = app(ProspectOutreachSender::class);
-    expect(fn () => $sender->send($prospect))->toThrow(LogicException::class, 'unsubscribed')
-        ->and(fn () => $sender->sendAutomated($prospect, ProspectOutreachMessageType::ColdFollowUp, 'Subject', 'Body', 'follow-up'))->toThrow(LogicException::class, 'unsubscribed')
-        ->and(fn () => $sender->sendPersonalisedVideo($prospect, 'Subject', 'Body', 'video'))->toThrow(LogicException::class, 'unsubscribed');
+    expect(fn() => $sender->send($prospect))->toThrow(LogicException::class, 'unsubscribed')
+        ->and(fn() => $sender->sendAutomated($prospect, ProspectOutreachMessageType::ColdFollowUp, 'Subject', 'Body', 'follow-up'))->toThrow(LogicException::class, 'unsubscribed')
+        ->and(fn() => $sender->sendPersonalisedVideo($prospect, 'Subject', 'Body', 'video'))->toThrow(LogicException::class, 'unsubscribed');
     Mail::assertNothingSent();
 });
 
@@ -112,12 +118,16 @@ it('keeps unsubscribe visible and prevents ordinary edits or resuming from clear
     $prospect = Prospect::factory()->for($admin, 'owner')->create(['status' => 'approved', 'approved_at' => now()]);
     app(ProspectUnsubscriber::class)->unsubscribe($prospect);
     $this->actingAs($admin)->put(route('admin.prospects.update', $prospect), [
-        'business_name' => $prospect->business_name, 'email' => $prospect->email, 'status' => 'drafted',
-        'outreach_subject' => 'Edited subject', 'outreach_body' => 'Edited message', 'suppressed' => false,
+        'business_name' => $prospect->business_name,
+        'email' => $prospect->email,
+        'status' => 'drafted',
+        'outreach_subject' => 'Edited subject',
+        'outreach_body' => 'Edited message',
+        'suppressed' => false,
     ])->assertRedirect()->assertSessionHasNoErrors();
     expect($prospect->fresh()->unsubscribed_at)->not->toBeNull()
         ->and($prospect->fresh()->suppressed_at)->not->toBeNull()
-        ->and(fn () => app(ProspectLifecycleManager::class)->resume($prospect))->toThrow(InvalidArgumentException::class, 'unsubscribed');
+        ->and(fn() => app(ProspectLifecycleManager::class)->resume($prospect))->toThrow(InvalidArgumentException::class, 'unsubscribed');
     $this->get(route('admin.prospects.show', [$prospect, 'section' => 'activity']))->assertSuccessful()
         ->assertSee('Unsubscribed')->assertSee('Recipient confirmed unsubscribe.');
 });

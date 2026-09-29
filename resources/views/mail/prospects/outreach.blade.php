@@ -34,7 +34,7 @@
 <p style="margin:8px 0 0;font-size:12px;line-height:1.6;color:#59685f;">We’re Digizu, a local web development agency based in Doncaster, helping businesses build and improve their websites. <a href="https://digizu.co.uk" style="color:#59685f;text-decoration:underline;">digizu.co.uk</a></p>
 </td></tr>
 </table>
-<p style="margin:20px 0 0;font-size:12px;line-height:1.6;color:#59685f;"><a href="{{ $unsubscribeUrl }}" style="color:#59685f;text-decoration:underline;">Unsubscribe from outreach emails</a></p>
+<p style="margin:20px 0 0;font-size:12px;line-height:1.6;color:#59685f;"><a href="{{ $unsubscribeUrl }}" style="color:#59685f;text-decoration:underline;">Unsubscribe</a></p>
 </div>
 @if ($trackingOpenUrl)
 <img src="{{ $trackingOpenUrl }}" alt="" width="1" height="1" style="display:block;width:1px;height:1px;border:0;" aria-hidden="true">

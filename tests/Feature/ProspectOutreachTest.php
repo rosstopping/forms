@@ -46,7 +46,7 @@ it('adds a prospect and automatically queues website research', function () {
         ->and($prospect->website_url)->toBe('https://example.com')
         ->and($prospect->showcase_video_url)->toBe('https://video.example.com/acme-plumbing')
         ->and($prospect->activities()->where('type', 'created')->exists())->toBeTrue();
-    Queue::assertPushed(AnalyzeProspect::class, fn (AnalyzeProspect $job): bool => $job->prospect->is($prospect));
+    Queue::assertPushed(AnalyzeProspect::class, fn(AnalyzeProspect $job): bool => $job->prospect->is($prospect));
 });
 
 it('adds a website opportunity without queueing website research', function () {
@@ -236,7 +236,7 @@ it('requires approval before sending outreach and schedules a follow-up', functi
         ->and($prospect->sent_at)->not->toBeNull()
         ->and($prospect->next_follow_up_at)->not->toBeNull()
         ->and($prospect->activities()->where('type', 'sent')->exists())->toBeTrue();
-    Mail::assertSent(ProspectOutreach::class, fn (ProspectOutreach $mail): bool => $mail->hasTo($prospect->email));
+    Mail::assertSent(ProspectOutreach::class, fn(ProspectOutreach $mail): bool => $mail->hasTo($prospect->email));
 });
 
 it('allows another approved email when the next follow-up is due', function () {
@@ -353,7 +353,7 @@ it('prefers the Loom preloaded video thumbnail over its open graph image', funct
     $thumbnailUrl = app(LoomVideoThumbnail::class)->fetch('https://www.loom.com/share/prospect-video');
 
     expect($thumbnailUrl)->toBe('https://cdn.loom.com/sessions/thumbnails/f6d69f68372e4dbaa342b27f84c867f5-f0e055e05a32db4b.jpg');
-    Http::assertSent(fn (Request $request): bool => $request->url() === 'https://www.loom.com/share/prospect-video');
+    Http::assertSent(fn(Request $request): bool => $request->url() === 'https://www.loom.com/share/prospect-video');
 });
 
 it('uses a Loom session thumbnail from open graph metadata as a fallback', function () {
@@ -505,7 +505,7 @@ it('renders the optional video and thumbnail in initial outreach', function () {
         ->assertDontSeeInHtml('Full disclosure')
         ->assertDontSeeInHtml('/outreach/click/')
         ->assertDontSeeInHtml('/outreach/open/')
-        ->assertSeeInHtml('Unsubscribe from outreach emails');
+        ->assertSeeInHtml('Unsubscribe');
 });
 
 it('includes a compact Digizu footer in initial and video test and live emails', function (ProspectOutreachMessageType $type, bool $live): void {
@@ -545,10 +545,10 @@ it('does not include a private website audit link in initial outreach', function
 
     (new ProspectOutreach($prospect))
         ->assertDontSeeInHtml('Your website audit')
-        ->assertDontSeeInHtml('/prospect-reports/'.$prospect->id)
+        ->assertDontSeeInHtml('/prospect-reports/' . $prospect->id)
         ->assertDontSeeInHtml('/outreach/click/')
         ->assertDontSeeInHtml('/outreach/open/')
-        ->assertSeeInHtml('Unsubscribe from outreach emails');
+        ->assertSeeInHtml('Unsubscribe');
 });
 
 it('includes the showcase video when offering a prospect a new website', function () {
@@ -567,14 +567,17 @@ it('includes the showcase video when offering a prospect a new website', functio
         ->assertSeeInOrderInHtml(['Watch your video', 'Book a call with Ross', '01302 248 374'])
         ->assertDontSeeInHtml('/outreach/click/')
         ->assertDontSeeInHtml('/outreach/open/')
-        ->assertSeeInHtml('Unsubscribe from outreach emails');
+        ->assertSeeInHtml('Unsubscribe');
 });
 
 it('saves the initial audit option and resets approval when it changes', function (): void {
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     $prospect = Prospect::factory()->for($admin, 'owner')->create([
-        'outreach_subject' => 'Hello', 'outreach_body' => 'Hello from Ross.',
-        'approved_at' => now(), 'approved_by' => $admin->id, 'status' => 'approved',
+        'outreach_subject' => 'Hello',
+        'outreach_body' => 'Hello from Ross.',
+        'approved_at' => now(),
+        'approved_by' => $admin->id,
+        'status' => 'approved',
     ]);
     $data = $prospect->only(['business_name', 'contact_name', 'email', 'website_url', 'status', 'outreach_subject', 'outreach_body', 'showcase_video_url']);
 
@@ -591,8 +594,10 @@ it('saves the initial audit option and resets approval when it changes', functio
 
 it('includes an opted in initial audit after the optional video in test and live emails', function (bool $live, bool $hasVideo): void {
     $prospect = Prospect::factory()->create([
-        'outreach_subject' => 'Hello', 'outreach_body' => 'Hello from Ross.',
-        'website_url' => 'https://example.com', 'analysed_at' => now(),
+        'outreach_subject' => 'Hello',
+        'outreach_body' => 'Hello from Ross.',
+        'website_url' => 'https://example.com',
+        'analysed_at' => now(),
         'include_site_audit' => true,
         'showcase_video_url' => $hasVideo ? 'https://video.example.com/introduction' : null,
     ]);
@@ -640,8 +645,10 @@ it('offers personalised templates for the initial draft without changing deliver
     $before = $prospect->fresh()->getAttributes();
     $response = $this->actingAs($admin)->get(route('admin.prospects.show', $prospect));
     $response->assertSuccessful()->assertSee('Start from a template')->assertSee('Use template')
-        ->assertViewHas('outreachDraftTemplates', fn (array $templates): bool => $templates['personalised_video'] === [
-            'label' => 'Personalised video', 'subject' => 'A video for Acme Plumbing', 'body' => "Hi Alex,\n\nHere is a video for Acme Plumbing.",
+        ->assertViewHas('outreachDraftTemplates', fn(array $templates): bool => $templates['personalised_video'] === [
+            'label' => 'Personalised video',
+            'subject' => 'A video for Acme Plumbing',
+            'body' => "Hi Alex,\n\nHere is a video for Acme Plumbing.",
         ] && $templates['saved']['body'] === 'Saved message' && ! isset($templates['cold_follow_up']));
     expect($prospect->fresh()->getAttributes())->toBe($before)
         ->and($prospect->outreachDeliveries()->count())->toBe(0);
