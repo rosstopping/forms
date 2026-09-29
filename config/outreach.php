@@ -44,6 +44,10 @@ return [
     ],
 
     'templates' => [
+        'initial_cold_outreach_with_video' => [
+            'subject' => null,
+            'body' => "Hi there,\n\nI was just having a look at your website and thought I’d say hello.\n\nI run a web & SEO company in Doncaster, helping businesses improve their websites and get found more on Google and AI.\n\nI’ve put together a quick website audit for you and recorded a short video to introduce myself and explain a little bit about what we do.\n\nLet me know if it’s something you’d be interested in having a chat about!\n\nCheers,\nRoss",
+        ],
         'cold_follow_up' => [
             'subject' => null,
             'body' => null,
