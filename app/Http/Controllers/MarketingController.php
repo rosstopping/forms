@@ -227,6 +227,9 @@ class MarketingController extends Controller
             ->merge(collect(array_keys(config('marketing.landing_pages')))->map(
                 fn (string $landing): string => route('marketing.landing', $landing)
             ))
+            ->merge(collect(config('ppc.pages', []))->reject(
+                fn (array $page): bool => isset($page['canonical_landing'])
+            )->keys()->map(fn (string $page): string => route('marketing.ppc.'.$page)))
             ->merge(collect(array_keys(config('marketing.industries')))->map(
                 fn (string $industry): string => route('marketing.industry', $industry)
             ))

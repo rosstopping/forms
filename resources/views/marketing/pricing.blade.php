@@ -49,7 +49,7 @@
                     @endforeach
                 </div>
             </div>
-            <p class="mt-5 text-pretty text-base text-ink/50 sm:text-sm">Prices exclude VAT. Each plan is designed around one business website. Need a tailored setup? We can help.</p>
+            <p class="mt-5 text-pretty text-base text-ink/50 sm:text-sm">Each plan is designed around one business website. Need a tailored setup? We can help.</p>
         </div>
     </section>
 

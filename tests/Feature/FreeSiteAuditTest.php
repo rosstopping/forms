@@ -10,6 +10,7 @@ use App\Models\WebsiteAudit;
 use App\Models\WebsiteDomain;
 use App\Notifications\WebsiteAuditClaim;
 use App\Services\ProspectWebsiteAnalyzer;
+use App\Support\MarketingJourney;
 use App\Support\MembershipPlan;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
@@ -74,7 +75,7 @@ it('stores an anonymous audit result for the live report', function (): void {
         'contacts' => ['emails' => [], 'phones' => [], 'contact_page_url' => null, 'contact_form_url' => null],
     ]);
 
-    (new GenerateWebsiteAudit($audit))->handle($analyzer);
+    (new GenerateWebsiteAudit($audit))->handle($analyzer, new MarketingJourney);
 
     expect($audit->refresh()->status)->toBe(WebsiteAudit::STATUS_COMPLETED)
         ->and($audit->opportunity_score)->toBe(35)

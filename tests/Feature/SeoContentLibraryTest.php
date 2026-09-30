@@ -68,6 +68,12 @@ it('keeps all sitemap pages reachable through public links and checks internal l
         expect(isset($inbound[$url]))->toBeTrue('No inbound link to '.$url);
     }
     foreach ($links as $href => $destination) {
+        if ($destination === route('marketing.ppc.book')) {
+            $response = $this->get($destination)->assertRedirect();
+            expect(Str::before($response->headers->get('Location'), '?'))->toBe(Str::before(config('marketing.booking_url'), '?'));
+
+            continue;
+        }
         if (! isset($documents[$destination])) {
             $this->get($destination)->assertStatus(200);
         }

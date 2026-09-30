@@ -27,7 +27,7 @@
                     <h2 class="max-w-[35ch] font-display text-3xl font-semibold tracking-tight text-balance">Enter your website below to get started</h2>
                     <p class="max-w-[56ch] text-pretty text-base text-ink/65 sm:text-sm">No account, email address, or website access is needed.</p>
                 </div>
-                <form method="POST" action="{{ route('marketing.free-site-audit.store') }}" class="grid max-w-xs gap-5">
+                <form method="POST" action="{{ route('marketing.free-site-audit.store') }}" data-audit-form data-marketing-attribution="{{ json_encode($attribution) }}" class="grid max-w-xs gap-5">
                     @csrf
                     <div class="grid gap-2">
                         <label for="website_url" class="text-base font-medium sm:text-sm">Website address</label>

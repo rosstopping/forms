@@ -15,6 +15,9 @@
     <title>@yield('title', 'Sitewell'){{ $__env->hasSection('concise_title') ? '' : ' · Your website, well looked after' }}</title>
     @yield('structured_data')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @if (request()->routeIs('marketing.free-site-audit', 'marketing.website-audits.show'))
+        @vite('resources/js/marketing-events.js')
+    @endif
 </head>
 <body class="min-h-dvh bg-paper font-sans text-ink">
     <div class="isolate min-h-dvh">

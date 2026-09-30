@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 
-#[Fillable(['user_id', 'website_id', 'website_url', 'domain', 'email', 'status', 'opportunity_score', 'findings', 'contact_details', 'analysis_error', 'started_at', 'completed_at', 'claim_email_sent_at', 'claimed_at', 'expires_at'])]
+#[Fillable(['marketing_attribution', 'user_id', 'website_id', 'website_url', 'domain', 'email', 'status', 'opportunity_score', 'findings', 'contact_details', 'analysis_error', 'started_at', 'completed_at', 'claim_email_sent_at', 'claimed_at', 'expires_at'])]
 class WebsiteAudit extends Model
 {
     /** @use HasFactory<WebsiteAuditFactory> */
@@ -36,6 +36,7 @@ class WebsiteAudit extends Model
     {
         return [
             'findings' => 'array',
+            'marketing_attribution' => 'array',
             'contact_details' => 'array',
             'started_at' => 'datetime',
             'completed_at' => 'datetime',

@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\WebsiteAudit;
 use App\Services\ProspectWebsiteAnalyzer;
+use App\Support\MarketingJourney;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -32,7 +33,7 @@ class GenerateWebsiteAudit implements ShouldBeUnique, ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(ProspectWebsiteAnalyzer $analyzer): void
+    public function handle(ProspectWebsiteAnalyzer $analyzer, MarketingJourney $journey): void
     {
         $this->audit->update([
             'status' => WebsiteAudit::STATUS_RUNNING,
@@ -49,6 +50,8 @@ class GenerateWebsiteAudit implements ShouldBeUnique, ShouldQueue
             'contact_details' => $analysis['contacts'],
             'completed_at' => now(),
         ]);
+
+        $journey->record('audit_completed', $this->audit->public_id, $this->audit->marketing_attribution ?? []);
     }
 
     public function failed(?Throwable $exception): void

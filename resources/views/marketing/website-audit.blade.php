@@ -10,7 +10,7 @@
     $reviewChecks = $checks->whereIn('severity', ['warning', 'failed'])->count();
     $categories = $checks->groupBy(fn (array $check): string => $check['category'] ?? 'Website review');
 @endphp
-<main class="isolate border-b border-ink/10 py-12 sm:py-20">
+<main data-marketing-events="{{ json_encode($marketingEvents) }}" class="isolate border-b border-ink/10 py-12 sm:py-20">
     <div class="mx-auto grid max-w-5xl gap-8 px-5 sm:px-8 lg:px-10">
         <header class="grid gap-4 border-b border-ink/10 pb-8">
             <p class="font-mono text-sm font-medium uppercase tracking-wide text-moss">Getting started</p>

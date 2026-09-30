@@ -26,6 +26,7 @@ it('shows the marketing packages on the account billing page', function (): void
     $this->actingAs($user)->get(route('admin.billing.index'))
         ->assertSuccessful()
         ->assertSee('Billing and membership')
+        ->assertDontSee('VAT')
         ->assertSee('Essential')
         ->assertSee('£149')
         ->assertSee('Search performance interpreted by our SEO specialists')

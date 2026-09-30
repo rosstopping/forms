@@ -508,7 +508,8 @@ it('explains the specialist work carried out during a typical month on every pla
             'Complete',
             'A typical month',
         ])
-        ->assertSee('Compare the working relationship');
+        ->assertSee('Compare the working relationship')
+        ->assertDontSee('VAT');
 });
 
 it('validates and queues get started enquiries with an optional current website', function (): void {

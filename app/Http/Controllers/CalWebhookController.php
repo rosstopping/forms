@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\MarketingConversion;
 use App\Models\User;
+use App\Support\MarketingJourney;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use JsonException;
@@ -10,7 +12,7 @@ use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
 class CalWebhookController extends Controller
 {
-    public function __invoke(Request $request): JsonResponse
+    public function __invoke(Request $request, MarketingJourney $journey): JsonResponse
     {
         $rawPayload = $request->getContent();
         $this->verifySignature($rawPayload, (string) $request->header('X-Cal-Signature-256'));
@@ -23,6 +25,16 @@ class CalWebhookController extends Controller
 
         $trigger = data_get($event, 'triggerEvent');
         $payload = data_get($event, 'payload', $event);
+        $bookingToken = data_get($payload, 'metadata.sitewell_booking');
+        $bookingUid = data_get($payload, 'uid');
+
+        if ($trigger === 'BOOKING_CREATED' && is_string($bookingToken) && is_string($bookingUid) && $bookingUid !== '') {
+            $click = MarketingConversion::query()->where('event_id', $bookingToken)->where('name', 'book_call_clicked')->first();
+
+            if ($click) {
+                $journey->record('call_booked', $bookingUid, $click->attribution ?? []);
+            }
+        }
         $attendeeEmails = collect(data_get($payload, 'attendees', []))
             ->pluck('email')
             ->filter(fn (mixed $email): bool => is_string($email))
@@ -41,6 +53,11 @@ class CalWebhookController extends Controller
 
         if (! $user) {
             return response()->json(['received' => true]);
+        }
+
+        if ($trigger === 'BOOKING_CREATED' && is_string($bookingUid) && $bookingUid !== '') {
+            $audit = $user->websiteAudits()->whereNotNull('claimed_at')->latest('claimed_at')->first();
+            $journey->record('call_booked', $bookingUid, $audit?->marketing_attribution ?? []);
         }
 
         if (in_array($trigger, ['BOOKING_CREATED', 'BOOKING_RESCHEDULED'], true)) {

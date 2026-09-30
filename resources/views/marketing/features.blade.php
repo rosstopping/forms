@@ -53,6 +53,11 @@
                         </li>
                     @endforeach
                 </ul>
+                <ul role="list" class="mt-8 flex flex-wrap gap-x-8 gap-y-4">
+                    @foreach (config('ppc.pages') as $page => $landing)
+                        <li><a href="{{ route('marketing.ppc.'.$page) }}" class="font-medium text-garden underline decoration-garden/30 underline-offset-4 hover:decoration-garden">{{ $landing['heading'] }}</a></li>
+                    @endforeach
+                </ul>
             </nav>
         </div>
     </section>

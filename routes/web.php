@@ -98,6 +98,7 @@ use App\Http\Controllers\GithubWebhookController;
 use App\Http\Controllers\MarketingController;
 use App\Http\Controllers\OnboardingEnquiryController;
 use App\Http\Controllers\OnboardingLifecycleClickController;
+use App\Http\Controllers\PpcLandingController;
 use App\Http\Controllers\ProspectOutreachClickController;
 use App\Http\Controllers\ProspectOutreachOpenController;
 use App\Http\Controllers\ProspectReportController;
@@ -114,6 +115,13 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/agencies', [AgencyMarketingController::class, 'index'])->name('marketing.agencies');
+
+Route::get('/book-a-call', [PpcLandingController::class, 'book'])->middleware('throttle:30,1')->name('marketing.ppc.book');
+foreach (config('ppc.pages', []) as $page => $landing) {
+    Route::get('/'.$landing['path'], [PpcLandingController::class, 'show'])
+        ->defaults('page', $page)
+        ->name('marketing.ppc.'.$page);
+}
 Route::post('/agencies/beta', [AgencyMarketingController::class, 'store'])->middleware('throttle:6,1')->name('marketing.agencies.store');
 Route::get('/agencies/{slug}', [AgencyMarketingController::class, 'show'])->where('slug', '[a-z0-9-]+')->name('marketing.agencies.show');
 

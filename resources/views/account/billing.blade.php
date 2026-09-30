@@ -41,6 +41,6 @@
         @endforeach
     </div>
 
-    <p class="text-slate-500 text-base sm:text-sm">Prices exclude VAT. Every package is designed around one business website. Features not specifically assigned to Growth or Complete are available across all packages.</p>
+    <p class="text-slate-500 text-base sm:text-sm">Every package is designed around one business website. Features not specifically assigned to Growth or Complete are available across all packages.</p>
 </div>
 @endsection
