@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\MarketingTurnstileVerifier;
+use App\Support\MarketingJourney;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -12,9 +14,13 @@ use ZipArchive;
 
 class MarketingController extends Controller
 {
-    public function home(): View
+    public function home(Request $request, MarketingTurnstileVerifier $turnstile, MarketingJourney $journey): View
     {
-        return view('marketing.home');
+        return view('marketing.home', [
+            'turnstileEnabled' => $turnstile->enabled(),
+            'turnstileSiteKey' => config('services.turnstile.marketing.site_key'),
+            'attribution' => $journey->capture($request),
+        ]);
     }
 
     public function howItWorks(): View

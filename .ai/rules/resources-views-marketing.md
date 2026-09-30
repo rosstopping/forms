@@ -1,0 +1,19 @@
+---
+paths:
+  - resources/views/marketing/free-site-audit.blade.php
+  - resources/views/marketing/website-audit.blade.php
+---
+
+# Resources Views Marketing
+
+## Keep Get started as one focused audit form
+The /get-started page has one concise heading, one sentence explaining the public search and technical check, and one website-domain form with a single Get your free search audit action. Keep the input and button as one rounded control, a compact mobile label, inline validation, CSRF, honeypot, marketing attribution, and configured Turnstile. Submission uses the existing IP/domain-throttled anonymous audit route and redirects to the existing website audit page. Avoid secondary sales sections, repeated checklists, and links that compete with the form.
+
+## Explain the audit briefly beside the single form
+Keep /get-started concise and focused on one website-domain audit form, but include a short report promise and three compact, factual checks beneath it: search setup (titles/headings/sitemap/crawl access), website health (homepage response/mobile setup/image text), and security basics (HTTPS/browser headers). This supersedes the earlier one-sentence-only rule. Avoid a second sales section, duplicate CTA, or claims of ranking measurement; retain the existing spam protections and redirect.
+
+## Show audit fix count and managed SEO work plan
+The public audit result shows one count of warning/failed checks as website fixes flagged, not itemized technical findings, scores, or pass/fail metrics. Explain that this is an initial public scan and the wider site needs review. After the count, present concise ordered work: fix issues; review and improve existing pages against customer searches; publish useful content for unmet questions; keep the site current and earn/monitor relevant backlinks; measure enquiries, search performance and AI citations where available, then iterate. Do not claim the scan measured rankings, content relevance, backlinks, or AI visibility. Completed-result CTA is Book a call with Ross, not email claim/account signup; leave existing private continuation routes intact for prior customers. Keep pending/failure states simple.
+
+## Bound public audit enrichment and label projections
+Public audit reports show measured technical checks and sitemap page counts, plus cached DataForSEO UK Google rankings, search volume, traffic estimates, and backlink summaries when credentials are configured. Limit enrichment to one domain overview, one 20-keyword sample (only when rankings exist), and one backlink summary; cache provider data for seven days and show unavailable when data is missing. Technical health is passed checks / total checks, not a search ranking score. Six-month numbers are conditional scenarios, never promises. Keep the managed SEO plan and Book a call with Ross CTA concise.

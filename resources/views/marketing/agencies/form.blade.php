@@ -1,8 +1,8 @@
 <section id="join-beta" class="scroll-mt-8 border-t border-ink/10 py-16 sm:py-20">
-    <div class="mx-auto grid max-w-7xl items-start gap-12 px-5 sm:px-8 lg:grid-cols-2 lg:px-10">
+    <div class="mx-auto grid max-w-7xl items-start gap-10 px-5 sm:px-8 lg:grid-cols-2 lg:px-10">
         <div>
             <p class="font-mono text-base uppercase tracking-wide text-garden sm:text-sm">Join the agency beta</p>
-            <h2 class="mt-4 max-w-[24ch] text-balance font-display text-4xl font-semibold tracking-tight sm:text-5xl">Let’s build a service your clients will value.</h2>
+            <h2 class="mt-4 max-w-[24ch] text-balance font-sans text-4xl font-medium tracking-tight sm:text-5xl">Let’s build a service your clients will value.</h2>
             <p class="mt-6 max-w-[48ch] text-pretty text-lg/8 text-ink/70">Tell us about your agency, the websites you look after and what you would like Sitewell to handle. We’ll discuss a suitable pilot and the work involved.</p>
             <p class="mt-5 max-w-[56ch] text-pretty text-base/7 text-ink/60">This is an expression of interest, not an instant account or a commitment to buy. Beta scope, pricing and availability will be discussed with you.</p>
             <a href="tel:+441302248374" class="mt-8 inline-block text-lg font-medium underline decoration-ink/25 underline-offset-4 hover:text-garden">Or call us on 01302 248 374</a>
@@ -19,7 +19,7 @@
                 <div><label for="beta-goals" class="text-base font-medium">Anything you’d like Sitewell to handle? <span class="font-normal text-ink/60">(optional)</span></label><textarea id="beta-goals" name="goals" rows="4" maxlength="3000" aria-invalid="{{ $errors->has('goals') ? 'true' : 'false' }}" @error('goals') aria-describedby="beta-goals-error" @enderror class="mt-2 w-full resize-y rounded-md bg-white px-3.5 py-3 text-base ring-1 ring-ink/20 focus:outline-2 focus:-outline-offset-1 focus:outline-garden">{{ old('goals') }}</textarea>@error('goals')<p id="beta-goals-error" class="mt-2 text-base text-red-700">{{ $message }}</p>@enderror</div>
                 <div class="absolute -left-9999" aria-hidden="true"><label for="beta-_sitewell_check">Leave this blank</label><input id="beta-_sitewell_check" name="_sitewell_check" tabindex="-1" autocomplete="off"></div>
                 <p class="text-pretty text-base/7 text-ink/60">We’ll use these details to respond to your beta enquiry. Read our <a href="{{ route('marketing.privacy') }}" class="underline underline-offset-4 hover:text-garden">privacy policy</a>.</p>
-                <button type="submit" class="justify-self-start rounded-md bg-garden px-5 py-3 text-base font-medium text-white hover:bg-moss focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-garden">Join the agency beta <span aria-hidden="true">↗</span></button>
+                <button type="submit" class="justify-self-start rounded-full bg-garden px-5 py-3 text-base font-medium text-white hover:bg-moss focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-garden">Join the agency beta <span aria-hidden="true">↗</span></button>
             </form>
         </div>
     </div>

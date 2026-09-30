@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\WebsiteAudit;
+use App\Services\MarketingAuditResearch;
 use App\Services\ProspectWebsiteAnalyzer;
 use App\Support\MarketingJourney;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -16,7 +17,7 @@ class GenerateWebsiteAudit implements ShouldBeUnique, ShouldQueue
 
     public int $tries = 3;
 
-    public int $timeout = 75;
+    public int $timeout = 150;
 
     public int $uniqueFor = 600;
 
@@ -33,7 +34,7 @@ class GenerateWebsiteAudit implements ShouldBeUnique, ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(ProspectWebsiteAnalyzer $analyzer, MarketingJourney $journey): void
+    public function handle(ProspectWebsiteAnalyzer $analyzer, MarketingJourney $journey, MarketingAuditResearch $research): void
     {
         $this->audit->update([
             'status' => WebsiteAudit::STATUS_RUNNING,
@@ -42,11 +43,13 @@ class GenerateWebsiteAudit implements ShouldBeUnique, ShouldQueue
         ]);
 
         $analysis = $analyzer->analyze($this->audit->website_url);
+        $insights = $research->forAudit($this->audit->domain, $this->audit->website_url, $analysis);
 
         $this->audit->update([
             'status' => WebsiteAudit::STATUS_COMPLETED,
             'opportunity_score' => $analysis['score'],
             'findings' => $analysis['findings'],
+            'insights' => $insights,
             'contact_details' => $analysis['contacts'],
             'completed_at' => now(),
         ]);

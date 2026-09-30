@@ -8,14 +8,14 @@
 @endsection
 
 @section('content')
-    <section class="border-b border-ink/10 py-16 sm:py-24">
+    <section class="marketing-hero border-b border-ink/10">
         <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
             <nav aria-label="Breadcrumb" class="text-base text-garden sm:text-sm"><a class="underline underline-offset-4 hover:text-moss" href="{{ route('marketing.home') }}">Home</a> / <a class="underline underline-offset-4 hover:text-moss" href="{{ route('marketing.features') }}">Services</a> / <span aria-current="page">{{ $page['eyebrow'] }}</span></nav>
-            <h1 class="mt-8 max-w-[24ch] font-display text-4xl font-semibold tracking-tight text-balance sm:text-6xl">{{ $page['title'] }}</h1>
+            <h1 class="mt-8 max-w-[24ch] font-sans text-4xl font-medium tracking-tight text-balance sm:text-6xl">{{ $page['title'] }}</h1>
             <p class="mt-6 max-w-[60ch] text-pretty text-lg text-ink/70">{{ $page['description'] }}</p>
         </div>
     </section>
-    <div class="mx-auto grid max-w-7xl gap-12 px-5 py-16 sm:px-8 sm:py-20 lg:grid-cols-[1fr_3fr] lg:px-10">
+    <div class="mx-auto grid max-w-7xl gap-10 px-5 py-16 sm:px-8 sm:py-20 lg:grid-cols-[1fr_3fr] lg:px-10">
         <nav aria-label="On this page" class="text-base sm:text-sm">
             <p class="font-medium">On this page</p>
             <ul role="list" class="mt-5 grid gap-4">

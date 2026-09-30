@@ -53,9 +53,9 @@ it('publishes eighteen distinct agency pages with metadata, breadcrumbs and site
     }
 });
 
-it('connects the hub to navigation and labels proposed product previews honestly', function (): void {
+it('keeps the agency hub available outside navigation and labels proposed previews honestly', function (): void {
     $home = $this->get(route('marketing.home'))->assertSuccessful()->getContent();
-    expect(substr_count($home, 'href="'.route('marketing.agencies').'"'))->toBe(3);
+    expect(substr_count($home, 'href="'.route('marketing.agencies').'"'))->toBe(0);
     $this->get(route('marketing.agencies'))->assertSuccessful()
         ->assertSee('Agency beta / planned direction')->assertSee('fictional businesses and data')
         ->assertSee('current customer access uses individual website workspaces')

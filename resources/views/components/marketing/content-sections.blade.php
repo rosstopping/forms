@@ -35,7 +35,7 @@
         </div>
     @endif
     @if (! empty($section['paragraph_note']))
-        <aside class="border-l-2 border-garden bg-lichen/40 p-5"><p>{{ $section['paragraph_note'] }}</p></aside>
+        <aside class="border-l-2 border-garden bg-lichen p-5"><p>{{ $section['paragraph_note'] }}</p></aside>
     @endif
     @if (! empty($section['link']))
         <p>{{ $section['link']['before'] }}<a href="{{ route($section['link']['route'], $section['link']['parameters'] ?? []) }}">{{ $section['link']['label'] }}</a>{{ $section['link']['after'] }}</p>

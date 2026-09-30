@@ -9,6 +9,7 @@ use App\Models\Website;
 use App\Models\WebsiteAudit;
 use App\Models\WebsiteDomain;
 use App\Notifications\WebsiteAuditClaim;
+use App\Services\MarketingAuditResearch;
 use App\Services\ProspectWebsiteAnalyzer;
 use App\Support\MarketingJourney;
 use App\Support\MembershipPlan;
@@ -75,19 +76,96 @@ it('stores an anonymous audit result for the live report', function (): void {
         'contacts' => ['emails' => [], 'phones' => [], 'contact_page_url' => null, 'contact_form_url' => null],
     ]);
 
-    (new GenerateWebsiteAudit($audit))->handle($analyzer, new MarketingJourney);
+    $research = Mockery::mock(MarketingAuditResearch::class);
+    $research->shouldReceive('forAudit')->once()->with($audit->domain, $audit->website_url, Mockery::type('array'))->andReturn([
+        'health_score' => 0,
+        'pages_listed' => 7,
+        'pages_partial' => false,
+        'seo' => null,
+        'projection' => null,
+    ]);
+
+    (new GenerateWebsiteAudit($audit))->handle($analyzer, new MarketingJourney, $research);
 
     expect($audit->refresh()->status)->toBe(WebsiteAudit::STATUS_COMPLETED)
         ->and($audit->opportunity_score)->toBe(35)
+        ->and($audit->insights['pages_listed'])->toBe(7)
         ->and($audit->completed_at)->not->toBeNull();
+
+    $response = $this->get(route('marketing.website-audits.show', $audit))
+        ->assertSuccessful()
+        ->assertSee('Your website checks are ready.')
+        ->assertSee('data-audit-next-step', false)
+        ->assertSee('Website fix flagged')
+        ->assertSee('Technical health')
+        ->assertSee('Pages listed in sitemap')
+        ->assertSee('Search estimates are unavailable')
+        ->assertSeeInOrder(['Fix the website issues.', 'Improve existing content.', 'Create content for missed searches.', 'Strengthen the website and its reputation.', 'Measure and keep improving.'])
+        ->assertSee('href="'.route('marketing.ppc.book').'"', false)
+        ->assertSee('Book a call with Ross')
+        ->assertDontSee('HTTPS should be reviewed.')
+        ->assertDontSee('Start preparing my fixes')
+        ->assertDontSee('name="email"', false);
+
+    $document = new DOMDocument;
+    @$document->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
+    expect((new DOMXPath($document))->query('//*[@data-audit-fix-count]')->item(0)->textContent)->toBe('1');
+});
+
+it('shows zero fixes when the initial scan finds no issues', function (): void {
+    $audit = WebsiteAudit::factory()->create([
+        'status' => WebsiteAudit::STATUS_COMPLETED,
+        'findings' => [['category' => 'Search essentials', 'title' => 'Page title', 'severity' => 'passed', 'message' => 'A title was found.']],
+        'created_at' => now()->subSeconds(11),
+    ]);
+
+    $response = $this->get(route('marketing.website-audits.show', $audit))
+        ->assertSuccessful()
+        ->assertSee('Website fixes flagged');
+
+    $document = new DOMDocument;
+    @$document->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
+    expect((new DOMXPath($document))->query('//*[@data-audit-fix-count]')->item(0)->textContent)->toBe('0');
+});
+
+it('shows measured search estimates and a conditional six-month scenario', function (): void {
+    $audit = WebsiteAudit::factory()->create([
+        'status' => WebsiteAudit::STATUS_COMPLETED,
+        'created_at' => now()->subSeconds(11),
+        'findings' => [['severity' => 'passed'], ['severity' => 'warning']],
+        'insights' => [
+            'health_score' => 50,
+            'pages_listed' => 18,
+            'pages_partial' => false,
+            'seo' => [
+                'location_code' => 2826,
+                'organic_keywords' => 42,
+                'top_3_keywords' => 3,
+                'top_10_keywords' => 7,
+                'estimated_monthly_visits' => 120,
+                'referring_domains' => 12,
+                'sample_size' => 1,
+                'keywords' => [['term' => 'garden office fitters', 'position' => 15, 'monthly_searches' => 1000]],
+            ],
+            'projection' => [
+                'baseline_monthly_visits' => 120,
+                'six_month_low' => 128,
+                'six_month_high' => 145,
+                'method' => 'Illustrative scenario from sampled positions.',
+            ],
+        ],
+    ]);
 
     $this->get(route('marketing.website-audits.show', $audit))
         ->assertSuccessful()
-        ->assertSee('We reviewed publicly visible signals')
-        ->assertSee('data-audit-next-step', false)
-        ->assertSeeInOrder(['Turn these findings into a fix plan', 'Checks completed', 'HTTPS should be reviewed.'])
-        ->assertSee('Start preparing my fixes')
-        ->assertSee('HTTPS should be reviewed.');
+        ->assertSee('50%')
+        ->assertSee('Pages listed in sitemap')
+        ->assertSee('Google ranking terms')
+        ->assertSee('Referring domains')
+        ->assertSee('garden office fitters')
+        ->assertSee('1,000')
+        ->assertSee('128–145')
+        ->assertSee('not a forecast or guarantee.');
 });
 
 it('keeps the progress experience visible for at least ten seconds', function (): void {
@@ -100,7 +178,7 @@ it('keeps the progress experience visible for at least ten seconds', function ()
     $this->get(route('marketing.website-audits.show', $audit))
         ->assertSuccessful()
         ->assertSee('Reviewing your website')
-        ->assertSee('We are reviewing publicly visible signals');
+        ->assertSee('We’re checking your website');
 
     $this->getJson(route('marketing.website-audits.status', $audit))
         ->assertExactJson(['status' => 'completed', 'completed' => false, 'failed' => false]);
@@ -247,6 +325,49 @@ it('rejects an invalid marketing Turnstile response', function (): void {
 
     expect(WebsiteAudit::query()->exists())->toBeFalse();
     Queue::assertNothingPushed();
+});
+
+it('requires a valid Turnstile token before starting the website audit', function (): void {
+    Queue::fake();
+    config([
+        'services.turnstile.marketing.enabled' => true,
+        'services.turnstile.marketing.site_key' => 'site-key',
+        'services.turnstile.marketing.secret_key' => 'secret-key',
+        'services.turnstile.marketing.hostname' => 'localhost',
+    ]);
+    Http::fake([
+        'https://challenges.cloudflare.com/turnstile/v0/siteverify' => Http::response(['success' => true, 'hostname' => 'localhost']),
+    ]);
+
+    $this->get(route('marketing.free-site-audit'))
+        ->assertSuccessful()
+        ->assertSee('data-sitekey="site-key"', false)
+        ->assertSee('https://challenges.cloudflare.com/turnstile/v0/api.js', false);
+
+    $this->from(route('marketing.free-site-audit'))
+        ->post(route('marketing.free-site-audit.store'), ['website_url' => 'northfield.example'])
+        ->assertSessionHasErrors('cf-turnstile-response');
+
+    $response = $this->from(route('marketing.free-site-audit'))
+        ->post(route('marketing.free-site-audit.store'), [
+            'website_url' => 'northfield.example',
+            'cf-turnstile-response' => 'valid-token',
+        ]);
+
+    $response->assertRedirect(route('marketing.website-audits.show', WebsiteAudit::query()->sole()));
+    Queue::assertPushed(GenerateWebsiteAudit::class);
+});
+
+it('throttles repeated website audit submissions', function (): void {
+    Queue::fake();
+    $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.42']);
+
+    foreach (['one.example', 'two.example', 'three.example'] as $domain) {
+        $this->post(route('marketing.free-site-audit.store'), ['website_url' => $domain])->assertRedirect();
+    }
+
+    $this->post(route('marketing.free-site-audit.store'), ['website_url' => 'four.example'])->assertTooManyRequests();
+    expect(WebsiteAudit::query()->count())->toBe(3);
 });
 
 it('expires private website audit links', function (): void {

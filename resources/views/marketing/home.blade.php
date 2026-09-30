@@ -1,7 +1,7 @@
 @extends('layouts.marketing')
 
 @section('title', 'Managed business websites')
-@section('meta_description', 'Website care and managed SEO for UK small businesses. We fix problems, update pages and keep your enquiries organised.')
+@section('meta_description', 'Get found. Get chosen. Sitewell manages your website and SEO, with practical improvements carried out for you and clear weekly updates.')
 @section('structured_data')
     @php
         $structuredData = [
@@ -11,109 +11,99 @@
             'url' => route('marketing.home'),
         ];
     @endphp
-    <script type="application/ld+json">
-        @json($structuredData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
-    </script>
+    <script type="application/ld+json">@json($structuredData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)</script>
 @endsection
 
 @section('content')
-    <section class="bg-moss py-14 text-paper sm:py-20">
-        <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
-            <p class="font-mono text-base text-paper/80 sm:text-sm">UK website management &amp; SEO</p>
-            <div class="mt-6 grid gap-10 lg:grid-cols-[7fr_4fr] lg:items-end">
-                <div>
-                    <h1 class="max-w-[17ch] font-display text-5xl font-semibold tracking-tight text-balance sm:text-6xl lg:text-7xl">Your website,<br>properly looked after.</h1>
-                    <p class="mt-6 max-w-[32ch] font-display text-2xl tracking-tight text-apricot sm:text-3xl">Website care. Updates. SEO.</p>
-                </div>
-                <div>
-                    <p class="max-w-[40ch] text-pretty text-lg leading-8 text-paper/90">We fix problems, keep your pages up to date and help customers find you.</p>
-                    <div class="mt-7 flex flex-wrap items-center gap-6 font-medium">
-                        <a href="{{ route('marketing.how-it-works') }}" class="inline-flex min-h-12 items-center gap-5 rounded-md bg-paper px-4 py-3 text-ink hover:bg-lichen focus-visible:outline-paper">See how it works <span aria-hidden="true">→</span></a>
-                        <a href="{{ route('marketing.contact') }}" class="inline-flex min-h-12 items-center underline decoration-paper/40 underline-offset-4 hover:decoration-paper">Talk to us</a>
+    <section class="bg-white px-3 pt-1 pb-6 text-[#151618] sm:px-6 sm:pt-2 sm:pb-8" aria-labelledby="hero-spotlight">
+        <div class="mx-auto grid max-w-7xl justify-items-center gap-6 rounded-3xl bg-[#faf7f4] px-5 py-10 text-center sm:gap-8 sm:px-10 sm:py-12 lg:py-16">
+            <p class="flex max-w-full items-center gap-2.5 rounded-full bg-[#fafaf9] py-2 pr-4 pl-2 text-base font-medium text-[#151618] ring-1 ring-black/8"><span class="size-6 shrink-0 rounded-full border-[6px] border-[#ff5035] bg-white" aria-hidden="true"></span>We’ll get you more customers.</p>
+            <h1 id="hero-spotlight" class="max-w-[19ch] text-4xl font-medium leading-[1.12] tracking-tight text-balance sm:text-6xl lg:text-7xl">Turn more searches into <span class="underline decoration-[#d63d24]/50 decoration-2 underline-offset-8 sm:decoration-4">your next customer.</span></h1>
+            <p class="w-full max-w-3xl text-pretty text-base text-[#62666d] sm:text-xl">Your customers search Google, ask ChatGPT and read the sites that shape AI answers. We find the searches that count and help you get found.</p>
+            <div class="grid w-full max-w-xl justify-items-center gap-2">
+                <form method="POST" action="{{ route('marketing.free-site-audit.store') }}" data-audit-form data-marketing-attribution="{{ json_encode($attribution) }}" class="grid w-full gap-3">
+                    @csrf
+                    <div class="grid grid-cols-[minmax(0,1fr)_auto] items-center rounded-full bg-white p-1.5 ring-1 ring-black/15 focus-within:ring-2 focus-within:ring-[#d63d24]">
+                        <label for="hero-website-url" class="sr-only">Website address</label>
+                        <input id="hero-website-url" name="website_url" type="text" required maxlength="255" inputmode="url" autocomplete="url" autocapitalize="none" spellcheck="false" placeholder="example.com" value="{{ old('website_url') }}" aria-invalid="{{ $errors->has('website_url') ? 'true' : 'false' }}" @error('website_url') aria-describedby="hero-website-error" @enderror class="min-h-14 w-full min-w-0 rounded-full border-0 bg-transparent px-3 py-4 text-base text-[#151618] placeholder:text-[#62666d] focus:outline-none sm:px-5">
+                        <button type="submit" aria-label="Get your free search audit" class="inline-flex min-h-14 items-center justify-center gap-3 rounded-full bg-[#d63d24] py-4 pr-4 pl-5 font-medium text-white hover:bg-[#b9301b] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#d63d24]"><span class="sm:hidden">Free audit</span><span class="max-sm:hidden">Get your free search audit</span><span class="shrink-0" aria-hidden="true">→</span></button>
                     </div>
-                </div>
+                    @error('website_url')<p id="hero-website-error" role="alert" class="text-base text-red-700 sm:text-sm">{{ $message }}</p>@enderror
+                    <div class="absolute left-[-9999px] size-px overflow-hidden" aria-hidden="true">
+                        <label for="hero-sitewell-check">Leave this field empty</label>
+                        <input id="hero-sitewell-check" name="_sitewell_check" type="text" tabindex="-1" autocomplete="off">
+                    </div>
+                    @if ($turnstileEnabled)
+                        <div class="cf-turnstile justify-self-center" data-sitekey="{{ $turnstileSiteKey }}" data-theme="light" data-size="flexible"></div>
+                        @error('cf-turnstile-response')<p role="alert" class="text-base text-red-700 sm:text-sm">{{ $message }}</p>@enderror
+                    @endif
+                </form>
             </div>
+        </div>
+        <div class="mx-auto grid max-w-5xl justify-items-center gap-6 px-5 pt-8 sm:pt-10">
+            <p class="text-center text-base text-[#62666d] sm:text-sm">Where people look for answers.</p>
+            <ul role="list" aria-label="Search engines and AI assistants" class="grid w-full grid-cols-2 gap-x-6 gap-y-6 sm:grid-cols-3 lg:grid-cols-6">
+                @foreach ([['google', 'Google'], ['bing', 'Bing'], ['openai', 'ChatGPT'], ['gemini', 'Gemini'], ['perplexity', 'Perplexity'], ['claude', 'Claude']] as [$mark, $name])
+                    <li class="flex items-center justify-center gap-2.5 text-lg font-medium tracking-tight text-[#62666d]">
+                        <img src="{{ asset('search-'.$mark.'.svg') }}" alt="" width="24" height="24" class="size-6 shrink-0 opacity-60" decoding="async">
+                        <span>{{ $name }}</span>
+                    </li>
+                @endforeach
+            </ul>
         </div>
     </section>
 
-    <section class="border-y border-ink/10 bg-lichen/45">
-        <div class="mx-auto grid max-w-7xl divide-y divide-ink/10 px-5 sm:grid-cols-3 sm:divide-x sm:divide-y-0 sm:px-8 lg:px-10">
-            @foreach ([['Need a website?', 'We can build one for your business.'], ['Bring your website', 'We can look after the site you already have.'], ['Take it with you', 'Your website stays yours if you leave.']] as [$title, $copy])
-                <div class="py-6 sm:px-6 sm:first:pl-0 sm:last:pr-0"><p class="font-display text-2xl font-semibold tracking-tight">{{ $title }}</p><p class="mt-2 text-base text-ink/55 sm:text-sm">{{ $copy }}</p></div>
-            @endforeach
+    <section class="py-12 text-[#151618] sm:py-16" aria-labelledby="homepage-services">
+        <div class="mx-auto grid max-w-7xl gap-10 px-5 sm:px-8 lg:grid-cols-[4fr_7fr] lg:px-10">
+            <div class="grid content-start justify-items-start gap-5">
+                <h2 id="homepage-services" class="max-w-[20ch] text-3xl font-medium tracking-tight text-balance sm:text-4xl">The changes your website needs.</h2>
+                <p class="max-w-[40ch] text-pretty text-lg text-[#62666d]">We handle the writing, editing and technical work. You get on with running your business.</p>
+            </div>
+            <dl class="grid divide-y divide-black/10">
+                @foreach ([
+                    ['Sharper page copy.', 'We rewrite service pages so people can see what you offer and how to enquire.'],
+                    ['Useful new content.', 'We write pages and articles around the questions your customers ask.'],
+                    ['Technical fixes.', 'We resolve website issues that make pages harder to find or use.'],
+                ] as [$heading, $copy])
+                    <div class="grid gap-2 py-6 first:pt-0 last:pb-0">
+                        <dt class="text-xl font-medium tracking-tight">{{ $heading }}</dt>
+                        <dd class="max-w-[48ch] text-pretty text-lg text-[#62666d]">{{ $copy }}</dd>
+                    </div>
+                @endforeach
+            </dl>
         </div>
     </section>
 
-    <section class="bg-paper py-14 sm:py-20">
-        <div class="mx-auto grid max-w-7xl gap-10 px-5 sm:px-8 lg:grid-cols-[4fr_7fr] lg:items-center lg:px-10">
-            <div>
-                <p class="font-mono text-base text-garden sm:text-sm">A look inside Sitewell</p>
-                <h2 class="mt-4 max-w-[19ch] font-display text-4xl font-semibold tracking-tight text-balance sm:text-5xl">See Sitewell in action.</h2>
-                <p class="mt-5 max-w-[38ch] text-pretty text-lg leading-8 text-ink/75">A quick tour of your website reports, updates and enquiries.</p>
-                <p class="mt-6 font-medium"><a href="{{ route('marketing.contact') }}" class="inline-flex min-h-12 items-center gap-5 underline decoration-ink/30 underline-offset-4 hover:decoration-ink">Talk to us about your website <span aria-hidden="true">→</span></a></p>
-            </div>
-            <figure class="min-w-0">
+    <section class="px-3 py-4 sm:px-6 sm:py-6" aria-label="Sitewell walkthrough">
+        <div class="mx-auto max-w-7xl">
+            <figure class="grid min-w-0 gap-3">
                 <iframe
-                    src="https://www.loom.com/embed/d406218f4a2843f7a7d8abbf804f2ba6"
+                    src="https://www.loom.com/embed/d406218f4a2843f7a7d8abbf804f2ba6?hideEmbedTopBar=true&amp;hide_owner=true&amp;hide_title=true&amp;hide_share=true"
                     title="See how Sitewell looks after your website"
-                    class="aspect-[2000/1299] w-full rounded-[min(1vw,8px)] bg-black outline-1 -outline-offset-1 outline-black/10"
+                    class="aspect-[2000/1299] w-full rounded-3xl bg-white ring-1 ring-black/10"
                     loading="lazy"
                     allow="fullscreen"
                     allowfullscreen
                 ></iframe>
-                <figcaption class="mt-4 flex flex-wrap justify-between gap-2 text-base text-ink/70 sm:text-sm"><span>The Sitewell walkthrough</span><span>Website care, search &amp; enquiries</span></figcaption>
             </figure>
         </div>
     </section>
 
-    <section class="border-y border-ink/10 bg-lichen/45 py-12 sm:py-16">
+    <section class="py-12 text-[#151618] sm:py-16" aria-labelledby="homepage-founder">
         <div class="mx-auto grid max-w-7xl gap-10 px-5 sm:px-8 lg:grid-cols-[4fr_7fr] lg:px-10">
-            <div>
-                <h2 class="max-w-[20ch] font-display text-3xl font-semibold tracking-tight text-balance sm:text-4xl">What we do each week.</h2>
-                <p class="mt-5 max-w-[36ch] text-pretty text-lg leading-8 text-ink/75">Regular checks, page updates and a report of what’s been done.</p>
-                <p class="mt-5 font-medium"><a href="{{ route('marketing.features') }}" class="inline-flex min-h-12 items-center underline decoration-ink/30 underline-offset-4 hover:decoration-ink">What the service covers →</a></p>
+            <div class="grid content-start gap-4">
+                <h2 id="homepage-founder" class="text-3xl font-medium tracking-tight text-balance sm:text-4xl">Hi, I’m Ross.</h2>
+                <p class="text-base text-[#62666d]">Web developer. Based in Doncaster.</p>
+                <p class="text-base font-medium">01302 248 374</p>
             </div>
-            <ol role="list" class="divide-y divide-ink/15">
-                @foreach ([
-                    ['Check', 'Website health, broken links and enquiry delivery.'],
-                    ['Prioritise', 'Agree which fixes and updates come first.'],
-                    ['Improve', 'Fix issues and update your pages.'],
-                    ['Measure', 'See completed work and track search progress on SEO plans.'],
-                ] as [$heading, $copy])
-                    <li class="grid grid-cols-[2rem_1fr] gap-x-4 gap-y-2 py-4 first:pt-0 last:pb-0 sm:grid-cols-[2rem_6rem_1fr]">
-                        <p class="font-mono text-base text-garden sm:text-sm">0{{ $loop->iteration }}</p>
-                        <h3 class="font-medium">{{ $heading }}</h3>
-                        <p class="col-start-2 text-pretty text-base text-ink/75 sm:col-start-auto">{{ $copy }}</p>
-                    </li>
-                @endforeach
-            </ol>
-        </div>
-    </section>
-
-    <section class="bg-apricot/35 py-12 sm:py-16">
-        <div class="mx-auto grid max-w-7xl gap-10 px-5 sm:px-8 lg:grid-cols-[4fr_7fr] lg:px-10">
-            <div>
-                <h2 class="font-display text-3xl font-semibold tracking-tight sm:text-4xl">Hi, I’m Ross.</h2>
-                <p class="mt-3 text-base text-ink/75">Founder of Sitewell. Based in the UK.</p>
-                {{-- TODO: Add a genuine photograph of Ross when supplied. Confirm years of experience and exact business location before publishing those details. --}}
-            </div>
-            <div>
-                <p class="max-w-[44ch] font-display text-2xl font-semibold tracking-tight text-pretty">Need a change? Have a question? Talk to me.</p>
-                <p class="mt-4 max-w-[52ch] text-pretty text-base leading-7 text-ink/75">Tell me about your business and your website. We’ll work out what needs doing.</p>
-                <div class="mt-6 flex flex-wrap items-center gap-6 font-medium">
-                    <a href="{{ config('marketing.booking_url') }}" class="inline-flex min-h-12 items-center underline decoration-ink/30 underline-offset-4 hover:decoration-ink">Book a call with Ross →</a>
-                    <a href="tel:+441302248374" class="inline-flex min-h-12 items-center tabular-nums underline decoration-ink/30 underline-offset-4 hover:decoration-ink">01302 248 374</a>
-                </div>
+            <div class="grid content-start justify-items-start gap-5">
+                <p class="max-w-[40ch] text-pretty text-xl">Start with your website. I’ll help you understand what needs attention and where Sitewell can help.</p>
+                <p class="text-base font-medium"><a href="{{ route('marketing.free-site-audit') }}" class="inline-flex min-h-12 items-center gap-3 rounded-full px-5 py-3 ring-1 ring-black/20 hover:bg-[#faf7f4] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#d63d24]">Get your free search audit <span aria-hidden="true">→</span></a></p>
+                <p class="max-w-[48ch] text-pretty text-base text-[#62666d]">Your website stays yours if you leave.</p>
             </div>
         </div>
     </section>
-
-    {{-- TODO: Add a genuine, approved customer quote when available; no testimonial or ranking results have been invented. --}}
-    <section class="py-10 sm:py-12">
-        <div class="mx-auto flex max-w-7xl flex-col gap-5 px-5 sm:px-8 md:flex-row md:items-center md:justify-between lg:px-10">
-            <h2 class="max-w-[30ch] font-display text-2xl font-semibold tracking-tight text-balance sm:text-3xl">Start with a look at your website.</h2>
-            <p class="font-medium"><a href="{{ route('marketing.free-site-audit') }}" class="inline-flex min-h-12 items-center underline decoration-ink/30 underline-offset-4 hover:decoration-ink">Get your free website audit →</a></p>
-        </div>
-        <p class="mx-auto mt-6 max-w-7xl px-5 text-base text-ink/70 sm:px-8 lg:px-10">Explore <a href="{{ route('marketing.landing', 'website-management-services') }}" class="text-garden underline underline-offset-4">ongoing website management</a>, or use our guide to <a href="{{ route('marketing.article', 'how-to-find-seo-problems') }}" class="text-garden underline underline-offset-4">find the SEO problems worth fixing first</a>.</p>
-    </section>
+@if ($turnstileEnabled)
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+@endif
 @endsection

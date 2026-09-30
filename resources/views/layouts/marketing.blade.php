@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#f4f1e8">
+    <meta name="theme-color" content="#ffffff">
     <meta name="description" content="@yield('meta_description', 'Sitewell keeps your website healthy, visible, and ready to turn visitors into customers.')">
     <link rel="canonical" href="{{ request()->url() }}">
     <meta property="og:site_name" content="Sitewell">
@@ -13,49 +13,24 @@
     <meta property="og:description" content="@yield('meta_description', 'Sitewell keeps your website healthy, visible, and ready to turn visitors into customers.')">
     <meta property="og:url" content="{{ request()->url() }}">
     <title>@yield('title', 'Sitewell'){{ $__env->hasSection('concise_title') ? '' : ' · Your website, well looked after' }}</title>
+    @fonts
     @yield('structured_data')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    @if (request()->routeIs('marketing.free-site-audit', 'marketing.website-audits.show'))
+    @if (request()->routeIs('marketing.home', 'marketing.free-site-audit', 'marketing.website-audits.show'))
         @vite('resources/js/marketing-events.js')
     @endif
 </head>
-<body class="min-h-dvh bg-paper font-sans text-ink">
+<body class="marketing-site prospect-workspace min-h-dvh bg-white text-ink">
     <div class="isolate min-h-dvh">
         @if (request()->routeIs('marketing.pricing') && \App\Support\MembershipPlan::activeGrowthOffer())
             <a href="{{ route('marketing.pricing') }}" class="flex items-center justify-center gap-2 bg-garden px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-moss"><span>2026 Growth offer: save 20% — now £316/month</span><span aria-hidden="true">→</span></a>
         @endif
-        <header class="border-b border-ink/10">
-            <div class="mx-auto flex max-w-7xl items-center justify-between gap-6 px-5 py-5 sm:px-8 lg:px-10">
-                <div class="flex flex-1 items-center">
-                    <a href="{{ route('marketing.home') }}" aria-label="Homepage" class="font-display text-2xl font-semibold tracking-tight text-ink">Sitewell</a>
-                </div>
-                <nav class="hidden items-center gap-8 text-sm text-ink/65 lg:flex" aria-label="Main navigation">
-                    @foreach ([['route' => 'marketing.how-it-works', 'label' => 'How it works'], ['route' => 'marketing.features', 'label' => 'Services'], ['route' => 'marketing.pricing', 'label' => 'Pricing'], ['route' => 'marketing.agencies', 'label' => 'For Agencies'], ['route' => 'marketing.journal', 'label' => 'Guides'], ['route' => 'marketing.about', 'label' => 'About']] as $item)
-                        <a href="{{ route($item['route']) }}" @class(['hover:text-ink', 'text-ink' => request()->routeIs($item['route'])])>{{ $item['label'] }}</a>
-                    @endforeach
+        <header class="bg-white text-ink">
+            <div class="mx-auto flex max-w-7xl items-center justify-between gap-5 px-5 py-4 sm:px-8 sm:py-5 lg:px-10">
+                <p class="shrink-0 text-2xl font-semibold tracking-tight sm:text-3xl"><a href="{{ route('marketing.home') }}" aria-label="Homepage">sitewell<span class="text-garden">.</span></a></p>
+                <nav aria-label="Main navigation">
+                    <a href="{{ route('marketing.free-site-audit') }}" class="inline-flex min-h-12 max-w-44 items-center justify-center gap-3 rounded-full px-4 py-3 text-center text-base font-medium leading-tight ring-1 ring-black/20 hover:bg-lichen focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-garden sm:max-w-none sm:px-5 sm:text-sm">Get your free search audit <span aria-hidden="true">→</span></a>
                 </nav>
-                <div class="hidden flex-1 items-center justify-end gap-5 text-sm lg:flex">
-                    <a href="{{ route('login') }}" class="text-ink/65 hover:text-ink">Log in</a>
-                    <a href="{{ route('marketing.free-site-audit') }}" class="rounded-md px-3 py-2 text-ink ring-1 ring-ink/20 hover:bg-white/40">Get started</a>
-                </div>
-                <details class="relative lg:hidden">
-                    <summary class="relative list-none rounded-md px-3 py-2 text-base font-medium ring-1 ring-ink/20">Menu<span class="absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2 pointer-fine:hidden" aria-hidden="true"></span></summary>
-                    <nav class="absolute right-0 z-50 mt-3 w-64 rounded-lg bg-[#fffefa] p-3 shadow-xl ring-1 ring-ink/10" aria-label="Mobile navigation">
-                        <div class="grid gap-1">
-                            <a href="{{ route('marketing.how-it-works') }}" class="rounded-md px-3 py-3 text-base hover:bg-lichen/50">How it works</a>
-                            <a href="{{ route('marketing.features') }}" class="rounded-md px-3 py-3 text-base hover:bg-lichen/50">Features</a>
-                            <a href="{{ route('marketing.agencies') }}" class="rounded-md px-3 py-3 text-base hover:bg-lichen/50">For Agencies</a>
-                            <a href="{{ route('marketing.examples') }}" class="rounded-md px-3 py-3 text-base hover:bg-lichen/50">Examples</a>
-                            <a href="{{ route('marketing.pricing') }}" class="rounded-md px-3 py-3 text-base hover:bg-lichen/50">Pricing</a>
-                            <a href="{{ route('marketing.about') }}" class="rounded-md px-3 py-3 text-base hover:bg-lichen/50">About</a>
-                            <a href="{{ route('marketing.faqs') }}" class="rounded-md px-3 py-3 text-base hover:bg-lichen/50">FAQs</a>
-                            <a href="{{ route('marketing.free-site-audit') }}" class="rounded-md px-3 py-3 text-base hover:bg-lichen/50">Get started</a>
-                            <a href="{{ route('marketing.journal') }}" class="rounded-md px-3 py-3 text-base hover:bg-lichen/50">Journal</a>
-                            <a href="{{ route('marketing.contact') }}" class="rounded-md px-3 py-3 text-base hover:bg-lichen/50">Contact</a>
-                            <a href="{{ route('login') }}" class="mt-2 border-t border-ink/10 px-3 pt-4 pb-3 text-base text-ink/65">Log in</a>
-                        </div>
-                    </nav>
-                </details>
             </div>
         </header>
 
@@ -63,44 +38,18 @@
             @yield('content')
         </main>
 
-        <footer class="border-t border-ink/10 bg-ink text-paper">
-            <div class="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:px-10">
-                <div class="grid gap-10 md:grid-cols-[2fr_1fr_1fr_1fr]">
-                    <div>
-                        <a href="{{ route('marketing.home') }}" aria-label="Homepage" class="font-display text-2xl font-semibold tracking-tight">Sitewell</a>
-                        <p class="mt-4 max-w-[42ch] text-pretty text-base text-paper/65 sm:text-sm">Specialist website and SEO management for growing businesses.</p>
-                    </div>
-                    <nav class="grid content-start gap-3 text-base text-paper/70 sm:text-sm" aria-label="Product">
-                        <p class="font-medium text-paper">Product</p>
-                        <a href="{{ route('marketing.how-it-works') }}" class="font-normal hover:text-paper">How it works</a>
-                        <a href="{{ route('marketing.features') }}" class="font-normal hover:text-paper">Features</a>
-                        <a href="{{ route('marketing.examples') }}" class="font-normal hover:text-paper">Examples</a>
-                        <a href="{{ route('marketing.comparison') }}" class="font-normal hover:text-paper">Compare Sitewell</a>
-                        <a href="{{ route('marketing.pricing') }}" class="font-normal hover:text-paper">Pricing</a>
-                        <a href="{{ route('marketing.free-site-audit') }}" class="font-normal hover:text-paper">Get started</a>
-                        <a href="{{ route('marketing.agencies') }}" class="font-normal hover:text-paper">For Agencies</a>
-                        <a href="{{ route('marketing.wordpress') }}" class="font-normal hover:text-paper">WordPress plugin</a>
-                    </nav>
-                    <nav class="grid content-start gap-3 text-base text-paper/70 sm:text-sm" aria-label="Industries">
-                        <p class="font-medium text-paper">Industries</p>
-                        <a href="{{ route('marketing.industry', 'travel-and-hospitality') }}" class="font-normal hover:text-paper">Travel & hospitality</a>
-                        <a href="{{ route('marketing.industry', 'events-and-experiences') }}" class="font-normal hover:text-paper">Events & experiences</a>
-                        <a href="{{ route('marketing.industry', 'training-and-professional-services') }}" class="font-normal hover:text-paper">Training & professional services</a>
-                    </nav>
-                    <nav class="grid content-start gap-3 text-base text-paper/70 sm:text-sm" aria-label="Company">
-                        <p class="font-medium text-paper">Company</p>
-                        <a href="{{ route('marketing.about') }}" class="font-normal hover:text-paper">About</a>
-                        <a href="{{ route('marketing.faqs') }}" class="font-normal hover:text-paper">FAQs</a>
-                        <a href="{{ route('marketing.journal') }}" class="font-normal hover:text-paper">Journal</a>
-                        <a href="{{ route('marketing.contact') }}" class="font-normal hover:text-paper">Contact</a>
-                        <a href="{{ route('marketing.privacy') }}" class="font-normal hover:text-paper">Privacy policy</a>
-                        <a href="{{ route('marketing.terms') }}" class="font-normal hover:text-paper">Terms of service</a>
-                        <a href="{{ route('login') }}" class="font-normal hover:text-paper">Log in</a>
-                    </nav>
-                </div>
-                <p class="mt-12 border-t border-paper/10 pt-6 text-base text-paper/50 sm:text-sm">© {{ now()->year }} Sitewell. Your website, well looked after.</p>
+        <footer class="border-t border-black/10 bg-white text-ink">
+            <div class="mx-auto flex max-w-7xl flex-col gap-6 px-5 py-8 sm:px-8 lg:flex-row lg:items-center lg:justify-between lg:px-10">
+                <p class="text-base text-ink/65 sm:text-sm">© {{ now()->year }} Sitewell.</p>
+                <nav aria-label="Footer navigation" class="flex flex-wrap gap-x-6 gap-y-2 text-base text-ink/65 sm:text-sm">
+                    <a href="{{ route('marketing.faqs') }}" class="inline-flex min-h-12 items-center hover:text-ink">FAQs</a>
+                    <a href="{{ route('marketing.journal') }}" class="inline-flex min-h-12 items-center hover:text-ink">Journal</a>
+                    <a href="{{ route('marketing.privacy') }}" class="inline-flex min-h-12 items-center hover:text-ink">Privacy policy</a>
+                    <a href="{{ route('marketing.terms') }}" class="inline-flex min-h-12 items-center hover:text-ink">Terms of service</a>
+                </nav>
             </div>
         </footer>
+
     </div>
 </body>
 </html>

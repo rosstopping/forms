@@ -4,19 +4,19 @@
 @section('meta_description', 'See practical examples of the website, SEO, enquiry, content, and local visibility work Sitewell specialists manage.')
 
 @section('content')
-    <section class="py-16 sm:py-24">
+    <section class="marketing-hero">
         <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
-            <p class="font-mono text-sm uppercase tracking-wide text-garden">What the service looks like</p>
-            <h1 class="mt-5 max-w-[18ch] font-display text-5xl font-semibold tracking-tight text-balance sm:text-6xl">From specialist insight to completed improvement</h1>
-            <p class="mt-6 max-w-[58ch] text-pretty text-lg leading-8 text-ink/65">Representative examples of the work our team manages. These scenarios explain the service and are not presented as individual client results.</p>
+            <p class="text-base font-medium sm:text-sm text-garden">What the service looks like</p>
+            <h1 class="mt-5 max-w-[18ch] font-sans text-4xl font-medium tracking-tight text-balance sm:text-6xl">The work we do.</h1>
+            <p class="mt-6 max-w-[58ch] text-pretty text-lg leading-8 text-ink/65">Examples of the work we handle. These are illustrative scenarios, not client results.</p>
         </div>
     </section>
 
-    <section class="border-y border-ink/10 bg-lichen/35 py-16 sm:py-24">
+    <section class="border-y border-ink/10 bg-lichen py-12 sm:py-16">
         <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10"><x-marketing.product-preview /></div>
     </section>
 
-    <section class="py-20 sm:py-28">
+    <section class="py-12 sm:py-16">
         <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
             <div class="grid gap-10 lg:grid-cols-2">
                 @foreach ([
@@ -27,7 +27,7 @@
                     ['Local presence', 'A Google Business Profile has inconsistent details and unanswered customer reviews.', 'Our specialist corrects the agreed information and prepares thoughtful responses in the business’s voice.'],
                     ['Ongoing management', 'The website needs a new service added without disrupting the rest of the site.', 'We plan where it belongs, create the supporting page and calls to action, and look after the release.'],
                 ] as [$area, $situation, $response])
-                    <article class="border-t border-ink/15 pt-6"><p class="font-mono text-sm uppercase tracking-wide text-garden">{{ $area }}</p><h2 class="mt-4 font-display text-2xl font-semibold tracking-tight text-balance">{{ $situation }}</h2><p class="mt-4 text-pretty text-base leading-7 text-ink/60">{{ $response }}</p></article>
+                    <article class="border-t border-ink/15 pt-6"><p class="text-base font-medium sm:text-sm text-garden">{{ $area }}</p><h2 class="mt-4 font-sans text-2xl font-medium tracking-tight text-balance">{{ $situation }}</h2><p class="mt-4 text-pretty text-base leading-7 text-ink/60">{{ $response }}</p></article>
                 @endforeach
             </div>
         </div>

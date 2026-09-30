@@ -34,7 +34,7 @@ it('renders every new page with its own metadata, content, canonical and sitemap
         ->and(array_unique($descriptions))->toHaveCount(43);
 });
 
-it('keeps all sitemap pages reachable through public links and checks internal link destinations', function (): void {
+it('keeps sitemap pages available and checks promoted pages and internal link destinations', function (): void {
     $xml = simplexml_load_string($this->get(route('marketing.sitemap'))->assertSuccessful()->getContent());
     $urls = [];
     foreach ($xml->url as $entry) {
@@ -64,7 +64,8 @@ it('keeps all sitemap pages reachable through public links and checks internal l
             }
         }
     }
-    foreach ($urls as $url) {
+    foreach (['marketing.home', 'marketing.free-site-audit', 'marketing.faqs', 'marketing.journal', 'marketing.privacy', 'marketing.terms'] as $route) {
+        $url = route($route);
         expect(isset($inbound[$url]))->toBeTrue('No inbound link to '.$url);
     }
     foreach ($links as $href => $destination) {

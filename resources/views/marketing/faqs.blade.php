@@ -4,9 +4,9 @@
 @section('meta_description', 'Straight answers about Sitewell website management, SEO, content, ownership, setup, reporting, and ongoing support.')
 
 @section('content')
-    <section class="py-16 sm:py-24"><div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10"><p class="font-mono text-sm uppercase tracking-wide text-garden">Straight answers</p><h1 class="mt-5 max-w-[18ch] font-display text-5xl font-semibold tracking-tight text-balance sm:text-6xl">What businesses ask before handing us their website</h1><p class="mt-6 max-w-[58ch] text-pretty text-lg leading-8 text-ink/65">The practical details of working with Sitewell and putting your website and SEO under specialist management.</p></div></section>
+    <section class="marketing-hero"><div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10"><p class="text-base font-medium sm:text-sm text-garden">Straight answers</p><h1 class="mt-5 max-w-[18ch] font-sans text-4xl font-medium tracking-tight text-balance sm:text-6xl">Your questions, answered.</h1><p class="mt-6 max-w-[58ch] text-pretty text-lg leading-8 text-ink/65">Setup, ownership, reporting and what’s included.</p></div></section>
 
-    <section class="border-t border-ink/10 pb-20 sm:pb-28">
+    <section class="border-t border-ink/10 pb-12 sm:pb-16">
         <div class="mx-auto max-w-5xl px-5 sm:px-8 lg:px-10">
             <div class="divide-y divide-ink/10 border-b border-ink/10">
                 @foreach ([

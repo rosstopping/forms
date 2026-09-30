@@ -1,12 +1,11 @@
-@props(['title' => 'Ready to put your website and SEO in expert hands?', 'text' => null, 'label' => 'Talk to a specialist →', 'route' => 'marketing.contact', 'parameters' => []])
+@props(['title' => 'See what your website needs.', 'text' => null, 'label' => 'Get your free search audit', 'route' => 'marketing.free-site-audit', 'parameters' => []])
 
-<section class="bg-garden py-16 text-white sm:py-20">
-    <div class="mx-auto grid max-w-7xl gap-8 px-5 sm:px-8 lg:grid-cols-[3fr_1fr] lg:items-end lg:px-10">
-        <div>
-            <p class="font-mono text-sm uppercase tracking-wide text-white/65">Specialist support, without the agency noise</p>
-            <h2 class="mt-4 max-w-[24ch] font-display text-4xl font-semibold tracking-tight text-balance sm:text-5xl">{{ $title }}</h2>
-            @if ($text)<p class="mt-5 max-w-[56ch] text-pretty text-base text-white/80">{{ $text }}</p>@endif
+<section class="px-3 py-8 text-ink sm:px-6 sm:py-12">
+    <div class="mx-auto grid max-w-7xl gap-10 rounded-3xl bg-lichen px-5 py-10 sm:px-10 sm:py-12 lg:grid-cols-[3fr_2fr] lg:items-center">
+        <div class="grid gap-4">
+            <h2 class="max-w-[24ch] text-3xl font-medium tracking-tight text-balance sm:text-4xl">{{ $title }}</h2>
+            @if ($text)<p class="max-w-[48ch] text-pretty text-lg text-ink/65">{{ $text }}</p>@endif
         </div>
-        <div class="text-base sm:text-sm lg:text-right"><a href="{{ route($route, $parameters) }}" class="inline-flex rounded-md px-3 py-2.5 font-medium ring-1 ring-white/50 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">{{ $label }}</a></div>
+        <p class="text-base font-medium lg:justify-self-end"><a href="{{ route($route, $parameters) }}" class="inline-flex min-h-12 items-center justify-center gap-3 rounded-full px-5 py-3 ring-1 ring-black/20 hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-garden">{{ $label }}</a></p>
     </div>
 </section>

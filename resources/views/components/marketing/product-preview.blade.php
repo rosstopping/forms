@@ -1,5 +1,5 @@
-<div class="@container rounded-[min(1.25vw,1rem)] bg-ink p-2 shadow-2xl shadow-ink/20 ring-1 ring-white/10">
-    <div class="overflow-hidden rounded-[calc(min(1.25vw,1rem)-0.5rem)] bg-[#fffefa]">
+<div class="@container rounded-3xl bg-ink p-2 shadow-none shadow-ink/20 ring-1 ring-white/10">
+    <div class="overflow-hidden rounded-[calc(min(1.25vw,1rem)-0.5rem)] bg-lichen">
         <div class="flex items-center justify-between gap-4 border-b border-ink/10 px-4 py-3">
             <div class="min-w-0"><p class="truncate text-base font-medium sm:text-sm">Website overview</p><p class="truncate text-base text-ink/45 sm:text-sm">Northfield Electrical</p></div>
             <p class="shrink-0 rounded-full bg-lichen py-1 pr-2.5 pl-2.5 font-mono text-base text-moss sm:text-sm">Healthy</p>
@@ -33,9 +33,9 @@
                 </div>
             </section>
 
-            <section class="min-w-0 bg-lichen/35 p-4" aria-label="Completed SEO improvement">
+            <section class="min-w-0 bg-lichen p-4" aria-label="Completed SEO improvement">
                 <div class="flex items-start justify-between gap-3">
-                    <div class="min-w-0"><p class="font-mono text-base uppercase tracking-wide text-garden sm:text-sm">Completed today</p><h2 class="mt-2 text-balance text-lg font-semibold">SEO amendment actioned</h2></div>
+                    <div class="min-w-0"><p class="font-mono text-base uppercase tracking-wide text-garden sm:text-sm">Completed today</p><h2 class="mt-2 text-balance text-lg font-medium">SEO amendment actioned</h2></div>
                     <svg class="size-4 h-lh shrink-0 fill-garden" viewBox="0 0 16 16" aria-hidden="true"><path fill-rule="evenodd" d="M13.49 3.51a.75.75 0 0 1 0 1.06l-6.75 6.75a.75.75 0 0 1-1.06 0L2.51 8.15a.75.75 0 1 1 1.06-1.06l2.64 2.64 6.22-6.22a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd" /></svg>
                 </div>
                 <div class="mt-5 border-t border-ink/10 pt-4"><p class="text-base text-ink/45 sm:text-sm">Page improved</p><p class="mt-1 truncate font-mono text-base text-ink/70 sm:text-sm">/commercial-electrician</p></div>

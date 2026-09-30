@@ -32,6 +32,10 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::define('access-outreach', fn ($user): bool => $user->isAdmin());
         RateLimiter::for('website-audits', function (Request $request): array {
+            if (app()->environment('local')) {
+                return [Limit::none()];
+            }
+
             $websiteUrl = Str::lower(trim((string) $request->input('website_url')));
             $websiteUrl = Str::startsWith($websiteUrl, ['http://', 'https://']) ? $websiteUrl : 'https://'.$websiteUrl;
             $domain = (string) parse_url($websiteUrl, PHP_URL_HOST);
@@ -42,6 +46,12 @@ class AppServiceProvider extends ServiceProvider
                 Limit::perDay(3)->by('website-audit-domain:'.$domain),
             ];
         });
+        RateLimiter::for('website-audit-reports', fn (Request $request): Limit => app()->environment('local')
+            ? Limit::none()
+            : Limit::perMinute(60)->by($request->ip()));
+        RateLimiter::for('website-audit-status', fn (Request $request): Limit => app()->environment('local')
+            ? Limit::none()
+            : Limit::perMinute(120)->by($request->ip()));
 
         View::composer('layouts.app', NavigationComposer::class);
     }

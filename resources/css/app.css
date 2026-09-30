@@ -17,6 +17,22 @@
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11', 'ss01', 'ss03';
 }
 
+@utility marketing-site {
+    --font-sans: 'InterVariable', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'InterVariable', ui-sans-serif, system-ui, sans-serif;
+    --color-paper: #ffffff;
+    --color-ink: #151618;
+    --color-garden: #d63d24;
+    --color-lichen: #faf7f4;
+    --color-moss: #b9301b;
+    --color-mist: #faf7f4;
+    --color-apricot: #ff5035;
+}
+
+@utility marketing-hero {
+    @apply mx-3 rounded-3xl bg-lichen py-10 sm:mx-6 sm:py-12 lg:py-16;
+}
+
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';

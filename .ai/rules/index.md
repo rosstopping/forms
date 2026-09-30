@@ -7,6 +7,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | resources/{css/app.css,js/app.js,views/admin/**,views/account/**,views/components/**} | .ai/rules/account-components.md |
 | app/{Models/User.php,Support/MembershipPlan.php,Http/Middleware/EnsureMembershipFeature.php,Http/Controllers/{Account/BillingController.php,StripeWebhookController.php}},config/memberships.php,routes/web.php | .ai/rules/account.md |
 | app/{Actions,Http,Models,Jobs,Notifications}/**/*.php | .ai/rules/actions-http-models-jobs-notifications.md |
+| app/Http/Controllers/*Audit*Controller.php,app/Actions/ActivateWebsiteAuditTrial.php,resources/views/marketing/**,config/marketing.php | .ai/rules/actions-views-marketing.md |
 | app/Http/Controllers/Admin/ContentRequestController.php,tests/Feature/{ContentGenerationTest.php,AdminResourceEditingTest.php,SeoOpportunityContentRequestTest.php}, app/Http/Controllers/Admin/UserController.php,tests/Feature/AdminResourceEditingTest.php | .ai/rules/admin-feature.md |
 | app/{Models/LeadTag.php,Models/FormSubmission.php,Http/Controllers/Admin/*FormSubmission*,Http/Requests/*FormSubmission*},resources/views/admin/form-submissions/** | .ai/rules/admin-form-submissions.md |
 | {app/Models/WebsiteDomain.php,app/Actions/{ActivateWebsiteAuditTrial.php,VerifyWebsiteDomainFromSearchConsole.php},app/Services/{SourceWebsiteResolver.php,PixelSiteResolver.php,TurnstileVerifier.php},app/Http/Controllers/Admin/SearchConsoleController.php,database/migrations/**/*ownership*website*domain*.php,tests/Feature/{FreeSiteAuditTest.php,ContentGenerationTest.php,FormSubmissionTest.php,PixelPayloadApiTest.php}} | .ai/rules/admin-migrations-feature.md |
@@ -34,6 +35,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Models/FormSubmissionFollowUpReminder.php,Jobs/SendLeadFollowUpReminder.php,Console/Commands/DispatchDueLeadFollowUpReminders.php,Http/Controllers/Admin/FormSubmissionController.php} | .ai/rules/commands-controllers-admin.md |
 | app/Services/Jev*.php,app/Console/Commands/*Jev.php,app/Models/Jev*.php | .ai/rules/commands-models.md |
 | app/{Jobs,Services,Models,Mail,Console/Commands}/**/*ProspectOutreach*.php,routes/console.php,config/outreach.php | .ai/rules/commands.md |
+| resources/views/marketing/**,resources/views/components/marketing/**,config/{marketing,agencies,seo_library,ppc}.php | .ai/rules/components-marketing.md |
 | app/Services/WeeklyReport*.php,app/Jobs/SendWeeklyRankingReport.php,resources/views/components/weekly-overview.blade.php | .ai/rules/components.md |
 | app/{Models,Services,Jobs,Http/Controllers}/**/*SeoTargetKeyword*.php,app/Console/Commands/DispatchWeeklySeoSnapshots.php | .ai/rules/console-commands.md |
 | app/{Http/Controllers/Admin/SearchConsoleController.php,Services/SearchConsolePropertyMatcher.php,Actions/VerifyWebsiteDomainFromSearchConsole.php},resources/views/admin/websites/search-console-property.blade.php | .ai/rules/controllers-admin-views-admin-websites.md |
@@ -44,6 +46,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | {config/seo_library.php,config/marketing.php,app/Http/Controllers/MarketingController.php,resources/views/marketing/**} | .ai/rules/controllers-views-marketing.md |
 | app/{Http/Controllers/FormSubmissionController.php,Services/SpamDetector.php}, app/{Http/Controllers/FormSubmissionController.php,Services/RedirectResolver.php} | .ai/rules/controllers.md |
 | app/{Services/{CopilotSdkTitleRunner,GithubSdkPublisher},Console/Commands/TestCopilotSdkRepository,Models/CopilotSdkTestRun}.php,resources/copilot-worker/** | .ai/rules/copilot-worker.md |
+| resources/views/{marketing/**,layouts/marketing.blade.php,layouts/ppc.blade.php,components/marketing/**},resources/css/app.css | .ai/rules/css.md |
 | app/{Services/AutoresponderHtmlSanitizer.php,Services/FormSettingsResolver.php,Mail/FormSubmissionAcknowledgement.php},resources/{js/app.js,css/app.css,views/components/trix-editor.blade.php,views/admin/forms/show.blade.php,views/admin/websites/show.blade.php,views/emails/form-submission-acknowledgement*.blade.php} | .ai/rules/emails.md |
 | app/{Http/Controllers/Admin/{WebsiteController.php,WebsiteMemberController.php},Models/Website.php},resources/views/admin/websites/show.blade.php,tests/Feature/{WebsiteMembershipTest.php,WebsiteCreationTest.php} | .ai/rules/feature.md |
 | app/{Http/Controllers/Admin/*FormSubmission*,View/Composers/NavigationComposer.php,Support/WebsiteNavigation.php},resources/views/{layouts/app.blade.php,admin/form-submissions/**} | .ai/rules/form-submissions.md |
@@ -68,6 +71,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | resources/views/mail/prospects/** | .ai/rules/mail-prospects.md |
 | app/{Mail,Services}/**/*ProspectOutreach*.php | .ai/rules/mail-services.md |
 | {app/Actions/StoreSitewellContactLead.php,app/Http/Controllers/OnboardingEnquiryController.php,resources/views/marketing/contact.blade.php,config/marketing.php,tests/Feature/MarketingPagesTest.php} | .ai/rules/marketing-feature.md |
+| resources/views/marketing/website-audit.blade.php,app/{Jobs/GenerateWebsiteAudit.php,Services/MarketingAudit*.php,Models/WebsiteAudit.php} | .ai/rules/marketing-jobs.md |
 | {config/ppc.php,app/Support/MarketingJourney.php,app/Models/MarketingConversion.php,app/Events/MarketingConversionRecorded.php,app/Http/Controllers/{PpcLandingController,CalWebhookController,FreeSiteAuditController}.php,resources/{js/marketing-events.js,views/marketing/ppc.blade.php,views/layouts/ppc.blade.php}} | .ai/rules/marketing-layouts.md |
 | app/{Http/Controllers/FreeSiteAuditController.php,Http/Requests/StoreFreeSiteAuditRequest.php,Jobs/GenerateFreeSiteAudit.php,Mail/FreeSiteAuditResults.php},resources/views/{marketing/free-site-audit.blade.php,prospects/report.blade.php,mail/free-site-audit-results.blade.php} | .ai/rules/marketing.md |
 | app/{Support/MembershipPlan.php,Http/Middleware/EnsureMembershipFeature.php,Http/Controllers/Admin/WebsiteController.php},resources/views/admin/websites/**,routes/web.php | .ai/rules/middleware-controllers-admin-views-admin-websites.md |
@@ -93,6 +97,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Jobs/RunCopilotSdkTitle.php,Http/Controllers/Admin/CopilotSdkRunController.php,Http/Requests/StoreCopilotSdkRunRequest.php},resources/views/admin/websites/partials/content-sdk*.blade.php | .ai/rules/requests-views-admin-websites-partials.md |
 | app/{Models/Website.php,Policies/WebsitePolicy.php,Http/Controllers/Admin/WebsiteMemberController.php,Http/Requests/*WebsiteMemberRequest.php},resources/views/admin/websites/**,routes/web.php | .ai/rules/requests-views-admin-websites.md |
 | app/{Models/Website.php,Http/Controllers/Admin/**,Http/Requests/**} | .ai/rules/requests.md |
+| resources/views/marketing/free-site-audit.blade.php, resources/views/marketing/website-audit.blade.php | .ai/rules/resources-views-marketing.md |
 | app/Services/SeoIntelligence/**,app/Models/SeoOpportunity.php | .ai/rules/seo-intelligence-models.md |
 | app/Services/SeoIntelligence/** | .ai/rules/seo-intelligence.md |
 | app/{Services,Console/Commands}/**/*Prospect*.php,routes/console.php | .ai/rules/services-console-commands.md |
@@ -122,6 +127,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | {app/Http/Controllers/MarketingController.php,config/marketing.php,resources/views/marketing/{landing,features}.blade.php,routes/web.php,tests/Feature/MarketingPagesTest.php} | .ai/rules/views-marketing-feature.md |
 | app/{Http/Controllers/FreeSiteAuditController.php,Http/Requests/StoreFreeSiteAuditRequest.php,Jobs/GenerateWebsiteAudit.php,Models/WebsiteAudit.php,Services/MarketingTurnstileVerifier.php},resources/views/marketing/{free-site-audit,website-audit}.blade.php,routes/web.php | .ai/rules/views-marketing.md |
 | app/{Console/Commands,Jobs,Mail,Models,Http/Controllers/Admin}/**/*Ranking*.php,resources/views/{admin/websites/**,emails/*ranking*},routes/web.php | .ai/rules/viewsadmin-websites.md |
+| resources/views/{layouts/marketing.blade.php,marketing/**} | .ai/rules/viewslayouts.md |
 | app/Models/Website.php,resources/views/admin/websites/**,resources/views/admin/website-health-reports/** | .ai/rules/website-health-reports.md |
 | app/{Http/Controllers/Admin/WebsiteMemberController,Http/Requests/{StoreWebsiteMemberRequest,UpdateWebsiteMemberRequest}}.php | .ai/rules/website-member-controller-http-requests.md |
 | app/{Services/AutoresponderHtmlSanitizer.php,Services/FormSettingsResolver.php,Mail/FormSubmissionAcknowledgement.php,Http/Controllers/Admin/{FormController.php,WebsiteAutoresponderController.php}},resources/{js/app.js,views/admin/forms/show.blade.php,views/admin/websites/show.blade.php,views/emails/form-submission-acknowledgement*.blade.php} | .ai/rules/websites-emails.md |

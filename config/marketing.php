@@ -12,9 +12,9 @@ return [
             'seo_title' => 'Website management services UK',
             'meta_description' => 'Website management services for UK small businesses, including website maintenance, SEO, content updates, lead handling and specialist support.',
             'eyebrow' => 'Website management services',
-            'title' => 'Your business website, managed by specialists',
-            'description' => 'Sitewell gives UK small businesses one dependable team to handle the ongoing website management, maintenance, SEO and enquiry systems that are usually left to chance after launch.',
-            'problem_title' => 'Most small businesses need ongoing website management, not occasional rescue work',
+            'title' => 'Website management for your business.',
+            'description' => 'We maintain your website, improve its pages and keep your enquiry forms working.',
+            'problem_title' => 'Keep your website up to date.',
             'problem' => 'A website can look fine on the surface while quietly losing enquiries, slipping in search results, or falling behind the business it is meant to support. When maintenance, content, SEO and day-to-day decisions are split across different suppliers, the owner often becomes the person forced to hold it all together.',
             'benefits' => [
                 ['One accountable team', 'Website maintenance, SEO, content and forms are managed together instead of being passed between suppliers.'],
@@ -22,7 +22,7 @@ return [
                 ['Completed improvements', 'Our specialists turn findings into reviewable website work instead of leaving you with another report to decode.'],
                 ['A website you still own', 'Bring the site you already use or have us create one, with a portable foundation and a clear handover path.'],
             ],
-            'service_title' => 'What a fully managed website service should actually cover',
+            'service_title' => 'What we manage.',
             'service_description' => 'A managed website service should not stop at updates. Sitewell looks after the complete role your website plays in the business, from maintenance and visibility to enquiries and ongoing improvement.',
             'services' => [
                 ['Website maintenance and health checks', 'Regular checks across important pages, links, accessibility, security, search essentials and form delivery.'],
@@ -57,8 +57,8 @@ return [
             'meta_description' => 'Website maintenance packages for UK small businesses, combining ongoing website maintenance, issue checks, practical improvements and a free audit.',
             'eyebrow' => 'Website maintenance packages',
             'title' => 'Ongoing website maintenance for small businesses',
-            'description' => 'Sitewell gives UK small businesses a website maintenance package built around ongoing care, dependable enquiries, and practical improvements—not just software updates and a support inbox.',
-            'problem_title' => 'Traditional maintenance services often protect the server more than the business',
+            'description' => 'Regular website checks, technical fixes and support for UK small businesses.',
+            'problem_title' => 'Maintenance needs to cover the whole website.',
             'problem' => 'Many website maintenance services stop at hosting, renewals, and occasional updates. That helps keep a website online, but it does not tell you whether important pages still work, whether enquiries are arriving properly, or whether the site is quietly falling behind in search and usability.',
             'benefits' => [
                 ['Routine care with context', 'The website is checked as a working business tool, not only as a collection of technical components.'],
@@ -66,7 +66,7 @@ return [
                 ['Improvements, not just updates', 'Useful maintenance includes fixing weak pages and practical issues before they become reasons to rebuild.'],
                 ['A clearer first step', 'Start with a free website audit to see what matters most before deciding how much ongoing support you need.'],
             ],
-            'service_title' => 'What ongoing website maintenance should actually include',
+            'service_title' => 'What’s included.',
             'service_description' => 'A worthwhile website maintenance package should cover the checks and small improvements that keep a business website dependable, visible and ready to generate enquiries.',
             'services' => [
                 ['Core updates and oversight', 'Keep the website software, security basics and connected services under regular review.'],
@@ -100,7 +100,7 @@ return [
             'meta_description' => 'Dependable UK website support for small businesses that need help with updates, problems, content, forms and ongoing improvements.',
             'eyebrow' => 'Small business website support',
             'title' => 'Website support without chasing three different suppliers',
-            'description' => 'Get a UK-based specialist team that knows your website, answers practical questions and manages the work needed to keep it moving.',
+            'description' => 'Get help with website changes, technical problems and day-to-day questions.',
             'problem_title' => 'Small website jobs become large distractions',
             'problem' => 'A broken form, outdated service page or unexplained search decline can consume hours when nobody clearly owns the answer. Hosting companies, designers and SEO providers may each cover one part, leaving the business to coordinate the rest.',
             'benefits' => [
@@ -109,7 +109,7 @@ return [
                 ['Clear decisions', 'We explain the available options and business impact without asking you to translate technical language.'],
                 ['Continuity after launch', 'The website keeps receiving attention instead of becoming an unsupported project once it goes live.'],
             ],
-            'service_title' => 'Support for the website as a working business tool',
+            'service_title' => 'How we help.',
             'service_description' => 'We combine responsive help with regular oversight, so support is not limited to waiting for something to break.',
             'services' => [
                 ['Content updates', 'Keep services, team information, calls to action and important customer details current.'],
@@ -142,9 +142,9 @@ return [
             'seo_title' => 'Managed SEO services UK',
             'meta_description' => 'Managed SEO for UK businesses, connecting Google Search Console, commercial opportunities, stronger pages and specialist implementation.',
             'eyebrow' => 'Managed SEO services',
-            'title' => 'SEO analysis that becomes useful website work',
-            'description' => 'Sitewell’s SEO specialists interpret real search performance, find commercially relevant opportunities and manage the page improvements worth making.',
-            'problem_title' => 'More SEO data does not automatically create growth',
+            'title' => 'SEO analysis and improvements.',
+            'description' => 'We review your Google search performance, identify opportunities and improve the pages that need work.',
+            'problem_title' => 'Know which changes to make.',
             'problem' => 'Ranking reports and dashboards can describe what happened without deciding what to do next. Progress needs somebody to connect searches with the right page, understand commercial relevance and carry a considered improvement through to the website.',
             'benefits' => [
                 ['Evidence-led priorities', 'Search Console data, website findings and commercial context shape the work rather than generic keyword lists.'],
@@ -185,8 +185,8 @@ return [
             'seo_title' => 'SEO for small businesses UK',
             'meta_description' => 'SEO for small businesses in the UK, focused on affordable ongoing improvements, clearer reporting and measurable website results.',
             'eyebrow' => 'SEO for small businesses',
-            'title' => 'Affordable small business SEO that keeps moving',
-            'description' => 'Sitewell helps UK small businesses improve their visibility with ongoing SEO work tied to real pages, real customer searches and the enquiries the website needs to generate.',
+            'title' => 'SEO for small businesses.',
+            'description' => 'Ongoing SEO, content and page improvements focused on the searches your customers make.',
             'problem_title' => 'Small business SEO should feel practical, not vague',
             'problem' => 'Many small businesses are offered reports, rankings and keyword lists without seeing enough useful change on the website itself. Good SEO work should show which page needs improving, why that change matters, and how progress is being measured over time.',
             'benefits' => [
@@ -195,7 +195,7 @@ return [
                 ['Measurable progress', 'See what changed, which page was improved and how visibility is moving, without promises nobody can honestly make.'],
                 ['An affordable route into better SEO', 'Small business SEO works best when effort is focused on the highest-value pages instead of trying to do everything at once.'],
             ],
-            'service_title' => 'What small business SEO services should actually cover',
+            'service_title' => 'What’s included.',
             'service_description' => 'Useful SEO for small businesses combines search evidence, stronger service pages, sensible new content and ongoing review of what is producing meaningful movement.',
             'services' => [
                 ['Search Console review', 'Use first-party search data to understand queries, impressions, clicks and the pages Google is already showing.'],
@@ -229,7 +229,7 @@ return [
             'meta_description' => 'Local SEO services for UK small businesses that rely on nearby customers, combining website optimisation, Google visibility, content updates and support.',
             'eyebrow' => 'Local SEO services',
             'title' => 'Local SEO services for businesses that depend on nearby customers',
-            'description' => 'Sitewell helps UK small businesses improve local visibility by connecting website optimisation, Google presence, practical content updates and ongoing SEO support.',
+            'description' => 'Help nearby customers find you through stronger service pages, local content and your Google Business Profile.',
             'problem_title' => 'Local searches are won by connected website and profile work',
             'problem' => 'Many businesses treat local SEO as one setup task, then wonder why nearby customers still find competitors first. Local visibility usually improves when your website pages, Google Business Profile signals and content are all aligned around the services and areas that matter most.',
             'benefits' => [
@@ -238,7 +238,7 @@ return [
                 ['Content that supports local decisions', 'Supporting pages and updates are chosen because they help a local customer decide, not because a calendar needs filling.'],
                 ['Ongoing improvement, not one-off setup', 'Local SEO progress is reviewed over time so pages and opportunities do not stall after the first round of work.'],
             ],
-            'service_title' => 'How website optimisation, Google visibility and content work together',
+            'service_title' => 'How we improve local visibility.',
             'service_description' => 'Local SEO works best when three things reinforce each other: useful local service pages, a dependable Google presence, and content that answers location-specific customer questions.',
             'services' => [
                 ['Local service page optimisation', 'Clarify services, locations, trust points and next steps on the pages most likely to win local enquiries.'],
@@ -271,8 +271,8 @@ return [
             'seo_title' => 'Get more website leads',
             'meta_description' => 'Improve your website’s ability to generate and handle enquiries with clearer pages, dependable forms and evidence-led ongoing management.',
             'eyebrow' => 'Website lead generation',
-            'title' => 'Help more of the right visitors become genuine enquiries',
-            'description' => 'Sitewell improves the pages, calls to action, forms and follow-up process that turn website attention into visible business opportunities.',
+            'title' => 'Turn more visitors into enquiries.',
+            'description' => 'We improve your service pages, forms and follow-up so customers can take the next step.',
             'problem_title' => 'Traffic can arrive without creating enough enquiries',
             'problem' => 'A visitor may find the website but still leave because the service is unclear, the page does not answer their concern, trust is missing or the next step feels difficult. Even a completed form creates little value if the message is lost or follow-up is forgotten.',
             'benefits' => [
@@ -281,7 +281,7 @@ return [
                 ['Better follow-up visibility', 'Lead status, notes and reminders make it easier to see which genuine enquiry needs attention.'],
                 ['Search with intent', 'SEO work focuses on commercially relevant searches rather than treating every visit as equally valuable.'],
             ],
-            'service_title' => 'Improve the complete path from search to follow-up',
+            'service_title' => 'From first visit to enquiry.',
             'service_description' => 'Lead generation is not one button or form. We look at how the right customer arrives, decides to trust the business, takes action and receives a dependable response.',
             'services' => [
                 ['Service page clarity', 'Explain who the service is for, what happens and why the business is a credible choice.'],
@@ -315,8 +315,8 @@ return [
             'meta_description' => 'Improve your existing business website with clearer priorities across health, content, search visibility, forms and customer journeys.',
             'eyebrow' => 'Improve my website',
             'title' => 'Make the website you already have work harder',
-            'description' => 'You may not need another redesign. Sitewell finds what is holding your current website back and manages the improvements most likely to matter.',
-            'problem_title' => 'Knowing the website could be better is not a useful plan',
+            'description' => 'We review your existing website and fix the problems that affect search visibility and enquiries.',
+            'problem_title' => 'Start with the problems that matter.',
             'problem' => 'An ageing design, weak enquiries, falling traffic or a collection of small faults can all create the feeling that a website needs improving. Starting everywhere at once usually means spending money without deciding which change will make the greatest difference.',
             'benefits' => [
                 ['A clear starting point', 'Website health, search activity, content and enquiry journeys reveal what deserves attention first.'],
@@ -324,7 +324,7 @@ return [
                 ['Prioritised changes', 'Improvements are ordered by business impact rather than by whichever issue is easiest to spot.'],
                 ['Ongoing progress', 'The website continues improving after the first fixes instead of drifting back into neglect.'],
             ],
-            'service_title' => 'Improve the weak points without losing the strong ones',
+            'service_title' => 'Improve your existing website.',
             'service_description' => 'Our specialists examine the website as a connected whole and choose practical work across the areas affecting trust, visibility and enquiries.',
             'services' => [
                 ['Website health', 'Resolve broken links, missing essentials, accessibility gaps and other issues affecting important pages.'],
@@ -359,7 +359,7 @@ return [
         'website-design-and-management' => [
             'eyebrow' => 'Website design & management',
             'title' => 'A professional website that keeps working after launch',
-            'description' => 'Start with a new website or bring the one you already have. Sitewell gives it the ongoing care, monitoring, and improvements it needs to remain useful to your business.',
+            'description' => 'Bring your existing website or start with a new one. We handle its maintenance and ongoing improvements.',
             'problem_title' => 'A website should not become another neglected job',
             'problem' => 'A typical website project ends on launch day. Forms go unchecked, pages become outdated, and every small change means finding a developer again. Our specialists provide the ongoing care that is normally missing.',
             'outcomes' => [
@@ -384,7 +384,7 @@ return [
         'website-health-monitoring' => [
             'eyebrow' => 'Website health monitoring',
             'title' => 'Find website problems before customers do',
-            'description' => 'Our website and SEO specialists monitor the pages your business depends on, prioritise what matters, and manage the work needed to keep them healthy.',
+            'description' => 'We check your pages regularly, flag problems and handle the fixes included in your plan.',
             'problem_title' => 'Small faults quietly cost trust and enquiries',
             'problem' => 'Broken links, missing page titles, inaccessible content, security warnings, and forms that no longer behave as expected are easy to miss when nobody is checking.',
             'outcomes' => [
@@ -408,7 +408,7 @@ return [
         ],
         'forms-and-lead-management' => [
             'eyebrow' => 'Forms & lead management',
-            'title' => 'Give every genuine enquiry a dependable next step',
+            'title' => 'Keep track of every enquiry.',
             'description' => 'Connect website forms to one lead inbox, acknowledge the customer promptly, and keep follow-up visible until the enquiry is resolved.',
             'problem_title' => 'An enquiry is only valuable if somebody sees and follows it up',
             'problem' => 'Website forms often rely on a single email notification. Messages can be filtered, forwarded to the wrong person, or forgotten after the first reply.',
@@ -433,8 +433,8 @@ return [
         ],
         'seo-and-search-growth' => [
             'eyebrow' => 'SEO & search growth',
-            'title' => 'Turn real search activity into the next useful improvement',
-            'description' => 'Our SEO specialists interpret how your website appears in Google, find commercially useful opportunities, and manage the page improvements most likely to move the business forward.',
+            'title' => 'See how your website performs in search.',
+            'description' => 'We review your Google search data and use it to plan improvements to your pages.',
             'problem_title' => 'Search data is plentiful; knowing what to do next is harder',
             'problem' => 'Clicks, impressions, and ranking positions do not improve a website by themselves. Businesses need to know which query matters, which page is involved, and what change is worth making.',
             'outcomes' => [
@@ -458,8 +458,8 @@ return [
         ],
         'content-planning-and-generation' => [
             'eyebrow' => 'SEO content management',
-            'title' => 'Useful content, planned and written by specialists',
-            'description' => 'Our SEO specialists use website findings, search activity, and your commercial priorities to plan and produce the page or improvement worth doing next.',
+            'title' => 'Content your customers need.',
+            'description' => 'We plan and write service pages and articles around your customers’ questions.',
             'problem_title' => 'More content is not the same as better content',
             'problem' => 'A stream of generic articles can consume time without helping customers or search visibility. Useful content starts with a real question, gap, service, or existing page that deserves attention.',
             'outcomes' => [
@@ -485,7 +485,7 @@ return [
         'google-business-profile' => [
             'eyebrow' => 'Google Business Profile',
             'title' => 'Keep your website and local presence working together',
-            'description' => 'Our specialists look after your Google Business Profile alongside your website, keeping its information current and your local presence active.',
+            'description' => 'We keep your Google Business Profile up to date, prepare posts and help with review replies.',
             'problem_title' => 'A neglected profile can undermine a well-cared-for website',
             'problem' => 'Outdated details, unanswered reviews, and long gaps between updates can make a healthy business appear inactive. The work is small, but it is easily pushed aside.',
             'outcomes' => [
@@ -545,7 +545,7 @@ return [
         'travel-and-hospitality' => [
             'eyebrow' => 'Travel & hospitality',
             'title' => 'Turn inspiration into confident enquiries and bookings',
-            'description' => 'We manage content-rich travel and hospitality websites where brand presentation, detailed information, search visibility, and a dependable booking journey all need to work together.',
+            'description' => 'Website care and SEO for accommodation, tours and experiences, from useful destination pages to clearer booking journeys.',
             'challenges' => [
                 ['Many reasons to visit', 'Accommodation, amenities, occasions, locations, and experiences need a clear structure rather than competing for attention.'],
                 ['High-consideration decisions', 'Guests need enough detail and reassurance to move from browsing to checking availability.'],
@@ -562,7 +562,7 @@ return [
         'events-and-experiences' => [
             'eyebrow' => 'Events & experiences',
             'title' => 'Keep fast-moving event websites clear, visible, and ready to sell',
-            'description' => 'Our specialists manage the website and search work behind ticketed events, seasonal programmes, packages, and customer information.',
+            'description' => 'We keep event pages, ticket information and seasonal content up to date and easy to find.',
             'challenges' => [
                 ['Time-sensitive information', 'Dates, availability, line-ups, and packages need to remain accurate across a busy website.'],
                 ['Complex customer journeys', 'Visitors must move easily between discovery, comparison, FAQs, booking, and account management.'],
@@ -579,7 +579,7 @@ return [
         'training-and-professional-services' => [
             'eyebrow' => 'Training & professional services',
             'title' => 'Explain specialist services clearly and earn the right enquiries',
-            'description' => 'We help expert-led organisations turn complex programmes, services, and professional knowledge into a website people can understand and trust.',
+            'description' => 'We make your courses and services clear, keep information current and help prospective customers find you.',
             'challenges' => [
                 ['Different audiences and needs', 'Prospective clients, existing members, parents, partners, and professionals may all need different information.'],
                 ['Expertise can be difficult to explain', 'Specialist services need clear structure and language without losing their depth or credibility.'],
