@@ -604,6 +604,90 @@ it('throttles repeated website audit submissions', function (): void {
     expect(WebsiteAudit::query()->count())->toBe(3);
 });
 
+it('sends repeat submissions to the existing report without another audit', function (): void {
+    Queue::fake();
+
+    $this->post(route('marketing.free-site-audit.store'), ['website_url' => 'repeat-audit.example'])
+        ->assertRedirect();
+
+    $audit = WebsiteAudit::query()->sole();
+
+    foreach (range(1, 4) as $attempt) {
+        $this->post(route('marketing.free-site-audit.store'), ['website_url' => 'repeat-audit.example'])
+            ->assertRedirect(route('marketing.website-audits.show', $audit));
+    }
+
+    $audit->update(['status' => WebsiteAudit::STATUS_COMPLETED]);
+
+    $this->post(route('marketing.free-site-audit.store'), ['website_url' => 'repeat-audit.example'])
+        ->assertRedirect(route('marketing.website-audits.show', $audit));
+
+    expect(WebsiteAudit::query()->count())->toBe(1);
+    Queue::assertPushed(GenerateWebsiteAudit::class, 1);
+});
+
+it('reuses a report opened from an existing private link', function (): void {
+    Queue::fake();
+    $audit = WebsiteAudit::factory()->create([
+        'website_url' => 'https://existing-audit.example',
+        'domain' => 'existing-audit.example',
+        'status' => WebsiteAudit::STATUS_COMPLETED,
+    ]);
+
+    $this->get(route('marketing.website-audits.show', $audit))->assertSuccessful();
+
+    $this->post(route('marketing.free-site-audit.store'), ['website_url' => 'existing-audit.example'])
+        ->assertRedirect(route('marketing.website-audits.show', $audit));
+
+    expect(WebsiteAudit::query()->count())->toBe(1);
+    Queue::assertNothingPushed();
+});
+
+it('keeps the per-domain daily cap for visitors without the report link', function (): void {
+    Queue::fake();
+
+    foreach (range(1, 3) as $attempt) {
+        $this->flushSession();
+        $this->withServerVariables(['REMOTE_ADDR' => "198.51.100.{$attempt}"])
+            ->post(route('marketing.free-site-audit.store'), ['website_url' => 'shared-audit.example'])
+            ->assertRedirect();
+    }
+
+    $this->flushSession();
+    $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.4'])
+        ->post(route('marketing.free-site-audit.store'), ['website_url' => 'shared-audit.example'])
+        ->assertTooManyRequests();
+
+    expect(WebsiteAudit::query()->count())->toBe(3);
+});
+
+it('does not rate limit audit submissions for signed-in admins', function (): void {
+    Queue::fake();
+    $this->actingAs(User::factory()->create(['role' => User::ROLE_ADMIN]));
+
+    foreach (range(1, 5) as $attempt) {
+        $this->post(route('marketing.free-site-audit.store'), [
+            'website_url' => "admin-audit-{$attempt}.example",
+        ])->assertRedirect();
+    }
+
+    expect(WebsiteAudit::query()->count())->toBe(5);
+    Queue::assertPushed(GenerateWebsiteAudit::class, 5);
+});
+
+it('does not rate limit report views and status checks for signed-in admins', function (): void {
+    $this->actingAs(User::factory()->create(['role' => User::ROLE_ADMIN]));
+    $audit = WebsiteAudit::factory()->create();
+
+    foreach (range(1, 61) as $attempt) {
+        $this->get(route('marketing.website-audits.show', $audit))->assertSuccessful();
+    }
+
+    foreach (range(1, 121) as $attempt) {
+        $this->getJson(route('marketing.website-audits.status', $audit))->assertSuccessful();
+    }
+});
+
 it('allows repeated audit submissions and report polling while developing locally', function (): void {
     Queue::fake();
     $this->withoutMiddleware(PreventRequestForgery::class);

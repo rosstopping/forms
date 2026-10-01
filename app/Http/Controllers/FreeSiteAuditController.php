@@ -57,12 +57,16 @@ class FreeSiteAuditController extends Controller
         $journey->record('audit_submitted', $audit->public_id, $audit->marketing_attribution);
         GenerateWebsiteAudit::dispatch($audit);
 
+        $request->session()->put('marketing.website_audit_id', $audit->public_id);
+
         return redirect()->route('marketing.website-audits.show', $audit);
     }
 
-    public function show(WebsiteAudit $websiteAudit, MarketingAuditResearch $research, MarketingAuditScreenshot $screenshot): View
+    public function show(Request $request, WebsiteAudit $websiteAudit, MarketingAuditResearch $research, MarketingAuditScreenshot $screenshot): View
     {
         abort_if($websiteAudit->hasExpired(), 404);
+
+        $request->session()->put('marketing.website_audit_id', $websiteAudit->public_id);
 
         $events = MarketingConversion::query()
             ->whereIn('deduplication_key', array_map(
