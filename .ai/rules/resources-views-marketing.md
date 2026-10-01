@@ -26,3 +26,6 @@ Emphasise technical health, flagged fixes, and page-one Google terms with condit
 
 ## Keep report email action accessible while scrolling
 On a completed public audit that has not yet been emailed, show a compact fixed bottom control that opens the existing email-report dialog immediately. Retain the 30-second automatic prompt, but cancel its timer after manual opening so a dismissed dialog does not reopen. Hide the control after an email request; do not show it during pending or failed audits.
+
+## Center the native audit email dialog explicitly
+Tailwind preflight removes the browser's default dialog margin, so showModal alone can place the email popup at the top left. Keep fixed inset-0 m-auto on the dialog, with a viewport-height cap and vertical overflow for mobile. Verify centering at mobile and desktop widths when changing its layout.

@@ -170,6 +170,7 @@ it('offers an email copy after the results and extends the requested report to f
         ->assertSee('Want a copy by email?')
         ->assertSee('data-audit-email-open', false)
         ->assertSee('aria-controls="audit-email-dialog"', false)
+        ->assertSee('fixed inset-0 m-auto max-h-[calc(100dvh-2rem)]', false)
         ->assertSee('30000')
         ->assertSee('name="email"', false);
 

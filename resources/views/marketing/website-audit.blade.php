@@ -231,7 +231,7 @@
 </section>
 @if ($audit->isReadyToDisplay() && $audit->report_requested_at === null)
     <button type="button" data-audit-email-open aria-haspopup="dialog" aria-controls="audit-email-dialog" class="fixed right-4 bottom-4 z-40 inline-flex min-h-12 items-center justify-center rounded-full bg-white px-5 text-base font-medium text-garden shadow-md ring-1 ring-ink/10 hover:bg-lichen focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden sm:right-6 sm:bottom-6 sm:text-sm">Get a copy by email</button>
-    <dialog id="audit-email-dialog" aria-labelledby="audit-email-title" aria-describedby="audit-email-description" class="w-[calc(100%-2rem)] max-w-md rounded-3xl border-0 bg-white p-0 text-ink shadow-xl backdrop:bg-ink/60">
+    <dialog id="audit-email-dialog" aria-labelledby="audit-email-title" aria-describedby="audit-email-description" class="fixed inset-0 m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md overflow-y-auto rounded-3xl border-0 bg-white p-0 text-ink shadow-xl backdrop:bg-ink/60">
         <div class="relative p-6 sm:p-8">
             <button type="button" data-audit-email-close aria-label="Close email prompt" class="absolute top-3 right-3 grid size-12 place-items-center rounded-full text-xl text-ink/60 hover:bg-lichen focus-visible:outline-2 focus-visible:outline-garden">×</button>
             <div class="grid gap-2 pr-8">
