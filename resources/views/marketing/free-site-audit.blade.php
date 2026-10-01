@@ -1,7 +1,7 @@
 @extends('layouts.marketing')
 
-@section('title', 'Get your free search audit')
-@section('meta_description', 'See your website health, Google visibility and next opportunities in a free Sitewell search audit.')
+@section('title', 'Free website and search audit')
+@section('meta_description', 'Enter your website for a free Sitewell audit of website health, Google visibility and the work we would prioritise. No account needed.')
 
 @section('content')
 <section class="px-3 pt-1 pb-16 sm:px-6 sm:pt-2 sm:pb-24" aria-labelledby="audit-title">

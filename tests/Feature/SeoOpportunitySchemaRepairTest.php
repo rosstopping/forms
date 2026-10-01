@@ -22,6 +22,7 @@ it('repairs a seo opportunities table whose original migration was recorded with
         Schema::drop('seo_opportunities');
         (require database_path('migrations/2026_08_13_100954_create_seo_opportunities_table.php'))->up();
         (require database_path('migrations/2026_08_13_113053_add_content_request_id_to_seo_opportunities_table.php'))->up();
+        (require database_path('migrations/2026_10_01_145210_replace_unique_content_request_index_on_seo_opportunities_table.php'))->up();
     }
 });
 
@@ -31,4 +32,9 @@ it('is safe when the repaired column already exists', function () {
     $migration->up();
 
     expect(Schema::hasColumn('seo_opportunities', 'content_request_id'))->toBeTrue();
+});
+
+it('indexes SEO opportunity content requests without limiting one request to one finding', function (): void {
+    expect(Schema::hasIndex('seo_opportunities', 'seo_opportunities_content_request_index'))->toBeTrue()
+        ->and(Schema::hasIndex('seo_opportunities', 'seo_opportunities_content_request_unique'))->toBeFalse();
 });

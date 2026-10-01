@@ -2,6 +2,7 @@
 paths:
   - resources/views/marketing/free-site-audit.blade.php
   - resources/views/marketing/website-audit.blade.php
+  - 'resources/views/marketing/**'
 ---
 
 # Resources Views Marketing
@@ -35,3 +36,12 @@ Supersedes the old Search setup / Website health / Security basics check list on
 
 ## Keep the audit preview visual and evidence-safe
 The Get started page uses four compact illustrated previews for Google visibility, technical health, sampled AI answers, and prioritised next steps. Illustrations are decorative and must not show invented rankings, scores, citations, or guaranteed growth; the real report supplies measured data. Keep the single website form and audit CTA, concise copy, and conditional language for AI observations and six-month scenarios.
+
+## Keep completed-audit actions together
+Completed audit reports use a fixed bottom action row with Book a call with Ross as the primary action and Get a copy by email beside it until a copy is requested. On mobile, shorten the booking label and show the email action as an accessible 48px icon button. The booking action stays available after the email request.
+
+## Keep SEO copy aligned to the managed service
+The current public offer is managed website and SEO improvements for UK businesses, with the free search audit as the primary conversion. Titles, descriptions, schema and internal copy must describe work done for clients rather than self-service SaaS. Keep the homepage audit-only CTA and preserve existing URLs until Search Console evidence supports consolidation.
+
+## Use green for the leading search position
+In the public audit competitor comparison, lower Google position numbers indicate the lead. Colour the winning number green for either site, keep the losing or tied number neutral, and do not use the marketing garden token because it is coral on public pages.

@@ -1,7 +1,7 @@
 @extends('layouts.marketing')
 
-@section('title', 'About')
-@section('meta_description', 'Learn why Sitewell brings website management, SEO, content, enquiries, and local visibility together under one specialist team.')
+@section('title', 'About Sitewell and Ross')
+@section('meta_description', 'Meet Ross, the Doncaster-based web developer behind Sitewell. We manage websites and SEO for UK businesses and keep improving them after launch.')
 
 @section('content')
     <section class="marketing-hero">

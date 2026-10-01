@@ -13,8 +13,8 @@ return [
     'landing_pages' => [
         ...$seoLibrary['landing_pages'],
         'website-management-services' => [
-            'seo_title' => 'Website management services UK',
-            'meta_description' => 'Website management services for UK small businesses, including website maintenance, SEO, content updates, lead handling and specialist support.',
+            'seo_title' => 'Website management for UK businesses',
+            'meta_description' => 'Sitewell looks after your website’s health, content, search visibility and enquiries, then carries out the improvements that matter.',
             'eyebrow' => 'Website management services',
             'title' => 'Website management for your business.',
             'description' => 'We maintain your website, improve its pages and keep your enquiry forms working.',
@@ -143,10 +143,10 @@ return [
             ],
         ],
         'managed-seo-services' => [
-            'seo_title' => 'Managed SEO services UK',
-            'meta_description' => 'Managed SEO for UK businesses, connecting Google Search Console, commercial opportunities, stronger pages and specialist implementation.',
+            'seo_title' => 'Managed SEO services for UK businesses',
+            'meta_description' => 'Sitewell finds useful search opportunities, improves existing pages and creates content for UK businesses. Start with a free search audit.',
             'eyebrow' => 'Managed SEO services',
-            'title' => 'SEO analysis and improvements.',
+            'title' => 'Managed SEO for your website.',
             'description' => 'We review your Google search performance, identify opportunities and improve the pages that need work.',
             'problem_title' => 'Know which changes to make.',
             'problem' => 'Ranking reports and dashboards can describe what happened without deciding what to do next. Progress needs somebody to connect searches with the right page, understand commercial relevance and carry a considered improvement through to the website.',
@@ -186,8 +186,8 @@ return [
             ],
         ],
         'seo-for-small-businesses' => [
-            'seo_title' => 'SEO for small businesses UK',
-            'meta_description' => 'SEO for small businesses in the UK, focused on affordable ongoing improvements, clearer reporting and measurable website results.',
+            'seo_title' => 'SEO for small UK businesses',
+            'meta_description' => 'Managed SEO for small UK businesses: improve existing pages, fix technical issues and create content around real customer searches.',
             'eyebrow' => 'SEO for small businesses',
             'title' => 'SEO for small businesses.',
             'description' => 'Ongoing SEO, content and page improvements focused on the searches your customers make.',

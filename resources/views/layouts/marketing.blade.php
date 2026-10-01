@@ -1,18 +1,25 @@
 <!DOCTYPE html>
-<html lang="en" class="antialiased">
+<html lang="en-GB" class="antialiased">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#ffffff">
-    <meta name="description" content="@yield('meta_description', 'Sitewell keeps your website healthy, visible, and ready to turn visitors into customers.')">
-    <link rel="canonical" href="{{ request()->url() }}">
+    <meta name="description" content="@yield('meta_description', 'Sitewell manages website and SEO improvements for UK businesses.')">
+    @if (request()->routeIs('marketing.website-audits.show'))
+        <meta name="robots" content="noindex">
+    @else
+        <link rel="canonical" href="{{ request()->url() }}">
+    @endif
     <meta property="og:site_name" content="Sitewell">
     <meta property="og:locale" content="en_GB">
     <meta property="og:type" content="@yield('og_type', 'website')">
-    <meta property="og:title" content="@yield('title', 'Sitewell')">
-    <meta property="og:description" content="@yield('meta_description', 'Sitewell keeps your website healthy, visible, and ready to turn visitors into customers.')">
+    <meta property="og:title" content="@yield('title', 'Sitewell'){{ $__env->hasSection('concise_title') ? '' : ' · Sitewell' }}">
+    <meta property="og:description" content="@yield('meta_description', 'Sitewell manages website and SEO improvements for UK businesses.')">
     <meta property="og:url" content="{{ request()->url() }}">
-    <title>@yield('title', 'Sitewell'){{ $__env->hasSection('concise_title') ? '' : ' · Your website, well looked after' }}</title>
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="@yield('title', 'Sitewell'){{ $__env->hasSection('concise_title') ? '' : ' · Sitewell' }}">
+    <meta name="twitter:description" content="@yield('meta_description', 'Sitewell manages website and SEO improvements for UK businesses.')">
+    <title>@yield('title', 'Sitewell'){{ $__env->hasSection('concise_title') ? '' : ' · Sitewell' }}</title>
     @fonts
     @yield('structured_data')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -29,7 +36,7 @@
             <div class="mx-auto flex max-w-7xl items-center justify-between gap-5 px-5 py-4 sm:px-8 sm:py-5 lg:px-10">
                 <p class="shrink-0 text-2xl font-semibold tracking-tight sm:text-3xl"><a href="{{ route('marketing.home') }}" aria-label="Homepage">sitewell<span class="text-garden">.</span></a></p>
                 <nav aria-label="Main navigation">
-                    <a href="{{ route('marketing.free-site-audit') }}" class="inline-flex min-h-12 max-w-44 items-center justify-center gap-3 rounded-full px-4 py-3 text-center text-base font-medium leading-tight ring-1 ring-black/20 hover:bg-lichen focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-garden sm:max-w-none sm:px-5 sm:text-sm">Get your free search audit <span aria-hidden="true">→</span></a>
+                    <a href="{{ route('marketing.free-site-audit') }}" class="inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-4 py-3 text-center text-base font-medium ring-1 ring-black/20 hover:bg-lichen focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-garden sm:gap-3 sm:px-5 sm:text-sm"><span class="sm:hidden">Free Audit</span><span class="max-sm:hidden">Get your free search audit</span><span aria-hidden="true">→</span></a>
                 </nav>
             </div>
         </header>

@@ -210,7 +210,7 @@
                                     <thead class="border-b border-ink/10 text-ink/60"><tr><th scope="col" class="whitespace-nowrap py-4 pr-4 font-medium">Shared search</th><th scope="col" class="whitespace-nowrap px-4 py-4 text-right font-medium">You</th><th scope="col" class="whitespace-nowrap py-4 pl-4 text-right font-medium">{{ $competitors['domain'] }}</th></tr></thead>
                                     <tbody>
                                         @foreach ($competitors['terms'] as $term)
-                                            <tr class="border-b border-ink/10 last:border-0"><td class="py-3 pr-4 text-ink">{{ $term['term'] }}</td><td @class(['px-4 py-3 text-right tabular-nums', 'font-medium text-garden' => $term['our_position'] < $term['competitor_position'], 'text-ink/65' => $term['our_position'] >= $term['competitor_position']])>{{ $term['our_position'] }}</td><td @class(['py-3 pl-4 text-right tabular-nums', 'font-medium text-garden' => $term['competitor_position'] < $term['our_position'], 'text-ink/65' => $term['competitor_position'] >= $term['our_position']])>{{ $term['competitor_position'] }}</td></tr>
+                                            <tr class="border-b border-ink/10 last:border-0"><td class="py-3 pr-4 text-ink">{{ $term['term'] }}</td><td @class(['px-4 py-3 text-right tabular-nums', 'font-medium text-emerald-700' => $term['our_position'] < $term['competitor_position'], 'text-ink/65' => $term['our_position'] >= $term['competitor_position']])>{{ $term['our_position'] }}</td><td @class(['py-3 pl-4 text-right tabular-nums', 'font-medium text-emerald-700' => $term['competitor_position'] < $term['our_position'], 'text-ink/65' => $term['competitor_position'] >= $term['our_position']])>{{ $term['competitor_position'] }}</td></tr>
                                         @endforeach
                                     </tbody>
                                 </table>
@@ -316,17 +316,23 @@
                         @endforeach
                     </ol>
                 </div>
-
-                <div class="border-t border-ink/10 pt-8">
-                    <a href="{{ route('marketing.ppc.book') }}" class="inline-flex min-h-12 items-center justify-center gap-3 rounded-full bg-garden py-3 pr-4 pl-5 text-base font-medium text-white hover:bg-moss focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-garden">Book a call with Ross <span aria-hidden="true">↗</span></a>
-                </div>
             </div>
         @endif
         <p class="text-pretty text-base text-ink/50 sm:text-sm">This private link expires {{ $audit->expires_at->diffForHumans() }}.</p>
     </div>
 </section>
+@if ($audit->isReadyToDisplay())
+    <div data-audit-actions class="fixed right-4 bottom-4 z-40 flex items-center gap-2 sm:right-6 sm:bottom-6 sm:gap-3">
+        <a data-audit-book-call href="{{ route('marketing.ppc.book') }}" aria-label="Book a call with Ross" class="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-garden py-3 pr-3 pl-4 text-base font-medium text-white shadow-md ring-1 ring-garden hover:bg-moss focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden sm:gap-3 sm:pr-4 sm:pl-5 sm:text-sm"><span class="sm:hidden">Book a call</span><span class="max-sm:hidden">Book a call with Ross</span><span aria-hidden="true">↗</span></a>
+        @if ($audit->report_requested_at === null)
+            <button type="button" data-audit-email-open aria-label="Get a copy by email" aria-haspopup="dialog" aria-controls="audit-email-dialog" class="inline-grid size-12 shrink-0 place-items-center rounded-full bg-white text-garden shadow-md ring-1 ring-ink/10 hover:bg-lichen focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden sm:w-auto sm:px-5 sm:text-sm">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" class="size-6 stroke-current sm:hidden" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15A2.25 2.25 0 0 0 2.25 6.75m19.5 0v.243a2.25 2.25 0 0 0 1.07 1.916l7.5 4.615a2.25 2.25 0 0 0 2.36 0l7.5-4.615a2.25 2.25 0 0 0 1.07-1.916V6.75"/></svg>
+                <span class="max-sm:hidden">Get a copy by email</span>
+            </button>
+        @endif
+    </div>
+@endif
 @if ($audit->isReadyToDisplay() && $audit->report_requested_at === null)
-    <button type="button" data-audit-email-open aria-haspopup="dialog" aria-controls="audit-email-dialog" class="fixed right-4 bottom-4 z-40 inline-flex min-h-12 items-center justify-center rounded-full bg-white px-5 text-base font-medium text-garden shadow-md ring-1 ring-ink/10 hover:bg-lichen focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden sm:right-6 sm:bottom-6 sm:text-sm">Get a copy by email</button>
     <dialog id="audit-email-dialog" aria-labelledby="audit-email-title" aria-describedby="audit-email-description" class="fixed inset-0 m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md overflow-y-auto rounded-3xl border-0 bg-white p-0 text-ink shadow-xl backdrop:bg-ink/60">
         <div class="relative p-6 sm:p-8">
             <button type="button" data-audit-email-close aria-label="Close email prompt" class="absolute top-3 right-3 grid size-12 place-items-center rounded-full text-xl text-ink/60 hover:bg-lichen focus-visible:outline-2 focus-visible:outline-garden">×</button>

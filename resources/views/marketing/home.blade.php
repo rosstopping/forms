@@ -1,17 +1,34 @@
 @extends('layouts.marketing')
 
-@section('title', 'Managed business websites')
-@section('meta_description', 'Get found. Get chosen. Sitewell manages your website and SEO, with practical improvements carried out for you and clear weekly updates.')
+@section('title', 'Managed SEO and website care for UK businesses')
+@section('meta_description', 'Sitewell manages SEO, content and website improvements for UK businesses. See what needs work with a free search audit.')
 @section('structured_data')
     @php
+        $homeUrl = route('marketing.home');
         $structuredData = [
             '@context' => 'https://schema.org',
-            '@type' => 'Organization',
-            'name' => 'Sitewell',
-            'url' => route('marketing.home'),
+            '@graph' => [
+                [
+                    '@type' => 'Organization',
+                    '@id' => $homeUrl.'#organization',
+                    'name' => 'Sitewell',
+                    'url' => $homeUrl,
+                    'description' => 'Managed website and SEO service for UK businesses.',
+                    'telephone' => '+441302248374',
+                    'areaServed' => ['@type' => 'Country', 'name' => 'United Kingdom'],
+                ],
+                [
+                    '@type' => 'WebSite',
+                    '@id' => $homeUrl.'#website',
+                    'name' => 'Sitewell',
+                    'url' => $homeUrl,
+                    'publisher' => ['@id' => $homeUrl.'#organization'],
+                    'inLanguage' => 'en-GB',
+                ],
+            ],
         ];
     @endphp
-    <script type="application/ld+json">@json($structuredData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)</script>
+    <script type="application/ld+json">@json($structuredData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT)</script>
 @endsection
 
 @section('content')
@@ -57,7 +74,7 @@
         <div class="mx-auto grid max-w-7xl gap-10 px-5 sm:px-8 lg:grid-cols-[4fr_7fr] lg:px-10">
             <div data-home-reveal class="grid content-start justify-items-start gap-5">
                 <h2 id="homepage-services" class="max-w-[20ch] text-3xl font-medium tracking-tight text-balance sm:text-4xl">The changes your website needs.</h2>
-                <p class="max-w-[40ch] text-pretty text-lg text-[#62666d]">We handle the writing, editing and technical work. You get on with running your business.</p>
+                <p class="max-w-[40ch] text-pretty text-lg text-[#62666d]">We manage your SEO and website changes, from page copy to technical fixes.</p>
             </div>
             <dl class="grid divide-y divide-black/10">
                 @foreach ([
@@ -74,26 +91,11 @@
         </div>
     </section>
 
-    {{-- <section class="px-3 py-4 sm:px-6 sm:py-6" aria-label="Sitewell walkthrough">
-        <div data-home-reveal="fade" class="mx-auto max-w-7xl">
-            <figure class="grid min-w-0 gap-3">
-                <iframe
-                    src="https://www.loom.com/embed/d406218f4a2843f7a7d8abbf804f2ba6?hideEmbedTopBar=true&amp;hide_owner=true&amp;hide_title=true&amp;hide_share=true"
-                    title="See how Sitewell looks after your website"
-                    class="aspect-[2000/1299] w-full rounded-3xl bg-white ring-1 ring-black/10"
-                    loading="lazy"
-                    allow="fullscreen"
-                    allowfullscreen
-                ></iframe>
-            </figure>
-        </div>
-    </section> --}}
-
     <section class="py-12 text-[#151618] sm:py-16" aria-labelledby="homepage-founder">
         <div class="mx-auto grid max-w-7xl gap-10 px-5 sm:px-8 lg:grid-cols-[4fr_7fr] lg:px-10">
             <div data-home-reveal class="grid content-start gap-4">
                 <h2 id="homepage-founder" class="text-3xl font-medium tracking-tight text-balance sm:text-4xl">Hi, I’m Ross.</h2>
-                <p class="text-base text-[#62666d]">Founder & Web developer. Based in Doncaster.</p>
+                <p class="text-base text-[#62666d]">Founder & Web Developer. Based in Doncaster.</p>
                 <p class="text-base font-medium">01302 248 374</p>
             </div>
             <div data-home-reveal class="grid content-start justify-items-start gap-5">

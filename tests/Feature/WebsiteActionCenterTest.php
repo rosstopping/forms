@@ -3,6 +3,8 @@
 use App\Models\ContentRequest;
 use App\Models\SearchOpportunity;
 use App\Models\SeoImpact;
+use App\Models\SeoOpportunity;
+use App\Models\SeoSnapshot;
 use App\Models\User;
 use App\Models\Website;
 use App\Models\WebsiteHealthReport;
@@ -89,6 +91,29 @@ test('removing grouped work reopens every linked observation', function (): void
     $this->actingAs($this->owner)->delete(route('admin.content-requests.destroy', [$this->website, $request]))->assertRedirect();
     expect($this->opportunity->fresh()->status)->toBe('open')->and($second->fresh()->status)->toBe('open')
         ->and($service->forWebsite($this->website)->where('stage', 'open'))->toHaveCount(1);
+});
+
+test('one queued page action can attach multiple SEO opportunities and reopen them together', function (): void {
+    $snapshot = SeoSnapshot::factory()->for($this->website)->create();
+    $first = SeoOpportunity::factory()->for($snapshot, 'snapshot')->for($this->website)->create(['metrics' => ['ranking_url' => $this->page->url]]);
+    $second = SeoOpportunity::factory()->for($snapshot, 'snapshot')->for($this->website)->create(['metrics' => ['ranking_url' => $this->page->url]]);
+    $service = app(WebsiteActionCenter::class);
+    $action = $service->forWebsite($this->website)->first();
+
+    expect(collect($action['evidence'])->where('source', 'seo'))->toHaveCount(2);
+
+    $request = $service->queue($this->website, $this->owner, $action['key']);
+
+    expect($request->seoOpportunities()->count())->toBe(2)
+        ->and($first->fresh()->status)->toBe(SeoOpportunity::STATUS_QUEUED)
+        ->and($second->fresh()->status)->toBe(SeoOpportunity::STATUS_QUEUED);
+
+    $this->actingAs($this->owner)->delete(route('admin.content-requests.destroy', [$this->website, $request]))->assertRedirect();
+
+    expect($first->fresh()->status)->toBe(SeoOpportunity::STATUS_OPEN)
+        ->and($first->fresh()->content_request_id)->toBeNull()
+        ->and($second->fresh()->status)->toBe(SeoOpportunity::STATUS_OPEN)
+        ->and($second->fresh()->content_request_id)->toBeNull();
 });
 
 test('fresh search evidence after a completed measurement can create a new action on the same page', function (): void {

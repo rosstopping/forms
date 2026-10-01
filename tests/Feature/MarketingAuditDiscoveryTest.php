@@ -67,15 +67,28 @@ it('renders competitor positions and a sampled AI citation on the public report'
             'health_score' => 100,
             'pages_listed' => 3,
             'seo' => ['location_code' => 2826, 'language_code' => 'en', 'retrieved_at' => now()->toIso8601String(), 'organic_keywords' => 8, 'top_3_keywords' => 0, 'top_10_keywords' => 2, 'top_20_keywords' => 4, 'estimated_monthly_visits' => 12, 'referring_domains' => 2, 'sample_size' => 0, 'keywords' => []],
-            'competitors' => ['domain' => 'rival.example', 'shared_terms' => 3, 'terms' => [['term' => 'garden offices', 'our_position' => 15, 'competitor_position' => 3]], 'others' => [['domain' => 'second.example', 'shared_terms' => 2]], 'retrieved_at' => now()->toIso8601String()],
+            'competitors' => ['domain' => 'rival.example', 'shared_terms' => 3, 'terms' => [['term' => 'garden offices', 'our_position' => 15, 'competitor_position' => 3], ['term' => 'garden office fitters', 'our_position' => 2, 'competitor_position' => 9], ['term' => 'garden studios', 'our_position' => 7, 'competitor_position' => 7]], 'others' => [['domain' => 'second.example', 'shared_terms' => 2]], 'retrieved_at' => now()->toIso8601String()],
             'ai_visibility' => ['status' => 'completed', 'questions' => ['Which businesses would you recommend for garden offices?'], 'results' => [['status' => 'completed', 'website_mentioned' => true, 'website_cited' => true, 'checked_at' => now()->toIso8601String()]]],
         ],
     ]);
 
-    $this->get(route('marketing.website-audits.show', $audit))
+    $response = $this->get(route('marketing.website-audits.show', $audit))
         ->assertSuccessful()
         ->assertSee('rival.example')
         ->assertSee('second.example')
         ->assertSee('garden offices')
         ->assertSee('Your website was cited.');
+
+    $document = new DOMDocument;
+    @$document->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
+    $xpath = new DOMXPath($document);
+    $rows = $xpath->query('//section[@aria-labelledby="audit-competitors-title"]//tbody/tr');
+
+    expect($rows)->toHaveCount(3)
+        ->and($rows->item(0)->getElementsByTagName('td')->item(1)->getAttribute('class'))->toContain('text-ink/65')
+        ->and($rows->item(0)->getElementsByTagName('td')->item(2)->getAttribute('class'))->toContain('text-emerald-700')
+        ->and($rows->item(1)->getElementsByTagName('td')->item(1)->getAttribute('class'))->toContain('text-emerald-700')
+        ->and($rows->item(1)->getElementsByTagName('td')->item(2)->getAttribute('class'))->toContain('text-ink/65')
+        ->and($rows->item(2)->getElementsByTagName('td')->item(1)->getAttribute('class'))->toContain('text-ink/65')
+        ->and($rows->item(2)->getElementsByTagName('td')->item(2)->getAttribute('class'))->toContain('text-ink/65');
 });

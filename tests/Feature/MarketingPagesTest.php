@@ -22,7 +22,8 @@ it('shows each public marketing page', function (string $route, string $copy): v
     expect($xpath->query('//header//details')->length)->toBe(0);
     $footerLinks = $xpath->query('//footer//a');
     expect(array_map(fn ($link) => $link->getAttribute('href'), iterator_to_array($footerLinks)))->toBe([route('marketing.faqs'), route('marketing.journal'), route('marketing.privacy'), route('marketing.terms')]);
-    expect(array_map(fn ($link) => trim($link->textContent), iterator_to_array($links)))->toBe(['Get your free search audit →']);
+    expect($xpath->query('//nav[@aria-label="Main navigation"]/a/span[contains(@class, "sm:hidden")]')->item(0)->textContent)->toBe('Free Audit');
+    expect($xpath->query('//nav[@aria-label="Main navigation"]/a/span[contains(@class, "max-sm:hidden")]')->item(0)->textContent)->toBe('Get your free search audit');
     expect($xpath->query('//main')->length)->toBe(1);
 
 })->with([
@@ -163,7 +164,7 @@ it('outputs canonical URLs for key marketing pages', function (string $routeName
 ]);
 
 it('uses shorter SEO page titles for flagged marketing pages', function (string $routeName, array $parameters, string $title): void {
-    $fullTitle = $title.' · Your website, well looked after';
+    $fullTitle = $title.' · Sitewell';
 
     $this->get(route($routeName, $parameters))
         ->assertSuccessful()
@@ -171,7 +172,7 @@ it('uses shorter SEO page titles for flagged marketing pages', function (string 
 
     expect(mb_strlen($fullTitle))->toBeLessThanOrEqual(65);
 })->with([
-    'home' => ['marketing.home', [], 'Managed business websites'],
+    'home' => ['marketing.home', [], 'Managed SEO and website care for UK businesses'],
     'clean handover article' => ['marketing.article', ['a-clean-website-handover'], 'A clean website handover'],
     'website updates article' => ['marketing.article', ['how-often-should-i-update-my-website'], 'How often to update a website'],
     'seo working article' => ['marketing.article', ['how-do-i-know-if-my-seo-is-working'], 'How to know if SEO is working'],
@@ -188,7 +189,24 @@ it('adds organization structured data on the home page', function (): void {
         ->assertSuccessful()
         ->assertSee('application/ld+json')
         ->assertSee('Organization')
+        ->assertSee('WebSite')
+        ->assertSee('Managed SEO')
         ->assertSee('Sitewell');
+});
+
+it('keeps social metadata aligned with the page title and links articles to Sitewell', function (): void {
+    $this->get(route('marketing.home'))
+        ->assertSuccessful()
+        ->assertSee('<meta property="og:title" content="Managed SEO and website care for UK businesses · Sitewell">', false)
+        ->assertSee('<meta name="twitter:card" content="summary">', false);
+
+    $this->get(route('marketing.article', 'a-clean-website-handover'))
+        ->assertSuccessful()
+        ->assertSee('By <a href="'.route('marketing.about').'"', false);
+});
+
+it('advertises the public sitemap to crawlers', function (): void {
+    expect(file_get_contents(public_path('robots.txt')))->toContain('Sitemap: https://sitewell.digizu.co.uk/sitemap.xml');
 });
 
 it('adds blog posting structured data on article pages', function (): void {
@@ -298,10 +316,10 @@ it('keeps get started focused on one protected website form', function (): void 
         ->and(substr_count($response->getContent(), 'data-audit-preview'))->toBe(4);
 });
 
-it('features the product video and audit call to action on the home page', function (): void {
+it('keeps the audit action visible on the home page without a branded video', function (): void {
     $this->get(route('marketing.home'))
         ->assertSuccessful()
-        ->assertSee('https://www.loom.com/embed/d406218f4a2843f7a7d8abbf804f2ba6')
+        ->assertDontSee('www.loom.com')
         ->assertDontSee('in plain sight.')
         ->assertSee('Get your free search audit')
         ->assertDontSee('href="'.route('marketing.contact').'"', false);
@@ -364,7 +382,7 @@ it('features the local UK phone number on the home page', function (): void {
     $this->get(route('marketing.home'))
         ->assertSuccessful()
         ->assertSee('Hi, I’m Ross.')
-        ->assertSee('Web developer. Based in Doncaster.')
+        ->assertSee('Founder & Web Developer. Based in Doncaster.', false)
         ->assertSee('01302 248 374');
 });
 
@@ -430,7 +448,7 @@ it('publishes search-led service landing pages with unique metadata and FAQ sche
 
     $response
         ->assertSuccessful()
-        ->assertSee('<title>'.$title.' · Your website, well looked after</title>', false)
+        ->assertSee('<title>'.$title.' · Sitewell</title>', false)
         ->assertSee('<meta name="description" content="'.$landing['meta_description'].'">', false)
         ->assertSee($heading)
         ->assertSee('application/ld+json')
@@ -438,14 +456,14 @@ it('publishes search-led service landing pages with unique metadata and FAQ sche
         ->assertSee('Get your free search audit')
         ->assertSee('Related help');
 
-    expect(strlen($title.' · Your website, well looked after'))->toBeLessThanOrEqual(65)
+    expect(strlen($title.' · Sitewell'))->toBeLessThanOrEqual(65)
         ->and(strlen($landing['meta_description']))->toBeLessThanOrEqual(160);
 })->with([
-    'website management' => ['website-management-services', 'Website management services UK', 'Website management for your business.'],
+    'website management' => ['website-management-services', 'Website management for UK businesses', 'Website management for your business.'],
     'website maintenance' => ['website-maintenance-packages', 'Website maintenance packages', 'Ongoing website maintenance for small businesses'],
     'small business support' => ['small-business-website-support', 'Small business website support', 'Website support without chasing three different suppliers'],
-    'managed SEO' => ['managed-seo-services', 'Managed SEO services UK', 'SEO analysis and improvements.'],
-    'small business SEO' => ['seo-for-small-businesses', 'SEO for small businesses UK', 'SEO for small businesses.'],
+    'managed SEO' => ['managed-seo-services', 'Managed SEO services for UK businesses', 'Managed SEO for your website.'],
+    'small business SEO' => ['seo-for-small-businesses', 'SEO for small UK businesses', 'SEO for small businesses.'],
     'local SEO' => ['local-seo-services', 'Local SEO services UK', 'Local SEO services for businesses that depend on nearby customers'],
     'website leads' => ['website-lead-generation', 'Get more website leads', 'Turn more visitors into enquiries.'],
     'website improvement' => ['improve-my-website', 'Improve my business website', 'Make the website you already have work harder'],
@@ -487,9 +505,9 @@ it('positions the commercial service as specialist led rather than AI led', func
 ]);
 
 it('makes website portability a core marketing promise', function (): void {
-    $this->get(route('marketing.home'))
+    $this->get(route('marketing.about'))
         ->assertSuccessful()
-        ->assertSee('Your website stays yours if you leave.');
+        ->assertSee('Your website stays yours.');
 
     $this->get(route('marketing.feature', 'website-design-and-management'))
         ->assertSuccessful()
@@ -615,20 +633,16 @@ it('rejects incomplete and automated get started enquiries', function (): void {
     Mail::assertNothingOutgoing();
 });
 
-it('keeps the selected light video layout with one accessible player', function (): void {
+it('keeps the home page clear while a replacement video is unavailable', function (): void {
     $response = $this->get(route('marketing.home'))
         ->assertSuccessful()
         ->assertDontSee('Your progress,')
-        ->assertSee('hideEmbedTopBar=true', false)
-        ->assertSee('hide_share=true', false)
-        ->assertSee('title="See how Sitewell looks after your website"', false)
-        ->assertSee('loading="lazy"', false)
-        ->assertSee('allowfullscreen', false)
+        ->assertDontSee('www.loom.com')
         ->assertDontSee('href="'.route('marketing.contact').'"', false)
         ->assertDontSee('Your website.<br>The work behind it.', false)
         ->assertDontSee('https://ui.sh/ui-picker.js');
 
-    expect(substr_count($response->getContent(), 'src="https://www.loom.com/embed/d406218f4a2843f7a7d8abbf804f2ba6?'))->toBe(1);
+    expect(substr_count($response->getContent(), '<iframe'))->toBe(0);
 });
 
 it('keeps pricing and the client list off the focused homepage', function (): void {
@@ -716,7 +730,7 @@ it('keeps the streamlined homepage focused on services proof and the audit', fun
         ->assertDontSee('Find the opportunities.')
         ->assertDontSee('Keep things moving.')
         ->assertDontSee('A clear weekly update.')
-        ->assertSee('Your website stays yours if you leave.')
+        ->assertSee('Founder & Web Developer. Based in Doncaster.', false)
         ->assertDontSee('href="'.route('marketing.landing', 'website-management-services').'"', false)
         ->assertDontSee('href="'.route('marketing.article', 'how-to-find-seo-problems').'"', false)
         ->assertDontSee('Good work.')
@@ -725,10 +739,10 @@ it('keeps the streamlined homepage focused on services proof and the audit', fun
     $document = new DOMDocument;
     @$document->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
     $xpath = new DOMXPath($document);
-    expect($xpath->query('//main/section')->length)->toBe(4)
+    expect($xpath->query('//main/section')->length)->toBe(3)
         ->and($xpath->query('//form[@data-audit-form]')->length)->toBe(1)
-        ->and($xpath->query('//iframe')->length)->toBe(1)
-        ->and($xpath->query('//main//*[@data-home-reveal]')->length)->toBe(8)
+        ->and($xpath->query('//iframe')->length)->toBe(0)
+        ->and($xpath->query('//main//*[@data-home-reveal]')->length)->toBe(7)
         ->and($xpath->query('//main//form[@data-audit-form]//*[@data-home-reveal]')->length)->toBe(0)
         ->and($xpath->query('//footer')->length)->toBe(1);
 });

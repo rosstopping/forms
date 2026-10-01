@@ -57,6 +57,11 @@ class ContentRequest extends Model
         return $this->hasOne(SeoOpportunity::class);
     }
 
+    public function seoOpportunities(): HasMany
+    {
+        return $this->hasMany(SeoOpportunity::class);
+    }
+
     public function seoImpact(): HasOne
     {
         return $this->hasOne(SeoImpact::class);

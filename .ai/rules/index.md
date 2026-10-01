@@ -103,7 +103,8 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Jobs/RunCopilotSdkTitle.php,Http/Controllers/Admin/CopilotSdkRunController.php,Http/Requests/StoreCopilotSdkRunRequest.php},resources/views/admin/websites/partials/content-sdk*.blade.php | .ai/rules/requests-views-admin-websites-partials.md |
 | app/{Models/Website.php,Policies/WebsitePolicy.php,Http/Controllers/Admin/WebsiteMemberController.php,Http/Requests/*WebsiteMemberRequest.php},resources/views/admin/websites/**,routes/web.php | .ai/rules/requests-views-admin-websites.md |
 | app/{Models/Website.php,Http/Controllers/Admin/**,Http/Requests/**} | .ai/rules/requests.md |
-| resources/views/marketing/free-site-audit.blade.php, resources/views/marketing/website-audit.blade.php | .ai/rules/resources-views-marketing.md |
+| resources/views/layouts/marketing.blade.php | .ai/rules/resources-views-layouts.md |
+| resources/views/marketing/free-site-audit.blade.php, resources/views/marketing/website-audit.blade.php, resources/views/marketing/** | .ai/rules/resources-views-marketing.md |
 | app/Services/SeoIntelligence/**,app/Models/SeoOpportunity.php | .ai/rules/seo-intelligence-models.md |
 | app/Services/SeoIntelligence/** | .ai/rules/seo-intelligence.md |
 | app/{Services,Console/Commands}/**/*Prospect*.php,routes/console.php | .ai/rules/services-console-commands.md |
@@ -113,6 +114,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Services,Jobs,Console/Commands}/**/*Competitor*.php | .ai/rules/services-jobs-console-commands.md |
 | app/{Services,Jobs,Http/Controllers/Admin}/**/*SeoProspect*.php, app/{Services,Jobs,Http/Controllers/Admin}/**/*Competitor*.php, app/{Services,Jobs,Http/Controllers/Admin}/**/*AiVisibility*.php | .ai/rules/services-jobs-http-controllers-admin.md |
 | app/{Services,Jobs,Http/Controllers}/**/*Content*.php | .ai/rules/services-jobs-http-controllers.md |
+| app/Services/WebsiteActionCenter.php,database/migrations/*seo_opportunities*.php | .ai/rules/services-migrations.md |
 | {app/Services/WordPressStaticReleaseBuilder.php,wordpress-plugin/sitewell-by-digizu/**} | .ai/rules/services-sitewell-by-digizu.md |
 | app/Services/Prospect*.php,resources/views/admin/prospects/** | .ai/rules/services-views-admin-prospects.md |
 | app/Services/ContentQueueOverview.php,resources/views/admin/overview.blade.php, app/Services/DashboardWorkActivity.php,resources/views/admin/overview.blade.php | .ai/rules/services-views-admin.md |

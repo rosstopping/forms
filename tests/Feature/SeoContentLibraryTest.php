@@ -98,7 +98,7 @@ it('publishes article authorship and dates and keeps FAQ schema identical to vis
             ->and($schema['publisher']['url'])->toBe(route('marketing.home'))
             ->and($schema['datePublished'])->toBe($article['date_iso'])
             ->and($schema['mainEntityOfPage'])->toBe($url);
-        expect($html)->toContain('By Sitewell');
+        expect($html)->toContain('By <a href="'.route('marketing.about').'"');
     }
     foreach (config('seo_library.landing_pages') as $slug => $page) {
         $response = $this->get(route('marketing.landing', $slug))->assertSuccessful();

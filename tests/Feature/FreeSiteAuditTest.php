@@ -62,8 +62,11 @@ it('shows audit progress and exposes only its processing state', function (): vo
 
     $this->get(route('marketing.website-audits.show', $audit))
         ->assertSuccessful()
+        ->assertSee('<meta name="robots" content="noindex">', false)
+        ->assertDontSee('<link rel="canonical"', false)
         ->assertSee('Building your audit.')
         ->assertSee('Your results will appear here automatically.')
+        ->assertDontSee('data-audit-actions', false)
         ->assertDontSee('data-audit-email-open', false)
         ->assertSee(route('marketing.website-audits.status', $audit));
 
@@ -114,6 +117,7 @@ it('stores an anonymous audit result for the live report', function (): void {
         ->assertSeeInOrder(['Fix the website issues.', 'Improve existing content.', 'Create content for missed searches.', 'Strengthen the website and its reputation.', 'Measure and keep improving.'])
         ->assertSee('href="'.route('marketing.ppc.book').'"', false)
         ->assertSee('Book a call with Ross')
+        ->assertSee('data-audit-actions', false)
         ->assertDontSee('HTTPS should be reviewed.')
         ->assertDontSee('Start preparing my fixes')
         ->assertSee('name="email"', false)
@@ -168,7 +172,11 @@ it('offers an email copy after the results and extends the requested report to f
     $this->get(route('marketing.website-audits.show', $audit))
         ->assertSuccessful()
         ->assertSee('Want a copy by email?')
+        ->assertSee('data-audit-actions', false)
+        ->assertSee('data-audit-book-call', false)
         ->assertSee('data-audit-email-open', false)
+        ->assertSee('aria-label="Get a copy by email"', false)
+        ->assertSee('class="size-6 stroke-current sm:hidden"', false)
         ->assertSee('aria-controls="audit-email-dialog"', false)
         ->assertSee('fixed inset-0 m-auto max-h-[calc(100dvh-2rem)]', false)
         ->assertSee('30000')
@@ -199,6 +207,7 @@ it('offers an email copy after the results and extends the requested report to f
     $this->get(route('marketing.website-audits.show', $audit))
         ->assertSuccessful()
         ->assertSee('Your report is on its way.')
+        ->assertSee('data-audit-book-call', false)
         ->assertDontSee('data-audit-email-open', false)
         ->assertDontSee('Want a copy by email?');
 });
