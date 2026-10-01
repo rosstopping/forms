@@ -4,6 +4,18 @@
 @section('concise_title', 'yes')
 @section('meta_description', $page['meta_description'] ?? $page['description'])
 @section('structured_data')
+    @php
+        $breadcrumbSchema = [
+            '@context' => 'https://schema.org',
+            '@type' => 'BreadcrumbList',
+            'itemListElement' => [
+                ['@type' => 'ListItem', 'position' => 1, 'name' => 'Home', 'item' => route('marketing.home')],
+                ['@type' => 'ListItem', 'position' => 2, 'name' => 'Services', 'item' => route('marketing.features')],
+                ['@type' => 'ListItem', 'position' => 3, 'name' => $page['eyebrow'], 'item' => request()->url()],
+            ],
+        ];
+    @endphp
+    <script type="application/ld+json">@json($breadcrumbSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT)</script>
     @if (isset($faqSchema))<script type="application/ld+json">{!! $faqSchema !!}</script>@endif
 @endsection
 
