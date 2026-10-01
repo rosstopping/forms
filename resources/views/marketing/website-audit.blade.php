@@ -150,24 +150,36 @@
                             <h2 id="audit-search-title" class="max-w-[35ch] text-2xl font-medium tracking-tight text-balance">Search snapshot.</h2>
                             <p class="max-w-[56ch] text-pretty text-base text-ink/65">Google search estimates for {{ $seo['location_code'] === 2826 ? 'the UK' : 'the selected market' }}{{ isset($seo['retrieved_at']) ? ', checked '.\Illuminate\Support\Carbon::parse($seo['retrieved_at'])->format('j M Y') : '' }}. Monthly search volume is demand for a term, not visits to your site.</p>
                         </div>
-                        @if ($seo['keywords'] !== [])
-                            <div class="overflow-x-auto">
-                                <table class="w-full min-w-md border-collapse text-left text-base sm:text-sm">
-                                    <thead class="border-b border-ink/15 text-ink/60">
-                                        <tr><th scope="col" class="py-3 pr-4 font-medium">Ranking search</th><th scope="col" class="px-4 py-3 text-right font-medium">Position</th><th scope="col" class="py-3 pl-4 text-right font-medium">Monthly searches</th></tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach (array_slice($seo['keywords'], 0, 6) as $keyword)
-                                            <tr class="border-b border-ink/10 last:border-0">
-                                                <td class="py-3 pr-4 text-ink">{{ $keyword['term'] }}</td>
-                                                <td class="px-4 py-3 text-right tabular-nums text-ink/65">{{ $keyword['position'] }}</td>
-                                                <td class="py-3 pl-4 text-right tabular-nums text-ink/65">{{ $keyword['monthly_searches'] !== null ? number_format($keyword['monthly_searches']) : '—' }}</td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
+                        @if ($rankings['page_one'] !== [] || $rankings['striking_distance'] !== [] || $rankings['other'] !== [])
+                            <div @class(['grid gap-8', 'lg:grid-cols-2' => $rankings['page_one'] !== [] && $rankings['striking_distance'] !== []])>
+                                @foreach (['page_one' => ['Page one rankings', 'Positions 1–10'], 'striking_distance' => ['Within striking distance', 'Positions 11–30'], 'other' => ['Rankings found', 'Best positions in this sample']] as $group => [$heading, $description])
+                                    @if ($rankings[$group] !== [])
+                                        <div class="min-w-0">
+                                            <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-t border-ink/15 pt-4">
+                                                <h3 class="text-lg font-medium tracking-tight text-ink">{{ $heading }}</h3>
+                                                <p class="text-sm text-ink/55">{{ $description }}</p>
+                                            </div>
+                                            <div class="overflow-x-auto">
+                                                <table class="w-full min-w-md border-collapse text-left text-sm">
+                                                    <thead class="border-b border-ink/15 text-ink/60">
+                                                        <tr><th scope="col" class="py-3 pr-3 font-medium">Ranking search</th><th scope="col" class="px-2 py-3 text-right font-medium">Position</th><th scope="col" class="py-3 pl-2 text-right font-medium">Monthly searches</th></tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach ($rankings[$group] as $keyword)
+                                                            <tr class="border-b border-ink/10 last:border-0">
+                                                                <td class="py-3 pr-3 text-ink">{{ $keyword['term'] }}</td>
+                                                                <td class="px-2 py-3 text-right tabular-nums text-ink/65">{{ $keyword['position'] }}</td>
+                                                                <td class="py-3 pl-2 text-right tabular-nums text-ink/65">{{ isset($keyword['monthly_searches']) ? number_format($keyword['monthly_searches']) : '—' }}</td>
+                                                            </tr>
+                                                        @endforeach
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    @endif
+                                @endforeach
                             </div>
-                            <p class="text-pretty text-base text-ink/55 sm:text-sm">A sample of {{ $seo['sample_size'] }} ranking terms; volumes and traffic are third-party estimates.</p>
+                            <p class="text-pretty text-base text-ink/55 sm:text-sm">Showing selected terms from a sample of {{ $seo['sample_size'] ?? count($seo['keywords']) }}; volumes and traffic are third-party estimates.</p>
                         @else
                             <p class="text-pretty text-base text-ink/65">{{ $seo['organic_keywords'] === 0 ? 'No ranking terms were found in this dataset yet.' : 'Keyword details are unavailable for this review.' }}</p>
                         @endif
@@ -319,7 +331,6 @@
         <div class="relative p-6 sm:p-8">
             <button type="button" data-audit-email-close aria-label="Close email prompt" class="absolute top-3 right-3 grid size-12 place-items-center rounded-full text-xl text-ink/60 hover:bg-lichen focus-visible:outline-2 focus-visible:outline-garden">×</button>
             <div class="grid gap-2 pr-8">
-                <p class="text-base font-medium text-garden sm:text-sm">Keep your report</p>
                 <h2 id="audit-email-title" class="text-3xl font-medium tracking-tight text-balance">Want a copy by email?</h2>
                 <p id="audit-email-description" class="text-pretty text-base text-ink/65">We’ll send you a link to this report. It will stay available for 14 days.</p>
             </div>

@@ -56,13 +56,14 @@ it('renders every Sitewell mailable with the shared inline email branding', func
     };
     $html = $mail->render();
     $document = HTMLDocument::createFromString($html, LIBXML_NOERROR);
-    expect($document->querySelector('.header')->getAttribute('style'))->toContain('#17201d')
-        ->and($document->querySelector('.wrapper')->getAttribute('style'))->toContain('#f4f1e8')
-        ->and($document->querySelector('.brand')->textContent)->toBe('Sitewell.')
+    expect($document->querySelector('.header')->getAttribute('style'))->toContain('#faf7f4')
+        ->and($document->querySelector('.wrapper')->getAttribute('style'))->toContain('#ffffff')
+        ->and($document->querySelector('.brand')->textContent)->toBe('sitewell.')
+        ->and($document->querySelector('.brand-dot')->getAttribute('style'))->toContain('#d63d24')
         ->and($document->querySelectorAll('html')->length)->toBe(1)
         ->and($document->querySelector('.content-cell')->textContent)->not->toBeEmpty()
-        ->and($html)->toContain('Your website, well looked after.', '@media only screen')
-        ->not->toContain('<script', '&lt;table', 'notification-logo-v2.1.png');
+        ->and($html)->toContain('@media only screen')
+        ->not->toContain('Your website, well looked after.', '#17201d', '#167a53', '<script', '&lt;table', 'notification-logo-v2.1.png');
     if ($kind === 'outreach') {
         expect($html)->toContain('Unsubscribe');
     }
@@ -79,9 +80,9 @@ it('brands account and admin notifications while preserving their action links',
     $mail = $notification->toMail($user);
     $html = (string) $mail->render();
     $document = HTMLDocument::createFromString($html, LIBXML_NOERROR);
-    expect($document->querySelector('.brand')->textContent)->toBe('Sitewell.')
+    expect($document->querySelector('.brand')->textContent)->toBe('sitewell.')
         ->and($document->querySelector('.button')->getAttribute('href'))->toBe($mail->actionUrl)
-        ->and($document->querySelector('.button')->getAttribute('style'))->toContain('#167a53')
+        ->and($document->querySelector('.button')->getAttribute('style'))->toContain('#d63d24')
         ->and($document->querySelector('.subcopy')->textContent)->toContain($mail->actionUrl)
         ->and($document->querySelector('.content-cell')->textContent)->toContain('The Sitewell team')->not->toContain('Laravel');
 
@@ -93,7 +94,7 @@ it('brands every onboarding lifecycle message', function (OnboardingLifecycleSte
     $user = User::factory()->create();
     $message = OnboardingLifecycleMessage::factory()->for($user)->create(['step' => $step]);
     $mail = (new OnboardingLifecycleNotification($message, $user, 'https://example.com/tracked-action'))->toMail($user);
-    expect((string) $mail->render())->toContain('Your website, well looked after.', 'https://example.com/tracked-action');
+    expect((string) $mail->render())->toContain('sitewell', 'https://example.com/tracked-action')->not->toContain('Your website, well looked after.');
 })->with(OnboardingLifecycleStep::cases());
 
 it('keeps client autoresponders unbranded and preserves their plain text', function (): void {

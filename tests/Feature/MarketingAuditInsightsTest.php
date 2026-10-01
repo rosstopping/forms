@@ -36,22 +36,26 @@ it('builds a bounded search snapshot and caches paid provider results', function
                 ]]]]]],
             ]],
         ]),
-        '*/ranked_keywords/live' => Http::response([
-            'status_code' => 20000,
-            'tasks' => [[
+        '*/ranked_keywords/live' => function ($request) {
+            $pageOne = $request->data()[0]['filters'][2][2] === 10;
+
+            return Http::response([
                 'status_code' => 20000,
-                'cost' => 0.0144,
-                'result' => [['items' => [[
-                    'keyword_data' => [
-                        'keyword' => 'garden office fitters',
-                        'location_code' => 2826,
-                        'language_code' => 'en',
-                        'keyword_info' => ['search_volume' => 1000],
-                    ],
-                    'ranked_serp_element' => ['serp_item' => ['rank_group' => 15, 'url' => 'https://example.com/garden-offices']],
-                ]]]],
-            ]],
-        ]),
+                'tasks' => [[
+                    'status_code' => 20000,
+                    'cost' => 0.0144,
+                    'result' => [['items' => [[
+                        'keyword_data' => [
+                            'keyword' => $pageOne ? 'garden office design' : 'garden office fitters',
+                            'location_code' => 2826,
+                            'language_code' => 'en',
+                            'keyword_info' => ['search_volume' => $pageOne ? 500 : 1000],
+                        ],
+                        'ranked_serp_element' => ['serp_item' => ['rank_group' => $pageOne ? 3 : 15, 'url' => 'https://example.com/garden-offices']],
+                    ]]]],
+                ]],
+            ]);
+        },
         '*/competitors_domain/live' => Http::response([
             'status_code' => 20000,
             'tasks' => [['status_code' => 20000, 'cost' => 0.01, 'result' => [['items' => []]]]],
@@ -80,14 +84,73 @@ it('builds a bounded search snapshot and caches paid provider results', function
         ->and($insights['seo']['top_10_keywords'])->toBe(7)
         ->and($insights['seo']['estimated_monthly_visits'])->toBe(120)
         ->and($insights['seo']['referring_domains'])->toBe(12)
-        ->and($insights['seo']['keywords'][0]['monthly_searches'])->toBe(1000)
-        ->and($insights['seo']['cost_usd'])->toBe(0.05056)
+        ->and($insights['seo']['keywords'][0]['position'])->toBe(3)
+        ->and($insights['seo']['keywords'][1]['position'])->toBe(15)
+        ->and($insights['seo']['cost_usd'])->toBe(0.06496)
         ->and($insights['projection']['six_month_low'])->toBe(128)
         ->and($insights['projection']['six_month_high'])->toBe(160)
         ->and($insights['projection']['method'])->toContain('3–8%')
         ->and($again['seo'])->toBe($insights['seo']);
-    Http::assertSentCount(4);
+    Http::assertSentCount(5);
+    Http::assertSent(fn ($request): bool => str_contains($request->url(), 'ranked_keywords/live') && $request->data()[0]['limit'] === 10 && $request->data()[0]['filters'][2][2] === 10);
+    Http::assertSent(fn ($request): bool => str_contains($request->url(), 'ranked_keywords/live') && $request->data()[0]['limit'] === 10 && $request->data()[0]['filters'][0][2] === 11);
+});
+
+it('prioritises page-one and striking-distance terms, falling back to other rankings', function (): void {
+    $research = app(MarketingAuditResearch::class);
+    $keywords = [
+        ['term' => 'distant high volume', 'position' => 65, 'monthly_searches' => 90000],
+        ['term' => 'striking term', 'position' => 14, 'monthly_searches' => 100],
+        ['term' => 'page-one term', 'position' => 2, 'monthly_searches' => 50],
+        ['term' => 'strongest term', 'position' => 1, 'monthly_searches' => 10],
+    ];
+
+    $highlights = $research->rankingHighlights(['keywords' => $keywords]);
+
+    expect(array_column($highlights['page_one'], 'term'))->toBe(['strongest term', 'page-one term'])
+        ->and(array_column($highlights['striking_distance'], 'term'))->toBe(['striking term'])
+        ->and($highlights['other'])->toBe([])
+        ->and(array_column($research->rankingHighlights(['keywords' => array_slice($keywords, 0, 1)])['other'], 'term'))->toBe(['distant high volume']);
+});
+
+it('fetches other rankings only when page one and striking distance are empty', function (): void {
+    Cache::flush();
+    config(['services.dataforseo.login' => 'test', 'services.dataforseo.password' => 'test']);
+    Http::fake([
+        '*/domain_rank_overview/live' => Http::response([
+            'status_code' => 20000,
+            'tasks' => [['status_code' => 20000, 'cost' => 0.01, 'result' => [['items' => [['metrics' => ['organic' => ['count' => 1, 'etv' => 1]]]]]]]],
+        ]),
+        '*/ranked_keywords/live' => function ($request) {
+            $fallback = $request->data()[0]['limit'] === 20;
+
+            return Http::response([
+                'status_code' => 20000,
+                'tasks' => [['status_code' => 20000, 'cost' => 0.01, 'result' => [['items' => $fallback ? [[
+                    'keyword_data' => ['keyword' => 'distant search', 'location_code' => 2826, 'language_code' => 'en', 'keyword_info' => ['search_volume' => 200]],
+                    'ranked_serp_element' => ['serp_item' => ['rank_group' => 65, 'url' => 'https://far.example/page']],
+                ]] : []]]]],
+            ]);
+        },
+        '*/backlinks/summary/live' => Http::response([
+            'status_code' => 20000,
+            'tasks' => [['status_code' => 20000, 'cost' => 0.01, 'result' => [['backlinks' => 0, 'referring_domains' => 0]]]],
+        ]),
+        '*/competitors_domain/live' => Http::response([
+            'status_code' => 20000,
+            'tasks' => [['status_code' => 20000, 'cost' => 0.01, 'result' => [['items' => []]]]],
+        ]),
+    ]);
+
+    $pages = Mockery::mock(MarketingAuditPageCounter::class);
+    $pages->shouldReceive('count')->once()->andReturn(['count' => 1, 'partial' => false]);
+    $research = new MarketingAuditResearch(app(DomainOverviewService::class), app(RankedKeywordsService::class), app(BacklinksService::class), $pages, app(MarketingAuditCompetitors::class), app(MarketingAuditAiVisibility::class));
+    $insights = $research->forAudit('far.example', 'https://far.example', ['findings' => []]);
+
+    expect($insights['seo']['keywords'][0]['term'])->toBe('distant search')
+        ->and($insights['seo']['sample_size'])->toBe(1);
     Http::assertSent(fn ($request): bool => str_contains($request->url(), 'ranked_keywords/live') && $request->data()[0]['limit'] === 20);
+    Http::assertSentCount(6);
 });
 
 it('does not invent search data or a forecast when the provider is unavailable', function (): void {
@@ -128,6 +191,20 @@ it('reuses a recent matching search snapshot when live credentials are unavailab
         'position' => 15,
         'search_volume' => 1000,
     ]);
+    SeoKeyword::factory()->create([
+        'seo_snapshot_id' => $snapshot->id,
+        'website_id' => $snapshot->website_id,
+        'keyword' => 'zante nightlife',
+        'position' => 2,
+        'search_volume' => 100,
+    ]);
+    SeoKeyword::factory()->create([
+        'seo_snapshot_id' => $snapshot->id,
+        'website_id' => $snapshot->website_id,
+        'keyword' => 'distant search',
+        'position' => 65,
+        'search_volume' => 90000,
+    ]);
 
     $pages = Mockery::mock(MarketingAuditPageCounter::class);
     $pages->shouldReceive('count')->once()->andReturn([
@@ -147,7 +224,7 @@ it('reuses a recent matching search snapshot when live credentials are unavailab
         ->and($insights['seo']['estimated_monthly_visits'])->toBe(3058)
         ->and($insights['seo']['referring_domains'])->toBe(88)
         ->and($insights['seo']['backlinks'])->toBe(168)
-        ->and($insights['seo']['keywords'][0]['term'])->toBe('zante events')
+        ->and(array_column($insights['seo']['keywords'], 'term'))->toBe(['zante nightlife', 'zante events'])
         ->and($insights['projection']['baseline_monthly_visits'])->toBe(3058);
     Http::assertNothingSent();
 });

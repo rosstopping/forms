@@ -77,6 +77,7 @@ class FreeSiteAuditController extends Controller
             'audit' => $websiteAudit,
             'marketingEvents' => $events,
             'projection' => is_array($seo) ? $research->projection($seo) : null,
+            'rankings' => is_array($seo) ? $research->rankingHighlights($seo) : ['page_one' => [], 'striking_distance' => [], 'other' => []],
             'screenshotUrl' => $websiteAudit->isReadyToDisplay() && Storage::disk('local')->exists($screenshot->pathFor($websiteAudit))
                 ? route('marketing.website-audits.preview', $websiteAudit)
                 : null,

@@ -74,6 +74,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Mail/FormSubmissionReceived.php,Http/Controllers/FormSubmissionSpamController.php} | .ai/rules/mail-controllers.md |
 | resources/views/mail/prospects/** | .ai/rules/mail-prospects.md |
 | app/{Mail,Services}/**/*ProspectOutreach*.php | .ai/rules/mail-services.md |
+| resources/views/{vendor/mail/**,emails/**,mail/**,components/email-layout.blade.php,components/prospect-audit-block.blade.php} | .ai/rules/mail.md |
 | {app/Actions/StoreSitewellContactLead.php,app/Http/Controllers/OnboardingEnquiryController.php,resources/views/marketing/contact.blade.php,config/marketing.php,tests/Feature/MarketingPagesTest.php} | .ai/rules/marketing-feature.md |
 | resources/views/marketing/website-audit.blade.php,app/{Jobs/GenerateWebsiteAudit.php,Services/MarketingAudit*.php,Models/WebsiteAudit.php} | .ai/rules/marketing-jobs.md |
 | {config/ppc.php,app/Support/MarketingJourney.php,app/Models/MarketingConversion.php,app/Events/MarketingConversionRecorded.php,app/Http/Controllers/{PpcLandingController,CalWebhookController,FreeSiteAuditController}.php,resources/{js/marketing-events.js,views/marketing/ppc.blade.php,views/layouts/ppc.blade.php}} | .ai/rules/marketing-layouts.md |
@@ -115,7 +116,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | {app/Services/WordPressStaticReleaseBuilder.php,wordpress-plugin/sitewell-by-digizu/**} | .ai/rules/services-sitewell-by-digizu.md |
 | app/Services/Prospect*.php,resources/views/admin/prospects/** | .ai/rules/services-views-admin-prospects.md |
 | app/Services/ContentQueueOverview.php,resources/views/admin/overview.blade.php, app/Services/DashboardWorkActivity.php,resources/views/admin/overview.blade.php | .ai/rules/services-views-admin.md |
-| app/Services/MarketingAudit*.php,resources/views/marketing/website-audit.blade.php | .ai/rules/services-views-marketing.md |
+| app/Services/MarketingAudit*.php,resources/views/marketing/website-audit.blade.php, app/Services/MarketingAuditResearch.php,resources/views/marketing/website-audit.blade.php | .ai/rules/services-views-marketing.md |
 | app/Services/WebsiteCrawler.php, app/Services/Pixel*.php, app/Services/{SitemapFetcher,ProspectWebsiteAnalyzer,WebsiteHealthAuditor}.php, app/Services/WeeklyReport*.php, app/Services/SearchConsoleClient.php | .ai/rules/services.md |
 | {app/Services/WordPressStaticReleaseBuilder.php,app/Http/Controllers/WordPress*Release*Controller.php,wordpress-plugin/sitewell-by-digizu/**} | .ai/rules/sitewell-by-digizu.md |
 | {app/Models/User.php,app/Http/Controllers/Admin/UserImpersonationController.php,resources/views/{admin/users/index.blade.php,layouts/app.blade.php},routes/web.php,tests/Feature/UserImpersonationTest.php} | .ai/rules/users-feature.md |

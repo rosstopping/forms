@@ -34,7 +34,7 @@ it('shows each public marketing page', function (string $route, string $copy): v
     'comparison' => ['marketing.comparison', 'Compare your options.'],
     'about' => ['marketing.about', 'Your website needs looking after.'],
     'faqs' => ['marketing.faqs', 'Your questions, answered.'],
-    'get started' => ['marketing.free-site-audit', 'See what your website needs.'],
+    'get started' => ['marketing.free-site-audit', 'Enter your website and'],
     'journal' => ['marketing.journal', 'Practical website and SEO guides.'],
     'contact' => ['marketing.contact', 'Talk to Sitewell.'],
     'privacy policy' => ['marketing.privacy', 'How Sitewell uses personal information'],
@@ -278,10 +278,13 @@ it('publishes legal pages suitable for connected Google services', function (): 
 it('keeps get started focused on one protected website form', function (): void {
     $response = $this->get(route('marketing.free-site-audit'))
         ->assertSuccessful()
-        ->assertSee('See what your website needs.')
-        ->assertSee('Search setup')
-        ->assertSee('Website health')
-        ->assertSee('Security basics')
+        ->assertSee("Enter your website and we'll tell you what to do next.", false)
+        ->assertSee('What your audit shows.')
+        ->assertSee('Where you show up.')
+        ->assertSee('What needs fixing.')
+        ->assertSee('Whether AI mentions you.')
+        ->assertSee('Where to go next.')
+        ->assertDontSee('browser security headers')
         ->assertSee('Get your free search audit')
         ->assertSee('action="'.route('marketing.free-site-audit.store').'"', false)
         ->assertSee('name="_sitewell_check"', false)
@@ -291,7 +294,8 @@ it('keeps get started focused on one protected website form', function (): void 
         ->assertDontSee('href="'.route('marketing.features').'"', false)
         ->assertDontSee('href="'.route('marketing.contact').'"', false);
 
-    expect(substr_count($response->getContent(), 'data-audit-form'))->toBe(1);
+    expect(substr_count($response->getContent(), 'data-audit-form'))->toBe(1)
+        ->and(substr_count($response->getContent(), 'data-audit-preview'))->toBe(4);
 });
 
 it('features the product video and audit call to action on the home page', function (): void {

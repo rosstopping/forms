@@ -1,14 +1,14 @@
 @extends('layouts.marketing')
 
 @section('title', 'Get your free search audit')
-@section('meta_description', 'Enter your website address for a free search audit from Sitewell.')
+@section('meta_description', 'See your website health, Google visibility and next opportunities in a free Sitewell search audit.')
 
 @section('content')
 <section class="px-3 pt-1 pb-16 sm:px-6 sm:pt-2 sm:pb-24" aria-labelledby="audit-title">
     <div class="mx-auto grid max-w-7xl justify-items-center gap-8 rounded-3xl bg-lichen px-5 py-16 text-center sm:gap-10 sm:px-10 sm:py-24">
         <div class="grid justify-items-center gap-5">
-            <h1 id="audit-title" class="max-w-[18ch] text-4xl font-medium tracking-tight text-balance sm:text-6xl">See what your website needs.</h1>
-            <p class="max-w-[48ch] text-pretty text-lg text-ink/65">Enter your website for a short report on what’s working and what needs attention.</p>
+            <h1 id="audit-title" class="max-w-3xl text-4xl font-medium tracking-tight text-balance sm:text-6xl">Enter your website and we'll tell you what to do next.</h1>
+            <p class="max-w-[48ch] text-pretty text-lg text-ink/65">Enter your website to see where it stands and what we’d do to help more customers find you.</p>
         </div>
         <form method="POST" action="{{ route('marketing.free-site-audit.store') }}" data-audit-form data-marketing-attribution="{{ json_encode($attribution) }}" class="grid w-full max-w-xl gap-3 text-left">
             @csrf
@@ -27,18 +27,66 @@
                 @error('cf-turnstile-response')<p role="alert" class="text-base text-red-700 sm:text-sm">{{ $message }}</p>@enderror
             @endif
         </form>
-        <dl class="grid w-full max-w-4xl gap-6 border-t border-ink/10 pt-8 text-left sm:grid-cols-3 sm:gap-8 sm:pt-10">
-            <div class="grid content-start gap-2">
-                <dt class="font-medium text-ink">Search setup</dt>
-                <dd class="text-pretty text-base text-ink/65 sm:text-sm">Page titles, headings, sitemap and crawl access.</dd>
+    </div>
+</section>
+
+<section class="pb-16 sm:pb-24" aria-labelledby="audit-preview-title">
+    <div class="mx-auto max-w-7xl px-5 sm:px-10">
+        <h2 id="audit-preview-title" class="max-w-[40ch] text-3xl font-medium tracking-tight text-balance text-ink sm:text-4xl">What your audit shows.</h2>
+        <dl class="grid gap-5 pt-7 md:grid-cols-2 sm:pt-9">
+            <div data-audit-preview class="grid min-w-0 overflow-hidden rounded-3xl bg-white ring-1 ring-ink/10">
+                <div aria-hidden="true" class="grid min-h-44 content-center gap-3 bg-lichen px-6 py-6 sm:px-8">
+                    <div class="flex max-w-sm items-center gap-3 rounded-full bg-white px-4 py-3 ring-1 ring-ink/10">
+                        <span class="size-3 shrink-0 rounded-full border-2 border-garden"></span>
+                        <span class="text-sm text-ink/55">Google searches</span>
+                        <span class="ml-auto text-base text-garden">↗</span>
+                    </div>
+                    <div class="grid max-w-sm gap-2 pl-3">
+                        <div class="flex items-center gap-3 rounded-xl bg-white px-4 py-3 ring-1 ring-ink/10"><span class="size-2 shrink-0 rounded-full bg-garden"></span><span class="h-2 w-2/3 rounded-full bg-ink/15"></span><span class="ml-auto h-2 w-8 rounded-full bg-garden/25"></span></div>
+                        <div class="flex items-center gap-3 rounded-xl bg-white/65 px-4 py-3"><span class="size-2 shrink-0 rounded-full bg-ink/20"></span><span class="h-2 w-1/2 rounded-full bg-ink/10"></span><span class="ml-auto h-2 w-8 rounded-full bg-ink/10"></span></div>
+                    </div>
+                </div>
+                <div class="grid content-start gap-2 p-6 sm:p-8">
+                    <dt class="text-xl font-medium tracking-tight text-ink">Where you show up.</dt>
+                    <dd class="max-w-[48ch] text-pretty text-base text-ink/65">Your Google rankings and the sites appearing alongside you.</dd>
+                </div>
             </div>
-            <div class="grid content-start gap-2">
-                <dt class="font-medium text-ink">Website health</dt>
-                <dd class="text-pretty text-base text-ink/65 sm:text-sm">Homepage response, mobile setup and image text.</dd>
+            <div data-audit-preview class="grid min-w-0 overflow-hidden rounded-3xl bg-white ring-1 ring-ink/10">
+                <div aria-hidden="true" class="grid min-h-44 place-items-center bg-lichen px-6 py-6 sm:px-8">
+                    <div class="flex w-full max-w-sm items-center gap-5 rounded-2xl bg-white p-5 ring-1 ring-ink/10">
+                        <div class="grid size-20 shrink-0 place-items-center rounded-full border-[10px] border-garden/15 border-r-garden border-b-garden"><span class="size-6 rounded-full bg-garden/15"></span></div>
+                        <div class="grid min-w-0 flex-1 gap-3"><span class="text-sm font-medium text-ink/65">Website health</span><span class="h-2 w-full rounded-full bg-ink/10"></span><span class="h-2 w-3/4 rounded-full bg-garden/30"></span><span class="h-2 w-1/2 rounded-full bg-ink/10"></span></div>
+                    </div>
+                </div>
+                <div class="grid content-start gap-2 p-6 sm:p-8">
+                    <dt class="text-xl font-medium tracking-tight text-ink">What needs fixing.</dt>
+                    <dd class="max-w-[48ch] text-pretty text-base text-ink/65">Pages found, technical health, and fixes to tackle first.</dd>
+                </div>
             </div>
-            <div class="grid content-start gap-2">
-                <dt class="font-medium text-ink">Security basics</dt>
-                <dd class="text-pretty text-base text-ink/65 sm:text-sm">HTTPS and browser security headers.</dd>
+            <div data-audit-preview class="grid min-w-0 overflow-hidden rounded-3xl bg-white ring-1 ring-ink/10">
+                <div aria-hidden="true" class="grid min-h-44 place-items-center bg-lichen px-6 py-6 sm:px-8">
+                    <div class="grid w-full max-w-sm gap-3">
+                        <div class="flex w-4/5 items-center gap-3 rounded-2xl rounded-bl-sm bg-white px-4 py-3 ring-1 ring-ink/10"><span class="font-medium text-garden">AI</span><span class="h-2 w-1/2 rounded-full bg-ink/15"></span></div>
+                        <div class="grid gap-3 justify-self-end w-5/6 rounded-2xl rounded-br-sm bg-white p-4 ring-1 ring-ink/10"><span class="h-2 w-full rounded-full bg-ink/15"></span><span class="h-2 w-3/4 rounded-full bg-ink/10"></span><span class="flex items-center gap-2 text-sm font-medium text-garden"><span class="size-2 rounded-full bg-garden"></span> Sample answer</span></div>
+                    </div>
+                </div>
+                <div class="grid content-start gap-2 p-6 sm:p-8">
+                    <dt class="text-xl font-medium tracking-tight text-ink">Whether AI mentions you.</dt>
+                    <dd class="max-w-[48ch] text-pretty text-base text-ink/65">Mentions and citations in sample answers to relevant questions, when found.</dd>
+                </div>
+            </div>
+            <div data-audit-preview class="grid min-w-0 overflow-hidden rounded-3xl bg-white ring-1 ring-ink/10">
+                <div aria-hidden="true" class="grid min-h-44 place-items-center bg-lichen px-6 py-6 sm:px-8">
+                    <div class="grid w-full max-w-sm gap-4 rounded-2xl bg-white p-5 ring-1 ring-ink/10">
+                        <div class="flex items-center gap-3"><span class="grid size-6 shrink-0 place-items-center rounded-full bg-garden text-sm text-white">1</span><span class="text-sm font-medium text-ink/75">Fix</span><span class="ml-auto h-2 w-1/3 rounded-full bg-ink/10"></span></div>
+                        <div class="flex items-center gap-3"><span class="grid size-6 shrink-0 place-items-center rounded-full bg-garden/15 text-sm text-garden">2</span><span class="text-sm font-medium text-ink/75">Improve</span><span class="ml-auto h-2 w-1/2 rounded-full bg-ink/10"></span></div>
+                        <div class="flex items-center gap-3"><span class="grid size-6 shrink-0 place-items-center rounded-full bg-garden/15 text-sm text-garden">3</span><span class="text-sm font-medium text-ink/75">Build</span><span class="ml-auto h-2 w-1/4 rounded-full bg-ink/10"></span></div>
+                    </div>
+                </div>
+                <div class="grid content-start gap-2 p-6 sm:p-8">
+                    <dt class="text-xl font-medium tracking-tight text-ink">Where to go next.</dt>
+                    <dd class="max-w-[48ch] text-pretty text-base text-ink/65">Prioritised work and a six-month search scenario when there’s enough data.</dd>
+                </div>
             </div>
         </dl>
     </div>

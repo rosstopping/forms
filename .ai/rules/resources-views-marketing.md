@@ -29,3 +29,9 @@ On a completed public audit that has not yet been emailed, show a compact fixed 
 
 ## Center the native audit email dialog explicitly
 Tailwind preflight removes the browser's default dialog margin, so showModal alone can place the email popup at the top left. Keep fixed inset-0 m-auto on the dialog, with a viewport-height cap and vertical overflow for mobile. Verify centering at mobile and desktop widths when changing its layout.
+
+## Describe the public audit by outcomes
+Supersedes the old Search setup / Website health / Security basics check list on Get started. Explain the audit in short plain-language outcomes: Google visibility and competitors, website issues and health, sampled AI mentions/citations, and prioritised next steps with a conditional six-month scenario. Do not list implementation checks or imply every data source is available for every site; keep one website form and one audit CTA.
+
+## Keep the audit preview visual and evidence-safe
+The Get started page uses four compact illustrated previews for Google visibility, technical health, sampled AI answers, and prioritised next steps. Illustrations are decorative and must not show invented rankings, scores, citations, or guaranteed growth; the real report supplies measured data. Keep the single website form and audit CTA, concise copy, and conditional language for AI observations and six-month scenarios.

@@ -1,9 +1,9 @@
 <x-email-layout>
-<p style="font-family:Courier New,monospace;font-size:14px;color:#315a46;">Weekly website health report</p>
+<p style="font-size:14px;font-weight:600;color:#d63d24;">Weekly website health report</p>
 <h1 style="margin:4px 0 8px;font-size:24px;">{{ $report->website->name }}</h1>
-<p style="color:#59685f;">Overall status: <strong>{{ str_replace('_', ' ', ucfirst($report->overall_status)) }}</strong></p>
-<p style="color:#59685f;">{{ data_get($report->metrics, 'changes.new_issues', 0) }} new issues and {{ data_get($report->metrics, 'changes.resolved_issues', 0) }} resolved issues since the previous report.</p>
-<p style="color:#59685f;"><strong>{{ data_get($report->metrics, 'pages_analyzed', 0) }} pages analysed</strong>, including titles, descriptions, headings, indexability, canonical URLs, content depth, links, and image accessibility.</p>
+<p style="color:#62666d;">Overall status: <strong>{{ str_replace('_', ' ', ucfirst($report->overall_status)) }}</strong></p>
+<p style="color:#62666d;">{{ data_get($report->metrics, 'changes.new_issues', 0) }} new issues and {{ data_get($report->metrics, 'changes.resolved_issues', 0) }} resolved issues since the previous report.</p>
+<p style="color:#62666d;"><strong>{{ data_get($report->metrics, 'pages_analyzed', 0) }} pages analysed</strong>, including titles, descriptions, headings, indexability, canonical URLs, content depth, links, and image accessibility.</p>
 <table class="metrics" style="width:100%;border-collapse:collapse;margin:20px 0;">
 <tr>
 <td style="padding:12px;background:#ecfdf5;color:#065f46;"><strong>{{ $report->passed_checks }}</strong><br>Passed</td>
@@ -18,15 +18,15 @@
 @if (data_get($report->metrics, 'content_updates'))
 <h2 style="margin-top:24px;font-size:18px;">Content updates this week</h2>
 @foreach (data_get($report->metrics, 'content_updates', []) as $update)
-<div style="margin-top:12px;padding:16px;border:1px solid #dce3dd;border-radius:8px;">
+<div style="margin-top:12px;padding:16px;border:1px solid #ebe6e2;border-radius:8px;">
 <h3 style="margin:0;font-size:16px;">
 @if ($showGithubLinks)
-<a href="{{ $update['url'] }}" style="color:#17201d;">{{ $update['title'] }}</a>
+<a href="{{ $update['url'] }}" style="color:#151618;">{{ $update['title'] }}</a>
 @else
 {{ $update['title'] }}
 @endif
 </h3>
-<p style="margin:6px 0;color:#59685f;font-size:14px;">Merged {{ \Illuminate\Support\Carbon::parse($update['merged_at'])->format('j M Y') }} · {{ number_format($update['changed_files']) }} files · <span style="color:#047857;">+{{ number_format($update['additions']) }}</span> <span style="color:#b91c1c;">−{{ number_format($update['deletions']) }}</span></p>
+<p style="margin:6px 0;color:#62666d;font-size:14px;">Merged {{ \Illuminate\Support\Carbon::parse($update['merged_at'])->format('j M Y') }} · {{ number_format($update['changed_files']) }} files · <span style="color:#047857;">+{{ number_format($update['additions']) }}</span> <span style="color:#b91c1c;">−{{ number_format($update['deletions']) }}</span></p>
 @if ($update['summary'])
 <p style="margin:10px 0;white-space:pre-line;">{{ $update['summary'] }}</p>
 @endif
@@ -43,13 +43,13 @@
 @endif
 @if (data_get($report->metrics, 'search_console'))
 <h2 style="margin-top:24px;font-size:18px;">Google Search Console</h2>
-<p style="color:#59685f;font-size:14px;">{{ \Illuminate\Support\Carbon::parse(data_get($report->metrics, 'search_console.period.start'))->format('j M') }}–{{ \Illuminate\Support\Carbon::parse(data_get($report->metrics, 'search_console.period.end'))->format('j M Y') }}</p>
+<p style="color:#62666d;font-size:14px;">{{ \Illuminate\Support\Carbon::parse(data_get($report->metrics, 'search_console.period.start'))->format('j M') }}–{{ \Illuminate\Support\Carbon::parse(data_get($report->metrics, 'search_console.period.end'))->format('j M Y') }}</p>
 <table class="metrics" role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:12px;text-align:center;">
 <tr>
-<td style="padding:12px;background:#eef3ec;"><strong>{{ number_format(data_get($report->metrics, 'search_console.totals.clicks', 0)) }}</strong><br>Clicks</td>
-<td style="padding:12px;background:#eef3ec;"><strong>{{ number_format(data_get($report->metrics, 'search_console.totals.impressions', 0)) }}</strong><br>Impressions</td>
-<td style="padding:12px;background:#eef3ec;"><strong>{{ number_format(data_get($report->metrics, 'search_console.totals.ctr', 0) * 100, 1) }}%</strong><br>CTR</td>
-<td style="padding:12px;background:#eef3ec;"><strong>{{ number_format(data_get($report->metrics, 'search_console.totals.position', 0), 1) }}</strong><br>Position</td>
+<td style="padding:12px;background:#faf7f4;"><strong>{{ number_format(data_get($report->metrics, 'search_console.totals.clicks', 0)) }}</strong><br>Clicks</td>
+<td style="padding:12px;background:#faf7f4;"><strong>{{ number_format(data_get($report->metrics, 'search_console.totals.impressions', 0)) }}</strong><br>Impressions</td>
+<td style="padding:12px;background:#faf7f4;"><strong>{{ number_format(data_get($report->metrics, 'search_console.totals.ctr', 0) * 100, 1) }}%</strong><br>CTR</td>
+<td style="padding:12px;background:#faf7f4;"><strong>{{ number_format(data_get($report->metrics, 'search_console.totals.position', 0), 1) }}</strong><br>Position</td>
 </tr>
 </table>
 @if (data_get($report->metrics, 'search_console.queries'))
@@ -62,5 +62,5 @@
 @endif
 @endif
 <p style="margin-top:24px;"><a href="{{ $reportUrl }}" class="button button-primary">View the full report</a></p>
-<p style="color:#59685f;font-size:14px;">This secure report link works for 30 days and does not require you to log in.</p>
+<p style="color:#62666d;font-size:14px;">This secure report link works for 30 days and does not require you to log in.</p>
 </x-email-layout>

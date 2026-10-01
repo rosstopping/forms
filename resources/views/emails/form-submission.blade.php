@@ -14,9 +14,9 @@
 @endforeach
 </ul>
 <p><a class="button button-primary" href="{{ url('/admin/form-submissions/'.$submission->id) }}">View submission in the admin area</a></p>
-<hr style="margin:24px 0; border:0; border-top:1px solid #e5e7eb;">
-<p style="margin-bottom:8px; color:#59685f; font-size:14px;">Was this submission unwanted?</p>
+<hr style="margin:24px 0; border:0; border-top:1px solid #ebe6e2;">
+<p style="margin-bottom:8px; color:#62666d; font-size:14px;">Was this submission unwanted?</p>
 <p style="margin:0;">
-<a href="{{ $markAsSpamUrl }}" style="display:inline-block; border-radius:6px; background:#eef3ec; color:#315a46; padding:10px 16px; font-size:14px; font-weight:600; text-decoration:none;">Mark as spam</a>
+<a href="{{ $markAsSpamUrl }}" style="display:inline-block; border-radius:999px; background:#faf7f4; color:#151618; padding:10px 16px; font-size:14px; font-weight:600; text-decoration:none;">Mark as spam</a>
 </p>
 </x-email-layout>

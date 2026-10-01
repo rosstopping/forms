@@ -57,14 +57,14 @@ class MarketingAuditResearch
     {
         $locationCode = (int) config('services.dataforseo.location_code', 2826);
         $languageCode = (string) config('services.dataforseo.language_code', 'en');
-        $cacheKey = 'marketing-audit-seo:'.hash('sha256', strtolower($domain)."|{$locationCode}|{$languageCode}");
+        $cacheKey = 'marketing-audit-seo:v2:'.hash('sha256', strtolower($domain)."|{$locationCode}|{$languageCode}");
         $cached = Cache::get($cacheKey);
 
         if (is_array($cached)) {
             return $cached;
         }
 
-        $recentSnapshot = $this->savedSeo($domain, $locationCode, $languageCode, 7);
+        $recentSnapshot = $this->savedSeo($domain, $locationCode, $languageCode, 7, true);
         if ($recentSnapshot !== null) {
             return $recentSnapshot;
         }
@@ -81,12 +81,27 @@ class MarketingAuditResearch
             return $this->savedSeo($domain, $locationCode, $languageCode, 30);
         }
 
-        $keywords = null;
+        $keywords = [];
+        $keywordCost = 0.0;
         if ($overview->overview->organicKeywords > 0) {
-            try {
-                $keywords = $this->rankedKeywords->forRange($domain, $locationCode, $languageCode, 1, 100, 20);
-            } catch (DataForSEOException $exception) {
-                report($exception);
+            foreach ([[1, 10], [11, 30]] as [$minimum, $maximum]) {
+                try {
+                    $response = $this->rankedKeywords->forRange($domain, $locationCode, $languageCode, $minimum, $maximum, 10);
+                    $keywords = array_merge($keywords, $response->keywords);
+                    $keywordCost += $response->cost;
+                } catch (DataForSEOException $exception) {
+                    report($exception);
+                }
+            }
+
+            if ($keywords === []) {
+                try {
+                    $response = $this->rankedKeywords->forRange($domain, $locationCode, $languageCode, 1, 100, 20);
+                    $keywords = $response->keywords;
+                    $keywordCost += $response->cost;
+                } catch (DataForSEOException $exception) {
+                    report($exception);
+                }
             }
         }
 
@@ -102,7 +117,8 @@ class MarketingAuditResearch
             'location_code' => $locationCode,
             'language_code' => $languageCode,
             'retrieved_at' => now()->toIso8601String(),
-            'cost_usd' => round($overview->cost + ($keywords?->cost ?? 0) + ($backlinks?->cost ?? 0), 5),
+            'cost_usd' => round($overview->cost + $keywordCost + ($backlinks?->cost ?? 0), 5),
+            'keyword_sample_strategy' => 'page_one_and_striking_distance',
             'organic_keywords' => $overview->overview->organicKeywords,
             'estimated_monthly_visits' => (int) round($overview->overview->estimatedOrganicTraffic),
             'top_3_keywords' => $overview->overview->top3Keywords,
@@ -110,13 +126,13 @@ class MarketingAuditResearch
             'top_20_keywords' => $overview->overview->top20Keywords,
             'referring_domains' => $backlinks?->overview->referringDomains,
             'backlinks' => $backlinks?->overview->backlinks,
-            'sample_size' => count($keywords?->keywords ?? []),
+            'sample_size' => count($keywords),
             'keywords' => array_map(fn ($keyword): array => [
                 'term' => $keyword->keyword,
                 'position' => $keyword->position,
                 'monthly_searches' => $keyword->searchVolume,
                 'url' => $keyword->rankingUrl,
-            ], $keywords?->keywords ?? []),
+            ], $keywords),
         ];
 
         Cache::put($cacheKey, $seo, now()->addDays(7));
@@ -125,14 +141,14 @@ class MarketingAuditResearch
     }
 
     /** @return array<string, mixed>|null */
-    private function savedSeo(string $domain, int $locationCode, string $languageCode, int $maximumAgeDays): ?array
+    private function savedSeo(string $domain, int $locationCode, string $languageCode, int $maximumAgeDays, bool $requireFocusedSample = false): ?array
     {
         return $this->savedSnapshot($domain, $locationCode, $languageCode, $maximumAgeDays)
-            ?? $this->previousAuditSeo($domain, $locationCode, $languageCode, $maximumAgeDays);
+            ?? $this->previousAuditSeo($domain, $locationCode, $languageCode, $maximumAgeDays, $requireFocusedSample);
     }
 
     /** @return array<string, mixed>|null */
-    private function previousAuditSeo(string $domain, int $locationCode, string $languageCode, int $maximumAgeDays): ?array
+    private function previousAuditSeo(string $domain, int $locationCode, string $languageCode, int $maximumAgeDays, bool $requireFocusedSample): ?array
     {
         $previousAudits = WebsiteAudit::query()
             ->where('domain', strtolower($domain))
@@ -147,6 +163,7 @@ class MarketingAuditResearch
             if (! is_array($seo)
                 || (int) ($seo['location_code'] ?? 0) !== $locationCode
                 || ($seo['language_code'] ?? null) !== $languageCode
+                || ($requireFocusedSample && ($seo['keyword_sample_strategy'] ?? null) !== 'page_one_and_striking_distance')
                 || ! isset($seo['retrieved_at'], $seo['organic_keywords'], $seo['estimated_monthly_visits'], $seo['keywords'])) {
                 continue;
             }
@@ -183,18 +200,22 @@ class MarketingAuditResearch
             return null;
         }
 
-        $keywords = $snapshot->keywords()
+        $keywordQuery = $snapshot->keywords()
             ->where('location_code', $locationCode)
-            ->where('language_code', $languageCode)
-            ->orderByDesc('search_volume')
-            ->orderBy('position')
-            ->limit(20)
-            ->get();
+            ->where('language_code', $languageCode);
+        $pageOne = (clone $keywordQuery)->whereBetween('position', [1, 10])->orderByDesc('search_volume')->limit(10)->get();
+        $strikingDistance = (clone $keywordQuery)->whereBetween('position', [11, 30])->orderByDesc('search_volume')->limit(10)->get();
+        $keywords = $pageOne->concat($strikingDistance);
+
+        if ($keywords->isEmpty()) {
+            $keywords = $keywordQuery->whereBetween('position', [1, 100])->orderBy('position')->limit(20)->get();
+        }
 
         return [
             'location_code' => $locationCode,
             'language_code' => $languageCode,
             'retrieved_at' => $snapshot->snapshot_date->toIso8601String(),
+            'keyword_sample_strategy' => 'page_one_and_striking_distance',
             'organic_keywords' => (int) $snapshot->organic_keywords,
             'estimated_monthly_visits' => (int) round((float) $snapshot->estimated_organic_traffic),
             'top_3_keywords' => (int) $snapshot->top_3_keywords,
@@ -209,6 +230,27 @@ class MarketingAuditResearch
                 'monthly_searches' => $keyword->search_volume,
                 'url' => $keyword->ranking_url,
             ])->all(),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $seo
+     * @return array{page_one: array<int, array<string, mixed>>, striking_distance: array<int, array<string, mixed>>, other: array<int, array<string, mixed>>}
+     */
+    public function rankingHighlights(array $seo): array
+    {
+        $keywords = collect($seo['keywords'] ?? [])
+            ->filter(fn (mixed $keyword): bool => is_array($keyword) && is_numeric($keyword['position'] ?? null) && (int) $keyword['position'] > 0)
+            ->sort(fn (array $first, array $second): int => ((int) $first['position'] <=> (int) $second['position'])
+                ?: ((int) ($second['monthly_searches'] ?? 0) <=> (int) ($first['monthly_searches'] ?? 0)));
+
+        $pageOne = $keywords->filter(fn (array $keyword): bool => (int) $keyword['position'] <= 10)->take(6)->values()->all();
+        $strikingDistance = $keywords->filter(fn (array $keyword): bool => (int) $keyword['position'] >= 11 && (int) $keyword['position'] <= 30)->take(6)->values()->all();
+
+        return [
+            'page_one' => $pageOne,
+            'striking_distance' => $strikingDistance,
+            'other' => $pageOne === [] && $strikingDistance === [] ? $keywords->take(6)->values()->all() : [],
         ];
     }
 

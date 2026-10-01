@@ -69,7 +69,7 @@ it('shows audit progress and exposes only its processing state', function (): vo
 
     $this->getJson(route('marketing.website-audits.status', $audit))
         ->assertSuccessful()
-        ->assertExactJson(['status' => 'pending', 'completed' => false, 'failed' => false]);
+        ->assertExactJson(['status' => 'pending', 'completed' => false, 'failed' => false, 'ai_visibility_status' => null]);
 });
 
 it('stores an anonymous audit result for the live report', function (): void {
@@ -298,6 +298,60 @@ it('shows measured search estimates and a conditional six-month scenario', funct
         ->assertSee('not a guarantee.');
 });
 
+it('shows page-one rankings beside striking-distance rankings and falls back to other terms', function (): void {
+    $audit = WebsiteAudit::factory()->create([
+        'status' => WebsiteAudit::STATUS_COMPLETED,
+        'created_at' => now()->subSeconds(11),
+        'insights' => ['seo' => [
+            'location_code' => 2826,
+            'organic_keywords' => 3,
+            'top_3_keywords' => 1,
+            'top_10_keywords' => 1,
+            'top_20_keywords' => 2,
+            'referring_domains' => 0,
+            'estimated_monthly_visits' => 10,
+            'sample_size' => 3,
+            'keywords' => [
+                ['term' => 'distant term', 'position' => 65, 'monthly_searches' => 90000],
+                ['term' => 'page one term', 'position' => 2, 'monthly_searches' => 100],
+                ['term' => 'striking term', 'position' => 15, 'monthly_searches' => 300],
+            ],
+        ]],
+    ]);
+
+    $response = $this->get(route('marketing.website-audits.show', $audit))
+        ->assertSuccessful()
+        ->assertSee('Page one rankings')
+        ->assertSee('Within striking distance')
+        ->assertDontSee('Rankings found');
+
+    $document = new DOMDocument;
+    @$document->loadHTML('<?xml encoding="UTF-8"'.$response->getContent());
+    $tables = (new DOMXPath($document))->query('//*[@id="audit-search-title"]/../following-sibling::div//table');
+    expect($tables->length)->toBe(2)
+        ->and($tables->item(0)->textContent)->toContain('page one term')
+        ->and($tables->item(1)->textContent)->toContain('striking term')
+        ->and($response->getContent())->not->toContain('distant term');
+
+    $audit->update(['insights' => ['seo' => [
+        'location_code' => 2826,
+        'organic_keywords' => 1,
+        'top_3_keywords' => 0,
+        'top_10_keywords' => 0,
+        'top_20_keywords' => 0,
+        'referring_domains' => 0,
+        'estimated_monthly_visits' => 0,
+        'sample_size' => 1,
+        'keywords' => [['term' => 'distant term', 'position' => 65, 'monthly_searches' => 90000]],
+    ]]]);
+
+    $this->get(route('marketing.website-audits.show', $audit))
+        ->assertSuccessful()
+        ->assertSee('Rankings found')
+        ->assertSee('distant term')
+        ->assertDontSee('Within striking distance');
+});
+
 it('explains when sitemap URLs point at a different domain', function (): void {
     $audit = WebsiteAudit::factory()->create([
         'domain' => 'vvipeventszante.com',
@@ -361,12 +415,12 @@ it('keeps the progress experience visible for at least ten seconds', function ()
         ->assertSee('Checking your website and preparing your report.');
 
     $this->getJson(route('marketing.website-audits.status', $audit))
-        ->assertExactJson(['status' => 'completed', 'completed' => false, 'failed' => false]);
+        ->assertExactJson(['status' => 'completed', 'completed' => false, 'failed' => false, 'ai_visibility_status' => null]);
 
     $this->travel(11)->seconds();
 
     $this->getJson(route('marketing.website-audits.status', $audit))
-        ->assertExactJson(['status' => 'completed', 'completed' => true, 'failed' => false]);
+        ->assertExactJson(['status' => 'completed', 'completed' => true, 'failed' => false, 'ai_visibility_status' => null]);
 });
 
 it('emails a secure continuation link after the website review', function (): void {
