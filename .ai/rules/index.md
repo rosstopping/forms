@@ -72,6 +72,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Jobs/Sync*Copilot*.php,app/Jobs/SyncContentGeneration.php | .ai/rules/jobs.md |
 | {resources/views/marketing/home.blade.php,resources/js/home-reveal.js,resources/css/app.css} | .ai/rules/js-css.md |
 | app/Http/Controllers/Admin/{WebsiteController.php,WebsiteHealthReportController.php},resources/views/admin/{websites/show.blade.php,website-health-reports/show.blade.php},resources/js/app.js | .ai/rules/js.md |
+| routes/web.php,app/Http/Controllers/Admin/GoogleAdsController.php,resources/views/layouts/app.blade.php,tests/Feature/GoogleAdsConnectionTest.php | .ai/rules/layouts-feature.md |
 | app/{Models/FormSubmission.php,Http/Controllers/Admin/FormSubmissionController.php,Http/Requests/*LeadRequest.php},resources/views/{layouts/app.blade.php,admin/form-submissions/**} | .ai/rules/layouts-form-submissions.md |
 | app/{Http/Middleware/ResolveCurrentWebsite.php,Support/WebsiteNavigation.php,Models/User.php},resources/views/layouts/app.blade.php,routes/web.php | .ai/rules/layouts.md |
 | app/{Mail/FormSubmissionReceived.php,Http/Controllers/FormSubmissionSpamController.php} | .ai/rules/mail-controllers.md |
