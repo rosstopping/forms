@@ -130,7 +130,7 @@
                     <section class="grid gap-5 border-t border-ink/10 pt-8" aria-labelledby="audit-search-title">
                         <div class="grid gap-2">
                             <h2 id="audit-search-title" class="max-w-[35ch] text-2xl font-medium tracking-tight text-balance">Search snapshot.</h2>
-                            <p class="max-w-[56ch] text-pretty text-base text-ink/65">DataForSEO estimates for Google in {{ $seo['location_code'] === 2826 ? 'the UK' : 'the selected market' }}. Monthly search volume is demand for a term, not visits to your site.</p>
+                            <p class="max-w-[56ch] text-pretty text-base text-ink/65">Google search estimates for {{ $seo['location_code'] === 2826 ? 'the UK' : 'the selected market' }}. Monthly search volume is demand for a term, not visits to your site.</p>
                         </div>
                         @if ($seo['keywords'] !== [])
                             <div class="overflow-x-auto">

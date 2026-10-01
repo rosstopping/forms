@@ -206,7 +206,7 @@
             <div class="border-t border-slate-950/10 bg-slate-50 p-4">
                 <form method="POST" action="{{ route('admin.backlink-audits.store', $website) }}" class="space-y-4">
                     @csrf
-                    <div><h4 class="font-semibold text-slate-950">Actionable backlink audit</h4><p class="mt-1 text-slate-600 text-base sm:text-sm">Collect detailed links, linked pages, new and lost trends, and optional gaps against up to three competitors. This is a paid, explicit DataForSEO audit; results are reused for seven days.</p></div>
+                    <div><h4 class="font-semibold text-slate-950">Actionable backlink audit</h4><p class="mt-1 text-slate-600 text-base sm:text-sm">Collect detailed links, linked pages, new and lost trends, and optional gaps against up to three competitors. This is a paid, on-demand audit; results are reused for seven days.</p></div>
                     @if ($latestBacklinkAudit)<p class="text-slate-600 text-base sm:text-sm">Latest audit: {{ ucfirst(str_replace('_', ' ', $latestBacklinkAudit->status)) }} · {{ ($latestBacklinkAudit->completed_at ?? $latestBacklinkAudit->updated_at)->format('j M Y, H:i') }}</p>@endif
                     @if ($canManageWebsite)
                         <fieldset><legend class="text-sm font-medium text-slate-800">Compare competitors (optional)</legend><div class="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">

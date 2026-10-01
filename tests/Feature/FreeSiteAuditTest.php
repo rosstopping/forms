@@ -165,6 +165,7 @@ it('shows measured search estimates and a conditional six-month scenario', funct
         ->assertSee('Pages listed in sitemap')
         ->assertSee('Google ranking terms')
         ->assertSee('Referring domains')
+        ->assertDontSee('DataForSEO')
         ->assertSee('garden office fitters')
         ->assertSee('1,000')
         ->assertSee('Needs some work')

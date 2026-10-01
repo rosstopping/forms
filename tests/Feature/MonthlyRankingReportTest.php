@@ -31,7 +31,8 @@ test('monthly report compares complete months and surfaces query movement', func
         ->and($report['highlights']->pluck('label')->all())->toContain('Google clicks', 'Average Google position')
         ->and($report['queryWins']->first()['query'])->toBe('website management');
     (new MonthlyRankingReport($website, $report))->assertSeeInHtml('August 2026')
-        ->assertSeeInHtml('Searches moving in the right direction')->assertSeeInHtml('website management');
+        ->assertSeeInHtml('Searches moving in the right direction')->assertSeeInHtml('website management')
+        ->assertDontSeeInHtml('DataForSEO');
 });
 
 test('monthly reports exclude viewer members without changing weekly recipients', function () {

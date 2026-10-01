@@ -13,7 +13,7 @@
                 </form>
             @endif
         </div>
-        <p class="text-slate-500 text-base sm:text-sm">DataForSEO observations and estimates collected {{ $audit->started_at?->format('j M Y, H:i') ?? 'when processing starts' }}. These are not Search Console measurements, and links do not prove ranking causation.</p>
+        <p class="text-slate-500 text-base sm:text-sm">Backlink observations and estimates collected {{ $audit->started_at?->format('j M Y, H:i') ?? 'when processing starts' }}. These are separate from Search Console, and links do not prove ranking causation.</p>
         <p class="text-slate-500 text-base sm:text-sm">Limits: {{ number_format($audit->limits['current_links']) }} current links, {{ number_format($audit->limits['lost_links']) }} lost links, {{ number_format($audit->limits['linked_pages']) }} own pages, {{ number_format($audit->limits['gap_domains']) }} gap domains, and {{ number_format($audit->limits['analyse_pages']) }} page analyses. Recorded provider cost: USD {{ number_format((float) $cost, 4) }}.</p>
         @if ($audit->competitors->isNotEmpty())<p class="text-slate-600 text-base sm:text-sm">Compared with: {{ $audit->competitors->pluck('domain')->implode(', ') }}</p>@endif
         @if (in_array($audit->status, ['pending', 'processing']))<p role="status" class="rounded-md bg-teal-50 p-3 text-teal-900 text-base sm:text-sm">Audit in progress. {{ count($audit->stages ?? []) }} of {{ count(\App\Services\BacklinkAuditService::STAGES) }} stages saved. Refresh this page to see newly stored evidence.</p>@endif

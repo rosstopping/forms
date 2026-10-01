@@ -9,7 +9,7 @@
                     <h2 id="target-keywords-title" class="text-lg font-semibold text-slate-950">Target keywords</h2>
                     <span class="rounded-full bg-teal-50 px-2 py-1 text-xs font-medium text-teal-800">{{ $targetKeywords->whereNull('archived_at')->count() }} / 20 active</span>
                 </div>
-                <p class="mt-1 max-w-2xl text-slate-600 text-base sm:text-sm">Track terms this website intends to rank for, including terms with no current visibility.@if ($targetKeywords->isNotEmpty()) Positions are exact DataForSEO desktop checks in location {{ config('services.dataforseo.location_code') }} ({{ strtoupper(config('services.dataforseo.language_code')) }}), separate from Search Console measurements.@endif</p>
+                <p class="mt-1 max-w-2xl text-slate-600 text-base sm:text-sm">Track terms this website intends to rank for, including terms with no current visibility.@if ($targetKeywords->isNotEmpty()) Positions are desktop ranking checks for the selected market, separate from Search Console measurements.@endif</p>
                 <a href="{{ route('admin.websites.show', [$website, 'tab' => 'seo', 'seo_section' => 'competitors']) }}" class="mt-2 inline-block text-sm font-medium text-teal-700 hover:underline">{{ $comparisonCompetitors->isEmpty() ? 'Add competitors to compare rankings' : 'Manage comparison competitors' }}</a>
                 @if ($canManageWebsite)
                     <form method="POST" action="{{ route('admin.seo-target-keywords.check-all', $website) }}" class="mt-3">

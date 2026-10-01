@@ -256,7 +256,7 @@ test('the seo tab displays and filters locally stored keyword estimates', functi
         ->assertDontSee('unrelated informational query')
         ->assertSee('Third-party market intelligence')
         ->assertSee('Locally stored third-party estimates')
-        ->assertSee('DataForSEO');
+        ->assertDontSee('DataForSEO');
     $this->get(route('admin.websites.section', [$website, 'seo', 'seo_section' => 'actions']))
         ->assertSuccessful()->assertSee('Your prioritised action list')
         ->assertSee('Move “garden rooms doncaster” towards page one')

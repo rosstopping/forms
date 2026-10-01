@@ -11,7 +11,7 @@
 @endif
 @if (collect($report['targetKeywords'] ?? [])->isNotEmpty())
 <h2 style="margin-top:24px;font-size:18px;">Monthly target movements</h2>
-<p style="color:#59685f;">Final compatible DataForSEO exact desktop checks from each complete calendar month.</p>
+<p style="color:#59685f;">Final desktop ranking checks from each complete calendar month.</p>
 @foreach ($report['targetKeywords'] as $item)
 <div style="margin-top:10px;padding:12px;border:1px solid #dce3dd;border-radius:8px;"><strong>{{ $item['target']->term }}</strong><p style="margin:5px 0 0;color:#59685f;">{{ $item['latest'] ? ($item['latest']->position ? 'Position '.$item['latest']->position : 'Not found in the top 100') : 'No completed-month observation' }} · {{ str($item['movement'])->replace('_', ' ')->headline() }}</p></div>
 @endforeach

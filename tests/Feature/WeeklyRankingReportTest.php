@@ -102,7 +102,8 @@ test('weekly ranking email shows active target states and links to target keywor
         ->assertSeeInHtml('new target awaiting check')
         ->assertSeeInHtml('target with failed check')
         ->assertSeeInHtml('latest check failed; previous result retained')
-        ->assertSeeInHtml('Exact DataForSEO desktop positions')
+        ->assertSeeInHtml('Desktop ranking checks for the selected market')
+        ->assertDontSeeInHtml('DataForSEO')
         ->assertSeeInHtml('View target keywords')
         ->assertDontSeeInHtml('archived target');
 });

@@ -127,6 +127,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Services/Prospect*.php,resources/views/mail/prospects/** | .ai/rules/views-mail-prospects.md |
 | {app/Http/Controllers/MarketingController.php,config/marketing.php,resources/views/marketing/{landing,features}.blade.php,routes/web.php,tests/Feature/MarketingPagesTest.php} | .ai/rules/views-marketing-feature.md |
 | app/{Http/Controllers/FreeSiteAuditController.php,Http/Requests/StoreFreeSiteAuditRequest.php,Jobs/GenerateWebsiteAudit.php,Models/WebsiteAudit.php,Services/MarketingTurnstileVerifier.php},resources/views/marketing/{free-site-audit,website-audit}.blade.php,routes/web.php | .ai/rules/views-marketing.md |
+| resources/views/** | .ai/rules/views.md |
 | app/{Console/Commands,Jobs,Mail,Models,Http/Controllers/Admin}/**/*Ranking*.php,resources/views/{admin/websites/**,emails/*ranking*},routes/web.php | .ai/rules/viewsadmin-websites.md |
 | resources/views/{layouts/marketing.blade.php,marketing/**} | .ai/rules/viewslayouts.md |
 | app/Models/Website.php,resources/views/admin/websites/**,resources/views/admin/website-health-reports/** | .ai/rules/website-health-reports.md |

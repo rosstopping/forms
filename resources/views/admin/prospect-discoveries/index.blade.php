@@ -52,7 +52,7 @@
                     <label class="ui-label grid gap-1.5">Maximum position<input type="number" name="maximum_position" value="{{ old('maximum_position', 100) }}" min="10" max="100" required class="ui-input" data-seo-cost-depth></label>
                     <label class="ui-label grid gap-1.5">Maximum site size<input type="number" name="maximum_pages" value="{{ old('maximum_pages', 20) }}" min="1" max="100" required class="ui-input"></label>
                 </div>
-                @if (! $dataForSeoConfigured)<p class="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-amber-800 text-base sm:text-sm">DataForSEO credentials are required before SEO opportunity searches can run.</p>@endif
+                @if (! $dataForSeoConfigured)<p class="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-amber-800 text-base sm:text-sm">Search data credentials are required before SEO opportunity searches can run.</p>@endif
                 @if ($errors->any())<div class="text-sm text-rose-700">{{ $errors->first() }}</div>@endif
                 <div class="ui-well px-3 py-2 text-sm text-slate-700"><span class="font-semibold">Estimated provider cost:</span> <output data-seo-cost-output>$0.0000</output><span class="text-xs text-slate-500"> · identical SERPs up to {{ $serpCacheDays }} days old are reused at no provider cost</span></div>
                 <div><button @disabled(! $dataForSeoConfigured) class="ui-button ui-button-primary disabled:cursor-not-allowed">Find ranking opportunities</button></div>
