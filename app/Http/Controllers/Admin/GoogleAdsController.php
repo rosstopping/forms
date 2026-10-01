@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\GenerateGoogleAdsSuggestionsRequest;
 use App\Http\Requests\StoreGoogleAdsCampaignDraftRequest;
 use App\Models\GoogleAdsCampaignDraft;
 use App\Models\Website;
@@ -10,6 +11,7 @@ use App\Services\GoogleAdsCampaignCreator;
 use App\Services\GoogleAdsClient;
 use App\Services\GoogleAdsOAuthClient;
 use App\Services\GoogleAdsOpportunityFinder;
+use App\Services\GoogleAdsSuggestionGenerator;
 use App\Support\MembershipPlan;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
@@ -18,11 +20,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
+use InvalidArgumentException;
 use RuntimeException;
 
 class GoogleAdsController extends Controller
 {
-    public function __construct(protected GoogleAdsOAuthClient $oauth, protected GoogleAdsClient $client, protected GoogleAdsOpportunityFinder $opportunities, protected GoogleAdsCampaignCreator $campaigns) {}
+    public function __construct(protected GoogleAdsOAuthClient $oauth, protected GoogleAdsClient $client, protected GoogleAdsOpportunityFinder $opportunities, protected GoogleAdsCampaignCreator $campaigns, protected GoogleAdsSuggestionGenerator $suggestions) {}
 
     public function index(Request $request, Website $website): View
     {
@@ -180,6 +183,28 @@ class GoogleAdsController extends Controller
         }
 
         return Redirect::route('admin.google-ads.index', $website)->with('status', 'Paused Search campaign created in Google Ads. Review conversion tracking before enabling it.');
+    }
+
+    public function suggest(GenerateGoogleAdsSuggestionsRequest $request, Website $website): RedirectResponse
+    {
+        if (! $website->googleAdsConnection?->customer_id) {
+            return back()->withInput()->with('error', 'Connect a Google Ads client account before generating suggestions.');
+        }
+
+        $data = $request->validated();
+
+        try {
+            $suggestions = $this->suggestions->generate($website, $data['final_url'], $data['city_name'], $data['campaign_brief'] ?? null);
+        } catch (InvalidArgumentException $exception) {
+            return back()->withInput()->with('error', $exception->getMessage());
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return back()->withInput()->with('error', 'Could not suggest ad copy right now. Please try again or enter it manually.');
+        }
+
+        return back()->withInput(array_replace($request->except('_token'), $suggestions))
+            ->with('status', 'Suggestions added. Review every search and claim before creating the paused campaign.');
     }
 
     protected function authorizeWebsite(Request $request, Website $website): void

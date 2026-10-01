@@ -40,6 +40,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | resources/views/marketing/**,resources/views/components/marketing/**,config/{marketing,agencies,seo_library,ppc}.php | .ai/rules/components-marketing.md |
 | app/Services/WeeklyReport*.php,app/Jobs/SendWeeklyRankingReport.php,resources/views/components/weekly-overview.blade.php | .ai/rules/components.md |
 | app/{Models,Services,Jobs,Http/Controllers}/**/*SeoTargetKeyword*.php,app/Console/Commands/DispatchWeeklySeoSnapshots.php | .ai/rules/console-commands.md |
+| app/{Ai/Agents/GoogleAdsCopyWriter.php,Services/GoogleAdsSuggestionGenerator.php,Http/Controllers/Admin/GoogleAdsController.php,Http/Requests/GenerateGoogleAdsSuggestionsRequest.php},resources/views/admin/websites/google-ads.blade.php | .ai/rules/controllers-admin-requests-views-admin-websites.md |
 | app/{Http/Controllers/Admin/SearchConsoleController.php,Services/SearchConsolePropertyMatcher.php,Actions/VerifyWebsiteDomainFromSearchConsole.php},resources/views/admin/websites/search-console-property.blade.php | .ai/rules/controllers-admin-views-admin-websites.md |
 | app/{Services/OptimisationValueSanitizer.php,Services/PixelDeploymentDriver.php,Http/Requests/*Optimisation*.php,Http/Controllers/Admin/Optimisation*.php} | .ai/rules/controllers-admin.md |
 | {app/Http/Controllers/FreeSiteAuditController.php,app/Mail/WebsiteAudit*.php,resources/views/marketing/website-audit.blade.php} | .ai/rules/controllers-mail-views-marketing.md |
