@@ -326,7 +326,10 @@
         <a data-audit-book-call href="{{ route('marketing.ppc.book') }}" aria-label="Book a call with Ross" class="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-garden py-3 pr-3 pl-4 text-base font-medium text-white shadow-md ring-1 ring-garden hover:bg-moss focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden sm:gap-3 sm:pr-4 sm:pl-5 sm:text-sm"><span class="sm:hidden">Book a call</span><span class="max-sm:hidden">Book a call with Ross</span><span aria-hidden="true">↗</span></a>
         @if ($audit->report_requested_at === null)
             <button type="button" data-audit-email-open aria-label="Get a copy by email" aria-haspopup="dialog" aria-controls="audit-email-dialog" class="inline-grid size-12 shrink-0 place-items-center rounded-full bg-white text-garden shadow-md ring-1 ring-ink/10 hover:bg-lichen focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden sm:w-auto sm:px-5 sm:text-sm">
-                <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" class="size-6 stroke-current sm:hidden" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15A2.25 2.25 0 0 0 2.25 6.75m19.5 0v.243a2.25 2.25 0 0 0 1.07 1.916l7.5 4.615a2.25 2.25 0 0 0 2.36 0l7.5-4.615a2.25 2.25 0 0 0 1.07-1.916V6.75"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 sm:hidden">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+                </svg>
+
                 <span class="max-sm:hidden">Get a copy by email</span>
             </button>
         @endif
