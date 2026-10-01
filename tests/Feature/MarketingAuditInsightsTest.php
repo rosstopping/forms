@@ -6,6 +6,8 @@ use App\Models\WebsiteAudit;
 use App\Services\DataForSEO\BacklinksService;
 use App\Services\DataForSEO\DomainOverviewService;
 use App\Services\DataForSEO\RankedKeywordsService;
+use App\Services\MarketingAuditAiVisibility;
+use App\Services\MarketingAuditCompetitors;
 use App\Services\MarketingAuditPageCounter;
 use App\Services\MarketingAuditResearch;
 use Illuminate\Support\Facades\Cache;
@@ -50,6 +52,10 @@ it('builds a bounded search snapshot and caches paid provider results', function
                 ]]]],
             ]],
         ]),
+        '*/competitors_domain/live' => Http::response([
+            'status_code' => 20000,
+            'tasks' => [['status_code' => 20000, 'cost' => 0.01, 'result' => [['items' => []]]]],
+        ]),
         '*/backlinks/summary/live' => Http::response([
             'status_code' => 20000,
             'tasks' => [[
@@ -62,7 +68,7 @@ it('builds a bounded search snapshot and caches paid provider results', function
 
     $pages = Mockery::mock(MarketingAuditPageCounter::class);
     $pages->shouldReceive('count')->twice()->with('https://example.com')->andReturn(['count' => 18, 'partial' => false]);
-    $research = new MarketingAuditResearch(app(DomainOverviewService::class), app(RankedKeywordsService::class), app(BacklinksService::class), $pages);
+    $research = new MarketingAuditResearch(app(DomainOverviewService::class), app(RankedKeywordsService::class), app(BacklinksService::class), $pages, app(MarketingAuditCompetitors::class), app(MarketingAuditAiVisibility::class));
     $analysis = ['findings' => [['severity' => 'passed'], ['severity' => 'warning']]];
 
     $insights = $research->forAudit('example.com', 'https://example.com', $analysis);
@@ -80,7 +86,7 @@ it('builds a bounded search snapshot and caches paid provider results', function
         ->and($insights['projection']['six_month_high'])->toBe(160)
         ->and($insights['projection']['method'])->toContain('3–8%')
         ->and($again['seo'])->toBe($insights['seo']);
-    Http::assertSentCount(3);
+    Http::assertSentCount(4);
     Http::assertSent(fn ($request): bool => str_contains($request->url(), 'ranked_keywords/live') && $request->data()[0]['limit'] === 20);
 });
 
@@ -91,7 +97,7 @@ it('does not invent search data or a forecast when the provider is unavailable',
 
     $pages = Mockery::mock(MarketingAuditPageCounter::class);
     $pages->shouldReceive('count')->once()->andReturn(['count' => null, 'partial' => false]);
-    $research = new MarketingAuditResearch(app(DomainOverviewService::class), app(RankedKeywordsService::class), app(BacklinksService::class), $pages);
+    $research = new MarketingAuditResearch(app(DomainOverviewService::class), app(RankedKeywordsService::class), app(BacklinksService::class), $pages, app(MarketingAuditCompetitors::class), app(MarketingAuditAiVisibility::class));
     $insights = $research->forAudit('example.com', 'https://example.com', ['findings' => []]);
 
     expect($insights['health_score'])->toBeNull()
@@ -131,7 +137,7 @@ it('reuses a recent matching search snapshot when live credentials are unavailab
         'mismatched_domain' => 81,
         'mismatched_host' => 'saved.test',
     ]);
-    $research = new MarketingAuditResearch(app(DomainOverviewService::class), app(RankedKeywordsService::class), app(BacklinksService::class), $pages);
+    $research = new MarketingAuditResearch(app(DomainOverviewService::class), app(RankedKeywordsService::class), app(BacklinksService::class), $pages, app(MarketingAuditCompetitors::class), app(MarketingAuditAiVisibility::class));
     $insights = $research->forAudit('saved.example', 'https://saved.example', ['findings' => []]);
 
     expect($insights['pages_listed'])->toBe(81)
@@ -169,7 +175,7 @@ it('reuses search estimates from a recent public audit for the same domain', fun
 
     $pages = Mockery::mock(MarketingAuditPageCounter::class);
     $pages->shouldReceive('count')->once()->andReturn(['count' => 4, 'partial' => false]);
-    $research = new MarketingAuditResearch(app(DomainOverviewService::class), app(RankedKeywordsService::class), app(BacklinksService::class), $pages);
+    $research = new MarketingAuditResearch(app(DomainOverviewService::class), app(RankedKeywordsService::class), app(BacklinksService::class), $pages, app(MarketingAuditCompetitors::class), app(MarketingAuditAiVisibility::class));
     $insights = $research->forAudit('previous.example', 'https://previous.example', ['findings' => []]);
 
     expect($insights['seo']['organic_keywords'])->toBe(23)
@@ -194,7 +200,7 @@ it('skips the keyword request when no Google rankings are found', function (): v
 
     $pages = Mockery::mock(MarketingAuditPageCounter::class);
     $pages->shouldReceive('count')->once()->andReturn(['count' => 1, 'partial' => false]);
-    $research = new MarketingAuditResearch(app(DomainOverviewService::class), app(RankedKeywordsService::class), app(BacklinksService::class), $pages);
+    $research = new MarketingAuditResearch(app(DomainOverviewService::class), app(RankedKeywordsService::class), app(BacklinksService::class), $pages, app(MarketingAuditCompetitors::class), app(MarketingAuditAiVisibility::class));
     $insights = $research->forAudit('new-domain.example', 'https://new-domain.example', ['findings' => []]);
 
     expect($insights['seo']['organic_keywords'])->toBe(0)

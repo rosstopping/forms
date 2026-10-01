@@ -74,7 +74,7 @@
         </div>
     </section>
 
-    <section class="px-3 py-4 sm:px-6 sm:py-6" aria-label="Sitewell walkthrough">
+    {{-- <section class="px-3 py-4 sm:px-6 sm:py-6" aria-label="Sitewell walkthrough">
         <div data-home-reveal="fade" class="mx-auto max-w-7xl">
             <figure class="grid min-w-0 gap-3">
                 <iframe
@@ -87,19 +87,18 @@
                 ></iframe>
             </figure>
         </div>
-    </section>
+    </section> --}}
 
     <section class="py-12 text-[#151618] sm:py-16" aria-labelledby="homepage-founder">
         <div class="mx-auto grid max-w-7xl gap-10 px-5 sm:px-8 lg:grid-cols-[4fr_7fr] lg:px-10">
             <div data-home-reveal class="grid content-start gap-4">
                 <h2 id="homepage-founder" class="text-3xl font-medium tracking-tight text-balance sm:text-4xl">Hi, I’m Ross.</h2>
-                <p class="text-base text-[#62666d]">Web developer. Based in Doncaster.</p>
+                <p class="text-base text-[#62666d]">Founder & Web developer. Based in Doncaster.</p>
                 <p class="text-base font-medium">01302 248 374</p>
             </div>
             <div data-home-reveal class="grid content-start justify-items-start gap-5">
                 <p class="max-w-[40ch] text-pretty text-xl">Start with your website. I’ll help you understand what needs attention and where Sitewell can help.</p>
                 <p class="text-base font-medium"><a href="{{ route('marketing.free-site-audit') }}" class="inline-flex min-h-12 items-center gap-3 rounded-full px-5 py-3 ring-1 ring-black/20 hover:bg-[#faf7f4] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#d63d24]">Get your free search audit <span aria-hidden="true">→</span></a></p>
-                <p class="max-w-[48ch] text-pretty text-base text-[#62666d]">Your website stays yours if you leave.</p>
             </div>
         </div>
     </section>

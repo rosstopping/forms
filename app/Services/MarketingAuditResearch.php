@@ -18,6 +18,8 @@ class MarketingAuditResearch
         private RankedKeywordsService $rankedKeywords,
         private BacklinksService $backlinks,
         private MarketingAuditPageCounter $pageCounter,
+        private MarketingAuditCompetitors $competitors,
+        private MarketingAuditAiVisibility $aiVisibility,
     ) {}
 
     /**
@@ -31,6 +33,7 @@ class MarketingAuditResearch
         $passedChecks = $findings->where('severity', 'passed')->count();
         $pages = $this->pageCounter->count($websiteUrl);
         $seo = $this->seoForDomain($domain);
+        $aiQuestions = $this->aiVisibility->questions($domain, $seo);
 
         return [
             'health_score' => $totalChecks > 0 ? (int) round($passedChecks / $totalChecks * 100) : null,
@@ -40,6 +43,11 @@ class MarketingAuditResearch
             'pages_mismatched_domain' => $pages['mismatched_domain'] ?? 0,
             'pages_mismatched_host' => $pages['mismatched_host'] ?? null,
             'seo' => $seo,
+            'competitors' => $seo !== null ? $this->competitors->forDomain($domain, $seo) : null,
+            'ai_visibility' => $aiQuestions !== [] ? [
+                'status' => $this->aiVisibility->available() ? 'pending' : 'unavailable',
+                'questions' => $aiQuestions,
+            ] : null,
             'projection' => $seo !== null ? $this->projection($seo) : null,
         ];
     }

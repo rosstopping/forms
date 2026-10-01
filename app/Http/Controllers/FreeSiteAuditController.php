@@ -130,6 +130,7 @@ class FreeSiteAuditController extends Controller
             'status' => $websiteAudit->status,
             'completed' => $websiteAudit->isReadyToDisplay(),
             'failed' => $websiteAudit->status === WebsiteAudit::STATUS_FAILED,
+            'ai_visibility_status' => data_get($websiteAudit->insights, 'ai_visibility.status'),
         ]);
     }
 }

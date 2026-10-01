@@ -65,6 +65,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Jobs/GeneratePagePixelOptimisations.php,Http/Controllers/Admin/*ReportOptimisationsController.php}, app/{Jobs/BuildWebsite.php,Http/Controllers/Admin/WebsiteBuilderController.php,Models/WebsiteBuild.php} | .ai/rules/jobs-controllers-admin.md |
 | app/{Jobs/GenerateWebsiteAudit.php,Services/MarketingAuditScreenshot.php,Http/Controllers/FreeSiteAuditController.php},resources/views/marketing/website-audit.blade.php | .ai/rules/jobs-controllers-views-marketing.md |
 | app/Jobs/SendWeeklyRankingReport.php,resources/views/emails/weekly-ranking-report.blade.php | .ai/rules/jobs-views-emails.md |
+| app/{Services,Jobs}/MarketingAudit*.php,app/Jobs/CheckMarketingAuditAiVisibility.php,resources/views/marketing/website-audit.blade.php | .ai/rules/jobs-views-marketing.md |
 | app/Jobs/Sync*Copilot*.php,app/Jobs/SyncContentGeneration.php | .ai/rules/jobs.md |
 | {resources/views/marketing/home.blade.php,resources/js/home-reveal.js,resources/css/app.css} | .ai/rules/js-css.md |
 | app/Http/Controllers/Admin/{WebsiteController.php,WebsiteHealthReportController.php},resources/views/admin/{websites/show.blade.php,website-health-reports/show.blade.php},resources/js/app.js | .ai/rules/js.md |

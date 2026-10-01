@@ -14,6 +14,8 @@
     $pagesMismatchedDomain = (int) data_get($audit->insights, 'pages_mismatched_domain', 0);
     $pagesMismatchedHost = data_get($audit->insights, 'pages_mismatched_host');
     $seo = data_get($audit->insights, 'seo');
+    $competitors = data_get($audit->insights, 'competitors');
+    $aiVisibility = data_get($audit->insights, 'ai_visibility');
 @endphp
 <section data-marketing-events="{{ json_encode($marketingEvents) }}" class="px-3 pt-1 pb-16 sm:px-6 sm:pt-2 sm:pb-24" aria-labelledby="audit-title">
     <div class="mx-auto grid max-w-7xl gap-8 rounded-3xl bg-lichen px-5 py-10 sm:px-10 sm:py-14">
@@ -170,6 +172,88 @@
                             <p class="text-pretty text-base text-ink/65">{{ $seo['organic_keywords'] === 0 ? 'No ranking terms were found in this dataset yet.' : 'Keyword details are unavailable for this review.' }}</p>
                         @endif
                     </section>
+                @endif
+
+                @if ($seo !== null)
+                    <section class="grid gap-5 border-t border-ink/10 pt-8" aria-labelledby="audit-competitors-title">
+                        <div class="grid gap-2">
+                            <h2 id="audit-competitors-title" class="text-2xl font-medium tracking-tight text-balance">Your Google search competitors.</h2>
+                            @if (is_array($competitors) && isset($competitors['domain']))
+                                <p class="max-w-[60ch] text-pretty text-base text-ink/65">{{ $competitors['domain'] }} ranks for {{ number_format($competitors['shared_terms']) }} of the same Google search terms. This is a search competitor, based on shared rankings.</p>
+                            @else
+                                <p class="max-w-[60ch] text-pretty text-base text-ink/65">We couldn't make a useful competitor comparison from this sample yet.</p>
+                            @endif
+                        </div>
+                        @if (! empty($competitors['others']))
+                            <div class="flex flex-wrap gap-2">
+                                @foreach ($competitors['others'] as $other)
+                                    <span class="rounded-full bg-white px-3 py-1.5 text-base text-ink/70 ring-1 ring-ink/10 sm:text-sm">{{ $other['domain'] }} · {{ number_format($other['shared_terms']) }} shared terms</span>
+                                @endforeach
+                            </div>
+                        @endif
+                        @if (is_array($competitors) && ! empty($competitors['terms']))
+                            <div class="-mx-5 -my-2 overflow-x-auto whitespace-nowrap sm:-mx-10">
+                                <div class="inline-block min-w-full px-5 py-2 align-middle sm:px-10">
+                                <table class="w-full min-w-md border-collapse text-left text-base sm:text-sm">
+                                    <thead class="border-b border-ink/10 text-ink/60"><tr><th scope="col" class="whitespace-nowrap py-4 pr-4 font-medium">Shared search</th><th scope="col" class="whitespace-nowrap px-4 py-4 text-right font-medium">You</th><th scope="col" class="whitespace-nowrap py-4 pl-4 text-right font-medium">{{ $competitors['domain'] }}</th></tr></thead>
+                                    <tbody>
+                                        @foreach ($competitors['terms'] as $term)
+                                            <tr class="border-b border-ink/10 last:border-0"><td class="py-3 pr-4 text-ink">{{ $term['term'] }}</td><td @class(['px-4 py-3 text-right tabular-nums', 'font-medium text-garden' => $term['our_position'] < $term['competitor_position'], 'text-ink/65' => $term['our_position'] >= $term['competitor_position']])>{{ $term['our_position'] }}</td><td @class(['py-3 pl-4 text-right tabular-nums', 'font-medium text-garden' => $term['competitor_position'] < $term['our_position'], 'text-ink/65' => $term['competitor_position'] >= $term['our_position']])>{{ $term['competitor_position'] }}</td></tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                                </div>
+                            </div>
+                            <p class="text-base text-ink/55 sm:text-sm">A small sample of estimated Google positions, checked {{ \Illuminate\Support\Carbon::parse($competitors['retrieved_at'])->format('j M Y') }}.</p>
+                        @endif
+                    </section>
+                @endif
+
+                <section class="grid gap-4 border-t border-ink/10 pt-8" aria-labelledby="audit-ai-title">
+                        <div class="grid gap-2">
+                            <h2 id="audit-ai-title" class="text-2xl font-medium tracking-tight text-balance">AI search check.</h2>
+                            <p class="max-w-[60ch] text-pretty text-base text-ink/65">Questions suggested by Google terms your site ranks for. These are sampled OpenAI answers; AI tools do not have fixed rankings for every question.</p>
+                        </div>
+                        @if (is_array($aiVisibility))
+                            <div class="grid gap-4 sm:grid-cols-2">
+                                @foreach ($aiVisibility['questions'] ?? [] as $index => $question)
+                                    @php($result = $aiVisibility['results'][$index] ?? null)
+                                    <div class="grid content-start gap-3 rounded-2xl bg-white p-5 ring-1 ring-ink/10 sm:p-6">
+                                        <p class="font-medium text-ink">“{{ $question }}”</p>
+                                        @if (($result['status'] ?? null) === 'completed')
+                                            <p @class(['font-medium', 'text-emerald-800' => $result['website_cited'], 'text-amber-900' => ! $result['website_cited']])>{{ $result['website_cited'] ? 'Your website was cited.' : ($result['website_mentioned'] ? 'Your website was mentioned, but not cited.' : 'Your website was not seen.') }}</p>
+                                            <p class="text-base text-ink/55 sm:text-sm">OpenAI check on {{ \Illuminate\Support\Carbon::parse($result['checked_at'])->format('j M Y') }}.</p>
+                                        @elseif ($aiVisibility['status'] === 'pending')
+                                            <p class="text-base text-ink/65" role="status">Checking this answer.</p>
+                                        @else
+                                            <p class="text-base text-ink/65">A live answer is unavailable.</p>
+                                        @endif
+                                    </div>
+                                @endforeach
+                            </div>
+                            <p class="text-base text-ink/55 sm:text-sm">These answers are samples, not a measure of all AI searches.</p>
+                        @else
+                            <p class="text-base text-ink/65">There isn't enough unbranded search data to choose a useful question yet.</p>
+                        @endif
+                </section>
+                @if (is_array($aiVisibility))
+                    @if ($aiVisibility['status'] === 'pending')
+                        <script>
+                            (() => {
+                                const statusUrl = @js(route('marketing.website-audits.status', $audit));
+                                const timer = window.setInterval(async () => {
+                                    try {
+                                        const response = await fetch(statusUrl, { headers: { Accept: 'application/json' } });
+                                        if (! response.ok) return;
+                                        if ((await response.json()).ai_visibility_status !== 'pending') {
+                                            window.clearInterval(timer);
+                                            window.location.reload();
+                                        }
+                                    } catch (_) {}
+                                }, 5000);
+                            })();
+                        </script>
+                    @endif
                 @endif
 
                 <section class="grid gap-6 rounded-3xl bg-white p-5 ring-1 ring-ink/10 sm:p-8" aria-labelledby="audit-projection-title">
