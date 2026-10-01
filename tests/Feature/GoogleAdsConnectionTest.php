@@ -1,15 +1,20 @@
 <?php
 
+use App\Jobs\CreateGoogleAdsCampaign;
 use App\Models\GoogleAdsCampaignDraft;
 use App\Models\GoogleAdsConnection;
 use App\Models\SearchConsoleConnection;
 use App\Models\SearchConsoleMetric;
 use App\Models\User;
 use App\Models\Website;
+use App\Services\GoogleAdsCampaignCreator;
 use App\Services\GoogleAdsOAuthClient;
 use App\Support\MembershipPlan;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request as ClientRequest;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 
 beforeEach(function (): void {
@@ -220,6 +225,7 @@ test('search gaps use only recent queries from the websites connected property',
 });
 
 test('a reviewed campaign is validated then created paused exactly once', function (): void {
+    Queue::fake();
     $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
     $website = Website::factory()->for($owner, 'owner')->create();
     $website->domains()->create(['domain' => 'example.com', 'is_primary' => true]);
@@ -242,6 +248,12 @@ test('a reviewed campaign is validated then created paused exactly once', functi
     $this->actingAs($owner)->post(route('admin.google-ads.campaigns.store', $website), $data)
         ->assertRedirect(route('admin.google-ads.index', $website));
     $draft = GoogleAdsCampaignDraft::query()->firstOrFail();
+    expect($draft->status)->toBe(GoogleAdsCampaignDraft::STATUS_PENDING);
+    Queue::assertPushed(CreateGoogleAdsCampaign::class, fn (CreateGoogleAdsCampaign $job): bool => $job->draftId === $draft->id);
+    Http::assertNothingSent();
+
+    (new CreateGoogleAdsCampaign($draft->id))->handle(app(GoogleAdsCampaignCreator::class));
+    $draft->refresh();
     expect($draft->status)->toBe(GoogleAdsCampaignDraft::STATUS_CREATED)
         ->and($draft->daily_budget_micros)->toBe(20000000)
         ->and($draft->campaign_resource_name)->toBe('customers/1234567890/campaigns/987');
@@ -275,6 +287,7 @@ test('a campaign cannot send visitors to an unverified or different website', fu
 });
 
 test('an uncertain Ads response cannot trigger a second campaign mutation', function (): void {
+    Queue::fake();
     $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
     $website = Website::factory()->for($owner, 'owner')->create();
     $website->domains()->create(['domain' => 'example.com', 'is_primary' => true]);
@@ -289,11 +302,42 @@ test('an uncertain Ads response cannot trigger a second campaign mutation', func
         'descriptions' => ['A useful first description.', 'A useful second description.'],
     ];
     $this->actingAs($owner)->post(route('admin.google-ads.campaigns.store', $website), $data)
-        ->assertSessionHas('error');
-    expect(GoogleAdsCampaignDraft::query()->firstOrFail()->status)->toBe(GoogleAdsCampaignDraft::STATUS_UNCERTAIN);
+        ->assertSessionHas('status');
+    $draft = GoogleAdsCampaignDraft::query()->firstOrFail();
+    expect(fn (): mixed => (new CreateGoogleAdsCampaign($draft->id))->handle(app(GoogleAdsCampaignCreator::class)))
+        ->toThrow(RequestException::class);
+    expect($draft->fresh()->status)->toBe(GoogleAdsCampaignDraft::STATUS_UNCERTAIN);
     $this->actingAs($owner)->post(route('admin.google-ads.campaigns.store', $website), $data)
         ->assertRedirect(route('admin.google-ads.index', $website));
     Http::assertSentCount(2);
+});
+
+test('a Google Ads timeout fails safely without a 500 or a second mutation', function (): void {
+    Queue::fake();
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $website->domains()->create(['domain' => 'example.com', 'is_primary' => true]);
+    GoogleAdsConnection::factory()->for($website)->create(['customer_id' => '1234567890', 'currency_code' => 'GBP']);
+    Http::fake(['*' => Http::failedConnection()]);
+
+    $data = [
+        'request_key' => (string) Str::uuid(),
+        'name' => 'Example search', 'daily_budget' => 20, 'city_name' => 'Doncaster', 'radius_miles' => 20,
+        'final_url' => 'https://example.com/', 'keywords_text' => 'local seo services',
+        'headlines' => ['Headline one', 'Headline two', 'Headline three'],
+        'descriptions' => ['A useful first description.', 'A useful second description.'],
+    ];
+    $this->actingAs($owner)->post(route('admin.google-ads.campaigns.store', $website), $data)
+        ->assertRedirect(route('admin.google-ads.index', $website))->assertSessionHas('status');
+    $draft = GoogleAdsCampaignDraft::query()->firstOrFail();
+
+    expect(fn (): mixed => (new CreateGoogleAdsCampaign($draft->id))->handle(app(GoogleAdsCampaignCreator::class)))
+        ->toThrow(ConnectionException::class);
+    expect($draft->fresh()->status)->toBe(GoogleAdsCampaignDraft::STATUS_FAILED)
+        ->and($draft->fresh()->error)->toBe('Google Ads did not respond in time.');
+    Http::assertSentCount(1);
+    $this->actingAs($owner)->get(route('admin.google-ads.index', $website))
+        ->assertSuccessful()->assertSee('Google Ads did not respond in time.');
 });
 
 test('Google Ads is hidden and all website routes require the owners active Complete plan', function (): void {

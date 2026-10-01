@@ -66,6 +66,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Services,Http/Controllers}/**/*ProspectOutreach*.php,app/Http/Controllers/ProspectReportController.php,config/outreach.php | .ai/rules/http-controllers.md |
 | app/Http/Controllers/Admin/DashboardController.php,resources/views/admin/overview.blade.php,app/Http/Middleware/ResolveCurrentWebsite.php | .ai/rules/http-middleware.md |
 | resources/views/{auth/**,layouts/auth.blade.php,components/auth/**},app/Http/Controllers/Auth/**,app/Http/Requests/{ResetPasswordRequest,SendPasswordResetLinkRequest}.php | .ai/rules/http-requests.md |
+| app/{Jobs/CreateGoogleAdsCampaign.php,Services/GoogleAdsCampaignCreator.php,Http/Controllers/Admin/GoogleAdsController.php,Models/GoogleAdsCampaignDraft.php},resources/views/admin/websites/google-ads.blade.php | .ai/rules/jobs-controllers-admin-views-admin-websites.md |
 | app/{Jobs/GeneratePagePixelOptimisations.php,Http/Controllers/Admin/*ReportOptimisationsController.php}, app/{Jobs/BuildWebsite.php,Http/Controllers/Admin/WebsiteBuilderController.php,Models/WebsiteBuild.php} | .ai/rules/jobs-controllers-admin.md |
 | app/{Jobs/GenerateWebsiteAudit.php,Services/MarketingAuditScreenshot.php,Http/Controllers/FreeSiteAuditController.php},resources/views/marketing/website-audit.blade.php | .ai/rules/jobs-controllers-views-marketing.md |
 | app/Jobs/SendWeeklyRankingReport.php,resources/views/emails/weekly-ranking-report.blade.php | .ai/rules/jobs-views-emails.md |

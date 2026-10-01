@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\GenerateGoogleAdsSuggestionsRequest;
 use App\Http\Requests\StoreGoogleAdsCampaignDraftRequest;
+use App\Jobs\CreateGoogleAdsCampaign;
 use App\Models\GoogleAdsCampaignDraft;
 use App\Models\Website;
-use App\Services\GoogleAdsCampaignCreator;
 use App\Services\GoogleAdsClient;
 use App\Services\GoogleAdsOAuthClient;
 use App\Services\GoogleAdsOpportunityFinder;
@@ -25,7 +25,7 @@ use RuntimeException;
 
 class GoogleAdsController extends Controller
 {
-    public function __construct(protected GoogleAdsOAuthClient $oauth, protected GoogleAdsClient $client, protected GoogleAdsOpportunityFinder $opportunities, protected GoogleAdsCampaignCreator $campaigns, protected GoogleAdsSuggestionGenerator $suggestions) {}
+    public function __construct(protected GoogleAdsOAuthClient $oauth, protected GoogleAdsClient $client, protected GoogleAdsOpportunityFinder $opportunities, protected GoogleAdsSuggestionGenerator $suggestions) {}
 
     public function index(Request $request, Website $website): View
     {
@@ -152,7 +152,16 @@ class GoogleAdsController extends Controller
         if ($existing) {
             abort_unless($existing->website_id === $website->id && $existing->created_by === $request->user()->id, 403);
 
-            return Redirect::route('admin.google-ads.index', $website)->with('status', 'This campaign request has already been processed. Check its status below.');
+            if ($existing->status === GoogleAdsCampaignDraft::STATUS_PENDING) {
+                CreateGoogleAdsCampaign::dispatch($existing->id);
+            }
+
+            return Redirect::route('admin.google-ads.index', $website)->with('status', 'This campaign request is already recorded. Check its status below.');
+        }
+
+        if ($website->googleAdsCampaignDrafts()->where('name', $data['name'])
+            ->whereIn('status', [GoogleAdsCampaignDraft::STATUS_PENDING, GoogleAdsCampaignDraft::STATUS_UNCERTAIN])->exists()) {
+            return back()->withInput()->with('error', 'A campaign with this name is still pending or needs checking in Google Ads. Review it below before trying again.');
         }
 
         $draft = $website->googleAdsCampaignDrafts()->create([
@@ -171,18 +180,9 @@ class GoogleAdsController extends Controller
             'descriptions' => $data['descriptions'],
         ]);
 
-        try {
-            $this->campaigns->create($draft);
-        } catch (RequestException|RuntimeException $exception) {
-            $draft->refresh();
-            $message = $draft->status === GoogleAdsCampaignDraft::STATUS_UNCERTAIN
-                ? 'Google Ads may have created the paused campaign. Check the Ads account before trying again.'
-                : 'Google Ads rejected the campaign. Check the account, budget, location, keywords and ad copy.';
+        CreateGoogleAdsCampaign::dispatch($draft->id);
 
-            return Redirect::route('admin.google-ads.index', $website)->with('error', $message);
-        }
-
-        return Redirect::route('admin.google-ads.index', $website)->with('status', 'Paused Search campaign created in Google Ads. Review conversion tracking before enabling it.');
+        return Redirect::route('admin.google-ads.index', $website)->with('status', 'Campaign queued. It will be created paused; refresh this page shortly to see the result.');
     }
 
     public function suggest(GenerateGoogleAdsSuggestionsRequest $request, Website $website): RedirectResponse

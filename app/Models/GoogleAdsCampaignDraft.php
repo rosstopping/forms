@@ -13,6 +13,8 @@ class GoogleAdsCampaignDraft extends Model
 
     public const STATUS_CREATED = 'created';
 
+    public const STATUS_FAILED = 'failed';
+
     public const STATUS_UNCERTAIN = 'uncertain';
 
     /** @use HasFactory<GoogleAdsCampaignDraftFactory> */
