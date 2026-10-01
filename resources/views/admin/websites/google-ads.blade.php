@@ -31,26 +31,30 @@
                         </dl>
                     @endif
 
-                    @if ($customerIds)
-                        <p class="mt-5 text-sm text-slate-600">Accounts directly available to this Google login: {{ implode(', ', $customerIds) }}.</p>
+                    @if ($unavailableAccountCount > 0)
+                        <p class="mt-5 text-sm text-amber-800">{{ $unavailableAccountCount }} {{ \Illuminate\Support\Str::plural('account', $unavailableAccountCount) }} could not be loaded. Reconnect Google if the account you need is missing.</p>
                     @endif
 
-                    <form method="POST" action="{{ route('admin.google-ads.account', $website) }}" class="mt-5 grid gap-4 sm:grid-cols-2">
-                        @csrf
-                        <div>
-                            <label for="customer_id" class="ui-label">Ads customer ID</label>
-                            <input id="customer_id" name="customer_id" class="ui-input mt-1 w-full" inputmode="numeric" autocomplete="off" placeholder="123-456-7890" value="{{ old('customer_id', $connection->customer_id) }}" required>
-                            @error('customer_id') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
-                        </div>
-                        <div>
-                            <label for="login_customer_id" class="ui-label">Manager account ID <span class="font-normal text-slate-500">(if applicable)</span></label>
-                            <input id="login_customer_id" name="login_customer_id" class="ui-input mt-1 w-full" inputmode="numeric" autocomplete="off" placeholder="123-456-7890" value="{{ old('login_customer_id', $connection->login_customer_id) }}">
-                            @error('login_customer_id') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
-                        </div>
-                        <div class="sm:col-span-2">
-                            <button type="submit" class="ui-button ui-button-primary">Verify account</button>
-                        </div>
-                    </form>
+                    @if ($availableAccounts)
+                        @php($selectedAccount = old('account', ($connection->login_customer_id ? $connection->login_customer_id.':' : '').$connection->customer_id))
+                        <form method="POST" action="{{ route('admin.google-ads.account', $website) }}" class="mt-5 space-y-4">
+                            @csrf
+                            <div>
+                                <label for="account" class="ui-label">Ads account</label>
+                                <select id="account" name="account" class="ui-input mt-1 w-full" required>
+                                    <option value="">Choose an account</option>
+                                    @foreach ($availableAccounts as $account)
+                                        @php($accountValue = ($account['login_customer_id'] ? $account['login_customer_id'].':' : '').$account['id'])
+                                        <option value="{{ $accountValue }}" @selected($selectedAccount === $accountValue)>{{ $account['name'] }} · {{ $account['id'] }}{{ $account['currency'] ? ' · '.$account['currency'] : '' }}{{ $account['manager_name'] ? ' · via '.$account['manager_name'] : '' }}</option>
+                                    @endforeach
+                                </select>
+                                @error('account') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
+                            </div>
+                            <button type="submit" class="ui-button ui-button-primary">Use this account</button>
+                        </form>
+                    @elseif (! $connectionError)
+                        <p class="mt-5 text-sm text-slate-600">No client Ads accounts found for this Google login. Check its access in Google Ads, then reconnect.</p>
+                    @endif
                 </div>
                 <form method="POST" action="{{ route('admin.google-ads.destroy', $website) }}" class="mt-6 border-t border-slate-200 pt-5">
                     @csrf

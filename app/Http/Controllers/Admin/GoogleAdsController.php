@@ -11,6 +11,7 @@ use App\Services\GoogleAdsClient;
 use App\Services\GoogleAdsOAuthClient;
 use App\Services\GoogleAdsOpportunityFinder;
 use App\Support\MembershipPlan;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -29,26 +30,29 @@ class GoogleAdsController extends Controller
         $connection = $website->googleAdsConnection;
         $searchGaps = $this->opportunities->searchGaps($website);
         $drafts = $website->googleAdsCampaignDrafts()->latest()->limit(10)->get();
-        $customerIds = [];
+        $availableAccounts = [];
+        $unavailableAccountCount = 0;
         $connectionError = null;
         $conversionActions = [];
         $conversionError = null;
         if ($connection) {
             try {
-                $customerIds = $this->client->accessibleCustomerIds($connection);
-            } catch (RequestException|RuntimeException) {
+                $accountList = $this->client->availableAccounts($connection);
+                $availableAccounts = $accountList['accounts'];
+                $unavailableAccountCount = $accountList['unavailable_count'];
+            } catch (ConnectionException|RequestException|RuntimeException) {
                 $connectionError = 'Google Ads could not list accounts. Check that the Google Cloud project has Google Ads API production access, then reconnect if needed.';
             }
             if ($connection->customer_id) {
                 try {
                     $conversionActions = $this->client->conversionActions($connection);
-                } catch (RequestException|RuntimeException) {
+                } catch (ConnectionException|RequestException|RuntimeException) {
                     $conversionError = 'Could not check conversion actions in this account.';
                 }
             }
         }
 
-        return view('admin.websites.google-ads', compact('website', 'connection', 'customerIds', 'connectionError', 'conversionActions', 'conversionError', 'searchGaps', 'drafts'));
+        return view('admin.websites.google-ads', compact('website', 'connection', 'availableAccounts', 'unavailableAccountCount', 'connectionError', 'conversionActions', 'conversionError', 'searchGaps', 'drafts'));
     }
 
     public function connect(Request $request, Website $website): RedirectResponse
@@ -100,21 +104,23 @@ class GoogleAdsController extends Controller
     {
         $this->authorizeWebsite($request, $website);
         $data = $request->validate([
-            'customer_id' => ['required', 'regex:/^\d{3}-?\d{3}-?\d{4}$/'],
-            'login_customer_id' => ['nullable', 'regex:/^\d{3}-?\d{3}-?\d{4}$/'],
+            'account' => ['required', 'regex:/^(?:\d{10}:)?\d{10}$/'],
         ]);
         $connection = $website->googleAdsConnection()->firstOrFail();
-        $customerId = str_replace('-', '', $data['customer_id']);
-        $loginCustomerId = filled($data['login_customer_id'] ?? null) ? str_replace('-', '', $data['login_customer_id']) : null;
 
         try {
-            $customer = $this->client->customer($connection, $customerId, $loginCustomerId);
-        } catch (RequestException|RuntimeException) {
-            return back()->withInput()->with('error', 'Google Ads could not verify that account. Check the customer ID, manager ID and API access.');
+            $accounts = $this->client->availableAccounts($connection)['accounts'];
+            $selected = collect($accounts)->first(fn (array $account): bool => ($account['login_customer_id'] ? $account['login_customer_id'].':' : '').$account['id'] === $data['account']);
+            if (! $selected) {
+                return back()->withInput()->withErrors(['account' => 'Choose an available client account from the list.']);
+            }
+            $customer = $this->client->customer($connection, $selected['id'], $selected['login_customer_id']);
+        } catch (ConnectionException|RequestException|RuntimeException) {
+            return back()->withInput()->with('error', 'Google Ads could not verify that account. Refresh the account list and try again.');
         }
         $connection->update([
             'customer_id' => $customer['id'],
-            'login_customer_id' => $loginCustomerId,
+            'login_customer_id' => $selected['login_customer_id'],
             'customer_name' => $customer['name'],
             'currency_code' => $customer['currency'],
         ]);

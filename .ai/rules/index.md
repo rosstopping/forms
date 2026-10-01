@@ -103,6 +103,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Services,Jobs,Http/Controllers/Admin,Http/Requests}/**/*PersonalisedVideo*.php,resources/views/admin/prospects/**,app/Services/ProspectEngagementScorer.php | .ai/rules/prospects-services.md |
 | app/{Mail,Models,Services,Http/Controllers}/**/*ProspectOutreach*.php,resources/views/mail/prospects/outreach.blade.php,resources/views/admin/prospects/**,routes/web.php | .ai/rules/prospects.md |
 | app/Providers/AppServiceProvider.php | .ai/rules/providers.md |
+| public/favicon.*,public/apple-touch-icon.png,resources/views/layouts/{marketing,ppc,auth,app}.blade.php | .ai/rules/public-views-layouts.md |
 | public/pixel.js | .ai/rules/public.md |
 | app/{Models,Services,Jobs,Http/Controllers/Admin,Http/Requests}/**/*SeoImpact*.php,app/Services/{ContentWorkSelector,ContentGenerationPromptGenerator,ContentOpportunityQueuer}.php | .ai/rules/requests-services.md |
 | app/{Jobs/RunCopilotSdkTitle.php,Http/Controllers/Admin/CopilotSdkRunController.php,Http/Requests/StoreCopilotSdkRunRequest.php},resources/views/admin/websites/partials/content-sdk*.blade.php | .ai/rules/requests-views-admin-websites-partials.md |
@@ -131,6 +132,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Models/{FormSubmission,ReviewInvitation}.php,Jobs/Send*Invitation.php,Services/ReviewInvitationService.php,Http/Controllers/Admin/*ReviewInvitationController.php},resources/views/admin/form-submissions/** | .ai/rules/views-admin-form-submissions.md |
 | app/{Actions/ActivateWebsiteAuditTrial.php,Enums/OnboardingLifecycleStep.php,Models/{User.php,OnboardingLifecycleMessage.php},Services/OnboardingLifecycleManager.php,Notifications/OnboardingLifecycleNotification.php,Listeners/MarkOnboardingLifecycleMessageSent.php,Console/Commands/DispatchDueOnboardingLifecycleMessages.php,Http/Controllers/OnboardingLifecycleClickController.php},database/migrations/**/*onboarding_lifecycle*.php,resources/views/admin/onboarding-leads/**,routes/{web,console}.php,tests/Feature/{OnboardingLifecycleTest.php,OnboardingLeadTest.php} | .ai/rules/views-admin-onboarding-leads-feature.md |
 | app/{Services,Models}/**/*Prospect*.php,config/outreach.php,resources/views/admin/prospects/** | .ai/rules/views-admin-prospects.md |
+| app/Services/GoogleAdsClient.php,app/Http/Controllers/Admin/GoogleAdsController.php,resources/views/admin/websites/google-ads.blade.php,tests/Feature/GoogleAdsConnectionTest.php | .ai/rules/views-admin-websites-feature.md |
 | resources/views/admin/websites/partials/content*.blade.php | .ai/rules/views-admin-websites-partials.md |
 | app/{Ai/Agents/WebsiteDataAssistant.php,Services/WebsiteAiContext.php,Http/Controllers/Admin/WebsiteAiChatController.php,Models/WebsiteAiQuestion.php},resources/views/admin/websites/show.blade.php,routes/web.php | .ai/rules/views-admin-websites.md |
 | app/Http/Controllers/Admin/DashboardController.php,resources/views/admin/dashboard.blade.php | .ai/rules/views-admin.md |

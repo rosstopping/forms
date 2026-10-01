@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\Website;
 use App\Services\GoogleAdsOAuthClient;
 use App\Support\MembershipPlan;
+use Illuminate\Http\Client\Request as ClientRequest;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
@@ -80,24 +81,86 @@ test('account selection verifies access and stores the account currency', functi
     $website = Website::factory()->for($owner, 'owner')->create();
     GoogleAdsConnection::factory()->for($website)->create();
     Http::fake([
-        'https://googleads.test/v25/customers/1234567890/googleAds:searchStream' => Http::response([[
-            'results' => [['customer' => [
-                'id' => '1234567890',
-                'descriptiveName' => 'Sitewell',
-                'currencyCode' => 'GBP',
-                'manager' => false,
-            ]]],
-        ]]),
+        'https://googleads.test/v25/customers:listAccessibleCustomers' => Http::response(['resourceNames' => ['customers/1234567890']]),
+        'https://googleads.test/v25/customers/1234567890/googleAds:searchStream' => Http::response([['results' => [['customer' => [
+            'id' => '1234567890', 'descriptiveName' => 'Sitewell', 'currencyCode' => 'GBP', 'manager' => false,
+        ]]]]]),
     ]);
 
     $this->actingAs($owner)->post(route('admin.google-ads.account', $website), [
-        'customer_id' => '123-456-7890',
+        'account' => '1234567890',
     ])->assertRedirect(route('admin.google-ads.index', $website));
 
     expect($website->googleAdsConnection->fresh())
         ->customer_id->toBe('1234567890')
         ->currency_code->toBe('GBP');
     Http::assertSent(fn ($request): bool => $request->hasHeader('Authorization', 'Bearer test-access-token'));
+});
+
+test('account picker shows names and manager clients without listing managers as selectable accounts', function (): void {
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    GoogleAdsConnection::factory()->for($website)->create();
+    Http::fake(function (ClientRequest $request) {
+        if (str_ends_with($request->url(), 'customers:listAccessibleCustomers')) {
+            return Http::response(['resourceNames' => ['customers/1111111111', 'customers/2222222222']]);
+        }
+        if (str_contains($request->url(), '/customers/1111111111/')) {
+            if (str_contains((string) $request['query'], 'FROM customer_client')) {
+                return Http::response([['results' => [
+                    ['customerClient' => ['id' => '3333333333', 'descriptiveName' => 'Ross Plumbing', 'currencyCode' => 'GBP', 'manager' => false, 'level' => 2, 'status' => 'ENABLED', 'hidden' => false]],
+                    ['customerClient' => ['id' => '4444444444', 'descriptiveName' => 'Sub-manager', 'manager' => true, 'level' => 1, 'status' => 'ENABLED', 'hidden' => false]],
+                ]]]);
+            }
+
+            return Http::response([['results' => [['customer' => ['id' => '1111111111', 'descriptiveName' => 'Agency manager', 'currencyCode' => 'GBP', 'manager' => true]]]]]);
+        }
+        if (str_contains($request->url(), '/customers/2222222222/')) {
+            return Http::response([['results' => [['customer' => ['id' => '2222222222', 'descriptiveName' => 'Sitewell Ads', 'currencyCode' => 'GBP', 'manager' => false]]]]]);
+        }
+        if (str_contains($request->url(), '/customers/3333333333/')) {
+            return Http::response([['results' => [['customer' => ['id' => '3333333333', 'descriptiveName' => 'Ross Plumbing', 'currencyCode' => 'GBP', 'manager' => false]]]]]);
+        }
+
+        return Http::response([], 404);
+    });
+
+    $this->actingAs($owner)->get(route('admin.google-ads.index', $website))
+        ->assertSuccessful()
+        ->assertSee('Ross Plumbing')
+        ->assertSee('Sitewell Ads')
+        ->assertSee('value="1111111111:3333333333"', false)
+        ->assertSee('value="2222222222"', false)
+        ->assertDontSee('value="1111111111"', false)
+        ->assertDontSee('value="1111111111:4444444444"', false)
+        ->assertDontSee('Ads customer ID');
+
+    $this->actingAs($owner)->post(route('admin.google-ads.account', $website), ['account' => '1111111111:3333333333'])
+        ->assertRedirect(route('admin.google-ads.index', $website));
+    expect($website->googleAdsConnection->fresh())
+        ->customer_id->toBe('3333333333')
+        ->login_customer_id->toBe('1111111111')
+        ->customer_name->toBe('Ross Plumbing');
+    Http::assertSent(fn (ClientRequest $request): bool => str_contains($request->url(), '/customers/3333333333/')
+        && $request->hasHeader('login-customer-id', '1111111111'));
+});
+
+test('account picker rejects a customer not in the available account list', function (): void {
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    GoogleAdsConnection::factory()->for($website)->create();
+    Http::fake([
+        'https://googleads.test/v25/customers:listAccessibleCustomers' => Http::response(['resourceNames' => ['customers/1234567890']]),
+        'https://googleads.test/v25/customers/1234567890/googleAds:searchStream' => Http::response([['results' => [['customer' => [
+            'id' => '1234567890', 'descriptiveName' => 'Sitewell', 'currencyCode' => 'GBP', 'manager' => false,
+        ]]]]]),
+    ]);
+
+    $this->actingAs($owner)->post(route('admin.google-ads.account', $website), ['account' => '9999999999'])
+        ->assertSessionHasErrors('account');
+
+    expect($website->googleAdsConnection->fresh()->customer_id)->toBeNull();
+    Http::assertSentCount(2);
 });
 
 test('unverified account selection does not replace the existing account', function (): void {
@@ -107,7 +170,7 @@ test('unverified account selection does not replace the existing account', funct
     Http::fake(['https://googleads.test/*' => Http::response(['error' => ['message' => 'No access']], 403)]);
 
     $this->actingAs($owner)->post(route('admin.google-ads.account', $website), [
-        'customer_id' => '1234567890',
+        'account' => '1234567890',
     ])->assertSessionHas('error');
 
     expect($website->googleAdsConnection->fresh()->customer_id)->toBe('1111111111');
