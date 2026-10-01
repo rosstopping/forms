@@ -176,7 +176,7 @@ it('offers an email copy after the results and extends the requested report to f
         ->assertSee('data-audit-book-call', false)
         ->assertSee('data-audit-email-open', false)
         ->assertSee('aria-label="Get a copy by email"', false)
-        ->assertSee('class="size-6 stroke-current sm:hidden"', false)
+        ->assertSee('class="size-6 sm:hidden"', false)
         ->assertSee('aria-controls="audit-email-dialog"', false)
         ->assertSee('fixed inset-0 m-auto max-h-[calc(100dvh-2rem)]', false)
         ->assertSee('30000')
@@ -289,7 +289,7 @@ it('shows measured search estimates and a conditional six-month scenario', funct
         ],
     ]);
 
-    $this->get(route('marketing.website-audits.show', $audit))
+    $response = $this->get(route('marketing.website-audits.show', $audit))
         ->assertSuccessful()
         ->assertSee('50%')
         ->assertSee('URLs in sitemap')
@@ -305,6 +305,16 @@ it('shows measured search estimates and a conditional six-month scenario', funct
         ->assertSee('128–160')
         ->assertDontSee('128–145')
         ->assertSee('not a guarantee.');
+
+    $document = new DOMDocument;
+    @$document->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
+    $arrows = (new DOMXPath($document))->query('//section[@aria-labelledby="audit-projection-title"]//svg');
+
+    expect($arrows)->toHaveCount(2)
+        ->and($arrows->item(0)->getAttribute('class'))->toBe('size-6 sm:hidden')
+        ->and($arrows->item(0)->getElementsByTagName('path')->item(0)->getAttribute('d'))->toBe('M19.5 13.5 12 21m0 0-7.5-7.5M12 21V3')
+        ->and($arrows->item(1)->getAttribute('class'))->toBe('hidden size-6 sm:block')
+        ->and($arrows->item(1)->getElementsByTagName('path')->item(0)->getAttribute('d'))->toBe('M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3');
 });
 
 it('shows page-one rankings beside striking-distance rankings and falls back to other terms', function (): void {

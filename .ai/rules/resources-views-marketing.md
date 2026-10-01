@@ -45,3 +45,6 @@ The current public offer is managed website and SEO improvements for UK business
 
 ## Use green for the leading search position
 In the public audit competitor comparison, lower Google position numbers indicate the lead. Colour the winning number green for either site, keep the losing or tied number neutral, and do not use the marketing garden token because it is coral on public pages.
+
+## Use directional SVGs in the six-month comparison
+The six-month projection comparison uses an inline downward arrow SVG while its cards stack below sm, and an inline rightward arrow SVG at sm and wider. Keep the arrows decorative and aligned with the card direction; do not restore the text arrow.

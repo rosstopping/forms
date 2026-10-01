@@ -280,7 +280,14 @@
                                 <p class="text-base text-ink/65 sm:text-sm">Today</p>
                                 <p class="text-4xl font-medium tracking-tight tabular-nums text-ink sm:text-5xl">{{ number_format($projection['baseline_monthly_visits']) }}</p>
                             </div>
-                            <div class="text-center text-2xl text-garden" aria-hidden="true">→</div>
+                            <div class="flex justify-center text-garden" aria-hidden="true">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 sm:hidden">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 13.5 12 21m0 0-7.5-7.5M12 21V3" />
+                                </svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="hidden size-6 sm:block">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                                </svg>
+                            </div>
                             <div class="grid gap-2 rounded-2xl bg-garden/10 p-5 sm:p-6">
                                 <p class="text-base font-medium text-garden sm:text-sm">Possible in six months</p>
                                 <p class="text-4xl font-medium tracking-tight tabular-nums text-ink sm:text-5xl">{{ number_format($projection['six_month_low']) }}–{{ number_format($projection['six_month_high']) }}</p>
