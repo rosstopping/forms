@@ -22,7 +22,6 @@
             <h1 class="max-w-[22ch] font-sans text-4xl font-medium tracking-tight text-balance sm:text-4xl lg:text-6xl">{{ $landing['heading'] }}</h1>
             <p class="max-w-[40ch] text-pretty text-xl font-medium text-moss sm:text-2xl">{{ $landing['promise'] }}</p>
             <p class="max-w-[48ch] text-pretty text-base text-ink/75 sm:text-lg">{{ $landing['intro'] }}</p>
-            <p class="text-base tabular-nums"><strong class="font-semibold">From £{{ $price }}/month</strong> <span class="text-ink/70">· Cancel anytime.</span></p>
             <x-marketing.ppc-actions primary />
             <p class="text-base text-ink/65 sm:text-sm">No email or website access needed for the check.</p>
         </div>
@@ -48,7 +47,7 @@
     <ul role="list" class="mx-auto flex max-w-7xl flex-wrap justify-between gap-x-8 gap-y-3 px-5 text-base font-medium text-moss sm:px-8 sm:text-sm lg:px-10">
         <li>Based in Doncaster, working across the UK</li>
         <li>Work carried out for you</li>
-        <li>No setup fee or long-term contract</li>
+        <li>No long-term contract</li>
     </ul>
 </div>
 
@@ -120,7 +119,7 @@
         <div class="grid content-start gap-5">
             <p class="font-mono text-base text-garden sm:text-sm">Clear weekly reporting</p>
             <h2 class="max-w-[26ch] font-sans text-3xl font-medium tracking-tight text-balance sm:text-4xl">Know what changed. And what comes next.</h2>
-            <p class="max-w-[48ch] text-pretty text-lg text-ink/85">You should not have to chase someone to find out what your monthly fee is paying for.</p>
+            <p class="max-w-[48ch] text-pretty text-lg text-ink/85">See the work completed on your website and what comes next.</p>
             <p class="text-base font-medium"><a href="https://www.loom.com/share/d406218f4a2843f7a7d8abbf804f2ba6" target="_blank" rel="noopener noreferrer" class="inline-flex min-h-12 items-center underline decoration-paper/40 underline-offset-4 hover:decoration-paper">Watch the real Sitewell walkthrough <span class="pl-3" aria-hidden="true">↗</span></a></p>
         </div>
         <dl class="grid divide-y divide-paper/20">
@@ -128,31 +127,6 @@
                 <div class="grid gap-2 py-5 first:pt-0 last:pb-0"><dt class="font-medium">{{ $title }}</dt><dd class="text-pretty text-base text-ink/85">{{ $copy }}</dd></div>
             @endforeach
         </dl>
-    </div>
-</section>
-
-<section id="pricing" class="py-14 sm:py-20">
-    <div class="mx-auto grid max-w-7xl gap-10 px-5 sm:px-8 lg:grid-cols-2 lg:px-10">
-        <div class="grid content-start gap-5">
-            <p class="font-mono text-base text-moss sm:text-sm">One website. Ongoing care.</p>
-            <h2 class="max-w-[26ch] font-sans text-3xl font-medium tracking-tight text-balance sm:text-4xl">Managed SEO, with the price in plain sight.</h2>
-            <div class="flex flex-wrap items-baseline gap-2 tabular-nums"><p class="font-sans text-5xl font-semibold tracking-tight">£{{ $price }}</p><p class="text-lg text-ink/70">/month</p></div>
-            <p class="font-medium">No setup fee. No long-term contract. Cancel anytime.</p>
-            @if ($offer)
-                <p class="max-w-[56ch] text-pretty text-base text-ink/70 sm:text-sm">Current Growth offer, available until {{ \Illuminate\Support\Carbon::parse($offer['ends_at'])->format('j F Y') }}. Standard Growth price: £{{ config('memberships.plans.growth.price') }}/month.</p>
-            @endif
-            <x-marketing.ppc-actions />
-        </div>
-        <div class="grid content-start gap-6">
-            <h3 class="font-sans text-2xl font-medium tracking-tight">Included in Growth</h3>
-            <ul role="list" class="grid gap-3 text-base text-ink/80">
-                @foreach (['Regular website improvements, carried out for you', 'Weekly website audits and clear progress reporting', 'Google ranking tracking and search performance monitoring', 'On-page optimisation and technical SEO improvements', 'Content creation and optimisation within your plan', 'Local website content where relevant to your business'] as $included)
-                    <li class="border-b border-ink/10 pb-3">{{ $included }}</li>
-                @endforeach
-            </ul>
-            <p class="text-pretty text-base text-ink/70 sm:text-sm">Growth includes up to one scheduled content improvement per week, prepared for review. Google Business Profile management is on Complete. AI visibility checks depend on your setup and supported features; they do not cover every AI provider.</p>
-            <p class="text-base sm:text-sm"><a href="{{ route('marketing.pricing') }}" class="font-medium underline decoration-ink/30 underline-offset-4 hover:decoration-ink">Compare the full plans and inclusions</a></p>
-        </div>
     </div>
 </section>
 

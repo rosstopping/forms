@@ -15,6 +15,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Jobs,Services/SeoIntelligence,Http/Controllers/Admin}/**/*Seo*.php,app/Models/Website.php | .ai/rules/admin-models.md |
 | app/{Http/Controllers/{CalWebhookController.php,Admin/OnboardingLeadController.php},Models/{User.php,WebsiteAudit.php}},resources/views/admin/onboarding-leads/**,routes/web.php,tests/Feature/{CalWebhookTest.php,OnboardingLeadTest.php} | .ai/rules/admin-onboarding-leads-feature.md |
 | app/{Mail,Models,Services,Http/Controllers}/**/*ProspectOutreach*.php,resources/views/admin/prospects/** | .ai/rules/admin-prospects.md |
+| app/{Services/GoogleAds*,Http/Controllers/Admin/GoogleAdsController.php,Http/Requests/StoreGoogleAdsCampaignDraftRequest.php},resources/views/admin/websites/google-ads.blade.php | .ai/rules/admin-requests-views-admin-websites.md |
 | app/{Services/Content*,Jobs/StartContentGeneration.php,Console/Commands/*Content*,Http/Controllers/Admin/ContentPlanController.php,Http/Requests/UpdateContentPlanRequest.php} | .ai/rules/admin-requests.md |
 | app/{Http/Controllers/Admin,Services,Jobs}/**/*Pixel*.php,resources/views/admin/{websites/**,website-health-reports/**},routes/web.php | .ai/rules/admin-services-jobs-views-adminwebsites.md |
 | app/{Http/Controllers/Admin,Services,Jobs}/**/*SeoProspect*.php | .ai/rules/admin-services-jobs.md |
@@ -45,6 +46,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | {app/Http/Controllers/MarketingController.php,wordpress-plugin/sitewell-by-digizu/**} | .ai/rules/controllers-sitewell-by-digizu.md |
 | app/{Models,Services,Jobs,Http/Controllers}/**/*Prospect*.php,resources/views/admin/prospects/** | .ai/rules/controllers-views-admin-prospects.md |
 | app/{Models/Website.php,Http/Controllers/FormSubmissionController.php},resources/views/admin/websites/show.blade.php | .ai/rules/controllers-views-admin-websites.md |
+| {config/ppc.php,app/Http/Controllers/PpcLandingController.php,resources/views/marketing/ppc.blade.php,tests/Feature/PpcLandingTest.php} | .ai/rules/controllers-views-marketing-feature.md |
 | {config/seo_library.php,config/marketing.php,app/Http/Controllers/MarketingController.php,resources/views/marketing/**} | .ai/rules/controllers-views-marketing.md |
 | app/{Http/Controllers/FormSubmissionController.php,Services/SpamDetector.php}, app/{Http/Controllers/FormSubmissionController.php,Services/RedirectResolver.php} | .ai/rules/controllers.md |
 | app/{Services/{CopilotSdkTitleRunner,GithubSdkPublisher},Console/Commands/TestCopilotSdkRepository,Models/CopilotSdkTestRun}.php,resources/copilot-worker/** | .ai/rules/copilot-worker.md |
@@ -78,6 +80,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | resources/views/{vendor/mail/**,emails/**,mail/**,components/email-layout.blade.php,components/prospect-audit-block.blade.php} | .ai/rules/mail.md |
 | {app/Actions/StoreSitewellContactLead.php,app/Http/Controllers/OnboardingEnquiryController.php,resources/views/marketing/contact.blade.php,config/marketing.php,tests/Feature/MarketingPagesTest.php} | .ai/rules/marketing-feature.md |
 | resources/views/marketing/website-audit.blade.php,app/{Jobs/GenerateWebsiteAudit.php,Services/MarketingAudit*.php,Models/WebsiteAudit.php} | .ai/rules/marketing-jobs.md |
+| {config/ppc.php,resources/views/marketing/ppc.blade.php,resources/js/marketing-events.js} | .ai/rules/marketing-js.md |
 | {config/ppc.php,app/Support/MarketingJourney.php,app/Models/MarketingConversion.php,app/Events/MarketingConversionRecorded.php,app/Http/Controllers/{PpcLandingController,CalWebhookController,FreeSiteAuditController}.php,resources/{js/marketing-events.js,views/marketing/ppc.blade.php,views/layouts/ppc.blade.php}} | .ai/rules/marketing-layouts.md |
 | app/{Http/Controllers/FreeSiteAuditController.php,Http/Requests/StoreFreeSiteAuditRequest.php,Jobs/GenerateFreeSiteAudit.php,Mail/FreeSiteAuditResults.php},resources/views/{marketing/free-site-audit.blade.php,prospects/report.blade.php,mail/free-site-audit-results.blade.php} | .ai/rules/marketing.md |
 | app/{Support/MembershipPlan.php,Http/Middleware/EnsureMembershipFeature.php,Http/Controllers/Admin/WebsiteController.php},resources/views/admin/websites/**,routes/web.php | .ai/rules/middleware-controllers-admin-views-admin-websites.md |

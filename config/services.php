@@ -93,6 +93,12 @@ return [
         'business_profile_performance_url' => env('GOOGLE_BUSINESS_PROFILE_PERFORMANCE_URL', 'https://businessprofileperformance.googleapis.com/v1'),
     ],
 
+    'google_ads' => [
+        'client_id' => env('GOOGLE_ADS_CLIENT_ID', env('GOOGLE_CLIENT_ID')),
+        'client_secret' => env('GOOGLE_ADS_CLIENT_SECRET', env('GOOGLE_CLIENT_SECRET')),
+        'api_url' => env('GOOGLE_ADS_API_URL', 'https://googleads.googleapis.com/v25'),
+    ],
+
     'dataforseo' => [
         'login' => env('DATAFORSEO_LOGIN'),
         'password' => env('DATAFORSEO_PASSWORD'),

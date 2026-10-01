@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Support\MarketingJourney;
-use App\Support\MembershipPlan;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -17,13 +16,10 @@ class PpcLandingController extends Controller
         $landing = config("ppc.pages.{$page}");
         abort_unless(is_array($landing), 404);
         $attribution = $journey->capture($request, $landing['path']);
-        $offer = MembershipPlan::activeGrowthOffer();
 
         return view('marketing.ppc', [
             'landing' => $landing,
             'pageKey' => $page,
-            'price' => $offer['price'] ?? MembershipPlan::find(MembershipPlan::GROWTH)['price'],
-            'offer' => $offer,
             'attribution' => $attribution,
             'faqs' => [...$landing['faqs'], ...config('ppc.faqs')],
             'canonical' => isset($landing['canonical_landing'])

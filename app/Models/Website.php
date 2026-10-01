@@ -217,6 +217,16 @@ class Website extends Model
         return $this->hasOne(SearchConsoleConnection::class);
     }
 
+    public function googleAdsConnection(): HasOne
+    {
+        return $this->hasOne(GoogleAdsConnection::class);
+    }
+
+    public function googleAdsCampaignDrafts(): HasMany
+    {
+        return $this->hasMany(GoogleAdsCampaignDraft::class);
+    }
+
     public function businessProfileConnection(): HasOne
     {
         return $this->hasOne(BusinessProfileConnection::class);

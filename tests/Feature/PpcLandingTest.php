@@ -2,7 +2,7 @@
 
 use Illuminate\Support\Carbon;
 
-it('renders each tailored PPC page with the existing audit action and accurate offer', function (string $page): void {
+it('renders each tailored PPC page without prices and with the existing audit action', function (string $page): void {
     $this->travelTo(Carbon::parse('2026-09-30'));
     $landing = config('ppc.pages.'.$page);
     $response = $this->get(route('marketing.ppc.'.$page));
@@ -11,10 +11,10 @@ it('renders each tailored PPC page with the existing audit action and accurate o
         ->assertSee($landing['heading'])
         ->assertSee($landing['problem_title'])
         ->assertSee($landing['example'])
-        ->assertSee('£316')
-        ->assertDontSee('VAT')
-        ->assertSee('31 December 2026')
-        ->assertSee('No setup fee')
+        ->assertDontSee('£')
+        ->assertDontSee('Current Growth offer')
+        ->assertDontSee('No setup fee')
+        ->assertSee('No long-term contract')
         ->assertSee('FAQPage')
         ->assertSee('href="'.route('marketing.free-site-audit').'"', false)
         ->assertSee('href="'.route('marketing.ppc.book').'"', false)
@@ -35,10 +35,12 @@ it('renders each tailored PPC page with the existing audit action and accurate o
     $response->assertSee('<link rel="canonical" href="'.$canonical.'">', false);
 })->with(['doncaster', 'local', 'small-business', 'managed', 'rankings']);
 
-it('uses standard pricing after the configured offer expires', function (): void {
+it('keeps PPC pages free of prices after the configured offer expires', function (): void {
     $this->travelTo(Carbon::parse('2027-01-01'));
     $this->get(route('marketing.ppc.managed'))->assertSuccessful()
-        ->assertSee('£395')->assertDontSee('£316')->assertDontSee('Current Growth offer');
+        ->assertDontSee('£')
+        ->assertDontSee('Current Growth offer')
+        ->assertSee('href="'.route('marketing.free-site-audit').'"', false);
 });
 
 it('connects PPC pages to the service hub and only adds canonical pages to the sitemap', function (): void {
