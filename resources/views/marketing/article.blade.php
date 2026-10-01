@@ -33,7 +33,7 @@
             <p class="mt-10 text-base font-medium sm:text-sm text-garden">{{ $article['category'] }}</p>
             <h1 class="mt-5 max-w-[20ch] font-sans text-4xl font-medium tracking-tight text-pretty sm:text-6xl">{{ $article['title'] }}</h1>
             <p class="mt-6 max-w-[48ch] text-pretty text-lg text-ink/65 sm:text-base">{{ $article['excerpt'] }}</p>
-            <p class="mt-6 font-mono text-sm text-ink/45">{{ $article['date'] }} · {{ $article['read_time'] }} · By <a href="{{ route('marketing.about') }}" class="underline underline-offset-4 hover:text-ink">Sitewell</a> @if (isset($article['date_modified'])) · Updated 28 September 2026 @endif</p>
+            <p class="mt-6 font-mono text-sm text-ink/45">{{ $article['date'] }} · {{ $article['read_time'] }} · By <a href="{{ route('marketing.about') }}" class="underline underline-offset-4 hover:text-ink">Sitewell</a> @if (isset($article['date_modified'])) · Updated {{ \Illuminate\Support\Carbon::parse($article['date_modified'])->format('j F Y') }} @endif</p>
         </header>
         <div class="prose mx-auto mt-16 max-w-[70ch] border-t border-ink/10 px-5 pt-12 sm:px-8 lg:px-10">
             <x-marketing.content-sections :sections="$article['sections']" />

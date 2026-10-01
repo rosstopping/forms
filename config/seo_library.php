@@ -2546,8 +2546,8 @@ return [
             'seo_title' => 'Why competitors rank above you | Sitewell',
             'excerpt' => 'Compare the actual pages above yours, identify differences in intent and usefulness, and choose improvements that fit your business.',
             'category' => 'SEO problems',
-            'date' => '28 September 2026',
-            'date_iso' => '2026-09-28',
+            'date' => '24 September 2026',
+            'date_iso' => '2026-09-24',
             'read_time' => '2 min read',
             'sections' => [
                 [
@@ -2668,8 +2668,8 @@ return [
             'seo_title' => 'Google Business Profile not ranking? | Sitewell',
             'excerpt' => 'Work through profile eligibility, relevance and location before assuming a missing map result means your website SEO has failed.',
             'category' => 'SEO problems',
-            'date' => '28 September 2026',
-            'date_iso' => '2026-09-28',
+            'date' => '5 September 2026',
+            'date_iso' => '2026-09-05',
             'read_time' => '2 min read',
             'sections' => [
                 [
@@ -2780,8 +2780,8 @@ return [
             'seo_title' => 'Website traffic but no enquiries? | Sitewell',
             'excerpt' => 'Find out whether the issue is unsuitable traffic, unclear service pages, a broken contact route or enquiries that are not being followed up.',
             'category' => 'SEO problems',
-            'date' => '28 September 2026',
-            'date_iso' => '2026-09-28',
+            'date' => '17 August 2026',
+            'date_iso' => '2026-08-17',
             'read_time' => '2 min read',
             'sections' => [
                 [
@@ -2909,8 +2909,8 @@ return [
             'seo_title' => 'From page 2 to page 1 on Google | Sitewell',
             'excerpt' => 'Use near-ranking queries to choose focused page improvements without treating an average position or a page-one promise as a business result.',
             'category' => 'SEO problems',
-            'date' => '28 September 2026',
-            'date_iso' => '2026-09-28',
+            'date' => '29 July 2026',
+            'date_iso' => '2026-07-29',
             'read_time' => '2 min read',
             'sections' => [
                 [
@@ -3014,8 +3014,8 @@ return [
             'seo_title' => 'How to rank for near me searches | Sitewell',
             'excerpt' => 'Build useful local service information and a truthful business presence instead of filling pages with the words “near me”.',
             'category' => 'Local SEO',
-            'date' => '28 September 2026',
-            'date_iso' => '2026-09-28',
+            'date' => '8 July 2026',
+            'date_iso' => '2026-07-08',
             'read_time' => '2 min read',
             'sections' => [
                 [
@@ -3127,8 +3127,8 @@ return [
             'seo_title' => 'Get more local customers from Google | Sitewell',
             'excerpt' => 'Connect local discovery to a useful page, an easy enquiry and dependable follow-up, then measure which searches bring suitable customers.',
             'category' => 'Local SEO',
-            'date' => '28 September 2026',
-            'date_iso' => '2026-09-28',
+            'date' => '18 June 2026',
+            'date_iso' => '2026-06-18',
             'read_time' => '2 min read',
             'sections' => [
                 [
@@ -3250,8 +3250,8 @@ return [
             'seo_title' => 'Find your website’s keyword rankings | Sitewell',
             'excerpt' => 'Use Search Console to find real query data, connect searches to pages and understand why a rank tracker may report a different position.',
             'category' => 'Search measurement',
-            'date' => '28 September 2026',
-            'date_iso' => '2026-09-28',
+            'date' => '28 May 2026',
+            'date_iso' => '2026-05-28',
             'read_time' => '2 min read',
             'sections' => [
                 [
@@ -3363,8 +3363,8 @@ return [
             'seo_title' => 'Find SEO problems on your website | Sitewell',
             'excerpt' => 'Check indexing, page clarity, internal links and enquiry paths in a useful order, without treating every audit warning as an emergency.',
             'category' => 'SEO problems',
-            'date' => '28 September 2026',
-            'date_iso' => '2026-09-28',
+            'date' => '7 May 2026',
+            'date_iso' => '2026-05-07',
             'read_time' => '2 min read',
             'sections' => [
                 [
@@ -3494,8 +3494,8 @@ return [
             'seo_title' => 'What is local SEO? | Sitewell',
             'excerpt' => 'Learn how local search connects a business, its services and its location, and why website results and map results need different expectations.',
             'category' => 'Local SEO',
-            'date' => '28 September 2026',
-            'date_iso' => '2026-09-28',
+            'date' => '17 April 2026',
+            'date_iso' => '2026-04-17',
             'read_time' => '2 min read',
             'sections' => [
                 [
@@ -3624,8 +3624,8 @@ return [
             'seo_title' => 'How long does SEO take? | Sitewell',
             'excerpt' => 'Set realistic expectations by separating implementation, discovery, ranking changes and customer enquiries, then agree useful review points.',
             'category' => 'SEO decisions',
-            'date' => '28 September 2026',
-            'date_iso' => '2026-09-28',
+            'date' => '27 March 2026',
+            'date_iso' => '2026-03-27',
             'read_time' => '2 min read',
             'sections' => [
                 [
@@ -3750,8 +3750,8 @@ return [
             'seo_title' => 'How much does SEO cost in the UK? | Sitewell',
             'excerpt' => 'Compare SEO quotes by scope, implementation and responsibility, with current Sitewell pricing linked separately from illustrative budget calculations.',
             'category' => 'SEO decisions',
-            'date' => '28 September 2026',
-            'date_iso' => '2026-09-28',
+            'date' => '6 March 2026',
+            'date_iso' => '2026-03-06',
             'read_time' => '2 min read',
             'sections' => [
                 [
@@ -3858,8 +3858,8 @@ return [
             'seo_title' => 'SEO vs Google Ads for small businesses | Sitewell',
             'excerpt' => 'Compare paid and organic search by urgency, landing-page readiness and measurement, rather than assuming one channel always wins.',
             'category' => 'SEO decisions',
-            'date' => '28 September 2026',
-            'date_iso' => '2026-09-28',
+            'date' => '13 February 2026',
+            'date_iso' => '2026-02-13',
             'read_time' => '2 min read',
             'sections' => [
                 [
@@ -3989,8 +3989,8 @@ return [
             'seo_title' => 'What is a website SEO audit? | Sitewell',
             'excerpt' => 'Understand what a useful SEO audit checks, what it cannot establish automatically and how a report should become a prioritised plan.',
             'category' => 'SEO foundations',
-            'date' => '28 September 2026',
-            'date_iso' => '2026-09-28',
+            'date' => '23 January 2026',
+            'date_iso' => '2026-01-23',
             'read_time' => '2 min read',
             'sections' => [
                 [
@@ -4119,8 +4119,8 @@ return [
             'seo_title' => 'What are Google search impressions? | Sitewell',
             'excerpt' => 'Understand impressions, clicks and click-through rate, then use page-level trends to decide whether growing visibility is useful.',
             'category' => 'Search measurement',
-            'date' => '28 September 2026',
-            'date_iso' => '2026-09-28',
+            'date' => '30 December 2025',
+            'date_iso' => '2025-12-30',
             'read_time' => '2 min read',
             'sections' => [
                 [
@@ -4249,8 +4249,8 @@ return [
             'seo_title' => 'What is domain authority? | Sitewell',
             'excerpt' => 'Learn what third-party authority scores estimate and why a higher score is not the same as better rankings or more customers.',
             'category' => 'Search measurement',
-            'date' => '28 September 2026',
-            'date_iso' => '2026-09-28',
+            'date' => '9 December 2025',
+            'date_iso' => '2025-12-09',
             'read_time' => '2 min read',
             'sections' => [
                 [
@@ -4361,8 +4361,8 @@ return [
             'seo_title' => 'Do Google reviews help SEO? | Sitewell',
             'excerpt' => 'Understand where reviews fit into local visibility and customer confidence, without buying ratings or treating a review count as a ranking guarantee.',
             'category' => 'Local SEO',
-            'date' => '28 September 2026',
-            'date_iso' => '2026-09-28',
+            'date' => '18 November 2025',
+            'date_iso' => '2025-11-18',
             'read_time' => '2 min read',
             'sections' => [
                 [
@@ -4477,8 +4477,8 @@ return [
             'seo_title' => 'Does new content improve Google rankings? | Sitewell',
             'excerpt' => 'Decide when to publish a new page, improve an existing one or leave useful content alone, based on a genuine search need.',
             'category' => 'SEO foundations',
-            'date' => '28 September 2026',
-            'date_iso' => '2026-09-28',
+            'date' => '28 October 2025',
+            'date_iso' => '2025-10-28',
             'read_time' => '2 min read',
             'sections' => [
                 [
@@ -4607,8 +4607,8 @@ return [
             'seo_title' => 'Can AI assistants find your business? | Sitewell',
             'excerpt' => 'Improve the public information assistants may find, and assess AI visibility without treating one generated answer as a stable ranking.',
             'category' => 'AI search',
-            'date' => '28 September 2026',
-            'date_iso' => '2026-09-28',
+            'date' => '7 October 2025',
+            'date_iso' => '2025-10-07',
             'read_time' => '2 min read',
             'sections' => [
                 [

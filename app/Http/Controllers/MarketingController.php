@@ -264,8 +264,8 @@ class MarketingController extends Controller
                 'title' => 'How often should I update my website?',
                 'seo_title' => 'How often to update a website',
                 'excerpt' => 'A practical guide to how often a business website should be updated, covering content changes, technical maintenance, SEO improvements and redesign decisions.',
-                'date' => '21 September 2026',
-                'date_iso' => '2026-09-21',
+                'date' => '16 September 2025',
+                'date_iso' => '2025-09-16',
                 'read_time' => '8 min read',
                 'sections' => [
                     [
@@ -365,8 +365,8 @@ class MarketingController extends Controller
                 'title' => 'How do I know if my SEO is working?',
                 'seo_title' => 'How to know if SEO is working',
                 'excerpt' => 'A practical guide to measuring whether SEO is helping your business, using clicks, impressions, rankings, conversions and leads rather than vanity metrics.',
-                'date' => '21 September 2026',
-                'date_iso' => '2026-09-21',
+                'date' => '26 August 2025',
+                'date_iso' => '2025-08-26',
                 'read_time' => '8 min read',
                 'sections' => [
                     [
@@ -457,8 +457,8 @@ class MarketingController extends Controller
                 'title' => 'Why isn\'t my website showing on Google?',
                 'seo_title' => 'Website not showing on Google?',
                 'excerpt' => 'A practical guide to diagnosing when a business website is missing from Google, including the difference between indexing issues and low rankings.',
-                'date' => '18 September 2026',
-                'date_iso' => '2026-09-18',
+                'date' => '5 August 2025',
+                'date_iso' => '2025-08-05',
                 'read_time' => '8 min read',
                 'sections' => [
                     [
@@ -548,8 +548,8 @@ class MarketingController extends Controller
                 'title' => 'Why has my website traffic dropped?',
                 'seo_title' => 'Why website traffic drops',
                 'excerpt' => 'A practical explanation of why website traffic can fall, from algorithm shifts and ranking losses to tracking errors, seasonality, and content decay.',
-                'date' => '18 September 2026',
-                'date_iso' => '2026-09-18',
+                'date' => '15 July 2025',
+                'date_iso' => '2025-07-15',
                 'read_time' => '10 min read',
                 'sections' => [
                     [
@@ -655,8 +655,8 @@ class MarketingController extends Controller
                 'title' => 'Why isn\'t my website ranking on Google?',
                 'seo_title' => 'Why your website is not ranking',
                 'excerpt' => 'A practical guide for small businesses on why pages struggle in Google, what to check first, and what to fix before spending more on marketing.',
-                'date' => '16 September 2026',
-                'date_iso' => '2026-09-16',
+                'date' => '24 June 2025',
+                'date_iso' => '2025-06-24',
                 'read_time' => '9 min read',
                 'sections' => [
                     [
@@ -758,8 +758,8 @@ class MarketingController extends Controller
                 'title' => 'What does website maintenance actually include?',
                 'seo_title' => 'Website maintenance explained',
                 'excerpt' => 'A practical guide to what website maintenance should cover for a small business, what hosting does not include, and how to tell whether your site is being properly looked after.',
-                'date' => '31 August 2026',
-                'date_iso' => '2026-08-31',
+                'date' => '3 June 2025',
+                'date_iso' => '2025-06-03',
                 'read_time' => '8 min read',
                 'sections' => [
                     [
@@ -887,8 +887,8 @@ class MarketingController extends Controller
                 'title' => 'A clean website handover is the start of good care',
                 'seo_title' => 'A clean website handover',
                 'excerpt' => 'The five connections and decisions that turn a finished build into a website your team can confidently support.',
-                'date' => '8 August 2026',
-                'date_iso' => '2026-08-08',
+                'date' => '13 May 2025',
+                'date_iso' => '2025-05-13',
                 'read_time' => '6 min read',
                 'sections' => [
                     ['heading' => 'A launch is a beginning, not a finish line', 'body' => 'The fragile period for a website often starts just after launch. Forms need watching, search data needs time to settle, and small technical issues can quietly become expensive. A good handover makes ownership explicit before any of that happens.'],
@@ -902,8 +902,8 @@ class MarketingController extends Controller
                 'title' => 'Build forms that never leave a lead wondering',
                 'seo_title' => 'Build forms that capture leads',
                 'excerpt' => 'A practical checklist for reliable delivery, useful notifications, spam handling, and better follow-up.',
-                'date' => '31 July 2026',
-                'date_iso' => '2026-07-31',
+                'date' => '22 April 2025',
+                'date_iso' => '2025-04-22',
                 'read_time' => '5 min read',
                 'sections' => [
                     ['heading' => 'Treat delivery as part of the experience', 'body' => 'A polished form is not complete when the button is pressed. Visitors need a clear success state, the right people need the submission promptly, and the data should be available when an inbox rule inevitably fails.'],
@@ -917,8 +917,8 @@ class MarketingController extends Controller
                 'title' => 'Turn search data into the next useful improvement',
                 'seo_title' => 'Turn search data into action',
                 'excerpt' => 'Move beyond top-line clicks by combining search queries, ranking pages, website findings, and specialist content decisions.',
-                'date' => '22 July 2026',
-                'date_iso' => '2026-07-22',
+                'date' => '2 April 2025',
+                'date_iso' => '2025-04-02',
                 'read_time' => '7 min read',
                 'sections' => [
                     ['heading' => 'Start with the page behind the query', 'body' => 'A ranking number becomes actionable when it is paired with the page Google is showing. That relationship reveals mismatched intent, competing pages, and opportunities to strengthen an existing answer.'],

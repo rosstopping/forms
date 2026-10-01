@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 it('renders every new page with its own metadata, content, canonical and sitemap entry', function (): void {
@@ -110,6 +111,30 @@ it('publishes article authorship and dates and keeps FAQ schema identical to vis
             expect($schema['mainEntity'][$index]['name'])->toBe($question)
                 ->and($schema['mainEntity'][$index]['acceptedAnswer']['text'])->toBe($answer);
         }
+    }
+});
+
+it('spreads journal publication dates across the last 18 months and keeps article dates consistent', function (): void {
+    $articles = $this->get(route('marketing.journal'))->assertSuccessful()->original->getData()['articles'];
+    $dates = array_column($articles, 'date_iso');
+
+    expect($dates)->toHaveCount(27)
+        ->and(array_unique($dates))->toHaveCount(27)
+        ->and($dates)->toBe(collect($dates)->sortDesc()->values()->all())
+        ->and(min($dates))->toBeGreaterThanOrEqual('2025-04-01')
+        ->and(min($dates))->toBeLessThanOrEqual('2025-04-30')
+        ->and(max($dates))->toBeGreaterThanOrEqual('2026-09-01')
+        ->and(max($dates))->toBeLessThanOrEqual('2026-10-01');
+
+    foreach ($articles as $article) {
+        expect($article['date'])->toBe(Carbon::parse($article['date_iso'])->format('j F Y'));
+
+        $response = $this->get(route('marketing.article', $article['slug']))->assertSuccessful()
+            ->assertSee($article['date']);
+        preg_match('/<script type="application\/ld\+json">(.*?)<\/script>/s', $response->getContent(), $match);
+        $schema = json_decode($match[1], true, flags: JSON_THROW_ON_ERROR);
+        expect($schema['datePublished'])->toBe($article['date_iso'])
+            ->and($schema['dateModified'])->toBeGreaterThanOrEqual($article['date_iso']);
     }
 });
 

@@ -215,7 +215,7 @@ it('adds blog posting structured data on article pages', function (): void {
         ->assertSee('application/ld+json')
         ->assertSee('BlogPosting')
         ->assertSee('What does website maintenance actually include?')
-        ->assertSee('2026-08-31');
+        ->assertSee('2025-06-03');
 });
 
 it('publishes an XML sitemap for the marketing site', function (): void {
