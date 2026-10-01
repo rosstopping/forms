@@ -10,6 +10,8 @@ use App\Mail\MonthlyRankingReport;
 use App\Mail\OnboardingEnquiryReceived;
 use App\Mail\ProspectOutreach;
 use App\Mail\WebsiteAiQuestionReported;
+use App\Mail\WebsiteAuditLeadReceived;
+use App\Mail\WebsiteAuditReport;
 use App\Mail\WebsiteHealthReportReady;
 use App\Mail\WeeklyRankingReport;
 use App\Models\ContentGeneration;
@@ -47,6 +49,8 @@ it('renders every Sitewell mailable with the shared inline email branding', func
         'submission' => new FormSubmissionReceived(FormSubmission::factory()->for($website)->create()),
         'audit' => new FreeSiteAuditResults($prospect),
         'outreach' => new ProspectOutreach($prospect),
+        'audit-report' => new WebsiteAuditReport(WebsiteAudit::factory()->create(['email' => 'owner@example.com'])),
+        'audit-lead' => new WebsiteAuditLeadReceived(WebsiteAudit::factory()->create(['email' => 'owner@example.com'])),
         'ai-report' => new WebsiteAiQuestionReported(WebsiteAiQuestion::factory()->for($website)->create()),
         'enquiry' => new OnboardingEnquiryReceived(['name' => 'Alex', 'email' => 'alex@example.com', 'agency' => null, 'website' => null, 'goals' => 'Help with my website.']),
     };
@@ -60,9 +64,9 @@ it('renders every Sitewell mailable with the shared inline email branding', func
         ->and($html)->toContain('Your website, well looked after.', '@media only screen')
         ->not->toContain('<script', '&lt;table', 'notification-logo-v2.1.png');
     if ($kind === 'outreach') {
-        expect($document->querySelectorAll('a')->length)->toBe(0);
+        expect($html)->toContain('Unsubscribe');
     }
-})->with(['weekly', 'monthly', 'health', 'generation', 'suggestions', 'submission', 'audit', 'outreach', 'ai-report', 'enquiry']);
+})->with(['weekly', 'monthly', 'health', 'generation', 'suggestions', 'submission', 'audit', 'outreach', 'audit-report', 'audit-lead', 'ai-report', 'enquiry']);
 
 it('brands account and admin notifications while preserving their action links', function (string $kind): void {
     $user = User::factory()->unverified()->create();

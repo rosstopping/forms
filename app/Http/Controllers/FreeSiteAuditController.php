@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\EmailWebsiteAuditReportRequest;
 use App\Http\Requests\StoreFreeSiteAuditRequest;
 use App\Jobs\GenerateWebsiteAudit;
+use App\Mail\WebsiteAuditLeadReceived;
+use App\Mail\WebsiteAuditReport;
 use App\Models\MarketingConversion;
 use App\Models\WebsiteAudit;
 use App\Services\MarketingAuditResearch;
@@ -13,6 +16,8 @@ use App\Support\MarketingJourney;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -87,6 +92,34 @@ class FreeSiteAuditController extends Controller
         abort_unless(Storage::disk('local')->exists($path), 404);
 
         return Storage::disk('local')->response($path, null, ['Cache-Control' => 'private, max-age=3600', 'Content-Type' => 'image/jpeg']);
+    }
+
+    public function emailReport(EmailWebsiteAuditReportRequest $request, WebsiteAudit $websiteAudit): RedirectResponse
+    {
+        $email = $request->validated('email');
+
+        DB::transaction(function () use ($websiteAudit, $email): void {
+            $audit = WebsiteAudit::query()->lockForUpdate()->findOrFail($websiteAudit->id);
+
+            if ($audit->report_requested_at !== null) {
+                if ($audit->email !== $email) {
+                    throw ValidationException::withMessages(['email' => 'This report has already been requested by email.']);
+                }
+
+                return;
+            }
+
+            $audit->update([
+                'email' => $email,
+                'report_requested_at' => now(),
+                'expires_at' => now()->addDays(14),
+            ]);
+
+            Mail::to($email)->queue(new WebsiteAuditReport($audit));
+            Mail::to(config('marketing.audit_notification_email'))->queue(new WebsiteAuditLeadReceived($audit));
+        });
+
+        return back()->with('report_email_status', 'Your report is on its way.');
     }
 
     public function status(WebsiteAudit $websiteAudit): JsonResponse

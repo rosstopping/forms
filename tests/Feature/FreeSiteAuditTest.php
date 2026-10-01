@@ -3,6 +3,8 @@
 use App\Jobs\GenerateFreeSiteAudit;
 use App\Jobs\GenerateWebsiteAudit;
 use App\Mail\FreeSiteAuditResults;
+use App\Mail\WebsiteAuditLeadReceived;
+use App\Mail\WebsiteAuditReport;
 use App\Models\Prospect;
 use App\Models\User;
 use App\Models\Website;
@@ -15,6 +17,7 @@ use App\Services\ProspectWebsiteAnalyzer;
 use App\Support\MarketingJourney;
 use App\Support\MembershipPlan;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
@@ -112,7 +115,8 @@ it('stores an anonymous audit result for the live report', function (): void {
         ->assertSee('Book a call with Ross')
         ->assertDontSee('HTTPS should be reviewed.')
         ->assertDontSee('Start preparing my fixes')
-        ->assertDontSee('name="email"', false);
+        ->assertSee('name="email"', false)
+        ->assertDontSee('name="password"', false);
 
     $document = new DOMDocument;
     @$document->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
@@ -150,6 +154,80 @@ it('refuses to capture website previews from private or credential-bearing URLs'
 
         Storage::disk('local')->assertMissing($screenshot->pathFor($audit));
     }
+});
+
+it('offers an email copy after the results and extends the requested report to fourteen days', function (): void {
+    Mail::fake();
+    $audit = WebsiteAudit::factory()->create([
+        'status' => WebsiteAudit::STATUS_COMPLETED,
+        'created_at' => now()->subSeconds(11),
+        'expires_at' => now()->addDay(),
+    ]);
+
+    $this->get(route('marketing.website-audits.show', $audit))
+        ->assertSuccessful()
+        ->assertSee('Want a copy by email?')
+        ->assertSee('30000')
+        ->assertSee('name="email"', false);
+
+    $this->post(route('marketing.website-audits.email-report', $audit), [
+        'email' => ' ALEX@EXAMPLE.COM ',
+        '_sitewell_check' => '',
+    ])->assertRedirect()->assertSessionHas('report_email_status');
+
+    $audit->refresh();
+    expect($audit->email)->toBe('alex@example.com')
+        ->and($audit->report_requested_at)->not->toBeNull()
+        ->and($audit->expires_at->between(now()->addDays(13), now()->addDays(14)->addMinute()))->toBeTrue()
+        ->and($audit->user_id)->toBeNull();
+
+    Mail::assertQueued(WebsiteAuditReport::class, fn (WebsiteAuditReport $mail): bool => $mail->hasTo('alex@example.com'));
+    Mail::assertQueued(WebsiteAuditLeadReceived::class, fn (WebsiteAuditLeadReceived $mail): bool => $mail->hasTo(config('marketing.audit_notification_email')));
+
+    (new WebsiteAuditReport($audit))
+        ->assertSeeInHtml('Book a call with Ross')
+        ->assertSeeInHtml(route('marketing.website-audits.show', $audit))
+        ->assertSeeInHtml(route('marketing.ppc.book'));
+    (new WebsiteAuditLeadReceived($audit))
+        ->assertSeeInHtml('alex@example.com')
+        ->assertSeeInHtml(route('admin.onboarding.index', ['search' => $audit->domain]));
+
+    $this->get(route('marketing.website-audits.show', $audit))
+        ->assertSuccessful()
+        ->assertSee('Your report is on its way.')
+        ->assertDontSee('Want a copy by email?');
+});
+
+it('rejects invalid report email requests and requests before completion', function (): void {
+    Mail::fake();
+    $audit = WebsiteAudit::factory()->create([
+        'status' => WebsiteAudit::STATUS_COMPLETED,
+        'created_at' => now()->subSeconds(11),
+    ]);
+    $url = route('marketing.website-audits.email-report', $audit);
+
+    $this->post($url, ['email' => 'not-an-email'])->assertSessionHasErrors('email');
+    $this->post($url, ['email' => 'alex@example.com', '_sitewell_check' => 'filled'])->assertSessionHasErrors('_sitewell_check');
+    expect($audit->refresh()->report_requested_at)->toBeNull();
+    Mail::assertNothingOutgoing();
+
+    $pendingAudit = WebsiteAudit::factory()->create();
+    $this->post(route('marketing.website-audits.email-report', $pendingAudit), ['email' => 'alex@example.com'])->assertForbidden();
+});
+
+it('queues a report only once for the same audit', function (): void {
+    Mail::fake();
+    $this->withoutMiddleware(ThrottleRequests::class);
+    $audit = WebsiteAudit::factory()->create([
+        'status' => WebsiteAudit::STATUS_COMPLETED,
+        'created_at' => now()->subSeconds(11),
+    ]);
+    $url = route('marketing.website-audits.email-report', $audit);
+
+    $this->post($url, ['email' => 'alex@example.com'])->assertRedirect();
+    $this->post($url, ['email' => 'alex@example.com'])->assertRedirect();
+    $this->post($url, ['email' => 'another@example.com'])->assertSessionHasErrors('email');
+    Mail::assertQueuedCount(2);
 });
 
 it('shows zero fixes when the initial scan finds no issues', function (): void {

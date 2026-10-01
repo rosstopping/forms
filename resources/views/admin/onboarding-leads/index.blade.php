@@ -9,12 +9,12 @@
     <header>
         <p class="font-mono font-medium uppercase tracking-widest text-teal-700 text-base sm:text-sm">Lead management</p>
         <h1 class="mt-1 text-2xl font-semibold text-slate-950 sm:text-3xl">Onboarding</h1>
-        <p class="mt-2 max-w-3xl text-slate-600 text-base sm:text-sm">Track the full Get started journey, from a submitted domain through signup, verification, trial progress, and onboarding call.</p>
+        <p class="mt-2 max-w-3xl text-slate-600 text-base sm:text-sm">See search audit enquiries, report requests and booked calls.</p>
     </header>
 
     <dl class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <div class="ui-panel p-4"><dt class="text-sm text-slate-500">Onboarding leads</dt><dd class="mt-1 text-3xl font-semibold tabular-nums text-slate-950">{{ $summary['total'] }}</dd></div>
-        <div class="rounded-xl border border-sky-200 bg-sky-50 p-4"><dt class="text-sm text-sky-800">Unclaimed domains</dt><dd class="mt-1 text-3xl font-semibold tabular-nums text-sky-950">{{ $summary['unclaimed'] }}</dd></div>
+        <div class="rounded-xl border border-sky-200 bg-sky-50 p-4"><dt class="text-sm text-sky-800">Report requests</dt><dd class="mt-1 text-3xl font-semibold tabular-nums text-sky-950">{{ $summary['report_requests'] }}</dd></div>
         <div class="rounded-xl border border-teal-200 bg-teal-50 p-4"><dt class="text-sm text-teal-800">Active trials</dt><dd class="mt-1 text-3xl font-semibold tabular-nums text-teal-950">{{ $summary['active'] }}</dd></div>
         <div class="rounded-xl border border-amber-200 bg-amber-50 p-4"><dt class="text-sm text-amber-800">Need verification</dt><dd class="mt-1 text-3xl font-semibold tabular-nums text-amber-950">{{ $summary['needs_verification'] }}</dd></div>
         <div class="rounded-xl border border-violet-200 bg-violet-50 p-4"><dt class="text-sm text-violet-800">Call not booked</dt><dd class="mt-1 text-3xl font-semibold tabular-nums text-violet-950">{{ $summary['call_not_booked'] }}</dd></div>
@@ -53,8 +53,8 @@
 
     <section class="space-y-4">
         <header>
-            <h2 class="text-lg font-semibold text-slate-950">Unclaimed domains</h2>
-            <p class="mt-1 text-slate-600 text-base sm:text-sm">Website reviews started by visitors who have not completed signup.</p>
+            <h2 class="text-lg font-semibold text-slate-950">Website audits</h2>
+            <p class="mt-1 text-slate-600 text-base sm:text-sm">Reports started by visitors, including those requested by email.</p>
         </header>
 
         <div class="ui-panel overflow-hidden">
@@ -69,14 +69,17 @@
                         <div class="sm:text-right">
                             @if ($unclaimedAudit->email)
                                 <a href="mailto:{{ $unclaimedAudit->email }}" class="text-sm font-medium text-teal-700 hover:text-teal-900">{{ $unclaimedAudit->email }}</a>
-                                <p class="mt-1 text-slate-500 text-base sm:text-sm">Confirmation pending</p>
+                                <p class="mt-1 text-slate-500 text-base sm:text-sm">{{ $unclaimedAudit->report_requested_at ? 'Report requested '.$unclaimedAudit->report_requested_at->diffForHumans() : 'Email captured' }}</p>
                             @else
                                 <p class="text-slate-500 text-base sm:text-sm">No email submitted</p>
+                            @endif
+                            @if ($unclaimedAudit->status === \App\Models\WebsiteAudit::STATUS_COMPLETED && ! $unclaimedAudit->hasExpired())
+                                <a href="{{ route('marketing.website-audits.show', $unclaimedAudit) }}" class="mt-2 inline-flex text-sm font-medium text-teal-700 hover:text-teal-900">View report</a>
                             @endif
                         </div>
                     </article>
                 @empty
-                    <div class="p-8 text-center text-sm text-slate-500">No unclaimed domains match these filters.</div>
+                    <div class="p-8 text-center text-sm text-slate-500">No website audits match these filters.</div>
                 @endforelse
             </div>
         </div>

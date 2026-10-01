@@ -60,15 +60,37 @@ it('gives admins a lead view of users who signed up through Get started', functi
         ->assertSee('Pending')
         ->assertSee('Search Console not connected')
         ->assertSee('Not booked')
-        ->assertSee('Unclaimed domains')
+        ->assertSee('Website audits')
         ->assertSee('unclaimed-business.test')
         ->assertSee('waiting@example.test')
-        ->assertSee('Confirmation pending')
+        ->assertSee('Email captured')
         ->assertSee('Trial welcome sent')
         ->assertSee('Next: Search Console reminder')
         ->assertSee('1 tracked click')
         ->assertSee('View as user')
         ->assertDontSee('Manual Customer');
+});
+
+it('shows emailed audit requests as onboarding leads without creating an account', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $audit = WebsiteAudit::factory()->create([
+        'domain' => 'customer-site.example',
+        'email' => 'owner@example.com',
+        'status' => WebsiteAudit::STATUS_COMPLETED,
+        'report_requested_at' => now(),
+        'expires_at' => now()->addDays(14),
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.onboarding.index'))
+        ->assertSuccessful()
+        ->assertSee('Report requests')
+        ->assertSee('customer-site.example')
+        ->assertSee('owner@example.com')
+        ->assertSee('Report requested')
+        ->assertSee(route('marketing.website-audits.show', $audit));
+
+    expect($audit->user_id)->toBeNull();
 });
 
 it('filters onboarding leads by search verification and call progress', function (): void {

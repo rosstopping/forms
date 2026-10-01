@@ -32,6 +32,10 @@
             @endif
         </header>
 
+        @if (session('report_email_status'))
+            <p role="status" class="rounded-2xl bg-emerald-50 px-5 py-4 text-base text-emerald-900 ring-1 ring-emerald-200/70">{{ session('report_email_status') }}</p>
+        @endif
+
         @if ($audit->status !== \App\Models\WebsiteAudit::STATUS_FAILED && ! $audit->isReadyToDisplay())
             <div id="audit-progress" data-status-url="{{ route('marketing.website-audits.status', $audit) }}" class="grid min-h-72 place-items-center border-t border-ink/10 py-10">
                 <div role="status" class="grid justify-items-center gap-6 text-center">
@@ -225,4 +229,63 @@
         <p class="text-pretty text-base text-ink/50 sm:text-sm">This private link expires {{ $audit->expires_at->diffForHumans() }}.</p>
     </div>
 </section>
+@if ($audit->isReadyToDisplay() && $audit->report_requested_at === null)
+    <dialog id="audit-email-dialog" aria-labelledby="audit-email-title" aria-describedby="audit-email-description" class="w-[calc(100%-2rem)] max-w-md rounded-3xl border-0 bg-white p-0 text-ink shadow-xl backdrop:bg-ink/60">
+        <div class="relative p-6 sm:p-8">
+            <button type="button" data-audit-email-close aria-label="Close email prompt" class="absolute top-3 right-3 grid size-12 place-items-center rounded-full text-xl text-ink/60 hover:bg-lichen focus-visible:outline-2 focus-visible:outline-garden">×</button>
+            <div class="grid gap-2 pr-8">
+                <p class="text-base font-medium text-garden sm:text-sm">Keep your report</p>
+                <h2 id="audit-email-title" class="text-3xl font-medium tracking-tight text-balance">Want a copy by email?</h2>
+                <p id="audit-email-description" class="text-pretty text-base text-ink/65">We’ll send you a link to this report. It will stay available for 14 days.</p>
+            </div>
+            <form method="POST" action="{{ route('marketing.website-audits.email-report', $audit) }}" class="grid gap-4 pt-6">
+                @csrf
+                <div class="absolute -left-[9999px]" aria-hidden="true"><label for="audit-email-check">Leave this blank</label><input id="audit-email-check" type="text" name="_sitewell_check" tabindex="-1" autocomplete="off"></div>
+                <div class="grid gap-2">
+                    <label for="audit-report-email" class="text-base font-medium text-ink sm:text-sm">Email address</label>
+                    <input id="audit-report-email" type="email" name="email" value="{{ old('email') }}" autocomplete="email" required maxlength="255" autofocus class="min-h-12 w-full rounded-xl bg-white px-4 text-base text-ink ring-1 ring-ink/15 outline-none placeholder:text-ink/40 focus-visible:ring-2 focus-visible:ring-garden" placeholder="you@example.com">
+                    @error('email') <p class="text-base text-rose-700 sm:text-sm">{{ $message }}</p> @enderror
+                </div>
+                <button type="submit" class="inline-flex min-h-12 items-center justify-center rounded-full bg-garden px-4 text-base font-medium text-white hover:bg-moss focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden">Email me the report</button>
+            </form>
+        </div>
+    </dialog>
+    <script>
+        (() => {
+            const dialog = document.getElementById('audit-email-dialog');
+            if (! dialog?.showModal) return;
+
+            const storageKey = @js('sitewell-audit-email-dismissed:'.$audit->public_id);
+            const hasError = @js($errors->has('email'));
+            const open = () => {
+                if (document.visibilityState === 'visible' && ! dialog.open) dialog.showModal();
+            };
+
+            dialog.querySelector('[data-audit-email-close]').addEventListener('click', () => dialog.close());
+            dialog.addEventListener('close', () => {
+                try { sessionStorage.setItem(storageKey, '1'); } catch (_) {}
+            });
+
+            if (hasError) {
+                open();
+                return;
+            }
+
+            try { if (sessionStorage.getItem(storageKey) === '1') return; } catch (_) {}
+
+            window.setTimeout(() => {
+                if (document.visibilityState === 'visible') {
+                    open();
+                } else {
+                    const openWhenVisible = () => {
+                        if (document.visibilityState !== 'visible') return;
+                        document.removeEventListener('visibilitychange', openWhenVisible);
+                        open();
+                    };
+                    document.addEventListener('visibilitychange', openWhenVisible);
+                }
+            }, 30000);
+        })();
+    </script>
+@endif
 @endsection

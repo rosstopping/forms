@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Contracts\SerpProvider;
+use App\Models\WebsiteAudit;
 use App\Services\CachedSerpProvider;
 use App\View\Composers\NavigationComposer;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -52,6 +53,19 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('website-audit-status', fn (Request $request): Limit => app()->environment('local')
             ? Limit::none()
             : Limit::perMinute(120)->by($request->ip()));
+        RateLimiter::for('website-audit-email', function (Request $request): array {
+            if (app()->environment('local')) {
+                return [Limit::none()];
+            }
+
+            $audit = $request->route('websiteAudit');
+            $auditKey = $audit instanceof WebsiteAudit ? $audit->getRouteKey() : (string) $audit;
+
+            return [
+                Limit::perMinute(3)->by('website-audit-email-ip:'.$request->ip()),
+                Limit::perDay(2)->by('website-audit-email-audit:'.$auditKey),
+            ];
+        });
 
         View::composer('layouts.app', NavigationComposer::class);
     }

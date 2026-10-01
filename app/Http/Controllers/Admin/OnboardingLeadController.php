@@ -23,9 +23,10 @@ class OnboardingLeadController extends Controller
         ]);
 
         $baseQuery = User::query()->whereHas('websiteAudits', fn (Builder $query) => $query->whereNotNull('claimed_at'));
+        $reportRequests = WebsiteAudit::query()->whereNull('claimed_at')->whereNotNull('report_requested_at')->count();
         $summary = [
-            'total' => (clone $baseQuery)->count(),
-            'unclaimed' => WebsiteAudit::query()->whereNull('claimed_at')->count(),
+            'total' => (clone $baseQuery)->count() + $reportRequests,
+            'report_requests' => $reportRequests,
             'active' => (clone $baseQuery)->where('onboarding_trial_ends_at', '>', now())->count(),
             'needs_verification' => (clone $baseQuery)->whereHas('websiteAudits.website.domains', fn (Builder $query) => $query->where('is_primary', true)->where('ownership_status', '!=', WebsiteDomain::OWNERSHIP_VERIFIED))->count(),
             'call_not_booked' => (clone $baseQuery)->whereNull('onboarding_call_booked_at')->count(),
