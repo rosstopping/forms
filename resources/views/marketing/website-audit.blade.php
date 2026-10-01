@@ -11,6 +11,8 @@
     $healthScore ??= $findings->isNotEmpty() ? (int) round($findings->where('severity', 'passed')->count() / $findings->count() * 100) : null;
     $pagesListed = data_get($audit->insights, 'pages_listed');
     $pagesPartial = (bool) data_get($audit->insights, 'pages_partial', false);
+    $pagesMismatchedDomain = (int) data_get($audit->insights, 'pages_mismatched_domain', 0);
+    $pagesMismatchedHost = data_get($audit->insights, 'pages_mismatched_host');
     $seo = data_get($audit->insights, 'seo');
 @endphp
 <section data-marketing-events="{{ json_encode($marketingEvents) }}" class="px-3 pt-1 pb-16 sm:px-6 sm:pt-2 sm:pb-24" aria-labelledby="audit-title">
@@ -104,14 +106,14 @@
                             </div>
                         @else
                             <div class="grid content-start gap-3 rounded-2xl bg-white p-5 ring-1 ring-ink/10 sm:p-6">
-                                <dt class="text-base text-ink/65 sm:text-sm">Pages listed in sitemap</dt>
+                                <dt class="text-base text-ink/65 sm:text-sm">URLs in sitemap</dt>
                                 <dd class="text-5xl font-medium tracking-tight tabular-nums text-ink">{{ $pagesListed !== null ? number_format($pagesListed).($pagesPartial ? '+' : '') : '—' }}</dd>
                             </div>
                         @endif
                     </dl>
                     @if ($seo !== null)
                         <dl class="grid grid-cols-2 gap-x-6 gap-y-6 sm:grid-cols-3 lg:grid-cols-5">
-                            <div class="grid content-start gap-1 border-t border-ink/10 pt-4"><dt class="text-base text-ink/65 sm:text-sm">Pages listed in sitemap</dt><dd class="order-first text-3xl font-medium tracking-tight tabular-nums text-ink">{{ $pagesListed !== null ? number_format($pagesListed).($pagesPartial ? '+' : '') : '—' }}</dd></div>
+                            <div class="grid content-start gap-1 border-t border-ink/10 pt-4"><dt class="text-base text-ink/65 sm:text-sm">URLs in sitemap</dt><dd class="order-first text-3xl font-medium tracking-tight tabular-nums text-ink">{{ $pagesListed !== null ? number_format($pagesListed).($pagesPartial ? '+' : '') : '—' }}</dd></div>
                             <div class="grid content-start gap-1 border-t border-ink/10 pt-4"><dt class="text-base text-ink/65 sm:text-sm">Google ranking terms</dt><dd class="order-first text-3xl font-medium tracking-tight tabular-nums text-ink">{{ number_format($seo['organic_keywords']) }}</dd></div>
                             <div class="grid content-start gap-1 border-t border-ink/10 pt-4"><dt class="text-base text-ink/65 sm:text-sm">Terms in the top 3</dt><dd class="order-first text-3xl font-medium tracking-tight tabular-nums text-ink">{{ number_format($seo['top_3_keywords']) }}</dd></div>
                             <div class="grid content-start gap-1 border-t border-ink/10 pt-4"><dt class="text-base text-ink/65 sm:text-sm">Est. monthly organic visits</dt><dd class="order-first text-3xl font-medium tracking-tight tabular-nums text-ink">{{ number_format($seo['estimated_monthly_visits']) }}</dd></div>
@@ -119,6 +121,9 @@
                                 <div class="grid content-start gap-1 border-t border-ink/10 pt-4"><dt class="text-base text-ink/65 sm:text-sm">Referring domains</dt><dd class="order-first text-3xl font-medium tracking-tight tabular-nums text-ink">{{ number_format($seo['referring_domains']) }}</dd></div>
                             @endif
                         </dl>
+                    @endif
+                    @if ($pagesMismatchedDomain > 0)
+                        <p class="rounded-2xl bg-amber-50 p-4 text-base text-amber-900 ring-1 ring-amber-200/70 sm:text-sm">Sitemap issue: {{ number_format($pagesMismatchedDomain) }} {{ $pagesMismatchedDomain === 1 ? 'URL points' : 'URLs point' }} {{ $pagesMismatchedHost ? 'to '.$pagesMismatchedHost.' instead of '.$audit->domain : 'away from '.$audit->domain }}. Update the sitemap to use your live domain.</p>
                     @endif
                     <p class="text-pretty text-base text-ink/55 sm:text-sm">Technical health covers the checks we ran. Search and backlink figures are third-party estimates.</p>
                     @if ($pagesListed === null || $seo === null)
@@ -130,7 +135,7 @@
                     <section class="grid gap-5 border-t border-ink/10 pt-8" aria-labelledby="audit-search-title">
                         <div class="grid gap-2">
                             <h2 id="audit-search-title" class="max-w-[35ch] text-2xl font-medium tracking-tight text-balance">Search snapshot.</h2>
-                            <p class="max-w-[56ch] text-pretty text-base text-ink/65">Google search estimates for {{ $seo['location_code'] === 2826 ? 'the UK' : 'the selected market' }}. Monthly search volume is demand for a term, not visits to your site.</p>
+                            <p class="max-w-[56ch] text-pretty text-base text-ink/65">Google search estimates for {{ $seo['location_code'] === 2826 ? 'the UK' : 'the selected market' }}{{ isset($seo['retrieved_at']) ? ', checked '.\Illuminate\Support\Carbon::parse($seo['retrieved_at'])->format('j M Y') : '' }}. Monthly search volume is demand for a term, not visits to your site.</p>
                         </div>
                         @if ($seo['keywords'] !== [])
                             <div class="overflow-x-auto">

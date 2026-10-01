@@ -100,7 +100,7 @@ it('stores an anonymous audit result for the live report', function (): void {
         ->assertSee('data-audit-next-step', false)
         ->assertSee('Website fix flagged')
         ->assertSee('Technical health')
-        ->assertSee('Pages listed in sitemap')
+        ->assertSee('URLs in sitemap')
         ->assertSee('Search estimates are unavailable')
         ->assertSeeInOrder(['Fix the website issues.', 'Improve existing content.', 'Create content for missed searches.', 'Strengthen the website and its reputation.', 'Measure and keep improving.'])
         ->assertSee('href="'.route('marketing.ppc.book').'"', false)
@@ -162,7 +162,7 @@ it('shows measured search estimates and a conditional six-month scenario', funct
     $this->get(route('marketing.website-audits.show', $audit))
         ->assertSuccessful()
         ->assertSee('50%')
-        ->assertSee('Pages listed in sitemap')
+        ->assertSee('URLs in sitemap')
         ->assertSee('Google ranking terms')
         ->assertSee('Referring domains')
         ->assertDontSee('DataForSEO')
@@ -175,6 +175,27 @@ it('shows measured search estimates and a conditional six-month scenario', funct
         ->assertSee('128–160')
         ->assertDontSee('128–145')
         ->assertSee('not a guarantee.');
+});
+
+it('explains when sitemap URLs point at a different domain', function (): void {
+    $audit = WebsiteAudit::factory()->create([
+        'domain' => 'vvipeventszante.com',
+        'status' => WebsiteAudit::STATUS_COMPLETED,
+        'created_at' => now()->subSeconds(11),
+        'insights' => [
+            'pages_listed' => 81,
+            'pages_partial' => false,
+            'pages_mismatched_domain' => 81,
+            'pages_mismatched_host' => 'vvipeventszante.test',
+            'seo' => null,
+        ],
+    ]);
+
+    $this->get(route('marketing.website-audits.show', $audit))
+        ->assertSuccessful()
+        ->assertSee('URLs in sitemap')
+        ->assertSee('Sitemap issue: 81 URLs point to vvipeventszante.test instead of vvipeventszante.com.')
+        ->assertDontSee('0+');
 });
 
 it('marks poor technical health and missing page-one visibility as needs attention', function (): void {

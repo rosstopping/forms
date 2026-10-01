@@ -9,7 +9,7 @@ class MarketingAuditPageCounter
 {
     public function __construct(private SitemapFetcher $sitemapFetcher) {}
 
-    /** @return array{count: int|null, partial: bool} */
+    /** @return array{count: int|null, partial: bool, matching_domain: int, mismatched_domain: int, mismatched_host: string|null} */
     public function count(string $websiteUrl): array
     {
         $scheme = parse_url($websiteUrl, PHP_URL_SCHEME);
@@ -17,13 +17,13 @@ class MarketingAuditPageCounter
         $port = parse_url($websiteUrl, PHP_URL_PORT);
 
         if (! in_array($scheme, ['http', 'https'], true) || ! is_string($host) || $host === '') {
-            return ['count' => null, 'partial' => false];
+            return $this->result(null, false, is_string($host) ? $host : null);
         }
 
         if (! app()->environment('testing')) {
             $addresses = gethostbynamel($host);
             if ($addresses === false || $addresses === [] || collect($addresses)->contains(fn (string $address): bool => filter_var($address, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false)) {
-                return ['count' => null, 'partial' => false];
+                return $this->result(null, false, $host);
             }
         }
 
@@ -31,13 +31,11 @@ class MarketingAuditPageCounter
         $root = $this->read($origin.'/sitemap.xml');
 
         if ($root === null) {
-            return ['count' => null, 'partial' => false];
+            return $this->result(null, false, $host);
         }
 
         if ($root['type'] === 'urlset') {
-            $pageUrls = array_filter($root['urls'], fn (string $url): bool => $this->belongsToOrigin($url, $scheme, $host, $port));
-
-            return ['count' => count($pageUrls), 'partial' => $root['partial'] || count($pageUrls) !== count($root['urls'])];
+            return $this->result($root['urls'], $root['partial'], $host);
         }
 
         $pageUrls = [];
@@ -61,20 +59,44 @@ class MarketingAuditPageCounter
             $loaded++;
             $partial = $partial || $child['partial'];
             foreach ($child['urls'] as $url) {
-                if (! $this->belongsToOrigin($url, $scheme, $host, $port)) {
-                    $partial = true;
-
-                    continue;
-                }
-
                 $pageUrls[$url] = true;
                 if (count($pageUrls) >= 5000) {
-                    return ['count' => count($pageUrls), 'partial' => true];
+                    return $this->result(array_keys($pageUrls), true, $host);
                 }
             }
         }
 
-        return ['count' => $loaded > 0 ? count($pageUrls) : null, 'partial' => $partial];
+        return $this->result($loaded > 0 ? array_keys($pageUrls) : null, $partial, $host);
+    }
+
+    /**
+     * @param  array<int, string>|null  $urls
+     * @return array{count: int|null, partial: bool, matching_domain: int, mismatched_domain: int, mismatched_host: string|null}
+     */
+    private function result(?array $urls, bool $partial, ?string $host): array
+    {
+        $matchingDomain = 0;
+        $mismatchedDomain = 0;
+        $mismatchedHost = null;
+
+        foreach ($urls ?? [] as $url) {
+            $listedHost = parse_url($url, PHP_URL_HOST);
+
+            if ($listedHost === $host) {
+                $matchingDomain++;
+            } else {
+                $mismatchedDomain++;
+                $mismatchedHost ??= is_string($listedHost) ? $listedHost : null;
+            }
+        }
+
+        return [
+            'count' => $urls !== null ? count($urls) : null,
+            'partial' => $partial,
+            'matching_domain' => $matchingDomain,
+            'mismatched_domain' => $mismatchedDomain,
+            'mismatched_host' => $mismatchedHost,
+        ];
     }
 
     private function belongsToOrigin(string $url, string $scheme, string $host, ?int $port): bool

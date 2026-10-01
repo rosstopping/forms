@@ -111,6 +111,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | {app/Services/WordPressStaticReleaseBuilder.php,wordpress-plugin/sitewell-by-digizu/**} | .ai/rules/services-sitewell-by-digizu.md |
 | app/Services/Prospect*.php,resources/views/admin/prospects/** | .ai/rules/services-views-admin-prospects.md |
 | app/Services/ContentQueueOverview.php,resources/views/admin/overview.blade.php, app/Services/DashboardWorkActivity.php,resources/views/admin/overview.blade.php | .ai/rules/services-views-admin.md |
+| app/Services/MarketingAudit*.php,resources/views/marketing/website-audit.blade.php | .ai/rules/services-views-marketing.md |
 | app/Services/WebsiteCrawler.php, app/Services/Pixel*.php, app/Services/{SitemapFetcher,ProspectWebsiteAnalyzer,WebsiteHealthAuditor}.php, app/Services/WeeklyReport*.php, app/Services/SearchConsoleClient.php | .ai/rules/services.md |
 | {app/Services/WordPressStaticReleaseBuilder.php,app/Http/Controllers/WordPress*Release*Controller.php,wordpress-plugin/sitewell-by-digizu/**} | .ai/rules/sitewell-by-digizu.md |
 | {app/Models/User.php,app/Http/Controllers/Admin/UserImpersonationController.php,resources/views/{admin/users/index.blade.php,layouts/app.blade.php},routes/web.php,tests/Feature/UserImpersonationTest.php} | .ai/rules/users-feature.md |

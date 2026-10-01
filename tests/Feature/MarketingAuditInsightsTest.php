@@ -1,5 +1,8 @@
 <?php
 
+use App\Models\SeoKeyword;
+use App\Models\SeoSnapshot;
+use App\Models\WebsiteAudit;
 use App\Services\DataForSEO\BacklinksService;
 use App\Services\DataForSEO\DomainOverviewService;
 use App\Services\DataForSEO\RankedKeywordsService;
@@ -82,6 +85,7 @@ it('builds a bounded search snapshot and caches paid provider results', function
 });
 
 it('does not invent search data or a forecast when the provider is unavailable', function (): void {
+    Cache::flush();
     config(['services.dataforseo.login' => null, 'services.dataforseo.password' => null]);
     Http::preventStrayRequests();
 
@@ -92,6 +96,84 @@ it('does not invent search data or a forecast when the provider is unavailable',
 
     expect($insights['health_score'])->toBeNull()
         ->and($insights['seo'])->toBeNull()
+        ->and($insights['projection'])->toBeNull();
+    Http::assertNothingSent();
+});
+
+it('reuses a recent matching search snapshot when live credentials are unavailable', function (): void {
+    Cache::flush();
+    config(['services.dataforseo.login' => null, 'services.dataforseo.password' => null]);
+    Http::preventStrayRequests();
+
+    $snapshot = SeoSnapshot::factory()->create([
+        'domain' => 'saved.example',
+        'snapshot_date' => today()->subDays(10),
+        'organic_keywords' => 186,
+        'estimated_organic_traffic' => 3057.7519,
+        'top_3_keywords' => 37,
+        'top_10_keywords' => 115,
+        'referring_domains' => 88,
+        'backlinks' => 168,
+    ]);
+    SeoKeyword::factory()->create([
+        'seo_snapshot_id' => $snapshot->id,
+        'website_id' => $snapshot->website_id,
+        'keyword' => 'zante events',
+        'position' => 15,
+        'search_volume' => 1000,
+    ]);
+
+    $pages = Mockery::mock(MarketingAuditPageCounter::class);
+    $pages->shouldReceive('count')->once()->andReturn([
+        'count' => 81,
+        'partial' => false,
+        'matching_domain' => 0,
+        'mismatched_domain' => 81,
+        'mismatched_host' => 'saved.test',
+    ]);
+    $research = new MarketingAuditResearch(app(DomainOverviewService::class), app(RankedKeywordsService::class), app(BacklinksService::class), $pages);
+    $insights = $research->forAudit('saved.example', 'https://saved.example', ['findings' => []]);
+
+    expect($insights['pages_listed'])->toBe(81)
+        ->and($insights['pages_mismatched_domain'])->toBe(81)
+        ->and($insights['pages_mismatched_host'])->toBe('saved.test')
+        ->and($insights['seo']['organic_keywords'])->toBe(186)
+        ->and($insights['seo']['estimated_monthly_visits'])->toBe(3058)
+        ->and($insights['seo']['referring_domains'])->toBe(88)
+        ->and($insights['seo']['backlinks'])->toBe(168)
+        ->and($insights['seo']['keywords'][0]['term'])->toBe('zante events')
+        ->and($insights['projection']['baseline_monthly_visits'])->toBe(3058);
+    Http::assertNothingSent();
+});
+
+it('reuses search estimates from a recent public audit for the same domain', function (): void {
+    Cache::flush();
+    config(['services.dataforseo.login' => null, 'services.dataforseo.password' => null]);
+    Http::preventStrayRequests();
+
+    WebsiteAudit::factory()->create([
+        'domain' => 'previous.example',
+        'status' => WebsiteAudit::STATUS_COMPLETED,
+        'insights' => ['seo' => [
+            'location_code' => 2826,
+            'language_code' => 'en',
+            'retrieved_at' => now()->subDays(5)->toIso8601String(),
+            'organic_keywords' => 23,
+            'estimated_monthly_visits' => 90,
+            'top_3_keywords' => 1,
+            'top_10_keywords' => 4,
+            'referring_domains' => 12,
+            'keywords' => [],
+        ]],
+    ]);
+
+    $pages = Mockery::mock(MarketingAuditPageCounter::class);
+    $pages->shouldReceive('count')->once()->andReturn(['count' => 4, 'partial' => false]);
+    $research = new MarketingAuditResearch(app(DomainOverviewService::class), app(RankedKeywordsService::class), app(BacklinksService::class), $pages);
+    $insights = $research->forAudit('previous.example', 'https://previous.example', ['findings' => []]);
+
+    expect($insights['seo']['organic_keywords'])->toBe(23)
+        ->and($insights['seo']['referring_domains'])->toBe(12)
         ->and($insights['projection'])->toBeNull();
     Http::assertNothingSent();
 });
@@ -130,17 +212,17 @@ it('counts sitemap pages within a small same-host request budget', function (): 
 
     $result = app(MarketingAuditPageCounter::class)->count('https://example.com');
 
-    expect($result)->toBe(['count' => 3, 'partial' => true]);
+    expect($result)->toBe(['count' => 3, 'partial' => true, 'matching_domain' => 3, 'mismatched_domain' => 0, 'mismatched_host' => null]);
     Http::assertSentCount(3);
 });
 
-it('excludes pages on other hosts from the sitemap count', function (): void {
+it('counts sitemap URLs on other hosts and identifies the wrong domain', function (): void {
     Http::fake([
         'https://example.com/sitemap.xml' => Http::response('<?xml version="1.0"?><urlset><url><loc>https://example.com/</loc></url><url><loc>https://other.example/about</loc></url></urlset>', 200),
     ]);
 
     $result = app(MarketingAuditPageCounter::class)->count('https://example.com');
 
-    expect($result)->toBe(['count' => 1, 'partial' => true]);
+    expect($result)->toBe(['count' => 2, 'partial' => false, 'matching_domain' => 1, 'mismatched_domain' => 1, 'mismatched_host' => 'other.example']);
     Http::assertSentCount(1);
 });
