@@ -1,6 +1,8 @@
 import 'trix';
+import { initializeHomeReveals } from './home-reveal';
 import { initializeOutreachDraftEditors } from './outreach-draft-editor';
 
+initializeHomeReveals(document);
 initializeOutreachDraftEditors(document);
 
 document.addEventListener('trix-file-accept', (event) => event.preventDefault());

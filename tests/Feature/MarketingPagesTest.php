@@ -724,6 +724,8 @@ it('keeps the streamlined homepage focused on services proof and the audit', fun
     expect($xpath->query('//main/section')->length)->toBe(4)
         ->and($xpath->query('//form[@data-audit-form]')->length)->toBe(1)
         ->and($xpath->query('//iframe')->length)->toBe(1)
+        ->and($xpath->query('//main//*[@data-home-reveal]')->length)->toBe(8)
+        ->and($xpath->query('//main//form[@data-audit-form]//*[@data-home-reveal]')->length)->toBe(0)
         ->and($xpath->query('//footer')->length)->toBe(1);
 });
 
