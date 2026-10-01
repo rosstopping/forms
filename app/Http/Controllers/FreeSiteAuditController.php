@@ -7,13 +7,16 @@ use App\Jobs\GenerateWebsiteAudit;
 use App\Models\MarketingConversion;
 use App\Models\WebsiteAudit;
 use App\Services\MarketingAuditResearch;
+use App\Services\MarketingAuditScreenshot;
 use App\Services\MarketingTurnstileVerifier;
 use App\Support\MarketingJourney;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class FreeSiteAuditController extends Controller
 {
@@ -52,7 +55,7 @@ class FreeSiteAuditController extends Controller
         return redirect()->route('marketing.website-audits.show', $audit);
     }
 
-    public function show(WebsiteAudit $websiteAudit, MarketingAuditResearch $research): View
+    public function show(WebsiteAudit $websiteAudit, MarketingAuditResearch $research, MarketingAuditScreenshot $screenshot): View
     {
         abort_if($websiteAudit->hasExpired(), 404);
 
@@ -69,7 +72,21 @@ class FreeSiteAuditController extends Controller
             'audit' => $websiteAudit,
             'marketingEvents' => $events,
             'projection' => is_array($seo) ? $research->projection($seo) : null,
+            'screenshotUrl' => $websiteAudit->isReadyToDisplay() && Storage::disk('local')->exists($screenshot->pathFor($websiteAudit))
+                ? route('marketing.website-audits.preview', $websiteAudit)
+                : null,
         ]);
+    }
+
+    public function preview(WebsiteAudit $websiteAudit, MarketingAuditScreenshot $screenshot): StreamedResponse
+    {
+        abort_if($websiteAudit->hasExpired(), 404);
+        abort_unless($websiteAudit->isReadyToDisplay(), 404);
+
+        $path = $screenshot->pathFor($websiteAudit);
+        abort_unless(Storage::disk('local')->exists($path), 404);
+
+        return Storage::disk('local')->response($path, null, ['Cache-Control' => 'private, max-age=3600', 'Content-Type' => 'image/jpeg']);
     }
 
     public function status(WebsiteAudit $websiteAudit): JsonResponse

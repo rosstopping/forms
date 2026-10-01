@@ -182,6 +182,9 @@ Route::post('/get-started', [FreeSiteAuditController::class, 'store'])
 Route::get('/website-audits/{websiteAudit}', [FreeSiteAuditController::class, 'show'])
     ->middleware('throttle:website-audit-reports')
     ->name('marketing.website-audits.show');
+Route::get('/website-audits/{websiteAudit}/preview', [FreeSiteAuditController::class, 'preview'])
+    ->middleware('throttle:website-audit-reports')
+    ->name('marketing.website-audits.preview');
 Route::get('/website-audits/{websiteAudit}/status', [FreeSiteAuditController::class, 'status'])
     ->middleware('throttle:website-audit-status')
     ->name('marketing.website-audits.status');

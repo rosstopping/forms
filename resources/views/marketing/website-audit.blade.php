@@ -17,11 +17,18 @@
 @endphp
 <section data-marketing-events="{{ json_encode($marketingEvents) }}" class="px-3 pt-1 pb-16 sm:px-6 sm:pt-2 sm:pb-24" aria-labelledby="audit-title">
     <div class="mx-auto grid max-w-7xl gap-8 rounded-3xl bg-lichen px-5 py-10 sm:px-10 sm:py-14">
-        <header class="grid gap-3">
-            <p class="text-base font-medium text-garden sm:text-sm">Your website review</p>
-            <h1 id="audit-title" class="max-w-[24ch] break-words text-4xl font-medium tracking-tight text-balance sm:text-5xl">{{ $audit->domain }}</h1>
-            @if ($audit->isReadyToDisplay())
-                <p class="max-w-[56ch] text-pretty text-base text-ink/65">Your website checks are ready.</p>
+        <header class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start lg:gap-10">
+            <div class="grid content-start gap-3">
+                <p class="text-base font-medium text-garden sm:text-sm">Your website review</p>
+                <h1 id="audit-title" class="max-w-[24ch] break-words text-4xl font-medium tracking-tight text-balance sm:text-5xl">{{ $audit->domain }}</h1>
+                @if ($audit->isReadyToDisplay())
+                    <p class="max-w-[56ch] text-pretty text-base text-ink/65">Your website checks are ready.</p>
+                @endif
+            </div>
+            @if ($screenshotUrl)
+                <figure class="max-w-sm rounded-[min(1.5vw,18px)] bg-white p-1.5 ring-1 ring-ink/10 lg:justify-self-end">
+                    <img src="{{ $screenshotUrl }}" alt="" width="1024" height="640" class="aspect-[8/5] w-full rounded-[min(1vw,12px)] object-cover object-top outline-1 -outline-offset-1 outline-black/5" loading="eager" decoding="async">
+                </figure>
             @endif
         </header>
 

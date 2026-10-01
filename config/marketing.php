@@ -5,6 +5,9 @@ $seoLibrary = require __DIR__.'/seo_library.php';
 return [
     'booking_url' => env('MARKETING_BOOKING_URL', 'https://cal.com/ross'),
     'contact_website_id' => env('MARKETING_CONTACT_WEBSITE_ID'),
+    'audit_screenshot' => [
+        'chrome_path' => env('MARKETING_SCREENSHOT_CHROME_PATH'),
+    ],
 
     'landing_pages' => [
         ...$seoLibrary['landing_pages'],

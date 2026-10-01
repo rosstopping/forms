@@ -10,6 +10,7 @@ use App\Models\WebsiteAudit;
 use App\Models\WebsiteDomain;
 use App\Notifications\WebsiteAuditClaim;
 use App\Services\MarketingAuditResearch;
+use App\Services\MarketingAuditScreenshot;
 use App\Services\ProspectWebsiteAnalyzer;
 use App\Support\MarketingJourney;
 use App\Support\MembershipPlan;
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 
 it('starts an anonymous website audit with only a website address', function (): void {
@@ -87,7 +89,10 @@ it('stores an anonymous audit result for the live report', function (): void {
         'projection' => null,
     ]);
 
-    (new GenerateWebsiteAudit($audit))->handle($analyzer, new MarketingJourney, $research);
+    $screenshot = Mockery::mock(MarketingAuditScreenshot::class);
+    $screenshot->shouldReceive('capture')->once()->with($audit);
+
+    (new GenerateWebsiteAudit($audit))->handle($analyzer, new MarketingJourney, $research, $screenshot);
 
     expect($audit->refresh()->status)->toBe(WebsiteAudit::STATUS_COMPLETED)
         ->and($audit->opportunity_score)->toBe(35)
@@ -112,6 +117,39 @@ it('stores an anonymous audit result for the live report', function (): void {
     $document = new DOMDocument;
     @$document->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
     expect((new DOMXPath($document))->query('//*[@data-audit-fix-count]')->item(0)->textContent)->toBe('1');
+});
+
+it('shows a private website preview beside the report title and expires it with the audit', function (): void {
+    Storage::fake('local');
+    $audit = WebsiteAudit::factory()->create([
+        'status' => WebsiteAudit::STATUS_COMPLETED,
+        'created_at' => now()->subSeconds(11),
+    ]);
+    $path = app(MarketingAuditScreenshot::class)->pathFor($audit);
+    Storage::disk('local')->put($path, "\xFF\xD8\xFFpreview");
+
+    $previewUrl = route('marketing.website-audits.preview', $audit);
+    $this->get(route('marketing.website-audits.show', $audit))
+        ->assertSuccessful()
+        ->assertSee('src="'.$previewUrl.'"', false);
+    $this->get($previewUrl)
+        ->assertSuccessful()
+        ->assertHeader('content-type', 'image/jpeg');
+
+    $audit->update(['expires_at' => now()->subMinute()]);
+    $this->get($previewUrl)->assertNotFound();
+});
+
+it('refuses to capture website previews from private or credential-bearing URLs', function (): void {
+    Storage::fake('local');
+
+    foreach (['http://127.0.0.1', 'http://localhost', 'https://user:pass@example.com'] as $url) {
+        $audit = WebsiteAudit::factory()->create(['website_url' => $url]);
+        $screenshot = app(MarketingAuditScreenshot::class);
+        $screenshot->capture($audit);
+
+        Storage::disk('local')->assertMissing($screenshot->pathFor($audit));
+    }
 });
 
 it('shows zero fixes when the initial scan finds no issues', function (): void {

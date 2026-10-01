@@ -62,6 +62,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Http/Controllers/Admin/DashboardController.php,resources/views/admin/overview.blade.php,app/Http/Middleware/ResolveCurrentWebsite.php | .ai/rules/http-middleware.md |
 | resources/views/{auth/**,layouts/auth.blade.php,components/auth/**},app/Http/Controllers/Auth/**,app/Http/Requests/{ResetPasswordRequest,SendPasswordResetLinkRequest}.php | .ai/rules/http-requests.md |
 | app/{Jobs/GeneratePagePixelOptimisations.php,Http/Controllers/Admin/*ReportOptimisationsController.php}, app/{Jobs/BuildWebsite.php,Http/Controllers/Admin/WebsiteBuilderController.php,Models/WebsiteBuild.php} | .ai/rules/jobs-controllers-admin.md |
+| app/{Jobs/GenerateWebsiteAudit.php,Services/MarketingAuditScreenshot.php,Http/Controllers/FreeSiteAuditController.php},resources/views/marketing/website-audit.blade.php | .ai/rules/jobs-controllers-views-marketing.md |
 | app/Jobs/SendWeeklyRankingReport.php,resources/views/emails/weekly-ranking-report.blade.php | .ai/rules/jobs-views-emails.md |
 | app/Jobs/Sync*Copilot*.php,app/Jobs/SyncContentGeneration.php | .ai/rules/jobs.md |
 | app/Http/Controllers/Admin/{WebsiteController.php,WebsiteHealthReportController.php},resources/views/admin/{websites/show.blade.php,website-health-reports/show.blade.php},resources/js/app.js | .ai/rules/js.md |
