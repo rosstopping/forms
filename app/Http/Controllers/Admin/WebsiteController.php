@@ -193,7 +193,7 @@ class WebsiteController extends Controller
                 ->paginate(20, pageName: 'content_activity_page')
                 ->withQueryString()->appends(['content_section' => 'activity'])->fragment('content-activity-title');
         }
-        $canUseSdk = $user?->isAdmin() === true && $website->repository !== null;
+        $canUseSdk = config('copilot_sdk.workspace_enabled') && $user?->isAdmin() === true && $website->repository !== null;
         $sdkRuns = $canUseSdk
             ? CopilotSdkTestRun::query()->where('website_repository_id', $website->repository->id)->latest('id')->limit(10)->get()
             : collect();

@@ -21,6 +21,8 @@ class CopilotSdkRunController extends Controller
 {
     public function store(StoreCopilotSdkRunRequest $request, Website $website, GithubSdkPublisher $publisher, CopilotSdkTitleRunner $runner): RedirectResponse
     {
+        abort_unless(config('copilot_sdk.workspace_enabled'), 404);
+
         $repository = $website->repository;
         abort_unless($repository, 422, 'Connect a repository first.');
         $lock = Cache::lock('copilot-sdk-test:'.$repository->repository_id, 600);
@@ -67,6 +69,8 @@ class CopilotSdkRunController extends Controller
 
     public function resume(Request $request, Website $website, CopilotSdkTestRun $run): RedirectResponse
     {
+        abort_unless(config('copilot_sdk.workspace_enabled'), 404);
+
         $this->authorizeWebsite($request, $website);
         abort_unless($run->website_repository_id === $website->repository?->id && $run->requested_by === $request->user()->id, 404);
         try {
@@ -91,6 +95,8 @@ class CopilotSdkRunController extends Controller
 
     public function status(Request $request, Website $website): View
     {
+        abort_unless(config('copilot_sdk.workspace_enabled'), 404);
+
         $this->authorizeWebsite($request, $website);
         $sdkRuns = CopilotSdkTestRun::query()->where('website_repository_id', $website->repository?->id)->latest('id')->limit(10)->get();
 

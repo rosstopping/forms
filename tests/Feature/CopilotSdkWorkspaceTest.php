@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Queue;
 
 beforeEach(function (): void {
-    config(['copilot_sdk.enabled' => true, 'copilot_sdk.api_key' => 'test-only', 'copilot_sdk.model' => 'test-model',
+    config(['copilot_sdk.enabled' => true, 'copilot_sdk.workspace_enabled' => true, 'copilot_sdk.api_key' => 'test-only', 'copilot_sdk.model' => 'test-model',
         'queue.default' => 'database', 'queue.connections.database.retry_after' => 300]);
     Queue::fake();
     Http::preventStrayRequests();
@@ -40,6 +40,23 @@ function workspaceSdkRun($context, array $attributes = []): CopilotSdkTestRun
         'status' => 'queued', ...$attributes,
     ]);
 }
+
+it('hides the temporary SDK test and blocks its web actions while paused', function (): void {
+    config(['copilot_sdk.workspace_enabled' => false]);
+    $run = workspaceSdkRun($this, ['status' => 'publish_failed']);
+
+    $this->actingAs($this->admin)->get($this->workspace)
+        ->assertSuccessful()
+        ->assertDontSee('SDK test')
+        ->assertDontSee('Run with SDK')
+        ->assertSee('Content workspace');
+    $this->post($this->url, $this->payload)->assertNotFound();
+    $this->get(route('admin.sdk-runs.status', $this->website))->assertNotFound();
+    $this->post(route('admin.sdk-runs.resume', [$this->website, $run]))->assertNotFound();
+
+    expect(CopilotSdkTestRun::count())->toBe(1);
+    Queue::assertNothingPushed();
+});
 
 it('queues a scoped snapshot without running the model in the web request', function (): void {
     $this->actingAs($this->admin)->post($this->url, $this->payload)->assertRedirect($this->workspace)->assertSessionHasNoErrors();
