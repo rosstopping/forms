@@ -62,8 +62,8 @@
             <ul role="list" aria-label="Search engines and AI assistants" class="grid w-full grid-cols-2 gap-x-6 gap-y-6 sm:grid-cols-3 lg:grid-cols-6">
                 @foreach ([['google', 'Google'], ['bing', 'Bing'], ['openai', 'ChatGPT'], ['gemini', 'Gemini'], ['perplexity', 'Perplexity'], ['claude', 'Claude']] as [$mark, $name])
                     <li class="flex items-center justify-center gap-2.5 text-lg font-medium tracking-tight text-[#62666d]">
-                        <img src="{{ asset('search-'.$mark.'.svg') }}" alt="" width="24" height="24" class="size-6 shrink-0 opacity-60" decoding="async">
-                        <span>{{ $name }}</span>
+                        <img src="{{ asset('search-'.$mark.'.svg') }}" alt="{{ $name }} logo" width="24" height="24" class="size-6 shrink-0 opacity-60" decoding="async">
+                        <span aria-hidden="true">{{ $name }}</span>
                     </li>
                 @endforeach
             </ul>

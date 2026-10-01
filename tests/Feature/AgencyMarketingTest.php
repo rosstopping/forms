@@ -53,6 +53,19 @@ it('publishes eighteen distinct agency pages with metadata, breadcrumbs and site
     }
 });
 
+it('keeps the flagged agency page titles within search result length guidance', function (): void {
+    foreach ([
+        'white-label-seo' => 'White-label SEO: your clients, your service | Sitewell',
+        'seo-reporting' => 'Agency SEO reporting: explain the work and results | Sitewell',
+    ] as $slug => $title) {
+        $this->get(route('marketing.agencies.show', $slug))
+            ->assertSuccessful()
+            ->assertSee('<title>'.e($title).'</title>', false);
+
+        expect(mb_strlen($title))->toBeLessThanOrEqual(65);
+    }
+});
+
 it('keeps the agency hub available outside navigation and labels proposed previews honestly', function (): void {
     $home = $this->get(route('marketing.home'))->assertSuccessful()->getContent();
     expect(substr_count($home, 'href="'.route('marketing.agencies').'"'))->toBe(0);
