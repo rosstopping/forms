@@ -5,7 +5,7 @@ return [
         'white-label-seo' => [
             'label' => 'White-label SEO', 'group' => 'The agency offering', 'kind' => 'service',
             'theme' => 'White label SEO services UK',
-            'title' => 'White-label SEO for agencies: your clients, your service | Sitewell',
+            'title' => 'White-label SEO: your clients, your service | Sitewell',
             'description' => 'Build an ongoing SEO service under your agency relationship. Explore the Sitewell agency beta, delivery responsibilities and our white-label direction.',
             'heading' => 'Your client relationship. An SEO service behind it.',
             'intro' => 'Keep the client relationship while adding SEO. The Sitewell agency beta explores monitoring, reporting and reviewed improvements delivered behind your service.',
@@ -53,7 +53,7 @@ return [
         'seo-reporting' => [
             'label' => 'Client SEO reporting', 'group' => 'Monitoring and delivery', 'kind' => 'service', 'visual' => 'report',
             'theme' => 'White label SEO reports and automated client reporting',
-            'title' => 'SEO reporting for agencies: explain the work and results | Sitewell',
+            'title' => 'Agency SEO reporting: explain the work and results | Sitewell',
             'description' => 'Turn rankings, search data, website issues and completed improvements into a useful client update. Explore Sitewell summaries and our agency-branded report direction.',
             'heading' => 'Give clients an update they can understand.',
             'intro' => 'Show clients what changed, what you did and what comes next. Use the numbers to explain the progress.',

@@ -355,6 +355,12 @@ it('uses the final Spotlight hero with unique ids even on old preview links', fu
     expect($hero->textContent)->toContain('We’ll get you more customers.')
         ->not->toContain('No email', 'No commitment', 'Your business. Easier to find.');
     expect($xpath->query('//ul[@aria-label="Search engines and AI assistants"]/li')->length)->toBe(6);
+    $searchMarkImages = $xpath->query('//ul[@aria-label="Search engines and AI assistants"]/li/img');
+    expect(array_map(fn ($image) => $image->getAttribute('alt'), iterator_to_array($searchMarkImages)))
+        ->toBe(['Google logo', 'Bing logo', 'ChatGPT logo', 'Gemini logo', 'Perplexity logo', 'Claude logo']);
+    foreach ($xpath->query('//ul[@aria-label="Search engines and AI assistants"]/li/span') as $label) {
+        expect($label->getAttribute('aria-hidden'))->toBe('true');
+    }
     foreach (['google', 'bing', 'openai', 'gemini', 'perplexity', 'claude'] as $mark) {
         expect(is_file(public_path('search-'.$mark.'.svg')))->toBeTrue();
     }
@@ -365,6 +371,24 @@ it('uses the final Spotlight hero with unique ids even on old preview links', fu
     expect(count(array_unique($ids)))->toBe(count($ids));
     $this->get(route('marketing.pricing'))->assertDontSee('https://ui.sh/ui-picker.js');
 })->with([null, 'search-first', 'editorial', 'spotlight']);
+
+it('adds breadcrumb structured data to SEO resource pages', function (string $routeName, array $parameters): void {
+    $url = route($routeName, $parameters);
+    $response = $this->get($url)->assertSuccessful();
+    preg_match_all('/<script type="application\/ld\+json">(.*?)<\/script>/s', $response->getContent(), $matches);
+    $schemas = collect($matches[1])->map(fn (string $schema): array => json_decode($schema, true, flags: JSON_THROW_ON_ERROR));
+    $breadcrumb = $schemas->firstWhere('@type', 'BreadcrumbList');
+
+    expect($breadcrumb)->not->toBeNull()
+        ->and(array_column($breadcrumb['itemListElement'], 'item'))->toBe([
+            route('marketing.home'),
+            route('marketing.features'),
+            $url,
+        ]);
+})->with([
+    'service resource' => ['marketing.landing', ['seo-rank-tracking-services']],
+    'industry resource' => ['marketing.industry', ['personal-trainers']],
+]);
 
 it('keeps the chosen audit button on Spotlight even on old preview links', function (mixed $button): void {
     $response = $this->get(route('marketing.home', ['cta' => $button]))->assertSuccessful();
