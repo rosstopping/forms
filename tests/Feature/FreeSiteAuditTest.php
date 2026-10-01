@@ -64,6 +64,7 @@ it('shows audit progress and exposes only its processing state', function (): vo
         ->assertSuccessful()
         ->assertSee('Building your audit.')
         ->assertSee('Your results will appear here automatically.')
+        ->assertDontSee('data-audit-email-open', false)
         ->assertSee(route('marketing.website-audits.status', $audit));
 
     $this->getJson(route('marketing.website-audits.status', $audit))
@@ -167,6 +168,8 @@ it('offers an email copy after the results and extends the requested report to f
     $this->get(route('marketing.website-audits.show', $audit))
         ->assertSuccessful()
         ->assertSee('Want a copy by email?')
+        ->assertSee('data-audit-email-open', false)
+        ->assertSee('aria-controls="audit-email-dialog"', false)
         ->assertSee('30000')
         ->assertSee('name="email"', false);
 
@@ -195,6 +198,7 @@ it('offers an email copy after the results and extends the requested report to f
     $this->get(route('marketing.website-audits.show', $audit))
         ->assertSuccessful()
         ->assertSee('Your report is on its way.')
+        ->assertDontSee('data-audit-email-open', false)
         ->assertDontSee('Want a copy by email?');
 });
 

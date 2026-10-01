@@ -23,3 +23,6 @@ The pending website audit shows a compact animated search mark, a single Buildin
 
 ## Interpret audit stats with restrained status colour and a clear projection
 Emphasise technical health, flagged fixes, and page-one Google terms with conditional green/amber/rose status treatments; leave page counts, traffic estimates, and referring domains neutral because raw counts have no universal good/bad threshold. Compare current estimated monthly organic visits with a clearly labelled six-month illustrative range. Keep projection assumptions accessible but out of the primary reading path, and derive the optimistic end from stated ranking/traffic assumptions, not an arbitrary uplift.
+
+## Keep report email action accessible while scrolling
+On a completed public audit that has not yet been emailed, show a compact fixed bottom control that opens the existing email-report dialog immediately. Retain the 30-second automatic prompt, but cancel its timer after manual opening so a dismissed dialog does not reopen. Hide the control after an email request; do not show it during pending or failed audits.
