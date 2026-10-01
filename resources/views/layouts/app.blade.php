@@ -64,7 +64,7 @@
                                     <a href="{{ \App\Support\WebsiteNavigation::routeFor($currentWebsite, 'pixel') }}" @class(['flex rounded-lg px-3 py-2 text-sm font-medium', 'bg-white/10 text-white' => $isWebsiteWorkspace && $currentWebsiteSection === 'pixel', 'text-slate-400 hover:bg-white/5 hover:text-white' => ! ($isWebsiteWorkspace && $currentWebsiteSection === 'pixel')])>Pixel</a>
                                 @endif
                                 <a href="{{ \App\Support\WebsiteNavigation::routeFor($currentWebsite, 'business-profile') }}" @class(['flex rounded-lg px-3 py-2 text-sm font-medium', 'bg-white/10 text-white' => $isWebsiteWorkspace && $currentWebsiteSection === 'business-profile', 'text-slate-400 hover:bg-white/5 hover:text-white' => ! ($isWebsiteWorkspace && $currentWebsiteSection === 'business-profile')])>Business Profile</a>
-                                @if ($currentWebsite->isManageableBy(Auth::user()))
+                                @if ($currentWebsite->isManageableBy(Auth::user()) && (Auth::user()->isAdmin() || $currentWebsite->owner?->hasMembershipFeature(\App\Support\MembershipPlan::FEATURE_COMPLETE)))
                                     <a href="{{ route('admin.google-ads.index', $currentWebsite) }}" @class(['flex rounded-lg px-3 py-2 text-sm font-medium', 'bg-white/10 text-white' => request()->routeIs('admin.google-ads.*'), 'text-slate-400 hover:bg-white/5 hover:text-white' => ! request()->routeIs('admin.google-ads.*')])>Google Ads</a>
                                 @endif
                                 <a href="{{ \App\Support\WebsiteNavigation::routeFor($currentWebsite, 'settings') }}" @class(['flex rounded-lg px-3 py-2 text-sm font-medium', 'bg-white/10 text-white' => $isWebsiteWorkspace && $currentWebsiteSection === 'settings', 'text-slate-400 hover:bg-white/5 hover:text-white' => ! ($isWebsiteWorkspace && $currentWebsiteSection === 'settings')])>Settings</a>
@@ -193,7 +193,7 @@
                                     <a href="{{ \App\Support\WebsiteNavigation::routeFor($currentWebsite, 'pixel') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Pixel</a>
                                 @endif
                                 <a href="{{ \App\Support\WebsiteNavigation::routeFor($currentWebsite, 'business-profile') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Business Profile</a>
-                                @if ($currentWebsite->isManageableBy(Auth::user()))
+                                @if ($currentWebsite->isManageableBy(Auth::user()) && (Auth::user()->isAdmin() || $currentWebsite->owner?->hasMembershipFeature(\App\Support\MembershipPlan::FEATURE_COMPLETE)))
                                     <a href="{{ route('admin.google-ads.index', $currentWebsite) }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Google Ads</a>
                                 @endif
                                 <a href="{{ \App\Support\WebsiteNavigation::routeFor($currentWebsite, 'settings') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Settings</a>

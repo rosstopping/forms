@@ -7,6 +7,7 @@ use App\Models\SearchConsoleMetric;
 use App\Models\User;
 use App\Models\Website;
 use App\Services\GoogleAdsOAuthClient;
+use App\Support\MembershipPlan;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
@@ -32,7 +33,7 @@ test('Google Ads requests its own offline OAuth scope', function (): void {
 });
 
 test('a website manager can authorize Google Ads for only that website', function (): void {
-    $owner = User::factory()->create();
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
     $website = Website::factory()->for($owner, 'owner')->create();
     $otherWebsite = Website::factory()->create();
     Http::fake(['https://oauth2.googleapis.com/token' => Http::response([
@@ -59,7 +60,7 @@ test('a website manager can authorize Google Ads for only that website', functio
 });
 
 test('OAuth callback rejects an invalid or replayed state', function (): void {
-    $owner = User::factory()->create();
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
     $website = Website::factory()->for($owner, 'owner')->create();
     $this->actingAs($owner)->get(route('admin.google-ads.connect', $website))->assertRedirect();
 
@@ -75,7 +76,7 @@ test('OAuth callback rejects an invalid or replayed state', function (): void {
 });
 
 test('account selection verifies access and stores the account currency', function (): void {
-    $owner = User::factory()->create();
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
     $website = Website::factory()->for($owner, 'owner')->create();
     GoogleAdsConnection::factory()->for($website)->create();
     Http::fake([
@@ -100,7 +101,7 @@ test('account selection verifies access and stores the account currency', functi
 });
 
 test('unverified account selection does not replace the existing account', function (): void {
-    $owner = User::factory()->create();
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
     $website = Website::factory()->for($owner, 'owner')->create();
     GoogleAdsConnection::factory()->for($website)->create(['customer_id' => '1111111111']);
     Http::fake(['https://googleads.test/*' => Http::response(['error' => ['message' => 'No access']], 403)]);
@@ -113,7 +114,7 @@ test('unverified account selection does not replace the existing account', funct
 });
 
 test('a viewer cannot connect or disconnect Google Ads', function (): void {
-    $owner = User::factory()->create();
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
     $viewer = User::factory()->create();
     $website = Website::factory()->for($owner, 'owner')->create();
     $website->members()->attach($viewer, ['role' => Website::MEMBER_ROLE_VIEWER]);
@@ -123,7 +124,7 @@ test('a viewer cannot connect or disconnect Google Ads', function (): void {
 });
 
 test('search gaps use only recent queries from the websites connected property', function (): void {
-    $owner = User::factory()->create();
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
     $website = Website::factory()->for($owner, 'owner')->create();
     SearchConsoleConnection::factory()->for($website)->create(['property_url' => 'sc-domain:example.com']);
     $eligible = SearchConsoleMetric::factory()->for($website)->create([
@@ -156,7 +157,7 @@ test('search gaps use only recent queries from the websites connected property',
 });
 
 test('a reviewed campaign is validated then created paused exactly once', function (): void {
-    $owner = User::factory()->create();
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
     $website = Website::factory()->for($owner, 'owner')->create();
     $website->domains()->create(['domain' => 'example.com', 'is_primary' => true]);
     GoogleAdsConnection::factory()->for($website)->create([
@@ -193,7 +194,7 @@ test('a reviewed campaign is validated then created paused exactly once', functi
 });
 
 test('a campaign cannot send visitors to an unverified or different website', function (): void {
-    $owner = User::factory()->create();
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
     $website = Website::factory()->for($owner, 'owner')->create();
     $website->domains()->create(['domain' => 'example.com', 'is_primary' => true]);
     GoogleAdsConnection::factory()->for($website)->create(['customer_id' => '1234567890', 'currency_code' => 'GBP']);
@@ -211,7 +212,7 @@ test('a campaign cannot send visitors to an unverified or different website', fu
 });
 
 test('an uncertain Ads response cannot trigger a second campaign mutation', function (): void {
-    $owner = User::factory()->create();
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
     $website = Website::factory()->for($owner, 'owner')->create();
     $website->domains()->create(['domain' => 'example.com', 'is_primary' => true]);
     GoogleAdsConnection::factory()->for($website)->create(['customer_id' => '1234567890', 'currency_code' => 'GBP']);
@@ -230,4 +231,59 @@ test('an uncertain Ads response cannot trigger a second campaign mutation', func
     $this->actingAs($owner)->post(route('admin.google-ads.campaigns.store', $website), $data)
         ->assertRedirect(route('admin.google-ads.index', $website));
     Http::assertSentCount(2);
+});
+
+test('Google Ads is hidden and all website routes require the owners active Complete plan', function (): void {
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::GROWTH, 'membership_status' => 'active']);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $owner->update(['current_website_id' => $website->id]);
+    $adsUrl = route('admin.google-ads.index', $website);
+
+    $this->actingAs($owner)->get(route('admin.dashboard'))->assertSuccessful()->assertDontSee($adsUrl, false);
+    foreach (['index', 'connect'] as $action) {
+        $this->actingAs($owner)->get(route('admin.google-ads.'.$action, $website))
+            ->assertRedirect(route('admin.billing.index'));
+    }
+    $this->actingAs($owner)->post(route('admin.google-ads.account', $website), ['customer_id' => '1234567890'])
+        ->assertRedirect(route('admin.billing.index'));
+    $this->actingAs($owner)->post(route('admin.google-ads.campaigns.store', $website), [])
+        ->assertRedirect(route('admin.billing.index'));
+    $this->actingAs($owner)->delete(route('admin.google-ads.destroy', $website))
+        ->assertRedirect(route('admin.billing.index'));
+    Http::assertNothingSent();
+
+    $owner->update(['membership_tier' => MembershipPlan::COMPLETE]);
+    $this->actingAs($owner)->get(route('admin.dashboard'))->assertSuccessful()->assertSee($adsUrl, false);
+    $owner->update(['membership_status' => 'canceled']);
+    $this->actingAs($owner)->get($adsUrl)->assertRedirect(route('admin.billing.index'));
+});
+
+test('a shared manager uses the website owners Complete plan and an admin can provide support', function (): void {
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
+    $manager = User::factory()->create(['membership_tier' => MembershipPlan::ESSENTIAL, 'membership_status' => 'active']);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $website->members()->attach($manager, ['role' => Website::MEMBER_ROLE_MANAGER]);
+
+    $this->actingAs($manager)->get(route('admin.google-ads.index', $website))->assertSuccessful();
+    $owner->update(['membership_tier' => MembershipPlan::GROWTH]);
+    $this->actingAs($manager)->get(route('admin.google-ads.index', $website))
+        ->assertRedirect(route('admin.billing.index'));
+
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $this->actingAs($admin)->get(route('admin.google-ads.index', $website))->assertSuccessful();
+});
+
+test('an OAuth callback cannot connect Ads after Complete access ends', function (): void {
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $response = $this->actingAs($owner)->get(route('admin.google-ads.connect', $website));
+    parse_str((string) parse_url($response->headers->get('Location'), PHP_URL_QUERY), $parameters);
+
+    $owner->update(['membership_tier' => MembershipPlan::GROWTH]);
+    $this->actingAs($owner)->get(route('admin.google-ads.callback', [
+        'state' => $parameters['state'], 'code' => 'authorization-code',
+    ]))->assertRedirect(route('admin.billing.index'));
+
+    expect(GoogleAdsConnection::query()->count())->toBe(0);
+    Http::assertNothingSent();
 });

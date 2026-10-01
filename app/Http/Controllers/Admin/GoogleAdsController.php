@@ -10,6 +10,7 @@ use App\Services\GoogleAdsCampaignCreator;
 use App\Services\GoogleAdsClient;
 use App\Services\GoogleAdsOAuthClient;
 use App\Services\GoogleAdsOpportunityFinder;
+use App\Support\MembershipPlan;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -76,6 +77,10 @@ class GoogleAdsController extends Controller
             && $state['user_id'] === $request->user()->id, 403);
         $website = Website::query()->findOrFail($state['website_id']);
         $this->authorizeWebsite($request, $website);
+        if (! $request->user()->isAdmin() && ! $website->owner?->hasMembershipFeature(MembershipPlan::FEATURE_COMPLETE)) {
+            return Redirect::route('admin.billing.index')
+                ->with('error', 'Google Ads is available on the Complete plan.');
+        }
 
         if ($request->query('error')) {
             return Redirect::route('admin.google-ads.index', $website)->with('error', 'Google Ads connection was cancelled.');

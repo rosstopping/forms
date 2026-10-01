@@ -320,12 +320,14 @@ Route::middleware(['web', 'auth', ResolveCurrentWebsite::class])->prefix('admin'
     Route::post('websites/{website}/repository', [WebsiteRepositoryController::class, 'store'])->name('website-repositories.store');
     Route::delete('websites/{website}/repository', [WebsiteRepositoryController::class, 'destroy'])->name('website-repositories.destroy');
     Route::get('websites/{website}/search-console/connect', [SearchConsoleController::class, 'connect'])->middleware('membership:search_console')->name('search-console.connect');
-    Route::get('websites/{website}/google-ads', [GoogleAdsController::class, 'index'])->name('google-ads.index');
-    Route::get('websites/{website}/google-ads/connect', [GoogleAdsController::class, 'connect'])->middleware('throttle:10,1')->name('google-ads.connect');
+    Route::middleware('membership:complete')->group(function (): void {
+        Route::get('websites/{website}/google-ads', [GoogleAdsController::class, 'index'])->name('google-ads.index');
+        Route::get('websites/{website}/google-ads/connect', [GoogleAdsController::class, 'connect'])->middleware('throttle:10,1')->name('google-ads.connect');
+        Route::post('websites/{website}/google-ads/account', [GoogleAdsController::class, 'selectAccount'])->middleware('throttle:10,1')->name('google-ads.account');
+        Route::post('websites/{website}/google-ads/campaigns', [GoogleAdsController::class, 'storeDraft'])->middleware('throttle:3,1')->name('google-ads.campaigns.store');
+        Route::delete('websites/{website}/google-ads', [GoogleAdsController::class, 'destroy'])->name('google-ads.destroy');
+    });
     Route::get('google-ads/callback', [GoogleAdsController::class, 'callback'])->name('google-ads.callback');
-    Route::post('websites/{website}/google-ads/account', [GoogleAdsController::class, 'selectAccount'])->middleware('throttle:10,1')->name('google-ads.account');
-    Route::post('websites/{website}/google-ads/campaigns', [GoogleAdsController::class, 'storeDraft'])->middleware('throttle:3,1')->name('google-ads.campaigns.store');
-    Route::delete('websites/{website}/google-ads', [GoogleAdsController::class, 'destroy'])->name('google-ads.destroy');
     Route::get('search-console/callback', [SearchConsoleController::class, 'callback'])->name('search-console.callback');
     Route::get('websites/{website}/search-console/property', [SearchConsoleController::class, 'property'])->middleware('membership:search_console')->name('search-console.property');
     Route::post('websites/{website}/search-console/property', [SearchConsoleController::class, 'storeProperty'])->middleware('membership:search_console')->name('search-console.property.store');
