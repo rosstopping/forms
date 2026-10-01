@@ -12,19 +12,34 @@
     $pagesListed = data_get($audit->insights, 'pages_listed');
     $pagesPartial = (bool) data_get($audit->insights, 'pages_partial', false);
     $seo = data_get($audit->insights, 'seo');
-    $projection = data_get($audit->insights, 'projection');
 @endphp
 <section data-marketing-events="{{ json_encode($marketingEvents) }}" class="px-3 pt-1 pb-16 sm:px-6 sm:pt-2 sm:pb-24" aria-labelledby="audit-title">
     <div class="mx-auto grid max-w-7xl gap-8 rounded-3xl bg-lichen px-5 py-10 sm:px-10 sm:py-14">
         <header class="grid gap-3">
             <p class="text-base font-medium text-garden sm:text-sm">Your website review</p>
             <h1 id="audit-title" class="max-w-[24ch] break-words text-4xl font-medium tracking-tight text-balance sm:text-5xl">{{ $audit->domain }}</h1>
-            <p class="max-w-[56ch] text-pretty text-base text-ink/65">{{ $audit->isReadyToDisplay() ? 'Your website checks are ready.' : 'We’re checking your website.' }}</p>
+            @if ($audit->isReadyToDisplay())
+                <p class="max-w-[56ch] text-pretty text-base text-ink/65">Your website checks are ready.</p>
+            @endif
         </header>
 
         @if ($audit->status !== \App\Models\WebsiteAudit::STATUS_FAILED && ! $audit->isReadyToDisplay())
-            <div id="audit-progress" data-status-url="{{ route('marketing.website-audits.status', $audit) }}" class="border-t border-ink/10 pt-8" aria-live="polite">
-                <p class="text-pretty text-base text-ink/65">Reviewing your website. This page will update when the checks are ready.</p>
+            <div id="audit-progress" data-status-url="{{ route('marketing.website-audits.status', $audit) }}" class="grid min-h-72 place-items-center border-t border-ink/10 py-10">
+                <div role="status" class="grid justify-items-center gap-6 text-center">
+                    <div class="relative grid size-20 place-items-center" aria-hidden="true">
+                        <div class="absolute inset-0 rounded-full border-2 border-garden/15"></div>
+                        <div class="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-garden motion-reduce:animate-none"></div>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="size-8 text-garden">
+                            <circle cx="10.8" cy="10.8" r="5.8" />
+                            <path d="m15.2 15.2 4.3 4.3" />
+                        </svg>
+                    </div>
+                    <div class="grid gap-2">
+                        <h2 class="text-2xl font-medium tracking-tight text-balance sm:text-3xl">Building your audit.</h2>
+                        <p class="max-w-[44ch] text-pretty text-base text-ink/65">Checking your website and preparing your report.</p>
+                    </div>
+                    <p class="text-pretty text-base text-ink/50 sm:text-sm">Your results will appear here automatically.</p>
+                </div>
             </div>
             <script>
                 (() => {
@@ -53,46 +68,59 @@
                 <section class="grid gap-6" aria-labelledby="audit-numbers-title">
                     <div class="grid gap-2">
                         <h2 id="audit-numbers-title" class="max-w-[35ch] text-3xl font-medium tracking-tight text-balance">What we found.</h2>
-                        <p class="max-w-[56ch] text-pretty text-base text-ink/65">The health score covers checked website basics, not search rankings. Search and backlink figures are third-party estimates when available.</p>
+                        <p class="max-w-[56ch] text-pretty text-base text-ink/65">A quick look at your website checks and search visibility.</p>
                     </div>
-                    <dl class="grid grid-cols-2 gap-x-6 gap-y-7 lg:grid-cols-4">
-                        <div class="grid content-start gap-1 border-t border-ink/10 pt-4">
+                    <dl class="grid gap-3 md:grid-cols-3">
+                        <div @class([
+                            'grid content-start gap-3 rounded-2xl p-5 ring-1 sm:p-6',
+                            'bg-emerald-50 ring-emerald-200/70' => $healthScore !== null && $healthScore >= 80,
+                            'bg-amber-50 ring-amber-200/70' => $healthScore !== null && $healthScore >= 50 && $healthScore < 80,
+                            'bg-rose-50 ring-rose-200/70' => $healthScore !== null && $healthScore < 50,
+                            'bg-white ring-ink/10' => $healthScore === null,
+                        ])>
                             <dt class="text-base text-ink/65 sm:text-sm">Technical health</dt>
-                            <dd class="order-first text-4xl font-medium tracking-tight tabular-nums text-ink sm:text-5xl">{{ $healthScore !== null ? $healthScore.'%' : '—' }}</dd>
+                            <dd class="text-5xl font-medium tracking-tight tabular-nums text-ink">{{ $healthScore !== null ? $healthScore.'%' : '—' }}</dd>
+                            <dd @class([
+                                'text-base font-medium sm:text-sm',
+                                'text-emerald-800' => $healthScore !== null && $healthScore >= 80,
+                                'text-amber-900' => $healthScore !== null && $healthScore >= 50 && $healthScore < 80,
+                                'text-rose-800' => $healthScore !== null && $healthScore < 50,
+                                'text-ink/60' => $healthScore === null,
+                            ])>{{ $healthScore === null ? 'No score available' : ($healthScore >= 80 ? 'Looking healthy' : ($healthScore >= 50 ? 'Needs some work' : 'Needs attention')) }}</dd>
+                            @if ($healthScore !== null)
+                                <div class="h-1.5 overflow-hidden rounded-full bg-ink/10" aria-hidden="true"><div @class(['h-full rounded-full', 'bg-emerald-600' => $healthScore >= 80, 'bg-amber-500' => $healthScore >= 50 && $healthScore < 80, 'bg-rose-600' => $healthScore < 50]) style="width: {{ $healthScore }}%"></div></div>
+                            @endif
                         </div>
-                        <div class="grid content-start gap-1 border-t border-ink/10 pt-4">
-                            <dt class="text-base text-ink/65 sm:text-sm">Pages listed in sitemap</dt>
-                            <dd class="order-first text-4xl font-medium tracking-tight tabular-nums text-ink sm:text-5xl">{{ $pagesListed !== null ? number_format($pagesListed).($pagesPartial ? '+' : '') : '—' }}</dd>
-                        </div>
-                        <div class="grid content-start gap-1 border-t border-ink/10 pt-4">
+                        <div @class(['grid content-start gap-3 rounded-2xl p-5 ring-1 sm:p-6', 'bg-amber-50 ring-amber-200/70' => $fixCount > 0, 'bg-emerald-50 ring-emerald-200/70' => $fixCount === 0])>
                             <dt class="text-base text-ink/65 sm:text-sm">{{ \Illuminate\Support\Str::plural('Website fix', $fixCount) }} flagged</dt>
-                            <dd data-audit-fix-count class="order-first text-4xl font-medium tracking-tight tabular-nums text-ink sm:text-5xl">{{ $fixCount }}</dd>
+                            <dd data-audit-fix-count class="text-5xl font-medium tracking-tight tabular-nums text-ink">{{ $fixCount }}</dd>
+                            <dd @class(['text-base font-medium sm:text-sm', 'text-amber-900' => $fixCount > 0, 'text-emerald-800' => $fixCount === 0])>{{ $fixCount > 0 ? 'Worth fixing' : 'No fixes flagged' }}</dd>
                         </div>
                         @if ($seo !== null)
-                            <div class="grid content-start gap-1 border-t border-ink/10 pt-4">
-                                <dt class="text-base text-ink/65 sm:text-sm">Google ranking terms</dt>
-                                <dd class="order-first text-4xl font-medium tracking-tight tabular-nums text-ink sm:text-5xl">{{ number_format($seo['organic_keywords']) }}</dd>
+                            <div @class(['grid content-start gap-3 rounded-2xl p-5 ring-1 sm:p-6', 'bg-amber-50 ring-amber-200/70' => $seo['top_10_keywords'] === 0, 'bg-emerald-50 ring-emerald-200/70' => $seo['top_10_keywords'] > 0])>
+                                <dt class="text-base text-ink/65 sm:text-sm">Google terms in the top 10</dt>
+                                <dd class="text-5xl font-medium tracking-tight tabular-nums text-ink">{{ number_format($seo['top_10_keywords']) }}</dd>
+                                <dd @class(['text-base font-medium sm:text-sm', 'text-amber-900' => $seo['top_10_keywords'] === 0, 'text-emerald-800' => $seo['top_10_keywords'] > 0])>{{ $seo['top_10_keywords'] === 0 ? 'No page-one terms yet' : 'Visible on page one' }}</dd>
                             </div>
-                            <div class="grid content-start gap-1 border-t border-ink/10 pt-4">
-                                <dt class="text-base text-ink/65 sm:text-sm">Terms in the top 3</dt>
-                                <dd class="order-first text-4xl font-medium tracking-tight tabular-nums text-ink sm:text-5xl">{{ number_format($seo['top_3_keywords']) }}</dd>
+                        @else
+                            <div class="grid content-start gap-3 rounded-2xl bg-white p-5 ring-1 ring-ink/10 sm:p-6">
+                                <dt class="text-base text-ink/65 sm:text-sm">Pages listed in sitemap</dt>
+                                <dd class="text-5xl font-medium tracking-tight tabular-nums text-ink">{{ $pagesListed !== null ? number_format($pagesListed).($pagesPartial ? '+' : '') : '—' }}</dd>
                             </div>
-                            <div class="grid content-start gap-1 border-t border-ink/10 pt-4">
-                                <dt class="text-base text-ink/65 sm:text-sm">Terms in the top 10</dt>
-                                <dd class="order-first text-4xl font-medium tracking-tight tabular-nums text-ink sm:text-5xl">{{ number_format($seo['top_10_keywords']) }}</dd>
-                            </div>
-                            <div class="grid content-start gap-1 border-t border-ink/10 pt-4">
-                                <dt class="text-base text-ink/65 sm:text-sm">Est. monthly organic visits</dt>
-                                <dd class="order-first text-4xl font-medium tracking-tight tabular-nums text-ink sm:text-5xl">{{ number_format($seo['estimated_monthly_visits']) }}</dd>
-                            </div>
-                            @if ($seo['referring_domains'] !== null)
-                                <div class="grid content-start gap-1 border-t border-ink/10 pt-4">
-                                    <dt class="text-base text-ink/65 sm:text-sm">Referring domains</dt>
-                                    <dd class="order-first text-4xl font-medium tracking-tight tabular-nums text-ink sm:text-5xl">{{ number_format($seo['referring_domains']) }}</dd>
-                                </div>
-                            @endif
                         @endif
                     </dl>
+                    @if ($seo !== null)
+                        <dl class="grid grid-cols-2 gap-x-6 gap-y-6 sm:grid-cols-3 lg:grid-cols-5">
+                            <div class="grid content-start gap-1 border-t border-ink/10 pt-4"><dt class="text-base text-ink/65 sm:text-sm">Pages listed in sitemap</dt><dd class="order-first text-3xl font-medium tracking-tight tabular-nums text-ink">{{ $pagesListed !== null ? number_format($pagesListed).($pagesPartial ? '+' : '') : '—' }}</dd></div>
+                            <div class="grid content-start gap-1 border-t border-ink/10 pt-4"><dt class="text-base text-ink/65 sm:text-sm">Google ranking terms</dt><dd class="order-first text-3xl font-medium tracking-tight tabular-nums text-ink">{{ number_format($seo['organic_keywords']) }}</dd></div>
+                            <div class="grid content-start gap-1 border-t border-ink/10 pt-4"><dt class="text-base text-ink/65 sm:text-sm">Terms in the top 3</dt><dd class="order-first text-3xl font-medium tracking-tight tabular-nums text-ink">{{ number_format($seo['top_3_keywords']) }}</dd></div>
+                            <div class="grid content-start gap-1 border-t border-ink/10 pt-4"><dt class="text-base text-ink/65 sm:text-sm">Est. monthly organic visits</dt><dd class="order-first text-3xl font-medium tracking-tight tabular-nums text-ink">{{ number_format($seo['estimated_monthly_visits']) }}</dd></div>
+                            @if ($seo['referring_domains'] !== null)
+                                <div class="grid content-start gap-1 border-t border-ink/10 pt-4"><dt class="text-base text-ink/65 sm:text-sm">Referring domains</dt><dd class="order-first text-3xl font-medium tracking-tight tabular-nums text-ink">{{ number_format($seo['referring_domains']) }}</dd></div>
+                            @endif
+                        </dl>
+                    @endif
+                    <p class="text-pretty text-base text-ink/55 sm:text-sm">Technical health covers the checks we ran. Search and backlink figures are third-party estimates.</p>
                     @if ($pagesListed === null || $seo === null)
                         <p class="text-pretty text-base text-ink/55 sm:text-sm">{{ $seo === null ? 'Search estimates are unavailable for this review.' : '' }} {{ $pagesListed === null ? 'A page count needs an accessible XML sitemap.' : '' }}</p>
                     @endif
@@ -128,14 +156,31 @@
                     </section>
                 @endif
 
-                <section class="grid gap-3 border-t border-ink/10 pt-8" aria-labelledby="audit-projection-title">
-                    <h2 id="audit-projection-title" class="max-w-[35ch] text-2xl font-medium tracking-tight text-balance">Six-month opportunity.</h2>
+                <section class="grid gap-6 rounded-3xl bg-white p-5 ring-1 ring-ink/10 sm:p-8" aria-labelledby="audit-projection-title">
+                    <div class="grid gap-2">
+                        <p class="text-base font-medium text-garden sm:text-sm">Search opportunity</p>
+                        <h2 id="audit-projection-title" class="max-w-[35ch] text-3xl font-medium tracking-tight text-balance">Where this could be in six months.</h2>
+                        <p class="max-w-[56ch] text-pretty text-base text-ink/65">Estimated monthly visits from Google search.</p>
+                    </div>
                     @if ($projection !== null)
-                        <p class="text-3xl font-medium tracking-tight tabular-nums text-ink sm:text-4xl">{{ number_format($projection['six_month_low']) }}–{{ number_format($projection['six_month_high']) }}</p>
-                        <p class="text-base text-ink/65">Estimated organic visits a month</p>
-                        <p class="max-w-[56ch] text-pretty text-base text-ink/65">Current estimate: {{ number_format($projection['baseline_monthly_visits']) }} a month. {{ $projection['method'] }} This is a scenario if we improve those pages, not a forecast or guarantee.</p>
+                        <div class="grid items-center gap-3 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+                            <div class="grid gap-2 rounded-2xl bg-lichen p-5 sm:p-6">
+                                <p class="text-base text-ink/65 sm:text-sm">Today</p>
+                                <p class="text-4xl font-medium tracking-tight tabular-nums text-ink sm:text-5xl">{{ number_format($projection['baseline_monthly_visits']) }}</p>
+                            </div>
+                            <div class="text-center text-2xl text-garden" aria-hidden="true">→</div>
+                            <div class="grid gap-2 rounded-2xl bg-garden/10 p-5 sm:p-6">
+                                <p class="text-base font-medium text-garden sm:text-sm">Possible in six months</p>
+                                <p class="text-4xl font-medium tracking-tight tabular-nums text-ink sm:text-5xl">{{ number_format($projection['six_month_low']) }}–{{ number_format($projection['six_month_high']) }}</p>
+                            </div>
+                        </div>
+                        <p class="max-w-[56ch] text-pretty text-base text-ink/65">This range assumes we improve pages already ranking just outside page one. It is an illustration, not a guarantee.</p>
+                        <details class="group border-t border-ink/10 pt-5">
+                            <summary class="cursor-pointer font-medium text-garden marker:text-garden">How we estimated this</summary>
+                            <p class="max-w-[65ch] pt-3 text-pretty text-base text-ink/65 sm:text-sm">{{ $projection['method'] }} Search volumes and the current visit count come from third-party estimates.</p>
+                        </details>
                     @else
-                        <p class="max-w-[56ch] text-pretty text-base text-ink/65">There isn’t enough ranking and search-volume evidence for a useful numeric estimate yet. We’d set a baseline, fix the site and review progress over the first six months.</p>
+                        <p class="max-w-[56ch] text-pretty text-base text-ink/65">There isn’t enough ranking data for a useful estimate yet. We’d set a baseline, improve the site and review progress over the first six months.</p>
                     @endif
                 </section>
 

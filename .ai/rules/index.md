@@ -92,6 +92,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Console/Commands,Jobs,Services,Models,Http/Controllers/Admin}/**/*Prospect*.php,database/migrations/**/*prospect*.php,resources/views/admin/prospecting-strategy/** | .ai/rules/prospecting-strategy.md |
 | app/{Services,Jobs,Http/Controllers/Admin,Http/Requests}/**/*PersonalisedVideo*.php,resources/views/admin/prospects/**,app/Services/ProspectEngagementScorer.php | .ai/rules/prospects-services.md |
 | app/{Mail,Models,Services,Http/Controllers}/**/*ProspectOutreach*.php,resources/views/mail/prospects/outreach.blade.php,resources/views/admin/prospects/**,routes/web.php | .ai/rules/prospects.md |
+| app/Providers/AppServiceProvider.php | .ai/rules/providers.md |
 | public/pixel.js | .ai/rules/public.md |
 | app/{Models,Services,Jobs,Http/Controllers/Admin,Http/Requests}/**/*SeoImpact*.php,app/Services/{ContentWorkSelector,ContentGenerationPromptGenerator,ContentOpportunityQueuer}.php | .ai/rules/requests-services.md |
 | app/{Jobs/RunCopilotSdkTitle.php,Http/Controllers/Admin/CopilotSdkRunController.php,Http/Requests/StoreCopilotSdkRunRequest.php},resources/views/admin/websites/partials/content-sdk*.blade.php | .ai/rules/requests-views-admin-websites-partials.md |

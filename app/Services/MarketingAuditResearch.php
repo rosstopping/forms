@@ -109,7 +109,7 @@ class MarketingAuditResearch
      * @param  array<string, mixed>  $seo
      * @return array<string, int|string>|null
      */
-    private function projection(array $seo): ?array
+    public function projection(array $seo): ?array
     {
         $midPageSearches = collect($seo['keywords'])
             ->filter(fn (array $keyword): bool => $keyword['position'] >= 11 && $keyword['position'] <= 30 && ($keyword['monthly_searches'] ?? 0) > 0)
@@ -121,14 +121,14 @@ class MarketingAuditResearch
 
         $baseline = max(0, (int) $seo['estimated_monthly_visits']);
         $lower = $baseline + max(1, (int) round($midPageSearches * 0.0075));
-        $upper = $baseline + max(2, (int) round($midPageSearches * 0.025));
+        $upper = $baseline + max(2, (int) round($midPageSearches * 0.04));
 
         return [
             'baseline_monthly_visits' => $baseline,
             'six_month_low' => $lower,
             'six_month_high' => max($lower + 1, $upper),
             'sampled_mid_page_searches' => $midPageSearches,
-            'method' => 'Illustrative monthly organic visits if 25–50% of sampled terms in positions 11–30 reach page one and attract 3–5% of searches. No new-content gains included.',
+            'method' => 'Based on 25–50% of sampled terms in positions 11–30 reaching page one and attracting 3–8% of those searches. Excludes gains from new content.',
         ];
     }
 }

@@ -74,7 +74,8 @@ it('builds a bounded search snapshot and caches paid provider results', function
         ->and($insights['seo']['keywords'][0]['monthly_searches'])->toBe(1000)
         ->and($insights['seo']['cost_usd'])->toBe(0.05056)
         ->and($insights['projection']['six_month_low'])->toBe(128)
-        ->and($insights['projection']['six_month_high'])->toBe(145)
+        ->and($insights['projection']['six_month_high'])->toBe(160)
+        ->and($insights['projection']['method'])->toContain('3–8%')
         ->and($again['seo'])->toBe($insights['seo']);
     Http::assertSentCount(3);
     Http::assertSent(fn ($request): bool => str_contains($request->url(), 'ranked_keywords/live') && $request->data()[0]['limit'] === 20);

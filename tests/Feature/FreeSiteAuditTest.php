@@ -13,6 +13,7 @@ use App\Services\MarketingAuditResearch;
 use App\Services\ProspectWebsiteAnalyzer;
 use App\Support\MarketingJourney;
 use App\Support\MembershipPlan;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
@@ -56,7 +57,8 @@ it('shows audit progress and exposes only its processing state', function (): vo
 
     $this->get(route('marketing.website-audits.show', $audit))
         ->assertSuccessful()
-        ->assertSee('Reviewing your website')
+        ->assertSee('Building your audit.')
+        ->assertSee('Your results will appear here automatically.')
         ->assertSee(route('marketing.website-audits.status', $audit));
 
     $this->getJson(route('marketing.website-audits.status', $audit))
@@ -126,6 +128,7 @@ it('shows zero fixes when the initial scan finds no issues', function (): void {
     $document = new DOMDocument;
     @$document->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
     expect((new DOMXPath($document))->query('//*[@data-audit-fix-count]')->item(0)->textContent)->toBe('0');
+    $response->assertSee('No fixes flagged');
 });
 
 it('shows measured search estimates and a conditional six-month scenario', function (): void {
@@ -164,8 +167,42 @@ it('shows measured search estimates and a conditional six-month scenario', funct
         ->assertSee('Referring domains')
         ->assertSee('garden office fitters')
         ->assertSee('1,000')
-        ->assertSee('128–145')
-        ->assertSee('not a forecast or guarantee.');
+        ->assertSee('Needs some work')
+        ->assertSee('Visible on page one')
+        ->assertSee('Today')
+        ->assertSee('Possible in six months')
+        ->assertSee('128–160')
+        ->assertDontSee('128–145')
+        ->assertSee('not a guarantee.');
+});
+
+it('marks poor technical health and missing page-one visibility as needs attention', function (): void {
+    $audit = WebsiteAudit::factory()->create([
+        'status' => WebsiteAudit::STATUS_COMPLETED,
+        'created_at' => now()->subSeconds(11),
+        'findings' => [['severity' => 'passed'], ['severity' => 'warning'], ['severity' => 'failed'], ['severity' => 'failed']],
+        'insights' => [
+            'health_score' => 25,
+            'pages_listed' => 12,
+            'pages_partial' => false,
+            'seo' => [
+                'location_code' => 2826,
+                'organic_keywords' => 4,
+                'top_3_keywords' => 0,
+                'top_10_keywords' => 0,
+                'estimated_monthly_visits' => 2,
+                'referring_domains' => 1,
+                'sample_size' => 0,
+                'keywords' => [],
+            ],
+        ],
+    ]);
+
+    $this->get(route('marketing.website-audits.show', $audit))
+        ->assertSuccessful()
+        ->assertSee('Needs attention')
+        ->assertSee('No page-one terms yet')
+        ->assertSee('There isn’t enough ranking data for a useful estimate yet.');
 });
 
 it('keeps the progress experience visible for at least ten seconds', function (): void {
@@ -177,8 +214,8 @@ it('keeps the progress experience visible for at least ten seconds', function ()
 
     $this->get(route('marketing.website-audits.show', $audit))
         ->assertSuccessful()
-        ->assertSee('Reviewing your website')
-        ->assertSee('We’re checking your website');
+        ->assertSee('Building your audit.')
+        ->assertSee('Checking your website and preparing your report.');
 
     $this->getJson(route('marketing.website-audits.status', $audit))
         ->assertExactJson(['status' => 'completed', 'completed' => false, 'failed' => false]);
@@ -368,6 +405,34 @@ it('throttles repeated website audit submissions', function (): void {
 
     $this->post(route('marketing.free-site-audit.store'), ['website_url' => 'four.example'])->assertTooManyRequests();
     expect(WebsiteAudit::query()->count())->toBe(3);
+});
+
+it('allows repeated audit submissions and report polling while developing locally', function (): void {
+    Queue::fake();
+    $this->withoutMiddleware(PreventRequestForgery::class);
+    $this->app->detectEnvironment(fn (): string => 'local');
+
+    try {
+        foreach (range(1, 4) as $attempt) {
+            $this->post(route('marketing.free-site-audit.store'), [
+                'website_url' => "local-test-{$attempt}.example",
+            ])->assertRedirect();
+        }
+
+        $audit = WebsiteAudit::query()->firstOrFail();
+
+        foreach (range(1, 61) as $attempt) {
+            $this->get(route('marketing.website-audits.show', $audit))->assertSuccessful();
+        }
+
+        foreach (range(1, 121) as $attempt) {
+            $this->getJson(route('marketing.website-audits.status', $audit))->assertSuccessful();
+        }
+
+        expect(WebsiteAudit::query()->count())->toBe(4);
+    } finally {
+        $this->app->detectEnvironment(fn (): string => 'testing');
+    }
 });
 
 it('expires private website audit links', function (): void {

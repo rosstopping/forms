@@ -17,3 +17,9 @@ The public audit result shows one count of warning/failed checks as website fixe
 
 ## Bound public audit enrichment and label projections
 Public audit reports show measured technical checks and sitemap page counts, plus cached DataForSEO UK Google rankings, search volume, traffic estimates, and backlink summaries when credentials are configured. Limit enrichment to one domain overview, one 20-keyword sample (only when rankings exist), and one backlink summary; cache provider data for seven days and show unavailable when data is missing. Technical health is passed checks / total checks, not a search ranking score. Six-month numbers are conditional scenarios, never promises. Keep the managed SEO plan and Book a call with Ross CTA concise.
+
+## Use a restrained pending audit loader
+The pending website audit shows a compact animated search mark, a single Building your audit heading, and concise copy that the report appears automatically. Keep the real status polling and avoid fake percentage progress or repetitive checking text; support reduced-motion preferences.
+
+## Interpret audit stats with restrained status colour and a clear projection
+Emphasise technical health, flagged fixes, and page-one Google terms with conditional green/amber/rose status treatments; leave page counts, traffic estimates, and referring domains neutral because raw counts have no universal good/bad threshold. Compare current estimated monthly organic visits with a clearly labelled six-month illustrative range. Keep projection assumptions accessible but out of the primary reading path, and derive the optimistic end from stated ranking/traffic assumptions, not an arbitrary uplift.

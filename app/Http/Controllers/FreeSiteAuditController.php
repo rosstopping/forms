@@ -6,6 +6,7 @@ use App\Http\Requests\StoreFreeSiteAuditRequest;
 use App\Jobs\GenerateWebsiteAudit;
 use App\Models\MarketingConversion;
 use App\Models\WebsiteAudit;
+use App\Services\MarketingAuditResearch;
 use App\Services\MarketingTurnstileVerifier;
 use App\Support\MarketingJourney;
 use Illuminate\Http\JsonResponse;
@@ -51,7 +52,7 @@ class FreeSiteAuditController extends Controller
         return redirect()->route('marketing.website-audits.show', $audit);
     }
 
-    public function show(WebsiteAudit $websiteAudit): View
+    public function show(WebsiteAudit $websiteAudit, MarketingAuditResearch $research): View
     {
         abort_if($websiteAudit->hasExpired(), 404);
 
@@ -62,7 +63,13 @@ class FreeSiteAuditController extends Controller
             ))
             ->get()->map(fn (MarketingConversion $conversion): array => $conversion->payload())->all();
 
-        return view('marketing.website-audit', ['audit' => $websiteAudit, 'marketingEvents' => $events]);
+        $seo = data_get($websiteAudit->insights, 'seo');
+
+        return view('marketing.website-audit', [
+            'audit' => $websiteAudit,
+            'marketingEvents' => $events,
+            'projection' => is_array($seo) ? $research->projection($seo) : null,
+        ]);
     }
 
     public function status(WebsiteAudit $websiteAudit): JsonResponse

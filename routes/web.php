@@ -180,10 +180,10 @@ Route::post('/get-started', [FreeSiteAuditController::class, 'store'])
     ->middleware('throttle:website-audits')
     ->name('marketing.free-site-audit.store');
 Route::get('/website-audits/{websiteAudit}', [FreeSiteAuditController::class, 'show'])
-    ->middleware('throttle:60,1')
+    ->middleware('throttle:website-audit-reports')
     ->name('marketing.website-audits.show');
 Route::get('/website-audits/{websiteAudit}/status', [FreeSiteAuditController::class, 'status'])
-    ->middleware('throttle:120,1')
+    ->middleware('throttle:website-audit-status')
     ->name('marketing.website-audits.status');
 Route::post('/website-audits/{websiteAudit}/continue', [WebsiteAuditOnboardingController::class, 'store'])
     ->middleware('throttle:60,1')
