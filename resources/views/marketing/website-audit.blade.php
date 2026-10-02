@@ -323,6 +323,14 @@
                         @endforeach
                     </ol>
                 </div>
+
+                <section data-audit-call-section class="grid gap-6 rounded-3xl bg-ink p-6 text-white sm:p-8 md:grid-cols-[minmax(0,1fr)_auto] md:items-center" aria-labelledby="audit-call-title">
+                    <div class="grid gap-2">
+                        <h2 id="audit-call-title" class="text-3xl font-medium tracking-tight text-balance">Talk through your audit with Ross.</h2>
+                        <p class="max-w-[52ch] text-base text-white/75">We’ll explain the findings and what we’d work on first.</p>
+                    </div>
+                    <a href="{{ route('marketing.ppc.book') }}" class="inline-flex min-h-12 items-center justify-center gap-3 rounded-full bg-garden px-5 py-3 text-base font-medium text-white hover:bg-moss focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white md:justify-self-end">Book a call with Ross <span aria-hidden="true">↗</span></a>
+                </section>
             </div>
         @endif
         <p class="text-pretty text-base text-ink/50 sm:text-sm">This private link expires {{ $audit->expires_at->diffForHumans() }}.</p>

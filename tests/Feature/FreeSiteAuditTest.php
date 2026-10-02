@@ -67,6 +67,7 @@ it('shows audit progress and exposes only its processing state', function (): vo
         ->assertSee('Building your audit.')
         ->assertSee('Your results will appear here automatically.')
         ->assertDontSee('data-audit-actions', false)
+        ->assertDontSee('data-audit-call-section', false)
         ->assertDontSee('data-audit-email-open', false)
         ->assertSee(route('marketing.website-audits.status', $audit));
 
@@ -131,6 +132,8 @@ it('stores an anonymous audit result for the live report', function (): void {
         ->assertSeeInOrder(['Fix the website issues.', 'Improve existing content.', 'Create content for missed searches.', 'Strengthen the website and its reputation.', 'Measure and keep improving.'])
         ->assertSee('href="'.route('marketing.ppc.book').'"', false)
         ->assertSee('Book a call with Ross')
+        ->assertSee('data-audit-call-section', false)
+        ->assertSee('Talk through your audit with Ross.')
         ->assertSee('data-audit-actions', false)
         ->assertDontSee('HTTPS should be reviewed.')
         ->assertDontSee('Start preparing my fixes')
