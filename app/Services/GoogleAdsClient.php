@@ -221,6 +221,101 @@ class GoogleAdsClient
             ->values()->all();
     }
 
+    /** @return list<array{id: string, resource_name: string, name: string, status: string, type: string, daily_budget_micros: int}> */
+    public function campaigns(GoogleAdsConnection $connection): array
+    {
+        return $this->searchCampaigns($connection, "campaign.status != 'REMOVED' ORDER BY campaign.id DESC LIMIT 100");
+    }
+
+    /** @return array{id: string, resource_name: string, name: string, status: string, type: string, daily_budget_micros: int}|null */
+    public function campaign(GoogleAdsConnection $connection, string $campaignId): ?array
+    {
+        $this->assertCampaignId($campaignId);
+
+        $campaign = $this->searchCampaigns($connection, "campaign.id = {$campaignId} LIMIT 1")[0] ?? null;
+
+        return $campaign && $campaign['id'] === $campaignId ? $campaign : null;
+    }
+
+    public function updateCampaignStatus(GoogleAdsConnection $connection, string $campaignId, string $status): void
+    {
+        $this->assertCampaignId($campaignId);
+        if (! in_array($status, ['ENABLED', 'PAUSED'], true)) {
+            throw new RuntimeException('Invalid Google Ads campaign status.');
+        }
+
+        $this->mutateCampaign($connection, ['update' => [
+            'resourceName' => $this->campaignResourceName($connection, $campaignId),
+            'status' => $status,
+        ], 'updateMask' => 'status']);
+    }
+
+    public function removeCampaign(GoogleAdsConnection $connection, string $campaignId): void
+    {
+        $this->assertCampaignId($campaignId);
+        $this->mutateCampaign($connection, ['remove' => $this->campaignResourceName($connection, $campaignId)]);
+    }
+
+    /**
+     * @return list<array{id: string, resource_name: string, name: string, status: string, type: string, daily_budget_micros: int}>
+     */
+    protected function searchCampaigns(GoogleAdsConnection $connection, string $filter): array
+    {
+        $customerId = (string) $connection->customer_id;
+        $this->assertCustomerId($customerId);
+        $response = $this->request($connection, $connection->login_customer_id)
+            ->post($this->url("customers/{$customerId}/googleAds:searchStream"), [
+                'query' => 'SELECT campaign.id, campaign.resource_name, campaign.name, campaign.status, campaign.advertising_channel_type, campaign_budget.amount_micros FROM campaign WHERE '.$filter,
+            ])->throw()->json();
+
+        if (! is_array($response)) {
+            throw new RuntimeException('Google Ads returned an invalid campaign list.');
+        }
+
+        return collect($response)
+            ->flatMap(fn (mixed $batch): array => is_array($batch) ? ($batch['results'] ?? []) : [])
+            ->map(fn (array $result): array => [
+                'id' => (string) data_get($result, 'campaign.id', ''),
+                'resource_name' => (string) data_get($result, 'campaign.resourceName', ''),
+                'name' => (string) data_get($result, 'campaign.name', ''),
+                'status' => (string) data_get($result, 'campaign.status', ''),
+                'type' => (string) data_get($result, 'campaign.advertisingChannelType', ''),
+                'daily_budget_micros' => (int) data_get($result, 'campaignBudget.amountMicros', 0),
+            ])
+            ->filter(fn (array $campaign): bool => preg_match('/^\d+$/', $campaign['id']) === 1)
+            ->values()->all();
+    }
+
+    /** @param array<string, mixed> $operation */
+    protected function mutateCampaign(GoogleAdsConnection $connection, array $operation): void
+    {
+        $customerId = (string) $connection->customer_id;
+        $response = $this->request($connection, $connection->login_customer_id)
+            ->post($this->url("customers/{$customerId}/campaigns:mutate"), [
+                'operations' => [$operation],
+                'partialFailure' => false,
+            ])->throw()->json();
+
+        if (! is_array($response) || ! is_string(data_get($response, 'results.0.resourceName'))) {
+            throw new RuntimeException('Google Ads did not confirm the campaign change.');
+        }
+    }
+
+    protected function campaignResourceName(GoogleAdsConnection $connection, string $campaignId): string
+    {
+        $customerId = (string) $connection->customer_id;
+        $this->assertCustomerId($customerId);
+
+        return "customers/{$customerId}/campaigns/{$campaignId}";
+    }
+
+    protected function assertCampaignId(string $campaignId): void
+    {
+        if (preg_match('/^[1-9]\d*$/', $campaignId) !== 1) {
+            throw new RuntimeException('Invalid Google Ads campaign ID.');
+        }
+    }
+
     protected function request(GoogleAdsConnection $connection, ?string $loginCustomerId = null): PendingRequest
     {
         $request = Http::acceptJson()->asJson()->withToken($this->oauth->accessToken($connection))

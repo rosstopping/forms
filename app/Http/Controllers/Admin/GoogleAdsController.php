@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\GenerateGoogleAdsSuggestionsRequest;
+use App\Http\Requests\SaveGoogleAdsCampaignFormDraftRequest;
 use App\Http\Requests\StoreGoogleAdsCampaignDraftRequest;
 use App\Jobs\CreateGoogleAdsCampaign;
 use App\Models\GoogleAdsCampaignDraft;
@@ -31,15 +32,33 @@ class GoogleAdsController extends Controller
     {
         $this->authorizeWebsite($request, $website);
         $connection = $website->googleAdsConnection;
+        $formDraft = $connection?->campaign_form_draft ?? [];
         $oauthConfigured = filled(config('services.google_ads.client_id')) && filled(config('services.google_ads.client_secret'));
-        $searchGaps = $this->opportunities->searchGaps($website);
-        $drafts = $website->googleAdsCampaignDrafts()->latest()->limit(10)->get();
+        $requestedTab = $request->query('tab');
+        $tab = in_array($requestedTab, ['settings', 'campaigns', 'create'], true) ? $requestedTab : null;
+        if (! $connection?->customer_id) {
+            $tab = 'settings';
+        }
+
+        $campaigns = [];
+        $campaignError = null;
+        if ($connection?->customer_id && ($tab === null || $tab === 'campaigns')) {
+            try {
+                $campaigns = $this->client->campaigns($connection);
+            } catch (ConnectionException|RequestException|RuntimeException) {
+                $campaignError = 'Could not load campaigns from this Ads account. Refresh to try again.';
+            }
+        }
+        $tab ??= $campaignError || $campaigns !== [] ? 'campaigns' : 'create';
+
+        $searchGaps = $tab === 'create' ? $this->opportunities->searchGaps($website) : collect();
+        $drafts = $tab === 'campaigns' ? $website->googleAdsCampaignDrafts()->latest()->limit(10)->get() : collect();
         $availableAccounts = [];
         $unavailableAccountCount = 0;
         $connectionError = null;
         $conversionActions = [];
         $conversionError = null;
-        if ($connection) {
+        if ($connection && $tab === 'settings') {
             try {
                 $accountList = $this->client->availableAccounts($connection);
                 $availableAccounts = $accountList['accounts'];
@@ -56,7 +75,7 @@ class GoogleAdsController extends Controller
             }
         }
 
-        return view('admin.websites.google-ads', compact('website', 'connection', 'oauthConfigured', 'availableAccounts', 'unavailableAccountCount', 'connectionError', 'conversionActions', 'conversionError', 'searchGaps', 'drafts'));
+        return view('admin.websites.google-ads', compact('website', 'connection', 'formDraft', 'oauthConfigured', 'tab', 'campaigns', 'campaignError', 'availableAccounts', 'unavailableAccountCount', 'connectionError', 'conversionActions', 'conversionError', 'searchGaps', 'drafts'));
     }
 
     public function connect(Request $request, Website $website): RedirectResponse
@@ -72,7 +91,7 @@ class GoogleAdsController extends Controller
         try {
             return Redirect::away($this->oauth->authorizationUrl($state));
         } catch (RuntimeException $exception) {
-            return Redirect::route('admin.google-ads.index', $website)->with('error', 'Google Ads connection is not configured here. Ask an administrator to check the Google OAuth credentials.');
+            return Redirect::route('admin.google-ads.index', ['website' => $website, 'tab' => 'settings'])->with('error', 'Google Ads connection is not configured here. Ask an administrator to check the Google OAuth credentials.');
         }
     }
 
@@ -91,17 +110,17 @@ class GoogleAdsController extends Controller
         }
 
         if ($request->query('error')) {
-            return Redirect::route('admin.google-ads.index', $website)->with('error', 'Google Ads connection was cancelled.');
+            return Redirect::route('admin.google-ads.index', ['website' => $website, 'tab' => 'settings'])->with('error', 'Google Ads connection was cancelled.');
         }
 
         $data = $request->validate(['code' => ['required', 'string']]);
         try {
             $this->oauth->authorize($website, $request->user(), $data['code']);
         } catch (ConnectionException|RequestException|RuntimeException) {
-            return Redirect::route('admin.google-ads.index', $website)->with('error', 'Google Ads could not complete the connection. Check your Google OAuth settings and try again.');
+            return Redirect::route('admin.google-ads.index', ['website' => $website, 'tab' => 'settings'])->with('error', 'Google Ads could not complete the connection. Check your Google OAuth settings and try again.');
         }
 
-        return Redirect::route('admin.google-ads.index', $website)->with('status', 'Google Ads authorized. Choose the account for this website.');
+        return Redirect::route('admin.google-ads.index', ['website' => $website, 'tab' => 'settings'])->with('status', 'Google Ads authorized. Choose the account for this website.');
     }
 
     public function selectAccount(Request $request, Website $website): RedirectResponse
@@ -137,7 +156,79 @@ class GoogleAdsController extends Controller
         $this->authorizeWebsite($request, $website);
         $website->googleAdsConnection()->delete();
 
-        return Redirect::route('admin.google-ads.index', $website)->with('status', 'Google Ads disconnected.');
+        return Redirect::route('admin.google-ads.index', ['website' => $website, 'tab' => 'settings'])->with('status', 'Google Ads disconnected.');
+    }
+
+    public function updateCampaignStatus(Request $request, Website $website, string $campaignId): RedirectResponse
+    {
+        $this->authorizeWebsite($request, $website);
+        abort_unless(preg_match('/^[1-9]\d*$/', $campaignId) === 1, 404);
+        $data = $request->validate(['status' => ['required', 'in:ENABLED,PAUSED']]);
+        $status = $data['status'];
+        if ($status === 'ENABLED') {
+            $request->validate(['tracking_confirmed' => ['accepted']]);
+        }
+
+        $connection = $website->googleAdsConnection;
+        abort_unless($connection?->customer_id, 404);
+
+        try {
+            $campaign = $this->client->campaign($connection, $campaignId);
+            if (! $campaign || $campaign['status'] === 'REMOVED') {
+                return Redirect::route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns'])
+                    ->with('error', 'This campaign is no longer available in the selected Ads account.');
+            }
+            if ($campaign['status'] === $status) {
+                return Redirect::route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns'])
+                    ->with('status', 'This campaign is already '.strtolower($status).'.');
+            }
+            if (($status === 'ENABLED' && $campaign['status'] !== 'PAUSED')
+                || ($status === 'PAUSED' && $campaign['status'] !== 'ENABLED')) {
+                return Redirect::route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns'])
+                    ->with('error', 'This campaign changed in Google Ads. Refresh the list before trying again.');
+            }
+
+            $this->client->updateCampaignStatus($connection, $campaignId, $status);
+        } catch (ConnectionException|RequestException|RuntimeException $exception) {
+            report($exception);
+
+            return Redirect::route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns'])
+                ->with('error', 'Google Ads did not confirm the status change. Refresh the campaign list before trying again.');
+        }
+
+        return Redirect::route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns'])
+            ->with('status', $status === 'ENABLED' ? 'Campaign enabled in Google Ads.' : 'Campaign paused in Google Ads.');
+    }
+
+    public function removeCampaign(Request $request, Website $website, string $campaignId): RedirectResponse
+    {
+        $this->authorizeWebsite($request, $website);
+        abort_unless(preg_match('/^[1-9]\d*$/', $campaignId) === 1, 404);
+        $data = $request->validate(['confirmation' => ['required', 'string', 'max:120']]);
+        $connection = $website->googleAdsConnection;
+        abort_unless($connection?->customer_id, 404);
+
+        try {
+            $campaign = $this->client->campaign($connection, $campaignId);
+            if (! $campaign || $campaign['status'] === 'REMOVED') {
+                return Redirect::route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns'])
+                    ->with('error', 'This campaign is no longer available in the selected Ads account.');
+            }
+            if (! hash_equals($campaign['name'], $data['confirmation'])) {
+                return Redirect::route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns'])
+                    ->with('error', 'The campaign name did not match. Nothing was removed.');
+            }
+
+            $this->client->removeCampaign($connection, $campaignId);
+        } catch (ConnectionException|RequestException|RuntimeException $exception) {
+            report($exception);
+
+            return Redirect::route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns'])
+                ->with('error', 'Google Ads did not confirm removal. Refresh the campaign list before trying again.');
+        }
+
+        return Redirect::route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns'])
+            ->with('status', 'Campaign removed from Google Ads.');
     }
 
     public function storeDraft(StoreGoogleAdsCampaignDraftRequest $request, Website $website): RedirectResponse
@@ -157,7 +248,7 @@ class GoogleAdsController extends Controller
                 CreateGoogleAdsCampaign::dispatch($existing->id);
             }
 
-            return Redirect::route('admin.google-ads.index', $website)->with('status', 'This campaign request is already recorded. Check its status below.');
+            return Redirect::route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns'])->with('status', 'This campaign request is already recorded. Check its status below.');
         }
 
         if ($website->googleAdsCampaignDrafts()->where('name', $data['name'])
@@ -182,8 +273,31 @@ class GoogleAdsController extends Controller
         ]);
 
         CreateGoogleAdsCampaign::dispatch($draft->id);
+        $connection->update(['campaign_form_draft' => null, 'campaign_form_draft_saved_at' => null]);
 
-        return Redirect::route('admin.google-ads.index', $website)->with('status', 'Campaign queued. It will be created paused; refresh this page shortly to see the result.');
+        return Redirect::route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns'])->with('status', 'Campaign queued. It will be created paused; refresh this page shortly to see the result.');
+    }
+
+    public function saveFormDraft(SaveGoogleAdsCampaignFormDraftRequest $request, Website $website): RedirectResponse
+    {
+        $connection = $website->googleAdsConnection()->firstOrFail();
+        if (! $connection->customer_id) {
+            return Redirect::route('admin.google-ads.index', ['website' => $website, 'tab' => 'settings'])
+                ->with('error', 'Choose a Google Ads account before saving a campaign draft.');
+        }
+
+        $data = $request->validated();
+        $formDraft = [];
+        foreach (['name', 'daily_budget', 'city_name', 'radius_miles', 'final_url', 'campaign_brief', 'keywords_text'] as $field) {
+            $formDraft[$field] = (string) ($data[$field] ?? '');
+        }
+        foreach (['headlines' => 3, 'descriptions' => 2] as $field => $count) {
+            $formDraft[$field] = array_pad(array_map(fn (mixed $value): string => (string) ($value ?? ''), array_values($data[$field] ?? [])), $count, '');
+        }
+
+        $connection->update(['campaign_form_draft' => $formDraft, 'campaign_form_draft_saved_at' => now()]);
+
+        return Redirect::route('admin.google-ads.index', ['website' => $website, 'tab' => 'create'])->with('status', 'Campaign draft saved. You can return and finish it later.');
     }
 
     public function checkCampaign(Request $request, Website $website, GoogleAdsCampaignDraft $draft): RedirectResponse
@@ -194,18 +308,18 @@ class GoogleAdsController extends Controller
         $connection = $website->googleAdsConnection;
 
         if (! $connection || $connection->customer_id !== $draft->customer_id) {
-            return Redirect::route('admin.google-ads.index', $website)
+            return Redirect::route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns'])
                 ->with('error', 'Select Ads account '.$draft->customer_id.' before checking this campaign request.');
         }
 
         try {
             $matches = $this->client->campaignsNamed($connection, $draft->name);
         } catch (ConnectionException|RequestException|RuntimeException) {
-            return Redirect::route('admin.google-ads.index', $website)
+            return Redirect::route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns'])
                 ->with('error', 'Google Ads could not check this campaign right now. Its creation status is still unconfirmed.');
         }
 
-        return Redirect::route('admin.google-ads.index', $website)->with('campaign_check', [
+        return Redirect::route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns'])->with('campaign_check', [
             'draft_id' => $draft->id,
             'matches' => $matches,
         ]);
@@ -218,25 +332,25 @@ class GoogleAdsController extends Controller
         abort_unless($draft->status === GoogleAdsCampaignDraft::STATUS_UNCERTAIN, 404);
 
         if ($draft->updated_at->isAfter(now()->subMinutes(5))) {
-            return Redirect::route('admin.google-ads.index', $website)
+            return Redirect::route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns'])
                 ->with('error', 'Wait five minutes for the original campaign request to finish, then check it again.');
         }
 
         $connection = $website->googleAdsConnection;
         if (! $connection || $connection->customer_id !== $draft->customer_id) {
-            return Redirect::route('admin.google-ads.index', $website)
+            return Redirect::route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns'])
                 ->with('error', 'Select Ads account '.$draft->customer_id.' before clearing this request.');
         }
 
         try {
             $matches = $this->client->campaignsNamed($connection, $draft->name);
         } catch (ConnectionException|RequestException|RuntimeException) {
-            return Redirect::route('admin.google-ads.index', $website)
+            return Redirect::route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns'])
                 ->with('error', 'Google Ads could not check this campaign right now. The request was not cleared.');
         }
 
         if ($matches !== []) {
-            return Redirect::route('admin.google-ads.index', $website)
+            return Redirect::route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns'])
                 ->with('error', 'A campaign with this name now exists in Google Ads. The request was not cleared.');
         }
 
@@ -249,7 +363,7 @@ class GoogleAdsController extends Controller
                 'error' => 'No matching campaign was found in Ads account '.$draft->customer_id.' when this request was cleared.',
             ]);
 
-        return Redirect::route('admin.google-ads.index', $website)->with(
+        return Redirect::route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns'])->with(
             $cleared ? 'status' : 'error',
             $cleared ? 'The unconfirmed request was cleared. You can now create a new paused campaign.' : 'This request changed while it was being checked. Refresh the page.',
         );

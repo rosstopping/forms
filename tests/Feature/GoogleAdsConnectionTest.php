@@ -13,6 +13,7 @@ use App\Support\MembershipPlan;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request as ClientRequest;
 use Illuminate\Http\Client\RequestException;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
@@ -44,7 +45,7 @@ test('missing local OAuth credentials explain why connect returns to the workspa
     $website = Website::factory()->for($admin, 'owner')->create();
 
     $this->actingAs($admin)->get(route('admin.google-ads.connect', $website))
-        ->assertRedirect(route('admin.google-ads.index', $website))
+        ->assertRedirect(route('admin.google-ads.index', ['website' => $website, 'tab' => 'settings']))
         ->assertSessionHas('error');
     $this->actingAs($admin)->get(route('admin.google-ads.index', $website))
         ->assertSuccessful()
@@ -69,7 +70,7 @@ test('a website manager can authorize Google Ads for only that website', functio
     $this->actingAs($owner)->get(route('admin.google-ads.callback', [
         'code' => 'authorization-code',
         'state' => $parameters['state'],
-    ]))->assertRedirect(route('admin.google-ads.index', $website));
+    ]))->assertRedirect(route('admin.google-ads.index', ['website' => $website, 'tab' => 'settings']));
 
     $connection = $website->googleAdsConnection()->firstOrFail();
     expect($connection->access_token)->toBe('access-secret')
@@ -208,6 +209,7 @@ test('a viewer cannot connect or disconnect Google Ads', function (): void {
 test('search gaps use only recent queries from the websites connected property', function (): void {
     $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
     $website = Website::factory()->for($owner, 'owner')->create();
+    GoogleAdsConnection::factory()->for($website)->create(['customer_id' => '1234567890', 'currency_code' => 'GBP']);
     SearchConsoleConnection::factory()->for($website)->create(['property_url' => 'sc-domain:example.com']);
     $eligible = SearchConsoleMetric::factory()->for($website)->create([
         'property_url' => 'sc-domain:example.com',
@@ -232,7 +234,7 @@ test('search gaps use only recent queries from the websites connected property',
         'position' => 20,
     ]);
 
-    $this->actingAs($owner)->get(route('admin.google-ads.index', $website))
+    $this->actingAs($owner)->get(route('admin.google-ads.index', ['website' => $website, 'tab' => 'create']))
         ->assertSuccessful()
         ->assertSee($eligible->query)
         ->assertDontSee('private other website');
@@ -243,8 +245,10 @@ test('a reviewed campaign is validated then created paused exactly once', functi
     $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
     $website = Website::factory()->for($owner, 'owner')->create();
     $website->domains()->create(['domain' => 'example.com', 'is_primary' => true]);
-    GoogleAdsConnection::factory()->for($website)->create([
+    $connection = GoogleAdsConnection::factory()->for($website)->create([
         'customer_id' => '1234567890', 'currency_code' => 'GBP',
+        'campaign_form_draft' => ['name' => 'Saved working copy'],
+        'campaign_form_draft_saved_at' => now(),
     ]);
     Http::fakeSequence()->push([])->push(['mutateOperationResponses' => [[], ['campaignResult' => ['resourceName' => 'customers/1234567890/campaigns/987']]]]);
 
@@ -260,9 +264,10 @@ test('a reviewed campaign is validated then created paused exactly once', functi
         'descriptions' => ['Find out where your website could win more searches.', 'Get a free search audit for your business.'],
     ];
     $this->actingAs($owner)->post(route('admin.google-ads.campaigns.store', $website), $data)
-        ->assertRedirect(route('admin.google-ads.index', $website));
+        ->assertRedirect(route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns']));
     $draft = GoogleAdsCampaignDraft::query()->firstOrFail();
     expect($draft->status)->toBe(GoogleAdsCampaignDraft::STATUS_PENDING);
+    expect($connection->fresh()->campaign_form_draft)->toBeNull();
     Queue::assertPushed(CreateGoogleAdsCampaign::class, fn (CreateGoogleAdsCampaign $job): bool => $job->draftId === $draft->id);
     Http::assertNothingSent();
 
@@ -277,9 +282,184 @@ test('a reviewed campaign is validated then created paused exactly once', functi
         && $request['mutateOperations'][2]['campaignCriterionOperation']['create']['proximity']['radius'] === 20);
 
     $this->actingAs($owner)->post(route('admin.google-ads.campaigns.store', $website), $data)
-        ->assertRedirect(route('admin.google-ads.index', $website));
+        ->assertRedirect(route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns']));
     expect(GoogleAdsCampaignDraft::query()->count())->toBe(1);
     Http::assertSentCount(2);
+});
+
+test('a partial Google Ads form draft saves and restores AI copy without creating a campaign', function (): void {
+    Queue::fake();
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $connection = GoogleAdsConnection::factory()->for($website)->create(['customer_id' => '1234567890', 'currency_code' => 'GBP']);
+    Http::fake([
+        'https://googleads.test/v25/customers:listAccessibleCustomers' => Http::response(['resourceNames' => []]),
+        'https://googleads.test/v25/customers/1234567890/googleAds:searchStream' => Http::response([['results' => []]]),
+    ]);
+
+    $this->actingAs($owner)->post(route('admin.google-ads.campaign-draft.save', $website), [
+        'name' => 'Local search campaign',
+        'daily_budget' => '20',
+        'city_name' => 'Doncaster',
+        'radius_miles' => '20',
+        'final_url' => 'https://example.com/',
+        'campaign_brief' => 'Help nearby businesses',
+        'keywords_text' => "local seo agency\nseo doncaster",
+        'headlines' => ['AI headline one', 'AI headline two', ''],
+        'descriptions' => ['AI description one', ''],
+    ])->assertRedirect(route('admin.google-ads.index', ['website' => $website, 'tab' => 'create']))
+        ->assertSessionHas('status', 'Campaign draft saved. You can return and finish it later.');
+
+    expect($connection->fresh()->campaign_form_draft)->toMatchArray([
+        'name' => 'Local search campaign',
+        'keywords_text' => "local seo agency\nseo doncaster",
+        'headlines' => ['AI headline one', 'AI headline two', ''],
+        'descriptions' => ['AI description one', ''],
+    ]);
+    expect($connection->fresh()->campaign_form_draft_saved_at)->not->toBeNull();
+    expect(GoogleAdsCampaignDraft::query()->count())->toBe(0);
+    Queue::assertNothingPushed();
+    Http::assertNothingSent();
+
+    $this->actingAs($owner)->get(route('admin.google-ads.index', $website))
+        ->assertSuccessful()
+        ->assertSee('AI headline one')
+        ->assertSee('AI description one')
+        ->assertSee('local seo agency')
+        ->assertSee('Save draft');
+});
+
+test('campaigns open first when the selected Ads account has campaigns', function (): void {
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    GoogleAdsConnection::factory()->for($website)->create(['customer_id' => '1234567890', 'customer_name' => 'Ross Ads', 'currency_code' => 'GBP']);
+    Http::fake(['https://googleads.test/v25/customers/1234567890/googleAds:searchStream' => Http::response([['results' => [
+        ['campaign' => ['id' => '987654321', 'resourceName' => 'customers/1234567890/campaigns/987654321', 'name' => 'Local search', 'status' => 'PAUSED', 'advertisingChannelType' => 'SEARCH'], 'campaignBudget' => ['amountMicros' => '20000000']],
+    ]]])]);
+
+    $this->actingAs($owner)->get(route('admin.google-ads.index', $website))
+        ->assertSuccessful()
+        ->assertSee('aria-current="page" >Campaigns', false)
+        ->assertSee('Local search')
+        ->assertSee('https://ads.google.com/aw/overview?campaignId=987654321', false)
+        ->assertSee('Enable campaign')
+        ->assertDontSee('Search opportunities');
+    Http::assertSentCount(1);
+});
+
+test('the create tab opens first when the selected Ads account has no campaigns', function (): void {
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    GoogleAdsConnection::factory()->for($website)->create(['customer_id' => '1234567890', 'currency_code' => 'GBP']);
+    Http::fake(['*' => Http::response([['results' => []]])]);
+
+    $this->actingAs($owner)->get(route('admin.google-ads.index', $website))
+        ->assertSuccessful()
+        ->assertSee('aria-current="page" >Create campaign', false)
+        ->assertSee('Save draft')
+        ->assertDontSee('Conversion tracking');
+    Http::assertSentCount(1);
+});
+
+test('enabling a campaign requires tracking confirmation and updates only the selected Ads campaign', function (): void {
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    GoogleAdsConnection::factory()->for($website)->create(['customer_id' => '1234567890', 'login_customer_id' => '1111111111']);
+    Http::fake([
+        'https://googleads.test/v25/customers/1234567890/googleAds:searchStream' => Http::response([['results' => [
+            ['campaign' => ['id' => '987654321', 'name' => 'Local search', 'status' => 'PAUSED']],
+        ]]]),
+        'https://googleads.test/v25/customers/1234567890/campaigns:mutate' => Http::response(['results' => [['resourceName' => 'customers/1234567890/campaigns/987654321']]]),
+    ]);
+    $url = route('admin.google-ads.live-campaigns.status', [$website, '987654321']);
+
+    $this->actingAs($owner)->patch($url, ['status' => 'ENABLED'])->assertSessionHasErrors('tracking_confirmed');
+    Http::assertNothingSent();
+    $this->actingAs($owner)->patch($url, ['status' => 'ENABLED', 'tracking_confirmed' => '1'])
+        ->assertRedirect(route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns']))
+        ->assertSessionHas('status', 'Campaign enabled in Google Ads.');
+
+    Http::assertSentCount(2);
+    Http::assertSent(fn (ClientRequest $request): bool => str_ends_with($request->url(), '/campaigns:mutate')
+        && $request->hasHeader('login-customer-id', '1111111111')
+        && $request['operations'][0]['updateMask'] === 'status'
+        && $request['operations'][0]['update']['resourceName'] === 'customers/1234567890/campaigns/987654321'
+        && $request['operations'][0]['update']['status'] === 'ENABLED');
+});
+
+test('pausing and removing campaigns require current account data and an exact removal confirmation', function (): void {
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    GoogleAdsConnection::factory()->for($website)->create(['customer_id' => '1234567890']);
+    Http::fake([
+        'https://googleads.test/v25/customers/1234567890/googleAds:searchStream' => Http::response([['results' => [
+            ['campaign' => ['id' => '987654321', 'name' => 'Local search', 'status' => 'ENABLED']],
+        ]]]),
+        'https://googleads.test/v25/customers/1234567890/campaigns:mutate' => Http::response(['results' => [['resourceName' => 'customers/1234567890/campaigns/987654321']]]),
+    ]);
+
+    $this->actingAs($owner)->patch(route('admin.google-ads.live-campaigns.status', [$website, '987654321']), ['status' => 'PAUSED'])
+        ->assertSessionHas('status', 'Campaign paused in Google Ads.');
+    $this->actingAs($owner)->delete(route('admin.google-ads.live-campaigns.destroy', [$website, '987654321']), ['confirmation' => 'Wrong name'])
+        ->assertSessionHas('error', 'The campaign name did not match. Nothing was removed.');
+    $this->actingAs($owner)->delete(route('admin.google-ads.live-campaigns.destroy', [$website, '987654321']), ['confirmation' => 'Local search'])
+        ->assertSessionHas('status', 'Campaign removed from Google Ads.');
+
+    Http::assertSentCount(5);
+    Http::assertSent(fn (ClientRequest $request): bool => str_ends_with($request->url(), '/campaigns:mutate')
+        && ($request['operations'][0]['update']['status'] ?? null) === 'PAUSED');
+    Http::assertSent(fn (ClientRequest $request): bool => str_ends_with($request->url(), '/campaigns:mutate')
+        && ($request['operations'][0]['remove'] ?? null) === 'customers/1234567890/campaigns/987654321');
+});
+
+test('campaign controls cannot mutate a campaign absent from the selected Ads account', function (): void {
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    GoogleAdsConnection::factory()->for($website)->create(['customer_id' => '1234567890']);
+    Http::fake(['*' => Http::response([['results' => []]])]);
+
+    $this->actingAs($owner)->patch(route('admin.google-ads.live-campaigns.status', [$website, '987654321']), ['status' => 'PAUSED'])
+        ->assertSessionHas('error', 'This campaign is no longer available in the selected Ads account.');
+    $this->actingAs($owner)->delete(route('admin.google-ads.live-campaigns.destroy', [$website, '987654321']), ['confirmation' => 'Local search'])
+        ->assertSessionHas('error', 'This campaign is no longer available in the selected Ads account.');
+
+    Http::assertSentCount(2);
+    Http::assertNotSent(fn (ClientRequest $request): bool => str_ends_with($request->url(), '/campaigns:mutate'));
+});
+
+test('campaign controls reject stale status and users without website management access', function (): void {
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
+    $viewer = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $website->members()->attach($viewer, ['role' => Website::MEMBER_ROLE_VIEWER]);
+    GoogleAdsConnection::factory()->for($website)->create(['customer_id' => '1234567890']);
+    Http::fake(['*' => Http::response([['results' => [
+        ['campaign' => ['id' => '987654321', 'name' => 'Local search', 'status' => 'UNKNOWN']],
+    ]]])]);
+    $statusUrl = route('admin.google-ads.live-campaigns.status', [$website, '987654321']);
+    $removeUrl = route('admin.google-ads.live-campaigns.destroy', [$website, '987654321']);
+
+    $this->actingAs($viewer)->patch($statusUrl, ['status' => 'ENABLED', 'tracking_confirmed' => '1'])->assertForbidden();
+    $this->actingAs($viewer)->delete($removeUrl, ['confirmation' => 'Local search'])->assertForbidden();
+    $this->actingAs($owner)->patch($statusUrl, ['status' => 'ENABLED', 'tracking_confirmed' => '1'])
+        ->assertSessionHas('error', 'This campaign changed in Google Ads. Refresh the list before trying again.');
+
+    Http::assertSentCount(1);
+    Http::assertNotSent(fn (ClientRequest $request): bool => str_ends_with($request->url(), '/campaigns:mutate'));
+});
+
+test('saving a campaign draft requires permission to manage the website and an Ads account', function (): void {
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
+    $viewer = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $website->members()->attach($viewer, ['role' => Website::MEMBER_ROLE_VIEWER]);
+    $connection = GoogleAdsConnection::factory()->for($website)->create(['customer_id' => null]);
+
+    $this->actingAs($viewer)->post(route('admin.google-ads.campaign-draft.save', $website), ['name' => 'Private'])->assertForbidden();
+    $this->actingAs($owner)->post(route('admin.google-ads.campaign-draft.save', $website), ['name' => 'Private'])
+        ->assertSessionHas('error', 'Choose a Google Ads account before saving a campaign draft.');
+
+    expect($connection->fresh()->campaign_form_draft)->toBeNull();
 });
 
 test('a campaign cannot send visitors to an unverified or different website', function (): void {
@@ -322,7 +502,7 @@ test('an uncertain Ads response cannot trigger a second campaign mutation', func
         ->toThrow(RequestException::class);
     expect($draft->fresh()->status)->toBe(GoogleAdsCampaignDraft::STATUS_UNCERTAIN);
     $this->actingAs($owner)->post(route('admin.google-ads.campaigns.store', $website), $data)
-        ->assertRedirect(route('admin.google-ads.index', $website));
+        ->assertRedirect(route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns']));
     Http::assertSentCount(2);
 });
 
@@ -354,7 +534,7 @@ test('an uncertain campaign can be checked without creating another campaign', f
     ]]])]);
 
     $this->actingAs($owner)->post(route('admin.google-ads.campaigns.check', [$website, $draft]))
-        ->assertRedirect(route('admin.google-ads.index', $website))
+        ->assertRedirect(route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns']))
         ->assertSessionHas('campaign_check.matches.0.id', '987654321');
 
     expect($draft->fresh()->status)->toBe(GoogleAdsCampaignDraft::STATUS_UNCERTAIN);
@@ -405,7 +585,7 @@ test('an old unconfirmed request can be cleared only after a fresh no-match chec
     Http::fake(['*' => Http::response([['results' => []]])]);
 
     $this->actingAs($owner)->post(route('admin.google-ads.campaigns.clear', [$website, $draft]))
-        ->assertRedirect(route('admin.google-ads.index', $website))
+        ->assertRedirect(route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns']))
         ->assertSessionHas('status');
 
     expect($draft->fresh()->status)->toBe(GoogleAdsCampaignDraft::STATUS_FAILED);
@@ -497,7 +677,7 @@ test('a Google Ads timeout fails safely without a 500 or a second mutation', fun
         'descriptions' => ['A useful first description.', 'A useful second description.'],
     ];
     $this->actingAs($owner)->post(route('admin.google-ads.campaigns.store', $website), $data)
-        ->assertRedirect(route('admin.google-ads.index', $website))->assertSessionHas('status');
+        ->assertRedirect(route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns']))->assertSessionHas('status');
     $draft = GoogleAdsCampaignDraft::query()->firstOrFail();
 
     expect(fn (): mixed => (new CreateGoogleAdsCampaign($draft->id))->handle(app(GoogleAdsCampaignCreator::class)))
@@ -510,6 +690,7 @@ test('a Google Ads timeout fails safely without a 500 or a second mutation', fun
 });
 
 test('Google Ads is hidden and all website routes require the owners active Complete plan', function (): void {
+    $this->withoutMiddleware(ThrottleRequests::class);
     $owner = User::factory()->create(['membership_tier' => MembershipPlan::GROWTH, 'membership_status' => 'active']);
     $website = Website::factory()->for($owner, 'owner')->create();
     $owner->update(['current_website_id' => $website->id]);
@@ -523,6 +704,12 @@ test('Google Ads is hidden and all website routes require the owners active Comp
     $this->actingAs($owner)->post(route('admin.google-ads.account', $website), ['customer_id' => '1234567890'])
         ->assertRedirect(route('admin.billing.index'));
     $this->actingAs($owner)->post(route('admin.google-ads.campaigns.store', $website), [])
+        ->assertRedirect(route('admin.billing.index'));
+    $this->actingAs($owner)->post(route('admin.google-ads.campaign-draft.save', $website), [])
+        ->assertRedirect(route('admin.billing.index'));
+    $this->actingAs($owner)->patch(route('admin.google-ads.live-campaigns.status', [$website, '987654321']), ['status' => 'ENABLED', 'tracking_confirmed' => '1'])
+        ->assertRedirect(route('admin.billing.index'));
+    $this->actingAs($owner)->delete(route('admin.google-ads.live-campaigns.destroy', [$website, '987654321']), ['confirmation' => 'Local search'])
         ->assertRedirect(route('admin.billing.index'));
     $this->actingAs($owner)->delete(route('admin.google-ads.destroy', $website))
         ->assertRedirect(route('admin.billing.index'));

@@ -5,8 +5,14 @@
         <header>
             <a href="{{ \App\Support\WebsiteNavigation::routeFor($website, 'search') }}" class="text-sm font-medium text-teal-700 hover:text-teal-900">← Search performance</a>
             <h1 class="mt-3 text-3xl font-semibold tracking-tight text-slate-950">Google Ads</h1>
-            <p class="mt-2 text-slate-600">Connect the Ads account for {{ $website->name }}.</p>
+            <p class="mt-2 text-slate-600">{{ $connection?->customer_id ? ($connection->customer_name ?: 'Ads account').' · '.$connection->customer_id : 'Connect an Ads account for '.$website->name.'.' }}</p>
         </header>
+
+        <nav class="ui-tabs" aria-label="Google Ads sections">
+            @foreach (['campaigns' => 'Campaigns', 'create' => 'Create campaign', 'settings' => 'Settings'] as $section => $label)
+                <a href="{{ route('admin.google-ads.index', ['website' => $website, 'tab' => $section]) }}" class="ui-tab" @if ($tab === $section) aria-current="page" @endif>{{ $label }}</a>
+            @endforeach
+        </nav>
 
         @if (session('status'))
             <p role="status" class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">{{ session('status') }}</p>
@@ -22,6 +28,7 @@
             <p role="alert" class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">{{ $connectionError }}</p>
         @endif
 
+        @if ($tab === 'settings')
         <section class="ui-panel p-5 sm:p-6">
             <div class="flex flex-wrap items-start justify-between gap-5">
                 <div>
@@ -73,8 +80,10 @@
                 </form>
             @endif
         </section>
+        @endif
 
         @if ($connection?->customer_id)
+            @if ($tab === 'settings')
             <section class="ui-panel p-5 sm:p-6">
                 <h2 class="text-lg font-semibold text-slate-950">Conversion tracking</h2>
                 <p class="mt-1 text-sm text-slate-600">Check which lead actions exist in this Ads account. An action here does not prove its tag is installed or firing on the website.</p>
@@ -87,11 +96,16 @@
                     <p class="mt-3 text-xs text-slate-500">Confirm a real test conversion is recorded in Google Ads before switching on spend.</p>
                 @endif
             </section>
+            @endif
+            @if ($tab === 'create')
             <section class="ui-panel p-5 sm:p-6">
                 <div class="flex flex-wrap items-start justify-between gap-4">
                     <div>
                         <h2 class="text-lg font-semibold text-slate-950">Create a paused Search campaign</h2>
                         <p class="mt-1 max-w-2xl text-sm text-slate-600">Review the searches, location, budget and ad before creating it in {{ $connection->customer_name ?: 'Google Ads' }}. The campaign stays paused until you check tracking and turn it on in Google Ads.</p>
+                        @if ($connection->campaign_form_draft_saved_at)
+                            <p class="mt-2 text-xs font-medium text-teal-700">Draft saved {{ $connection->campaign_form_draft_saved_at->diffForHumans() }}</p>
+                        @endif
                     </div>
                     <span class="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-900">No spend until enabled</span>
                 </div>
@@ -99,24 +113,84 @@
                     @csrf
                     <input type="hidden" name="request_key" value="{{ old('request_key', (string) \Illuminate\Support\Str::uuid()) }}">
                     <div class="grid gap-4 sm:grid-cols-2">
-                        <div><label for="ad_name" class="ui-label">Campaign name</label><input id="ad_name" name="name" class="ui-input mt-1 w-full" maxlength="120" value="{{ old('name', $website->name.' | Local Search') }}" required>@error('name') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror</div>
-                        <div><label for="ad_budget" class="ui-label">Average daily budget ({{ $connection->currency_code }})</label><input id="ad_budget" name="daily_budget" class="ui-input mt-1 w-full" type="number" min="1" max="1000" step="0.01" value="{{ old('daily_budget', '20') }}" required><p class="mt-1 text-xs text-slate-500">Google can spend up to twice this on a day, within its monthly limit.</p>@error('daily_budget') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror</div>
-                        <div><label for="ad_city" class="ui-label">Target city</label><input id="ad_city" name="city_name" class="ui-input mt-1 w-full" value="{{ old('city_name', 'Doncaster') }}" required>@error('city_name') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror</div>
-                        <div><label for="ad_radius" class="ui-label">Radius (miles)</label><input id="ad_radius" name="radius_miles" class="ui-input mt-1 w-full" type="number" min="1" max="50" value="{{ old('radius_miles', '20') }}" required>@error('radius_miles') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror</div>
+                        <div><label for="ad_name" class="ui-label">Campaign name</label><input id="ad_name" name="name" class="ui-input mt-1 w-full" maxlength="120" value="{{ old('name', $formDraft['name'] ?? $website->name.' | Local Search') }}" required>@error('name') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror</div>
+                        <div><label for="ad_budget" class="ui-label">Average daily budget ({{ $connection->currency_code }})</label><input id="ad_budget" name="daily_budget" class="ui-input mt-1 w-full" type="number" min="1" max="1000" step="0.01" value="{{ old('daily_budget', $formDraft['daily_budget'] ?? '20') }}" required><p class="mt-1 text-xs text-slate-500">Google can spend up to twice this on a day, within its monthly limit.</p>@error('daily_budget') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror</div>
+                        <div><label for="ad_city" class="ui-label">Target city</label><input id="ad_city" name="city_name" class="ui-input mt-1 w-full" value="{{ old('city_name', $formDraft['city_name'] ?? 'Doncaster') }}" required>@error('city_name') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror</div>
+                        <div><label for="ad_radius" class="ui-label">Radius (miles)</label><input id="ad_radius" name="radius_miles" class="ui-input mt-1 w-full" type="number" min="1" max="50" value="{{ old('radius_miles', $formDraft['radius_miles'] ?? '20') }}" required>@error('radius_miles') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror</div>
                     </div>
-                    <div><label for="ad_url" class="ui-label">Landing page on your verified domain</label><input id="ad_url" name="final_url" type="url" class="ui-input mt-1 w-full" value="{{ old('final_url', $website->primaryDomain() ? 'https://'.$website->primaryDomain()->domain.'/' : '') }}" required>@error('final_url') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror</div>
-                    <div><label for="ad_brief" class="ui-label">What should this ad promote? <span class="font-normal text-slate-500">Optional</span></label><textarea id="ad_brief" name="campaign_brief" rows="2" maxlength="1000" class="ui-input mt-1 w-full" placeholder="A short description of the service or product on this page">{{ old('campaign_brief') }}</textarea><p class="mt-1 text-xs text-slate-500">Helps the suggestions stay accurate if we have not scanned this page yet.</p>@error('campaign_brief') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror</div>
+                    <div><label for="ad_url" class="ui-label">Landing page on your verified domain</label><input id="ad_url" name="final_url" type="url" class="ui-input mt-1 w-full" value="{{ old('final_url', $formDraft['final_url'] ?? ($website->primaryDomain() ? 'https://'.$website->primaryDomain()->domain.'/' : '')) }}" required>@error('final_url') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror</div>
+                    <div><label for="ad_brief" class="ui-label">What should this ad promote? <span class="font-normal text-slate-500">Optional</span></label><textarea id="ad_brief" name="campaign_brief" rows="2" maxlength="1000" class="ui-input mt-1 w-full" placeholder="A short description of the service or product on this page">{{ old('campaign_brief', $formDraft['campaign_brief'] ?? '') }}</textarea><p class="mt-1 text-xs text-slate-500">Helps the suggestions stay accurate if we have not scanned this page yet.</p>@error('campaign_brief') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror</div>
                     <div class="flex flex-wrap items-center gap-3"><button type="submit" formaction="{{ route('admin.google-ads.suggestions', $website) }}" formnovalidate class="ui-button ui-button-secondary">Suggest keywords &amp; ad copy</button><span class="text-xs text-slate-500">Fills the fields below. Review and edit before creating.</span></div>
-                    <div><label for="ad_keywords" class="ui-label">Searches to advertise on</label><textarea id="ad_keywords" name="keywords_text" rows="4" class="ui-input mt-1 w-full" placeholder="One buying-intent search per line" required>{{ old('keywords_text') }}</textarea><p class="mt-1 text-xs text-slate-500">1–10 exact-match searches. Use the opportunities above as research, then choose terms a buyer would use.</p>@error('keywords_text') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror</div>
-                    <div><span class="ui-label">Headlines</span><div class="mt-2 grid gap-3 sm:grid-cols-3">@for ($i = 0; $i < 3; $i++) <div><input name="headlines[]" class="ui-input w-full" maxlength="30" placeholder="Headline {{ $i + 1 }}" value="{{ old('headlines.'.$i) }}" required></div> @endfor</div>@error('headlines') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror @error('headlines.*') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror</div>
-                    <div><span class="ui-label">Descriptions</span><div class="mt-2 grid gap-3 sm:grid-cols-2">@for ($i = 0; $i < 2; $i++) <div><input name="descriptions[]" class="ui-input w-full" maxlength="90" placeholder="Description {{ $i + 1 }}" value="{{ old('descriptions.'.$i) }}" required></div> @endfor</div>@error('descriptions') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror @error('descriptions.*') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror</div>
-                    <button type="submit" class="ui-button ui-button-primary">Create paused campaign</button>
+                    <div><label for="ad_keywords" class="ui-label">Searches to advertise on</label><textarea id="ad_keywords" name="keywords_text" rows="4" class="ui-input mt-1 w-full" placeholder="One buying-intent search per line" required>{{ old('keywords_text', $formDraft['keywords_text'] ?? '') }}</textarea><p class="mt-1 text-xs text-slate-500">1–10 exact-match searches. Use the opportunities above as research, then choose terms a buyer would use.</p>@error('keywords_text') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror</div>
+                    <div><span class="ui-label">Headlines</span><div class="mt-2 grid gap-3 sm:grid-cols-3">@for ($i = 0; $i < 3; $i++) <div><input name="headlines[]" class="ui-input w-full" maxlength="30" placeholder="Headline {{ $i + 1 }}" value="{{ old('headlines.'.$i, $formDraft['headlines'][$i] ?? '') }}" required></div> @endfor</div>@error('headlines') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror @error('headlines.*') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror</div>
+                    <div><span class="ui-label">Descriptions</span><div class="mt-2 grid gap-3 sm:grid-cols-2">@for ($i = 0; $i < 2; $i++) <div><input name="descriptions[]" class="ui-input w-full" maxlength="90" placeholder="Description {{ $i + 1 }}" value="{{ old('descriptions.'.$i, $formDraft['descriptions'][$i] ?? '') }}" required></div> @endfor</div>@error('descriptions') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror @error('descriptions.*') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror</div>
+                    <div class="flex flex-wrap gap-3">
+                        <button type="submit" class="ui-button ui-button-primary">Create paused campaign</button>
+                        <button type="submit" formaction="{{ route('admin.google-ads.campaign-draft.save', $website) }}" formnovalidate class="ui-button ui-button-secondary">Save draft</button>
+                    </div>
                 </form>
             </section>
+            @endif
+
+            @if ($tab === 'campaigns')
+                <section class="ui-panel p-5 sm:p-6">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div><h2 class="text-lg font-semibold text-slate-950">Campaigns</h2><p class="mt-1 text-sm text-slate-600">In {{ $connection->customer_name ?: 'Ads account '.$connection->customer_id }}.</p></div>
+                        <a href="{{ route('admin.google-ads.index', ['website' => $website, 'tab' => 'create']) }}" class="ui-button ui-button-secondary">Create campaign</a>
+                    </div>
+                    @if ($campaignError)
+                        <p role="alert" class="mt-5 text-sm text-amber-800">{{ $campaignError }}</p>
+                    @elseif ($campaigns === [])
+                        <p class="mt-5 text-sm text-slate-600">No campaigns in this account yet.</p>
+                    @else
+                        <div class="mt-5 divide-y divide-slate-200">
+                            @foreach ($campaigns as $campaign)
+                                <article class="py-5 first:pt-0 last:pb-0">
+                                    <div class="flex flex-wrap items-start justify-between gap-3">
+                                        <div class="min-w-0">
+                                            <h3 class="font-semibold text-slate-950">{{ $campaign['name'] }}</h3>
+                                            <p class="mt-1 text-xs text-slate-500">{{ ucfirst(strtolower($campaign['type'])) }} · ID {{ $campaign['id'] }}@if ($campaign['daily_budget_micros'] > 0) · {{ $connection->currency_code }} {{ number_format($campaign['daily_budget_micros'] / 1000000, 2) }}/day @endif</p>
+                                            <a href="https://ads.google.com/aw/overview?campaignId={{ $campaign['id'] }}" target="_blank" rel="noopener noreferrer" class="mt-2 inline-block text-sm font-medium text-teal-700 underline hover:text-teal-900">Review in Google Ads ↗</a>
+                                        </div>
+                                        <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $campaign['status'] === 'ENABLED' ? 'bg-emerald-50 text-emerald-800' : 'bg-amber-50 text-amber-900' }}">{{ ucfirst(strtolower($campaign['status'])) }}</span>
+                                    </div>
+                                    <div class="mt-4 flex flex-wrap items-start gap-4">
+                                        @if ($campaign['status'] === 'PAUSED')
+                                            <form method="POST" action="{{ route('admin.google-ads.live-campaigns.status', [$website, $campaign['id']]) }}" class="space-y-2">
+                                                @csrf
+                                                @method('PATCH')
+                                                <input type="hidden" name="status" value="ENABLED">
+                                                <label class="flex max-w-md items-start gap-2 text-xs text-slate-600"><input type="checkbox" name="tracking_confirmed" value="1" class="mt-0.5" required><span>I’ve tested conversion tracking and checked the ad and budget. Enabling can start spend.</span></label>
+                                                <button type="submit" class="ui-button ui-button-primary ui-button-small">Enable campaign</button>
+                                            </form>
+                                        @elseif ($campaign['status'] === 'ENABLED')
+                                            <form method="POST" action="{{ route('admin.google-ads.live-campaigns.status', [$website, $campaign['id']]) }}">
+                                                @csrf
+                                                @method('PATCH')
+                                                <input type="hidden" name="status" value="PAUSED">
+                                                <button type="submit" class="ui-button ui-button-secondary ui-button-small">Pause campaign</button>
+                                            </form>
+                                        @endif
+                                        <details class="text-sm">
+                                            <summary class="cursor-pointer font-medium text-red-700">Remove campaign</summary>
+                                            <form method="POST" action="{{ route('admin.google-ads.live-campaigns.destroy', [$website, $campaign['id']]) }}" class="mt-2 max-w-sm space-y-2">
+                                                @csrf
+                                                @method('DELETE')
+                                                <p class="text-xs text-slate-600">Removal is permanent. Type the campaign name to confirm.</p>
+                                                <input name="confirmation" class="ui-input w-full" aria-label="Confirm campaign name" placeholder="{{ $campaign['name'] }}" required>
+                                                <button type="submit" class="ui-button ui-button-danger ui-button-small">Remove permanently</button>
+                                            </form>
+                                        </details>
+                                    </div>
+                                </article>
+                            @endforeach
+                        </div>
+                    @endif
+                </section>
 
             @if ($drafts->isNotEmpty())
                 <section class="ui-panel p-5 sm:p-6">
-                    <div class="flex items-center justify-between gap-4"><h2 class="text-lg font-semibold text-slate-950">Campaign requests</h2><a href="{{ route('admin.google-ads.index', $website) }}" class="text-sm font-medium text-teal-700 hover:text-teal-900">Refresh status</a></div>
+                    <div class="flex items-center justify-between gap-4"><h2 class="text-lg font-semibold text-slate-950">Campaign requests</h2><a href="{{ route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns']) }}" class="text-sm font-medium text-teal-700 hover:text-teal-900">Refresh status</a></div>
                     <div class="mt-4 divide-y divide-slate-200">
                         @foreach ($drafts as $draft)
                             <div class="flex flex-wrap items-start justify-between gap-2 py-3 text-sm">
@@ -156,8 +230,10 @@
                     </div>
                 </section>
             @endif
+            @endif
         @endif
 
+        @if ($tab === 'create' && $connection?->customer_id)
         <section class="ui-panel p-5 sm:p-6">
             <h2 class="text-lg font-semibold text-slate-950">Search opportunities</h2>
             <p class="mt-1 text-sm text-slate-600">Searches where this website already appears but gets few clicks. Review their buying intent before using them in ads.</p>
@@ -176,5 +252,6 @@
                 </div>
             @endif
         </section>
+        @endif
     </div>
 @endsection

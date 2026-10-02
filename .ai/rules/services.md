@@ -5,6 +5,7 @@ paths:
   - 'app/Services/{SitemapFetcher,ProspectWebsiteAnalyzer,WebsiteHealthAuditor}.php'
   - 'app/Services/WeeklyReport*.php'
   - app/Services/SearchConsoleClient.php
+  - 'app/Services/GoogleAds*'
 ---
 
 # Services
@@ -23,3 +24,6 @@ WeeklyReportBuilder includes AI Visibility only from persisted observations. Wee
 
 ## Distinguish Search Console access loss from temporary failures
 Persist property-specific permission failures for a visible site warning, including failures from background jobs. Google can also return 403 for quota limits; do not label these as lost verification. Clear the warning only after a successful read of the same selected property, never from listing sites or an old property's response. Search Console access loss is not proof that Sitewell website ownership should be revoked.
+
+## Recheck selected Ads customer before campaign changes
+Campaigns are created paused. Before enabling, pausing, or removing, fetch the current campaign from the website's selected Ads customer. Enabling requires an explicit tracking, ad, and budget check; removal requires its exact current name. Do not auto-retry uncertain Ads mutations.

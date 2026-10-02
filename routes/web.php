@@ -325,7 +325,10 @@ Route::middleware(['web', 'auth', ResolveCurrentWebsite::class])->prefix('admin'
         Route::get('websites/{website}/google-ads/connect', [GoogleAdsController::class, 'connect'])->middleware('throttle:10,1')->name('google-ads.connect');
         Route::post('websites/{website}/google-ads/account', [GoogleAdsController::class, 'selectAccount'])->middleware('throttle:10,1')->name('google-ads.account');
         Route::post('websites/{website}/google-ads/suggestions', [GoogleAdsController::class, 'suggest'])->middleware('throttle:3,1')->name('google-ads.suggestions');
+        Route::post('websites/{website}/google-ads/campaign-draft', [GoogleAdsController::class, 'saveFormDraft'])->middleware('throttle:20,1')->name('google-ads.campaign-draft.save');
         Route::post('websites/{website}/google-ads/campaigns', [GoogleAdsController::class, 'storeDraft'])->middleware('throttle:3,1')->name('google-ads.campaigns.store');
+        Route::patch('websites/{website}/google-ads/live-campaigns/{campaignId}/status', [GoogleAdsController::class, 'updateCampaignStatus'])->middleware('throttle:10,1')->name('google-ads.live-campaigns.status');
+        Route::delete('websites/{website}/google-ads/live-campaigns/{campaignId}', [GoogleAdsController::class, 'removeCampaign'])->middleware('throttle:3,1')->name('google-ads.live-campaigns.destroy');
         Route::post('websites/{website}/google-ads/campaigns/{draft}/check', [GoogleAdsController::class, 'checkCampaign'])->middleware('throttle:10,1')->name('google-ads.campaigns.check');
         Route::post('websites/{website}/google-ads/campaigns/{draft}/clear', [GoogleAdsController::class, 'clearUnconfirmedCampaign'])->middleware('throttle:3,1')->name('google-ads.campaigns.clear');
         Route::delete('websites/{website}/google-ads', [GoogleAdsController::class, 'destroy'])->name('google-ads.destroy');

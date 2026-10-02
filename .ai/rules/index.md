@@ -118,6 +118,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Services,Console/Commands}/**/*Prospect*.php,routes/console.php | .ai/rules/services-console-commands.md |
 | app/{Services/Github*,Http/Controllers/**/*Github*,Models/{GithubInstallation,WebsiteRepository,RemediationRun}.php}, app/{Services/PixelUrlNormalizer.php,Services/PixelPayloadBuilder.php,Http/Controllers/PixelPayloadController.php,Models/Optimisation.php} | .ai/rules/services-controllers.md |
 | app/Services/BacklinkAuditService.php,tests/Feature/BacklinkAuditTest.php | .ai/rules/services-feature.md |
+| app/Services/GoogleAdsClient.php,app/Http/Controllers/Admin/GoogleAdsController.php,resources/views/admin/websites/google-ads.blade.php | .ai/rules/services-http-controllers-admin-views-admin-websites.md |
 | {app/Services/GithubRepositoryPilot.php,app/Http/Controllers/Admin/{GithubConnectionController,WebsiteRepositoryController}.php,config/copilot_sdk.php} | .ai/rules/services-http-controllers-admin.md |
 | app/{Services,Jobs,Console/Commands}/**/*Competitor*.php | .ai/rules/services-jobs-console-commands.md |
 | app/{Services,Jobs,Http/Controllers/Admin}/**/*SeoProspect*.php, app/{Services,Jobs,Http/Controllers/Admin}/**/*Competitor*.php, app/{Services,Jobs,Http/Controllers/Admin}/**/*AiVisibility*.php | .ai/rules/services-jobs-http-controllers-admin.md |
@@ -127,7 +128,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Services/Prospect*.php,resources/views/admin/prospects/** | .ai/rules/services-views-admin-prospects.md |
 | app/Services/ContentQueueOverview.php,resources/views/admin/overview.blade.php, app/Services/DashboardWorkActivity.php,resources/views/admin/overview.blade.php | .ai/rules/services-views-admin.md |
 | app/Services/MarketingAudit*.php,resources/views/marketing/website-audit.blade.php, app/Services/MarketingAuditResearch.php,resources/views/marketing/website-audit.blade.php | .ai/rules/services-views-marketing.md |
-| app/Services/WebsiteCrawler.php, app/Services/Pixel*.php, app/Services/{SitemapFetcher,ProspectWebsiteAnalyzer,WebsiteHealthAuditor}.php, app/Services/WeeklyReport*.php, app/Services/SearchConsoleClient.php | .ai/rules/services.md |
+| app/Services/WebsiteCrawler.php, app/Services/Pixel*.php, app/Services/{SitemapFetcher,ProspectWebsiteAnalyzer,WebsiteHealthAuditor}.php, app/Services/WeeklyReport*.php, app/Services/SearchConsoleClient.php, app/Services/GoogleAds* | .ai/rules/services.md |
 | {app/Services/WordPressStaticReleaseBuilder.php,app/Http/Controllers/WordPress*Release*Controller.php,wordpress-plugin/sitewell-by-digizu/**} | .ai/rules/sitewell-by-digizu.md |
 | {app/Models/User.php,app/Http/Controllers/Admin/UserImpersonationController.php,resources/views/{admin/users/index.blade.php,layouts/app.blade.php},routes/web.php,tests/Feature/UserImpersonationTest.php} | .ai/rules/users-feature.md |
 | app/{Models/User.php,Http/Controllers/Admin/{DashboardController.php,OnboardingCallController.php,UserOnboardingCallController.php,WebsiteHealthReportController.php},Http/Requests/UpdateUserOnboardingCallRequest.php},resources/views/{admin/dashboard.blade.php,admin/users/index.blade.php,layouts/app.blade.php},routes/web.php,database/migrations/**/*onboarding*progress*.php | .ai/rules/users-migrations.md |
