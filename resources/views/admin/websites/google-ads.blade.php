@@ -149,11 +149,18 @@
                                     <div class="flex flex-wrap items-start justify-between gap-3">
                                         <div class="min-w-0">
                                             <h3 class="font-semibold text-slate-950">{{ $campaign['name'] }}</h3>
-                                            <p class="mt-1 text-xs text-slate-500">{{ ucfirst(strtolower($campaign['type'])) }} · ID {{ $campaign['id'] }}@if ($campaign['daily_budget_micros'] > 0) · {{ $connection->currency_code }} {{ number_format($campaign['daily_budget_micros'] / 1000000, 2) }}/day @endif</p>
-                                            <a href="https://ads.google.com/aw/overview?campaignId={{ $campaign['id'] }}" target="_blank" rel="noopener noreferrer" class="mt-2 inline-block text-sm font-medium text-teal-700 underline hover:text-teal-900">Review in Google Ads ↗</a>
+                                            <p class="mt-1 text-xs text-slate-500">{{ ucfirst(strtolower($campaign['type'])) }} · ID {{ $campaign['id'] }}</p>
                                         </div>
                                         <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $campaign['status'] === 'ENABLED' ? 'bg-emerald-50 text-emerald-800' : 'bg-amber-50 text-amber-900' }}">{{ ucfirst(strtolower($campaign['status'])) }}</span>
                                     </div>
+                                    <dl class="mt-4 grid grid-cols-2 gap-3 rounded-xl bg-slate-50 p-4 sm:grid-cols-5">
+                                        <div><dt class="text-xs text-slate-500">Daily budget</dt><dd class="mt-1 font-semibold text-slate-900">{{ $campaign['daily_budget_micros'] > 0 ? $connection->currency_code.' '.number_format($campaign['daily_budget_micros'] / 1000000, 2) : '—' }}</dd></div>
+                                        <div><dt class="text-xs text-slate-500">Impressions · 30 days</dt><dd class="mt-1 font-semibold tabular-nums text-slate-900">{{ isset($campaignPerformance[$campaign['id']]) ? number_format($campaignPerformance[$campaign['id']]['impressions']) : '—' }}</dd></div>
+                                        <div><dt class="text-xs text-slate-500">Clicks · 30 days</dt><dd class="mt-1 font-semibold tabular-nums text-slate-900">{{ isset($campaignPerformance[$campaign['id']]) ? number_format($campaignPerformance[$campaign['id']]['clicks']) : '—' }}</dd></div>
+                                        <div><dt class="text-xs text-slate-500">Spend · 30 days</dt><dd class="mt-1 font-semibold tabular-nums text-slate-900">{{ isset($campaignPerformance[$campaign['id']]) ? $connection->currency_code.' '.number_format($campaignPerformance[$campaign['id']]['cost_micros'] / 1000000, 2) : '—' }}</dd></div>
+                                        <div><dt class="text-xs text-slate-500">Conversions · 30 days</dt><dd class="mt-1 font-semibold tabular-nums text-slate-900">{{ isset($campaignPerformance[$campaign['id']]) ? number_format($campaignPerformance[$campaign['id']]['conversions'], 1) : '—' }}</dd></div>
+                                    </dl>
+                                    <div class="mt-3 flex flex-wrap gap-4 text-sm font-medium"><a href="{{ route('admin.google-ads.live-campaigns.show', [$website, $campaign['id']]) }}" class="text-teal-700 underline hover:text-teal-900">View &amp; edit campaign →</a><a href="https://ads.google.com/aw/overview?campaignId={{ $campaign['id'] }}" target="_blank" rel="noopener noreferrer" class="text-slate-600 underline hover:text-slate-900">Open Google Ads ↗</a></div>
                                     <div class="mt-4 flex flex-wrap items-start gap-4">
                                         @if ($campaign['status'] === 'PAUSED')
                                             <form method="POST" action="{{ route('admin.google-ads.live-campaigns.status', [$website, $campaign['id']]) }}" class="space-y-2">

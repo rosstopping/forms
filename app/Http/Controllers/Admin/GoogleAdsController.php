@@ -41,10 +41,18 @@ class GoogleAdsController extends Controller
         }
 
         $campaigns = [];
+        $campaignPerformance = [];
         $campaignError = null;
         if ($connection?->customer_id && ($tab === null || $tab === 'campaigns')) {
             try {
                 $campaigns = $this->client->campaigns($connection);
+                if ($campaigns !== []) {
+                    try {
+                        $campaignPerformance = $this->client->campaignPerformance($connection);
+                    } catch (ConnectionException|RequestException|RuntimeException $exception) {
+                        report($exception);
+                    }
+                }
             } catch (ConnectionException|RequestException|RuntimeException) {
                 $campaignError = 'Could not load campaigns from this Ads account. Refresh to try again.';
             }
@@ -75,7 +83,125 @@ class GoogleAdsController extends Controller
             }
         }
 
-        return view('admin.websites.google-ads', compact('website', 'connection', 'formDraft', 'oauthConfigured', 'tab', 'campaigns', 'campaignError', 'availableAccounts', 'unavailableAccountCount', 'connectionError', 'conversionActions', 'conversionError', 'searchGaps', 'drafts'));
+        return view('admin.websites.google-ads', compact('website', 'connection', 'formDraft', 'oauthConfigured', 'tab', 'campaigns', 'campaignPerformance', 'campaignError', 'availableAccounts', 'unavailableAccountCount', 'connectionError', 'conversionActions', 'conversionError', 'searchGaps', 'drafts'));
+    }
+
+    public function showCampaign(Request $request, Website $website, string $campaignId): View|RedirectResponse
+    {
+        $this->authorizeWebsite($request, $website);
+        abort_unless(preg_match('/^[1-9]\d*$/', $campaignId) === 1, 404);
+        $connection = $website->googleAdsConnection;
+        abort_unless($connection?->customer_id, 404);
+
+        try {
+            $campaign = $this->client->campaign($connection, $campaignId);
+            abort_unless($campaign && $campaign['status'] !== 'REMOVED', 404);
+            $ads = $this->client->responsiveSearchAds($connection, $campaignId);
+            $keywords = $this->client->campaignKeywords($connection, $campaignId);
+            $proximities = $this->client->campaignProximities($connection, $campaignId);
+        } catch (ConnectionException|RequestException|RuntimeException $exception) {
+            report($exception);
+
+            return Redirect::route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns'])
+                ->with('error', 'Could not load this campaign from Google Ads. Try again shortly.');
+        }
+
+        return view('admin.websites.google-ads-campaign', compact('website', 'connection', 'campaign', 'ads', 'keywords', 'proximities'));
+    }
+
+    public function updateCampaignName(Request $request, Website $website, string $campaignId): RedirectResponse
+    {
+        $this->authorizeWebsite($request, $website);
+        abort_unless(preg_match('/^[1-9]\d*$/', $campaignId) === 1, 404);
+        $data = $request->validate(['name' => ['required', 'string', 'max:120'], 'original_name' => ['required', 'string', 'max:120']]);
+        $connection = $website->googleAdsConnection;
+        abort_unless($connection?->customer_id, 404);
+
+        try {
+            $campaign = $this->client->campaign($connection, $campaignId);
+            abort_unless($campaign && $campaign['status'] !== 'REMOVED', 404);
+            if (! hash_equals($campaign['name'], $data['original_name'])) {
+                return back()->with('error', 'The campaign name changed in Google Ads. Refresh before saving.');
+            }
+            if ($campaign['name'] !== $data['name']) {
+                $this->client->updateCampaignName($connection, $campaignId, $data['name']);
+            }
+        } catch (ConnectionException|RequestException|RuntimeException $exception) {
+            report($exception);
+
+            return back()->with('error', 'Google Ads did not confirm the name change. Refresh before trying again.');
+        }
+
+        return back()->with('status', 'Campaign name saved in Google Ads.');
+    }
+
+    public function updateCampaignBudget(Request $request, Website $website, string $campaignId): RedirectResponse
+    {
+        $this->authorizeWebsite($request, $website);
+        abort_unless(preg_match('/^[1-9]\d*$/', $campaignId) === 1, 404);
+        $data = $request->validate(['daily_budget' => ['required', 'numeric', 'min:1', 'max:1000'], 'original_budget_micros' => ['required', 'integer', 'min:0']]);
+        $connection = $website->googleAdsConnection;
+        abort_unless($connection?->customer_id, 404);
+
+        try {
+            $campaign = $this->client->campaign($connection, $campaignId);
+            abort_unless($campaign && $campaign['status'] !== 'REMOVED', 404);
+            if ($campaign['budget_shared'] || $campaign['budget_period'] !== 'DAILY' || $campaign['budget_resource_name'] === '') {
+                return back()->with('error', 'This budget cannot be edited here. Open it in Google Ads.');
+            }
+            if ($campaign['daily_budget_micros'] !== (int) $data['original_budget_micros']) {
+                return back()->with('error', 'The budget changed in Google Ads. Refresh before saving.');
+            }
+            $amountMicros = (int) round((float) $data['daily_budget'] * 1000000);
+            if ($amountMicros !== $campaign['daily_budget_micros']) {
+                $this->client->updateCampaignBudget($connection, $campaign['budget_resource_name'], $amountMicros);
+            }
+        } catch (ConnectionException|RequestException|RuntimeException $exception) {
+            report($exception);
+
+            return back()->with('error', 'Google Ads did not confirm the budget change. Refresh before trying again.');
+        }
+
+        return back()->with('status', 'Daily budget saved in Google Ads.');
+    }
+
+    public function updateAdCopy(Request $request, Website $website, string $campaignId, string $adId): RedirectResponse
+    {
+        $this->authorizeWebsite($request, $website);
+        abort_unless(preg_match('/^[1-9]\d*$/', $campaignId) === 1 && preg_match('/^[1-9]\d*$/', $adId) === 1, 404);
+        $data = $request->validate([
+            'headlines' => ['required', 'array', 'between:3,15'],
+            'headlines.*' => ['required', 'string', 'max:30', 'distinct:ignore_case'],
+            'descriptions' => ['required', 'array', 'between:2,4'],
+            'descriptions.*' => ['required', 'string', 'max:90', 'distinct:ignore_case'],
+            'copy_signature' => ['required', 'string', 'size:64'],
+        ]);
+        $connection = $website->googleAdsConnection;
+        abort_unless($connection?->customer_id, 404);
+
+        try {
+            $campaign = $this->client->campaign($connection, $campaignId);
+            abort_unless($campaign && $campaign['status'] !== 'REMOVED', 404);
+            $ad = collect($this->client->responsiveSearchAds($connection, $campaignId))->firstWhere('id', $adId);
+            abort_unless($ad, 404);
+            if (! hash_equals(hash('sha256', json_encode([$ad['headlines'], $ad['descriptions']])), $data['copy_signature'])) {
+                return back()->with('error', 'This ad changed in Google Ads. Refresh before saving.');
+            }
+            if (count($data['headlines']) !== count($ad['headlines']) || count($data['descriptions']) !== count($ad['descriptions'])) {
+                return back()->with('error', 'Refresh before changing the number of ad lines.');
+            }
+            $headlines = array_map(fn (string $text, array $asset): array => ['text' => trim($text), 'pinned_field' => $asset['pinned_field']], $data['headlines'], $ad['headlines']);
+            $descriptions = array_map(fn (string $text, array $asset): array => ['text' => trim($text), 'pinned_field' => $asset['pinned_field']], $data['descriptions'], $ad['descriptions']);
+            if ($headlines !== $ad['headlines'] || $descriptions !== $ad['descriptions']) {
+                $this->client->updateResponsiveSearchAd($connection, $adId, $headlines, $descriptions);
+            }
+        } catch (ConnectionException|RequestException|RuntimeException $exception) {
+            report($exception);
+
+            return back()->with('error', 'Google Ads did not confirm the ad changes. Refresh before trying again.');
+        }
+
+        return back()->with('status', 'Ad copy saved in Google Ads.');
     }
 
     public function connect(Request $request, Website $website): RedirectResponse

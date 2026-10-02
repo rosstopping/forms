@@ -227,6 +227,27 @@ class GoogleAdsClient
         return $this->searchCampaigns($connection, "campaign.status != 'REMOVED' ORDER BY campaign.id DESC LIMIT 100");
     }
 
+    /** @return array<string, array{impressions: int, clicks: int, cost_micros: int, conversions: float}> */
+    public function campaignPerformance(GoogleAdsConnection $connection): array
+    {
+        $rows = $this->searchRows($connection, "SELECT campaign.id, metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions FROM campaign WHERE campaign.status != 'REMOVED' AND segments.date DURING LAST_30_DAYS LIMIT 100");
+        $performance = [];
+        foreach ($rows as $row) {
+            $id = (string) data_get($row, 'campaign.id', '');
+            if (preg_match('/^[1-9]\d*$/', $id) !== 1) {
+                continue;
+            }
+            $performance[$id] = [
+                'impressions' => (int) data_get($row, 'metrics.impressions', 0),
+                'clicks' => (int) data_get($row, 'metrics.clicks', 0),
+                'cost_micros' => (int) data_get($row, 'metrics.costMicros', 0),
+                'conversions' => (float) data_get($row, 'metrics.conversions', 0),
+            ];
+        }
+
+        return $performance;
+    }
+
     /** @return array{id: string, resource_name: string, name: string, status: string, type: string, daily_budget_micros: int}|null */
     public function campaign(GoogleAdsConnection $connection, string $campaignId): ?array
     {
@@ -235,6 +256,82 @@ class GoogleAdsClient
         $campaign = $this->searchCampaigns($connection, "campaign.id = {$campaignId} LIMIT 1")[0] ?? null;
 
         return $campaign && $campaign['id'] === $campaignId ? $campaign : null;
+    }
+
+    /** @return list<array{id: string, resource_name: string, status: string, final_url: string, headlines: list<array{text: string, pinned_field: string}>, descriptions: list<array{text: string, pinned_field: string}>}> */
+    public function responsiveSearchAds(GoogleAdsConnection $connection, string $campaignId): array
+    {
+        $this->assertCampaignId($campaignId);
+        $rows = $this->searchRows($connection, "SELECT campaign.id, ad_group_ad.ad.id, ad_group_ad.ad.resource_name, ad_group_ad.ad.final_urls, ad_group_ad.ad.responsive_search_ad.headlines, ad_group_ad.ad.responsive_search_ad.descriptions, ad_group_ad.status FROM ad_group_ad WHERE campaign.id = {$campaignId} AND ad_group_ad.ad.type = RESPONSIVE_SEARCH_AD AND ad_group_ad.status != 'REMOVED' LIMIT 50");
+
+        return collect($rows)->filter(fn (array $row): bool => (string) data_get($row, 'campaign.id') === $campaignId)
+            ->map(fn (array $row): array => [
+                'id' => (string) data_get($row, 'adGroupAd.ad.id', ''),
+                'resource_name' => (string) data_get($row, 'adGroupAd.ad.resourceName', ''),
+                'status' => (string) data_get($row, 'adGroupAd.status', ''),
+                'final_url' => (string) data_get($row, 'adGroupAd.ad.finalUrls.0', ''),
+                'headlines' => $this->adTextAssets(data_get($row, 'adGroupAd.ad.responsiveSearchAd.headlines', [])),
+                'descriptions' => $this->adTextAssets(data_get($row, 'adGroupAd.ad.responsiveSearchAd.descriptions', [])),
+            ])->filter(fn (array $ad): bool => preg_match('/^[1-9]\d*$/', $ad['id']) === 1)->values()->all();
+    }
+
+    /** @return list<array{text: string, match_type: string}> */
+    public function campaignKeywords(GoogleAdsConnection $connection, string $campaignId): array
+    {
+        $this->assertCampaignId($campaignId);
+        $rows = $this->searchRows($connection, "SELECT campaign.id, ad_group_criterion.keyword.text, ad_group_criterion.keyword.match_type FROM ad_group_criterion WHERE campaign.id = {$campaignId} AND ad_group_criterion.type = KEYWORD AND ad_group_criterion.status != 'REMOVED' LIMIT 100");
+
+        return collect($rows)->filter(fn (array $row): bool => (string) data_get($row, 'campaign.id') === $campaignId)
+            ->map(fn (array $row): array => ['text' => (string) data_get($row, 'adGroupCriterion.keyword.text', ''), 'match_type' => (string) data_get($row, 'adGroupCriterion.keyword.matchType', '')])
+            ->filter(fn (array $keyword): bool => $keyword['text'] !== '')->values()->all();
+    }
+
+    /** @return list<array{city: string, radius: float, units: string}> */
+    public function campaignProximities(GoogleAdsConnection $connection, string $campaignId): array
+    {
+        $this->assertCampaignId($campaignId);
+        $rows = $this->searchRows($connection, "SELECT campaign.id, campaign_criterion.proximity.address.city_name, campaign_criterion.proximity.radius, campaign_criterion.proximity.radius_units FROM campaign_criterion WHERE campaign.id = {$campaignId} AND campaign_criterion.type = PROXIMITY AND campaign_criterion.status != 'REMOVED' LIMIT 50");
+
+        return collect($rows)->filter(fn (array $row): bool => (string) data_get($row, 'campaign.id') === $campaignId)
+            ->map(fn (array $row): array => ['city' => (string) data_get($row, 'campaignCriterion.proximity.address.cityName', ''), 'radius' => (float) data_get($row, 'campaignCriterion.proximity.radius', 0), 'units' => (string) data_get($row, 'campaignCriterion.proximity.radiusUnits', '')])->values()->all();
+    }
+
+    public function updateCampaignName(GoogleAdsConnection $connection, string $campaignId, string $name): void
+    {
+        $this->assertCampaignId($campaignId);
+        $this->mutateCampaign($connection, ['update' => ['resourceName' => $this->campaignResourceName($connection, $campaignId), 'name' => $name], 'updateMask' => 'name']);
+    }
+
+    public function updateCampaignBudget(GoogleAdsConnection $connection, string $budgetResourceName, int $amountMicros): void
+    {
+        $customerId = (string) $connection->customer_id;
+        $this->assertCustomerId($customerId);
+        if (preg_match('/^customers\/'.$customerId.'\/campaignBudgets\/[1-9]\d*$/', $budgetResourceName) !== 1) {
+            throw new RuntimeException('Invalid campaign budget resource.');
+        }
+        $this->mutateResource($connection, 'campaignBudgets', ['update' => ['resourceName' => $budgetResourceName, 'amountMicros' => (string) $amountMicros], 'updateMask' => 'amount_micros']);
+    }
+
+    /** @param list<array{text: string, pinned_field: string}> $headlines
+     * @param  list<array{text: string, pinned_field: string}>  $descriptions
+     */
+    public function updateResponsiveSearchAd(GoogleAdsConnection $connection, string $adId, array $headlines, array $descriptions): void
+    {
+        $this->assertCampaignId($adId);
+        $customerId = (string) $connection->customer_id;
+        $this->assertCustomerId($customerId);
+        $assets = fn (array $items): array => array_map(function (array $item): array {
+            $asset = ['text' => $item['text']];
+            if ($item['pinned_field'] !== '' && ! in_array($item['pinned_field'], ['UNSPECIFIED', 'UNKNOWN'], true)) {
+                $asset['pinnedField'] = $item['pinned_field'];
+            }
+
+            return $asset;
+        }, $items);
+        $this->mutateResource($connection, 'ads', ['update' => [
+            'resourceName' => "customers/{$customerId}/ads/{$adId}",
+            'responsiveSearchAd' => ['headlines' => $assets($headlines), 'descriptions' => $assets($descriptions)],
+        ], 'updateMask' => 'responsive_search_ad.headlines,responsive_search_ad.descriptions']);
     }
 
     public function updateCampaignStatus(GoogleAdsConnection $connection, string $campaignId, string $status): void
@@ -263,17 +360,8 @@ class GoogleAdsClient
     {
         $customerId = (string) $connection->customer_id;
         $this->assertCustomerId($customerId);
-        $response = $this->request($connection, $connection->login_customer_id)
-            ->post($this->url("customers/{$customerId}/googleAds:searchStream"), [
-                'query' => 'SELECT campaign.id, campaign.resource_name, campaign.name, campaign.status, campaign.advertising_channel_type, campaign_budget.amount_micros FROM campaign WHERE '.$filter,
-            ])->throw()->json();
 
-        if (! is_array($response)) {
-            throw new RuntimeException('Google Ads returned an invalid campaign list.');
-        }
-
-        return collect($response)
-            ->flatMap(fn (mixed $batch): array => is_array($batch) ? ($batch['results'] ?? []) : [])
+        return collect($this->searchRows($connection, 'SELECT campaign.id, campaign.resource_name, campaign.name, campaign.status, campaign.advertising_channel_type, campaign_budget.resource_name, campaign_budget.amount_micros, campaign_budget.explicitly_shared, campaign_budget.reference_count, campaign_budget.period FROM campaign WHERE '.$filter))
             ->map(fn (array $result): array => [
                 'id' => (string) data_get($result, 'campaign.id', ''),
                 'resource_name' => (string) data_get($result, 'campaign.resourceName', ''),
@@ -281,6 +369,9 @@ class GoogleAdsClient
                 'status' => (string) data_get($result, 'campaign.status', ''),
                 'type' => (string) data_get($result, 'campaign.advertisingChannelType', ''),
                 'daily_budget_micros' => (int) data_get($result, 'campaignBudget.amountMicros', 0),
+                'budget_resource_name' => (string) data_get($result, 'campaignBudget.resourceName', ''),
+                'budget_shared' => data_get($result, 'campaignBudget.explicitlyShared') !== false || (int) data_get($result, 'campaignBudget.referenceCount', 0) > 1,
+                'budget_period' => (string) data_get($result, 'campaignBudget.period', ''),
             ])
             ->filter(fn (array $campaign): bool => preg_match('/^\d+$/', $campaign['id']) === 1)
             ->values()->all();
@@ -289,9 +380,40 @@ class GoogleAdsClient
     /** @param array<string, mixed> $operation */
     protected function mutateCampaign(GoogleAdsConnection $connection, array $operation): void
     {
+        $this->mutateResource($connection, 'campaigns', $operation);
+    }
+
+    /** @return list<array<string, mixed>> */
+    protected function searchRows(GoogleAdsConnection $connection, string $query): array
+    {
         $customerId = (string) $connection->customer_id;
+        $this->assertCustomerId($customerId);
         $response = $this->request($connection, $connection->login_customer_id)
-            ->post($this->url("customers/{$customerId}/campaigns:mutate"), [
+            ->post($this->url("customers/{$customerId}/googleAds:searchStream"), ['query' => $query])->throw()->json();
+        if (! is_array($response)) {
+            throw new RuntimeException('Google Ads returned an invalid search response.');
+        }
+
+        return collect($response)->flatMap(fn (mixed $batch): array => is_array($batch) ? ($batch['results'] ?? []) : [])->filter(fn (mixed $row): bool => is_array($row))->values()->all();
+    }
+
+    /** @return list<array{text: string, pinned_field: string}> */
+    protected function adTextAssets(mixed $items): array
+    {
+        if (! is_array($items)) {
+            return [];
+        }
+
+        return collect($items)->filter(fn (mixed $item): bool => is_array($item))->map(fn (array $item): array => ['text' => (string) ($item['text'] ?? ''), 'pinned_field' => (string) ($item['pinnedField'] ?? '')])->values()->all();
+    }
+
+    /** @param array<string, mixed> $operation */
+    protected function mutateResource(GoogleAdsConnection $connection, string $resource, array $operation): void
+    {
+        $customerId = (string) $connection->customer_id;
+        $this->assertCustomerId($customerId);
+        $response = $this->request($connection, $connection->login_customer_id)
+            ->post($this->url("customers/{$customerId}/{$resource}:mutate"), [
                 'operations' => [$operation],
                 'partialFailure' => false,
             ])->throw()->json();

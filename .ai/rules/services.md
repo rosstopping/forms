@@ -6,6 +6,7 @@ paths:
   - 'app/Services/WeeklyReport*.php'
   - app/Services/SearchConsoleClient.php
   - 'app/Services/GoogleAds*'
+  - app/Services/GoogleAdsClient.php
 ---
 
 # Services
@@ -27,3 +28,6 @@ Persist property-specific permission failures for a visible site warning, includ
 
 ## Recheck selected Ads customer before campaign changes
 Campaigns are created paused. Before enabling, pausing, or removing, fetch the current campaign from the website's selected Ads customer. Enabling requires an explicit tracking, ad, and budget check; removal requires its exact current name. Do not auto-retry uncertain Ads mutations.
+
+## Edit live Ads from fresh account data
+Read live campaign, ad, and budget values from the website's selected Ads customer before editing. Only change an unshared DAILY campaign budget; shared budgets can affect other campaigns. Keep ad text edits scoped to the current responsive search ad, preserving pinned assets and rejecting stale forms.

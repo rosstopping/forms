@@ -342,9 +342,12 @@ test('campaigns open first when the selected Ads account has campaigns', functio
         ->assertSee('aria-current="page" >Campaigns', false)
         ->assertSee('Local search')
         ->assertSee('https://ads.google.com/aw/overview?campaignId=987654321', false)
+        ->assertSee('View &amp; edit campaign →', false)
+        ->assertSee('Impressions · 30 days')
+        ->assertSee('Conversions · 30 days')
         ->assertSee('Enable campaign')
         ->assertDontSee('Search opportunities');
-    Http::assertSentCount(1);
+    Http::assertSentCount(2);
 });
 
 test('the create tab opens first when the selected Ads account has no campaigns', function (): void {
@@ -446,6 +449,112 @@ test('campaign controls reject stale status and users without website management
 
     Http::assertSentCount(1);
     Http::assertNotSent(fn (ClientRequest $request): bool => str_ends_with($request->url(), '/campaigns:mutate'));
+});
+
+test('campaign details show targeting keywords and a responsive search ad preview', function (): void {
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    GoogleAdsConnection::factory()->for($website)->create(['customer_id' => '1234567890', 'currency_code' => 'GBP']);
+    Http::fake(function (ClientRequest $request) {
+        $query = (string) ($request['query'] ?? '');
+        if (str_contains($query, 'FROM ad_group_ad')) {
+            return Http::response([['results' => [[
+                'campaign' => ['id' => '987654321'],
+                'adGroupAd' => ['status' => 'ENABLED', 'ad' => [
+                    'id' => '321', 'resourceName' => 'customers/1234567890/ads/321', 'finalUrls' => ['https://example.com/'],
+                    'responsiveSearchAd' => [
+                        'headlines' => [['text' => 'Local SEO'], ['text' => 'Better rankings'], ['text' => 'Get found']],
+                        'descriptions' => [['text' => 'Reach local customers.'], ['text' => 'Get a free audit.']],
+                    ],
+                ]],
+            ]]]]);
+        }
+        if (str_contains($query, 'FROM ad_group_criterion')) {
+            return Http::response([['results' => [[
+                'campaign' => ['id' => '987654321'],
+                'adGroupCriterion' => ['keyword' => ['text' => 'seo doncaster', 'matchType' => 'EXACT']],
+            ]]]]);
+        }
+        if (str_contains($query, 'FROM campaign_criterion')) {
+            return Http::response([['results' => [[
+                'campaign' => ['id' => '987654321'],
+                'campaignCriterion' => ['proximity' => ['address' => ['cityName' => 'Doncaster'], 'radius' => 20, 'radiusUnits' => 'MILES']],
+            ]]]]);
+        }
+
+        return Http::response([['results' => [['campaign' => ['id' => '987654321', 'name' => 'Local search', 'status' => 'PAUSED', 'advertisingChannelType' => 'SEARCH'], 'campaignBudget' => ['resourceName' => 'customers/1234567890/campaignBudgets/222', 'amountMicros' => '20000000', 'period' => 'DAILY', 'explicitlyShared' => false, 'referenceCount' => 1]]]]]);
+    });
+
+    $this->actingAs($owner)->get(route('admin.google-ads.live-campaigns.show', [$website, '987654321']))
+        ->assertSuccessful()
+        ->assertSee('Local search')
+        ->assertSee('Doncaster')
+        ->assertSee('seo doncaster')
+        ->assertSee('Local SEO | Better rankings | Get found')
+        ->assertSee('Save budget')
+        ->assertSee('Save ad copy');
+    Http::assertSentCount(4);
+});
+
+test('campaign name budget and ad copy updates use account-scoped mutations', function (): void {
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    GoogleAdsConnection::factory()->for($website)->create(['customer_id' => '1234567890', 'currency_code' => 'GBP']);
+    $headlines = [['text' => 'Local SEO', 'pinned_field' => 'HEADLINE_1'], ['text' => 'Better rankings', 'pinned_field' => ''], ['text' => 'Get found', 'pinned_field' => '']];
+    $descriptions = [['text' => 'Reach local customers.', 'pinned_field' => ''], ['text' => 'Get a free audit.', 'pinned_field' => '']];
+    Http::fake(function (ClientRequest $request) use ($headlines, $descriptions) {
+        if (str_ends_with($request->url(), ':mutate')) {
+            return Http::response(['results' => [['resourceName' => 'customers/1234567890/campaigns/987654321']]]);
+        }
+        $query = (string) ($request['query'] ?? '');
+        if (str_contains($query, 'FROM ad_group_ad')) {
+            return Http::response([['results' => [[
+                'campaign' => ['id' => '987654321'],
+                'adGroupAd' => ['status' => 'ENABLED', 'ad' => [
+                    'id' => '321', 'resourceName' => 'customers/1234567890/ads/321', 'finalUrls' => ['https://example.com/'],
+                    'responsiveSearchAd' => [
+                        'headlines' => array_map(fn (array $asset): array => ['text' => $asset['text'], 'pinnedField' => $asset['pinned_field']], $headlines),
+                        'descriptions' => array_map(fn (array $asset): array => ['text' => $asset['text']], $descriptions),
+                    ],
+                ]],
+            ]]]]);
+        }
+
+        return Http::response([['results' => [['campaign' => ['id' => '987654321', 'name' => 'Local search', 'status' => 'PAUSED'], 'campaignBudget' => ['resourceName' => 'customers/1234567890/campaignBudgets/222', 'amountMicros' => '20000000', 'period' => 'DAILY', 'explicitlyShared' => false, 'referenceCount' => 1]]]]]);
+    });
+    $base = [$website, '987654321'];
+
+    $this->actingAs($owner)->patch(route('admin.google-ads.live-campaigns.name', $base), ['name' => 'Updated local search', 'original_name' => 'Local search'])
+        ->assertSessionHas('status', 'Campaign name saved in Google Ads.');
+    $this->actingAs($owner)->patch(route('admin.google-ads.live-campaigns.budget', $base), ['daily_budget' => '25.50', 'original_budget_micros' => '20000000'])
+        ->assertSessionHas('status', 'Daily budget saved in Google Ads.');
+    $this->actingAs($owner)->patch(route('admin.google-ads.live-campaigns.ads.update', [$website, '987654321', '321']), [
+        'headlines' => ['New local SEO', 'Better rankings', 'Get found'],
+        'descriptions' => ['Reach local customers.', 'Get a free audit.'],
+        'copy_signature' => hash('sha256', json_encode([$headlines, $descriptions])),
+    ])->assertSessionHas('status', 'Ad copy saved in Google Ads.');
+
+    Http::assertSent(fn (ClientRequest $request): bool => str_ends_with($request->url(), '/campaigns:mutate') && $request['operations'][0]['update']['name'] === 'Updated local search');
+    Http::assertSent(fn (ClientRequest $request): bool => str_ends_with($request->url(), '/campaignBudgets:mutate') && $request['operations'][0]['update']['amountMicros'] === '25500000');
+    Http::assertSent(fn (ClientRequest $request): bool => str_ends_with($request->url(), '/ads:mutate') && $request['operations'][0]['update']['responsiveSearchAd']['headlines'][0]['pinnedField'] === 'HEADLINE_1');
+});
+
+test('shared campaign budgets and stale edit forms cannot change live Ads', function (): void {
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    GoogleAdsConnection::factory()->for($website)->create(['customer_id' => '1234567890']);
+    Http::fake(['*' => Http::response([['results' => [[
+        'campaign' => ['id' => '987654321', 'name' => 'Current name', 'status' => 'PAUSED'],
+        'campaignBudget' => ['resourceName' => 'customers/1234567890/campaignBudgets/222', 'amountMicros' => '20000000', 'period' => 'DAILY', 'explicitlyShared' => true, 'referenceCount' => 2],
+    ]]]])]);
+
+    $this->actingAs($owner)->patch(route('admin.google-ads.live-campaigns.name', [$website, '987654321']), ['name' => 'New name', 'original_name' => 'Old name'])
+        ->assertSessionHas('error', 'The campaign name changed in Google Ads. Refresh before saving.');
+    $this->actingAs($owner)->patch(route('admin.google-ads.live-campaigns.budget', [$website, '987654321']), ['daily_budget' => '25', 'original_budget_micros' => '20000000'])
+        ->assertSessionHas('error', 'This budget cannot be edited here. Open it in Google Ads.');
+
+    Http::assertSentCount(2);
+    Http::assertNotSent(fn (ClientRequest $request): bool => str_ends_with($request->url(), ':mutate'));
 });
 
 test('saving a campaign draft requires permission to manage the website and an Ads account', function (): void {
@@ -701,6 +810,14 @@ test('Google Ads is hidden and all website routes require the owners active Comp
         $this->actingAs($owner)->get(route('admin.google-ads.'.$action, $website))
             ->assertRedirect(route('admin.billing.index'));
     }
+    $this->actingAs($owner)->get(route('admin.google-ads.live-campaigns.show', [$website, '987654321']))
+        ->assertRedirect(route('admin.billing.index'));
+    $this->actingAs($owner)->patch(route('admin.google-ads.live-campaigns.name', [$website, '987654321']), [])
+        ->assertRedirect(route('admin.billing.index'));
+    $this->actingAs($owner)->patch(route('admin.google-ads.live-campaigns.budget', [$website, '987654321']), [])
+        ->assertRedirect(route('admin.billing.index'));
+    $this->actingAs($owner)->patch(route('admin.google-ads.live-campaigns.ads.update', [$website, '987654321', '321']), [])
+        ->assertRedirect(route('admin.billing.index'));
     $this->actingAs($owner)->post(route('admin.google-ads.account', $website), ['customer_id' => '1234567890'])
         ->assertRedirect(route('admin.billing.index'));
     $this->actingAs($owner)->post(route('admin.google-ads.campaigns.store', $website), [])
