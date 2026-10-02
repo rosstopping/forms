@@ -211,6 +211,50 @@ class GoogleAdsController extends Controller
         ]);
     }
 
+    public function clearUnconfirmedCampaign(Request $request, Website $website, GoogleAdsCampaignDraft $draft): RedirectResponse
+    {
+        $this->authorizeWebsite($request, $website);
+        abort_unless($draft->website_id === $website->id, 404);
+        abort_unless($draft->status === GoogleAdsCampaignDraft::STATUS_UNCERTAIN, 404);
+
+        if ($draft->updated_at->isAfter(now()->subMinutes(5))) {
+            return Redirect::route('admin.google-ads.index', $website)
+                ->with('error', 'Wait five minutes for the original campaign request to finish, then check it again.');
+        }
+
+        $connection = $website->googleAdsConnection;
+        if (! $connection || $connection->customer_id !== $draft->customer_id) {
+            return Redirect::route('admin.google-ads.index', $website)
+                ->with('error', 'Select Ads account '.$draft->customer_id.' before clearing this request.');
+        }
+
+        try {
+            $matches = $this->client->campaignsNamed($connection, $draft->name);
+        } catch (ConnectionException|RequestException|RuntimeException) {
+            return Redirect::route('admin.google-ads.index', $website)
+                ->with('error', 'Google Ads could not check this campaign right now. The request was not cleared.');
+        }
+
+        if ($matches !== []) {
+            return Redirect::route('admin.google-ads.index', $website)
+                ->with('error', 'A campaign with this name now exists in Google Ads. The request was not cleared.');
+        }
+
+        $cleared = GoogleAdsCampaignDraft::query()
+            ->whereKey($draft->id)
+            ->where('status', GoogleAdsCampaignDraft::STATUS_UNCERTAIN)
+            ->where('updated_at', '<=', now()->subMinutes(5))
+            ->update([
+                'status' => GoogleAdsCampaignDraft::STATUS_FAILED,
+                'error' => 'No matching campaign was found in Ads account '.$draft->customer_id.' when this request was cleared.',
+            ]);
+
+        return Redirect::route('admin.google-ads.index', $website)->with(
+            $cleared ? 'status' : 'error',
+            $cleared ? 'The unconfirmed request was cleared. You can now create a new paused campaign.' : 'This request changed while it was being checked. Refresh the page.',
+        );
+    }
+
     public function suggest(GenerateGoogleAdsSuggestionsRequest $request, Website $website): RedirectResponse
     {
         if (! $website->googleAdsConnection?->customer_id) {

@@ -327,6 +327,7 @@ Route::middleware(['web', 'auth', ResolveCurrentWebsite::class])->prefix('admin'
         Route::post('websites/{website}/google-ads/suggestions', [GoogleAdsController::class, 'suggest'])->middleware('throttle:3,1')->name('google-ads.suggestions');
         Route::post('websites/{website}/google-ads/campaigns', [GoogleAdsController::class, 'storeDraft'])->middleware('throttle:3,1')->name('google-ads.campaigns.store');
         Route::post('websites/{website}/google-ads/campaigns/{draft}/check', [GoogleAdsController::class, 'checkCampaign'])->middleware('throttle:10,1')->name('google-ads.campaigns.check');
+        Route::post('websites/{website}/google-ads/campaigns/{draft}/clear', [GoogleAdsController::class, 'clearUnconfirmedCampaign'])->middleware('throttle:3,1')->name('google-ads.campaigns.clear');
         Route::delete('websites/{website}/google-ads', [GoogleAdsController::class, 'destroy'])->name('google-ads.destroy');
     });
     Route::get('google-ads/callback', [GoogleAdsController::class, 'callback'])->name('google-ads.callback');

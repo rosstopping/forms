@@ -137,7 +137,15 @@
                                                 <p class="mt-2 text-sm font-medium text-emerald-800">Matching campaign{{ count(session('campaign_check.matches')) === 1 ? '' : 's' }} found in account {{ $draft->customer_id }}:</p>
                                                 <ul class="mt-1 text-sm text-emerald-800">@foreach (session('campaign_check.matches') as $match)<li>ID {{ $match['id'] }} · {{ ucfirst(strtolower($match['status'])) }}</li>@endforeach</ul>
                                             @else
-                                                <p class="mt-2 max-w-xl text-sm text-amber-800">No campaign with this name was found in account {{ $draft->customer_id }}. This request is still unconfirmed; check the same account in Google Ads before creating another.</p>
+                                                <p class="mt-2 max-w-xl text-sm text-amber-800">No campaign with this name was found in account {{ $draft->customer_id }}. Check the same account in Google Ads before creating another.</p>
+                                                @if ($draft->updated_at->lte(now()->subMinutes(5)))
+                                                    <form method="POST" action="{{ route('admin.google-ads.campaigns.clear', [$website, $draft]) }}" class="mt-2">
+                                                        @csrf
+                                                        <button type="submit" class="text-sm font-medium text-teal-700 underline hover:text-teal-900">Clear this request after checking Ads</button>
+                                                    </form>
+                                                @else
+                                                    <p class="mt-1 text-xs text-slate-600">You can clear this request after five minutes if it still does not appear.</p>
+                                                @endif
                                             @endif
                                         @endif
                                     @endif

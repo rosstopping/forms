@@ -392,6 +392,95 @@ test('campaign checks cannot read another website or a different Ads account', f
     Http::assertNothingSent();
 });
 
+test('an old unconfirmed request can be cleared only after a fresh no-match check', function (): void {
+    Queue::fake();
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $website->domains()->create(['domain' => 'example.com', 'is_primary' => true]);
+    $connection = GoogleAdsConnection::factory()->for($website)->create(['customer_id' => '1234567890', 'currency_code' => 'GBP']);
+    $draft = GoogleAdsCampaignDraft::factory()->for($website)->for($connection, 'connection')->create([
+        'status' => GoogleAdsCampaignDraft::STATUS_UNCERTAIN,
+        'updated_at' => now()->subMinutes(6),
+    ]);
+    Http::fake(['*' => Http::response([['results' => []]])]);
+
+    $this->actingAs($owner)->post(route('admin.google-ads.campaigns.clear', [$website, $draft]))
+        ->assertRedirect(route('admin.google-ads.index', $website))
+        ->assertSessionHas('status');
+
+    expect($draft->fresh()->status)->toBe(GoogleAdsCampaignDraft::STATUS_FAILED);
+    Http::assertSentCount(1);
+    Queue::assertNothingPushed();
+
+    $this->actingAs($owner)->post(route('admin.google-ads.campaigns.store', $website), [
+        'request_key' => (string) Str::uuid(),
+        'name' => $draft->name,
+        'daily_budget' => 20,
+        'city_name' => 'Doncaster',
+        'radius_miles' => 20,
+        'final_url' => 'https://example.com/',
+        'keywords_text' => 'local seo services',
+        'headlines' => ['Headline one', 'Headline two', 'Headline three'],
+        'descriptions' => ['A useful first description.', 'A useful second description.'],
+    ])->assertSessionHas('status');
+
+    expect(GoogleAdsCampaignDraft::query()->count())->toBe(2);
+    Queue::assertPushed(CreateGoogleAdsCampaign::class);
+});
+
+test('an unconfirmed request cannot be cleared if Google Ads now has the campaign', function (): void {
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $connection = GoogleAdsConnection::factory()->for($website)->create(['customer_id' => '1234567890']);
+    $draft = GoogleAdsCampaignDraft::factory()->for($website)->for($connection, 'connection')->create([
+        'status' => GoogleAdsCampaignDraft::STATUS_UNCERTAIN,
+        'updated_at' => now()->subMinutes(6),
+    ]);
+    Http::fake(['*' => Http::response([['results' => [
+        ['campaign' => ['id' => '987654321', 'name' => $draft->name, 'status' => 'PAUSED']],
+    ]]])]);
+
+    $this->actingAs($owner)->post(route('admin.google-ads.campaigns.clear', [$website, $draft]))
+        ->assertSessionHas('error', 'A campaign with this name now exists in Google Ads. The request was not cleared.');
+
+    expect($draft->fresh()->status)->toBe(GoogleAdsCampaignDraft::STATUS_UNCERTAIN);
+    Http::assertSentCount(1);
+});
+
+test('a recent unconfirmed request cannot be cleared while its original job may still run', function (): void {
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $connection = GoogleAdsConnection::factory()->for($website)->create(['customer_id' => '1234567890']);
+    $draft = GoogleAdsCampaignDraft::factory()->for($website)->for($connection, 'connection')->create(['status' => GoogleAdsCampaignDraft::STATUS_UNCERTAIN]);
+    Http::fake();
+
+    $this->actingAs($owner)->post(route('admin.google-ads.campaigns.clear', [$website, $draft]))
+        ->assertSessionHas('error', 'Wait five minutes for the original campaign request to finish, then check it again.');
+
+    expect($draft->fresh()->status)->toBe(GoogleAdsCampaignDraft::STATUS_UNCERTAIN);
+    Http::assertNothingSent();
+});
+
+test('an unconfirmed request cannot be cleared through another website or Ads account', function (): void {
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $otherWebsite = Website::factory()->for($owner, 'owner')->create();
+    $connection = GoogleAdsConnection::factory()->for($website)->create(['customer_id' => '1234567890']);
+    $draft = GoogleAdsCampaignDraft::factory()->for($website)->for($connection, 'connection')->create([
+        'status' => GoogleAdsCampaignDraft::STATUS_UNCERTAIN,
+        'updated_at' => now()->subMinutes(6),
+    ]);
+    Http::fake();
+
+    $this->actingAs($owner)->post(route('admin.google-ads.campaigns.clear', [$otherWebsite, $draft]))->assertNotFound();
+    $connection->update(['customer_id' => '9999999999']);
+    $this->actingAs($owner)->post(route('admin.google-ads.campaigns.clear', [$website, $draft]))
+        ->assertSessionHas('error', 'Select Ads account 1234567890 before clearing this request.');
+
+    expect($draft->fresh()->status)->toBe(GoogleAdsCampaignDraft::STATUS_UNCERTAIN);
+    Http::assertNothingSent();
+});
+
 test('a Google Ads timeout fails safely without a 500 or a second mutation', function (): void {
     Queue::fake();
     $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
