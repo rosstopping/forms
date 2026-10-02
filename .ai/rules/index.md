@@ -30,7 +30,9 @@ Before planning or editing, find the row whose globs match the file's path and r
 | {config/agencies.php,app/Http/Controllers/AgencyMarketingController.php,app/Http/Requests/StoreAgencyBetaRequest.php,resources/views/marketing/agencies/**} | .ai/rules/agencies.md |
 | app/{Ai/Agents/PixelOptimisationWriter.php,Services/PixelOptimisationGenerator.php,Http/Controllers/Admin/*PageOptimisationsController.php} | .ai/rules/agents-controllers-admin.md |
 | app/{Ai/Agents/CompetitorAnalyst.php,Services/CompetitorBriefGenerator.php} | .ai/rules/agents.md |
+| app/{Jobs/Send*RankingReport.php,Services/GoogleAdsEmailSummary.php,Services/GoogleAdsClient.php,Mail/*RankingReport.php},resources/views/emails/*ranking-report.blade.php | .ai/rules/app-jobs-views-emails.md |
 | app/{Jobs/StartContentGeneration.php,Services/ContentGenerationPromptGenerator.php,Services/SeoTargetKeywordSelector.php,Models/ContentGeneration.php} | .ai/rules/app-jobs.md |
+| app/{Services/MarketingAudit*.php,Services/WebsiteHealthAuditor.php,Services/AiVisibility*.php},resources/views/marketing/** | .ai/rules/app-services-views-marketing.md |
 | app/{Services/Github*,Models/GithubUserAuthorization.php,Jobs/{StartCopilotRemediation,SyncCopilotRemediation}.php}, app/{Services/SearchConsoleHistoryStore.php,Services/WebsiteAiContext.php,Jobs/SyncSearchConsoleHistory.php}, app/{Services/Content*,Jobs/StartContentGeneration.php}, app/{Services/ProspectPersonalisedVideo.php,Models/ProspectOutreachState.php,Mail/ProspectOutreach.php} | .ai/rules/app-services.md |
 | app/** | .ai/rules/app.md |
 | app/{Actions/ActivateWebsiteAuditTrial.php,Models/User.php,Http/Controllers/WebsiteAuditOnboardingController.php},resources/views/{auth/complete-website-audit-onboarding.blade.php,admin/dashboard.blade.php},tests/Feature/{FreeSiteAuditTest.php,DashboardInformationArchitectureTest.php} | .ai/rules/auth-feature.md |

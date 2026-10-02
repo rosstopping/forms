@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\AddStrictTransportSecurity;
 use App\Http\Middleware\EnsureMembershipFeature;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -14,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->web(append: [AddStrictTransportSecurity::class]);
         $middleware->alias(['membership' => EnsureMembershipFeature::class]);
         $middleware->validateCsrfTokens(except: [
             'cal/webhook',

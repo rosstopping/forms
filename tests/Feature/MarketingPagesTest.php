@@ -21,7 +21,7 @@ it('shows each public marketing page', function (string $route, string $copy): v
     expect($links->item(0)->getAttribute('href'))->toBe(route('marketing.free-site-audit'));
     expect($xpath->query('//header//details')->length)->toBe(0);
     $footerLinks = $xpath->query('//footer//a');
-    expect(array_map(fn ($link) => $link->getAttribute('href'), iterator_to_array($footerLinks)))->toBe([route('marketing.faqs'), route('marketing.journal'), route('marketing.privacy'), route('marketing.terms')]);
+    expect(array_map(fn ($link) => $link->getAttribute('href'), iterator_to_array($footerLinks)))->toBe([route('marketing.about'), route('marketing.faqs'), route('marketing.journal'), route('marketing.privacy'), route('marketing.terms')]);
     expect($xpath->query('//nav[@aria-label="Main navigation"]/a/span[contains(@class, "sm:hidden")]')->item(0)->textContent)->toBe('Free Audit');
     expect($xpath->query('//nav[@aria-label="Main navigation"]/a/span[contains(@class, "max-sm:hidden")]')->item(0)->textContent)->toBe('Get your free search audit');
     expect($xpath->query('//main')->length)->toBe(1);
@@ -207,6 +207,25 @@ it('keeps social metadata aligned with the page title and links articles to Site
 
 it('advertises the public sitemap to crawlers', function (): void {
     expect(file_get_contents(public_path('robots.txt')))->toContain('Sitemap: https://sitewell.digizu.co.uk/sitemap.xml');
+});
+
+it('provides a keyboard skip link and a factual AI resource directory', function (): void {
+    $response = $this->get(route('marketing.home'))->assertSuccessful();
+    $document = new DOMDocument;
+    @$document->loadHTML('<?xml encoding="UTF-8"'.$response->getContent());
+    $xpath = new DOMXPath($document);
+
+    expect($xpath->query('//body//a')->item(0)->getAttribute('href'))->toBe('#main-content')
+        ->and($xpath->query('//main[@id="main-content"]')->length)->toBe(1);
+    $directory = file_get_contents(public_path('llms.txt'));
+    expect(count(array_filter(explode("\n", $directory))))->toBeGreaterThanOrEqual(5)
+        ->and($directory)->toContain('https://sitewell.digizu.co.uk/about');
+    $this->get('/managed-seo-services')->assertSuccessful();
+});
+
+it('adds HSTS to secure web responses only', function (): void {
+    $this->get('https://sitewell.test/')->assertSuccessful()->assertHeader('Strict-Transport-Security', 'max-age=86400');
+    $this->get('http://sitewell.test/')->assertSuccessful()->assertHeaderMissing('Strict-Transport-Security');
 });
 
 it('adds blog posting structured data on article pages', function (): void {
@@ -666,7 +685,9 @@ it('keeps the home page clear while a replacement video is unavailable', functio
         ->assertDontSee('Your website.<br>The work behind it.', false)
         ->assertDontSee('https://ui.sh/ui-picker.js');
 
-    expect(substr_count($response->getContent(), '<iframe'))->toBe(0);
+    $document = new DOMDocument;
+    @$document->loadHTML('<?xml encoding="UTF-8"'.$response->getContent());
+    expect((new DOMXPath($document))->query('//main//iframe')->length)->toBe(0);
 });
 
 it('keeps pricing and the client list off the focused homepage', function (): void {
@@ -765,7 +786,7 @@ it('keeps the streamlined homepage focused on services proof and the audit', fun
     $xpath = new DOMXPath($document);
     expect($xpath->query('//main/section')->length)->toBe(3)
         ->and($xpath->query('//form[@data-audit-form]')->length)->toBe(1)
-        ->and($xpath->query('//iframe')->length)->toBe(0)
+        ->and($xpath->query('//main//iframe')->length)->toBe(0)
         ->and($xpath->query('//main//*[@data-home-reveal]')->length)->toBe(7)
         ->and($xpath->query('//main//form[@data-audit-form]//*[@data-home-reveal]')->length)->toBe(0)
         ->and($xpath->query('//footer')->length)->toBe(1);

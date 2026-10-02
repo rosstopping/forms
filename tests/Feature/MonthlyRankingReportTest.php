@@ -2,14 +2,18 @@
 
 use App\Jobs\SendMonthlyRankingReport;
 use App\Mail\MonthlyRankingReport;
+use App\Models\GoogleAdsConnection;
 use App\Models\SearchConsoleConnection;
 use App\Models\SearchConsoleMetric;
 use App\Models\User;
 use App\Models\Website;
 use App\Services\MonthlyRankingReportBuilder;
 use App\Services\WebsiteMailRecipients;
+use App\Support\MembershipPlan;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request as ClientRequest;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 
@@ -47,6 +51,36 @@ test('monthly reports exclude viewer members without changing weekly recipients'
     (new SendMonthlyRankingReport($website))->handle(app(MonthlyRankingReportBuilder::class), app(WebsiteMailRecipients::class));
     Mail::assertQueued(MonthlyRankingReport::class, 3);
     Mail::assertNotQueued(MonthlyRankingReport::class, fn (MonthlyRankingReport $mail): bool => $mail->hasTo('viewer@example.com'));
+});
+
+test('monthly email shows one enabled Google Ads total for the last complete month', function (): void {
+    Mail::fake();
+    $this->travelTo(Carbon::parse('2026-09-08'));
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    GoogleAdsConnection::factory()->for($website)->create(['customer_id' => '1234567890', 'currency_code' => 'GBP']);
+    config(['services.google_ads.api_url' => 'https://googleads.test/v25']);
+    Http::preventStrayRequests();
+    Http::fake(function (ClientRequest $request) {
+        expect($request['query'])->toContain("campaign.status = 'ENABLED'")
+            ->toContain("segments.date BETWEEN '2026-08-01' AND '2026-08-31'");
+
+        return Http::response([['results' => [[
+            'campaign' => ['id' => '1'],
+            'metrics' => ['impressions' => '2500', 'clicks' => '80', 'costMicros' => '42000000', 'conversions' => 4],
+        ]]]]);
+    });
+
+    (new SendMonthlyRankingReport($website))->handle(app(MonthlyRankingReportBuilder::class), app(WebsiteMailRecipients::class));
+
+    Mail::assertQueued(MonthlyRankingReport::class, function (MonthlyRankingReport $mail): bool {
+        $mail->assertSeeInHtml('Google Ads')->assertSeeInHtml('GBP 42.00');
+
+        return $mail->adsSummary['impressions'] === 2500
+            && $mail->adsSummary['clicks'] === 80
+            && $mail->adsSummary['cost_micros'] === 42000000
+            && $mail->adsSummary['conversions'] === 4.0;
+    });
 });
 
 test('monthly dispatcher includes active subscribed websites with ranking data', function () {

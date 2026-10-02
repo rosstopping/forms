@@ -23,6 +23,7 @@
 <hr style="margin:24px 0;border:0;border-top:1px solid #ebe6e2;">
 <h2 style="font-size:18px;">Detailed reporting</h2>
 @endif
+@include('emails.google-ads-summary')
 @if ($report['latestSearch'])
 <h2 style="margin-top:24px;font-size:18px;">Google Search performance</h2>
 <p style="color:#62666d;">Month beginning {{ $report['latestSearch']->month->format('j M Y') }}</p>

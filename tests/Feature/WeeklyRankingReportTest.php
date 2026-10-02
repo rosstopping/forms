@@ -3,6 +3,7 @@
 use App\Ai\Agents\WeeklyOverviewWriter;
 use App\Jobs\SendWeeklyRankingReport;
 use App\Mail\WeeklyRankingReport;
+use App\Models\GoogleAdsConnection;
 use App\Models\SearchConsoleConnection;
 use App\Models\SearchConsoleMetric;
 use App\Models\SeoOpportunity;
@@ -13,7 +14,9 @@ use App\Models\User;
 use App\Models\Website;
 use App\Services\RankingReportBuilder;
 use App\Services\WebsiteMailRecipients;
+use App\Support\MembershipPlan;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request as ClientRequest;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
@@ -78,6 +81,65 @@ test('weekly ranking reports are queued to administrators, the owner, and websit
     Mail::assertQueued(WeeklyRankingReport::class, fn (WeeklyRankingReport $mail): bool => $mail->hasTo('owner@example.com'));
     Mail::assertQueued(WeeklyRankingReport::class, fn (WeeklyRankingReport $mail): bool => $mail->hasTo('manager@example.com'));
     Mail::assertQueued(WeeklyRankingReport::class, fn (WeeklyRankingReport $mail): bool => $mail->hasTo('viewer@example.com'));
+});
+
+test('weekly email includes combined enabled Google Ads results for its reporting week', function (): void {
+    Mail::fake();
+    $this->travelTo(Carbon::parse('2026-09-14 08:00:00'));
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    GoogleAdsConnection::factory()->for($website)->create(['customer_id' => '1234567890', 'currency_code' => 'GBP']);
+    config(['services.google_ads.api_url' => 'https://googleads.test/v25']);
+    Http::fake(function (ClientRequest $request) {
+        expect($request['query'])->toContain("campaign.status = 'ENABLED'")
+            ->toContain("segments.date BETWEEN '2026-09-07' AND '2026-09-13'");
+
+        return Http::response([['results' => [
+            ['campaign' => ['id' => '1'], 'metrics' => ['impressions' => '1000', 'clicks' => '25', 'costMicros' => '15000000', 'conversions' => 2]],
+            ['campaign' => ['id' => '2'], 'metrics' => ['impressions' => '500', 'clicks' => '10', 'costMicros' => '5000000', 'conversions' => 1]],
+        ]]]);
+    });
+
+    (new SendWeeklyRankingReport($website))->handle(app(RankingReportBuilder::class), app(WebsiteMailRecipients::class));
+
+    Mail::assertQueued(WeeklyRankingReport::class, fn (WeeklyRankingReport $mail): bool => $mail->adsSummary['campaigns'] === 2
+        && $mail->adsSummary['impressions'] === 1500
+        && $mail->adsSummary['clicks'] === 35
+        && $mail->adsSummary['cost_micros'] === 20000000
+        && $mail->adsSummary['conversions'] === 3.0);
+});
+
+test('weekly email omits Google Ads when no enabled campaigns return data', function (): void {
+    Mail::fake();
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    GoogleAdsConnection::factory()->for($website)->create(['customer_id' => '1234567890', 'currency_code' => 'GBP']);
+    config(['services.google_ads.api_url' => 'https://googleads.test/v25']);
+    Http::fake(['https://googleads.test/v25/*' => Http::response([['results' => []]])]);
+
+    (new SendWeeklyRankingReport($website))->handle(app(RankingReportBuilder::class), app(WebsiteMailRecipients::class));
+
+    Mail::assertQueued(WeeklyRankingReport::class, fn (WeeklyRankingReport $mail): bool => $mail->adsSummary === null);
+    (new WeeklyRankingReport($website, app(RankingReportBuilder::class)->build($website)))->assertDontSeeInHtml('Google Ads');
+});
+
+test('Ads access loss or an Ads API failure does not stop the weekly email', function (): void {
+    Mail::fake();
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::GROWTH, 'membership_status' => 'active']);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    GoogleAdsConnection::factory()->for($website)->create(['customer_id' => '1234567890', 'currency_code' => 'GBP']);
+    config(['services.google_ads.api_url' => 'https://googleads.test/v25']);
+    Http::fake(['https://googleads.test/v25/*' => Http::response(['error' => 'Unavailable'], 503)]);
+
+    (new SendWeeklyRankingReport($website))->handle(app(RankingReportBuilder::class), app(WebsiteMailRecipients::class));
+    Http::assertNothingSent();
+
+    $owner->update(['membership_tier' => MembershipPlan::COMPLETE]);
+    (new SendWeeklyRankingReport($website))->handle(app(RankingReportBuilder::class), app(WebsiteMailRecipients::class));
+
+    Http::assertSentCount(1);
+    Mail::assertQueued(WeeklyRankingReport::class, 2);
+    Mail::assertQueued(WeeklyRankingReport::class, fn (WeeklyRankingReport $mail): bool => $mail->adsSummary === null);
 });
 
 test('weekly ranking email shows active target states and links to target keywords', function (): void {

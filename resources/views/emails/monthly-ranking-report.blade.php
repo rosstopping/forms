@@ -1,6 +1,7 @@
 <x-email-layout>
 <p style="font-size:14px;font-weight:600;color:#d63d24;">Monthly search performance</p>
 <h1 style="margin:4px 0 8px;font-size:24px;">{{ $website->name }}</h1>
+@include('emails.google-ads-summary')
 @if ($report['latestSearch'])
 <p style="color:#62666d;">Your results for {{ $report['latestSearch']->month->format('F Y') }}, compared with {{ $report['previousSearch']?->month->format('F Y') ?? 'the previous available month' }}.</p>
 <table class="metrics" role="presentation" width="100%" cellspacing="0" cellpadding="0" style="text-align:center;margin-top:20px;">

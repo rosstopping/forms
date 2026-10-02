@@ -6,6 +6,7 @@ use App\Models\GoogleAdsConnection;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\RequestException;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
@@ -273,6 +274,23 @@ class GoogleAdsClient
         }
 
         return $performance;
+    }
+
+    /** @return array{campaigns: int, impressions: int, clicks: int, cost_micros: int, conversions: float}|null */
+    public function enabledCampaignPerformance(GoogleAdsConnection $connection, Carbon $start, Carbon $end): ?array
+    {
+        $rows = $this->searchRows($connection, "SELECT campaign.id, metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions FROM campaign WHERE campaign.status = 'ENABLED' AND segments.date BETWEEN '".$start->toDateString()."' AND '".$end->toDateString()."'");
+        if ($rows === []) {
+            return null;
+        }
+
+        return [
+            'campaigns' => count($rows),
+            'impressions' => array_sum(array_map(fn (array $row): int => (int) data_get($row, 'metrics.impressions', 0), $rows)),
+            'clicks' => array_sum(array_map(fn (array $row): int => (int) data_get($row, 'metrics.clicks', 0), $rows)),
+            'cost_micros' => array_sum(array_map(fn (array $row): int => (int) data_get($row, 'metrics.costMicros', 0), $rows)),
+            'conversions' => array_sum(array_map(fn (array $row): float => (float) data_get($row, 'metrics.conversions', 0), $rows)),
+        ];
     }
 
     /** @return array{id: string, resource_name: string, name: string, status: string, type: string, daily_budget_micros: int}|null */

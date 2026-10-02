@@ -1,0 +1,9 @@
+# Sitewell
+
+> Sitewell manages website and SEO improvements for UK businesses.
+
+- [Home](https://sitewell.digizu.co.uk/): What Sitewell does and how to request a free search audit.
+- [About Sitewell](https://sitewell.digizu.co.uk/about): Ross, the Doncaster-based founder, and how Sitewell works.
+- [Managed SEO services](https://sitewell.digizu.co.uk/managed-seo-services): Ongoing SEO and website improvements.
+- [Free search audit](https://sitewell.digizu.co.uk/get-started): Submit a website for an initial public audit.
+- [FAQs](https://sitewell.digizu.co.uk/faqs): Answers about the managed service.

@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Mail\MonthlyRankingReport;
 use App\Models\Website;
+use App\Services\GoogleAdsEmailSummary;
 use App\Services\MonthlyRankingReportBuilder;
 use App\Services\WebsiteMailRecipients;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -32,9 +33,11 @@ class SendMonthlyRankingReport implements ShouldBeUnique, ShouldQueue
     public function handle(MonthlyRankingReportBuilder $builder, WebsiteMailRecipients $recipients): void
     {
         $report = $builder->build($this->website);
+        $month = today()->subMonthNoOverflow();
+        $adsSummary = app(GoogleAdsEmailSummary::class)->forPeriod($this->website, $month->copy()->startOfMonth(), $month->copy()->endOfMonth());
         $monthlyRecipients = $recipients->withoutViewers($this->website, $recipients->forReports($this->website));
         foreach ($monthlyRecipients as $recipient) {
-            Mail::to($recipient)->send(new MonthlyRankingReport($this->website, $report));
+            Mail::to($recipient)->send(new MonthlyRankingReport($this->website, $report, $adsSummary));
         }
     }
 }

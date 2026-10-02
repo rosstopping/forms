@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Mail\WeeklyRankingReport;
 use App\Models\Website;
+use App\Services\GoogleAdsEmailSummary;
 use App\Services\RankingReportBuilder;
 use App\Services\WebsiteMailRecipients;
 use App\Services\WeeklyReportGenerator;
@@ -65,9 +66,10 @@ class SendWeeklyRankingReport implements ShouldBeUnique, ShouldQueue
         }
 
         $overview = app(WeeklyReportGenerator::class)->generate($this->website, $this->overviewDispatchDate ?? $this->rankingPeriodStart);
+        $adsSummary = app(GoogleAdsEmailSummary::class)->forPeriod($this->website, $overview->period_start, $overview->period_end);
 
         foreach ($recipients->forReports($this->website) as $recipient) {
-            Mail::to($recipient)->send(new WeeklyRankingReport($this->website, $report, $overview));
+            Mail::to($recipient)->send(new WeeklyRankingReport($this->website, $report, $overview, $adsSummary));
         }
     }
 }

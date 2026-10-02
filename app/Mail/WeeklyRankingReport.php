@@ -15,8 +15,10 @@ class WeeklyRankingReport extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
-    /** @param array<string, mixed> $report */
-    public function __construct(public Website $website, public array $report, public ?WeeklyReport $weeklyOverview = null)
+    /** @param array<string, mixed> $report
+     * @param  array<string, mixed>|null  $adsSummary
+     */
+    public function __construct(public Website $website, public array $report, public ?WeeklyReport $weeklyOverview = null, public ?array $adsSummary = null)
     {
         $this->afterCommit();
     }

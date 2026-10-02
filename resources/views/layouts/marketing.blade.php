@@ -38,6 +38,7 @@
     @endif
 </head>
 <body class="marketing-site prospect-workspace min-h-dvh bg-white text-ink">
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-full focus:bg-white focus:px-5 focus:py-3 focus:text-ink focus:shadow-lg focus:outline-2 focus:outline-offset-2 focus:outline-garden">Skip to content</a>
     <!-- Google Tag Manager (noscript) -->
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-N36VDJNH"
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
@@ -55,7 +56,7 @@
             </div>
         </header>
 
-        <main>
+        <main id="main-content" tabindex="-1">
             @yield('content')
         </main>
 
@@ -63,6 +64,7 @@
             <div class="mx-auto flex max-w-7xl flex-col gap-6 px-5 py-8 sm:px-8 lg:flex-row lg:items-center lg:justify-between lg:px-10">
                 <p class="text-base text-ink/65 sm:text-sm">© {{ now()->year }} Sitewell.</p>
                 <nav aria-label="Footer navigation" class="flex flex-wrap gap-x-6 gap-y-2 text-base text-ink/65 sm:text-sm">
+                    <a href="{{ route('marketing.about') }}" class="inline-flex min-h-12 items-center hover:text-ink">About</a>
                     <a href="{{ route('marketing.faqs') }}" class="inline-flex min-h-12 items-center hover:text-ink">FAQs</a>
                     <a href="{{ route('marketing.journal') }}" class="inline-flex min-h-12 items-center hover:text-ink">Journal</a>
                     <a href="{{ route('marketing.privacy') }}" class="inline-flex min-h-12 items-center hover:text-ink">Privacy policy</a>
