@@ -196,6 +196,31 @@ class GoogleAdsClient
             ->values()->all();
     }
 
+    /** @return list<array{id: string, name: string, status: string}> */
+    public function campaignsNamed(GoogleAdsConnection $connection, string $name): array
+    {
+        $customerId = (string) $connection->customer_id;
+        $this->assertCustomerId($customerId);
+        $escapedName = str_replace(['\\', "'", "\n", "\r"], ['\\\\', "\\'", '\\n', '\\r'], $name);
+        $response = $this->request($connection, $connection->login_customer_id)
+            ->post($this->url("customers/{$customerId}/googleAds:searchStream"), [
+                'query' => "SELECT campaign.id, campaign.name, campaign.status FROM campaign WHERE campaign.name = '{$escapedName}' LIMIT 20",
+            ])->throw()->json();
+
+        if (! is_array($response)) {
+            throw new RuntimeException('Google Ads returned an invalid campaign list.');
+        }
+
+        return collect($response)
+            ->flatMap(fn (mixed $batch): array => is_array($batch) ? ($batch['results'] ?? []) : [])
+            ->map(fn (array $result): array => [
+                'id' => (string) data_get($result, 'campaign.id', ''),
+                'name' => (string) data_get($result, 'campaign.name', ''),
+                'status' => (string) data_get($result, 'campaign.status', ''),
+            ])->filter(fn (array $campaign): bool => $campaign['id'] !== '' && $campaign['name'] === $name)
+            ->values()->all();
+    }
+
     protected function request(GoogleAdsConnection $connection, ?string $loginCustomerId = null): PendingRequest
     {
         $request = Http::acceptJson()->asJson()->withToken($this->oauth->accessToken($connection))

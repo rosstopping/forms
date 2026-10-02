@@ -3,6 +3,7 @@ paths:
   - app/Http/Controllers/Admin/ProspectController.php
   - app/Http/Controllers/Admin/OnboardingCallController.php
   - app/Http/Controllers/Admin/ContentPlanController.php
+  - app/Http/Controllers/Admin/WebsiteController.php
 ---
 
 # Http Controllers Admin
@@ -15,3 +16,6 @@ The onboarding call route must redirect authenticated users to marketing.booking
 
 ## Retry content without duplicating GitHub work
 Admin retries retain the original generation, requester and daily reservation under the content plan lock. Existing task IDs only resume synchronization. Restart pre-task failures only in the original local-date slot after a definite rejection or before submission; ambiguous submission failures require reconciliation with GitHub. Keep scheduling, work cooldown and review safeguards intact.
+
+## Load recent content runs with a narrow single-plan query
+The website workspace has one content plan. Do not eager load contentPlan.generations with limit(8): Laravel builds a ROW_NUMBER window query that sorts full content_generations rows, including long prompts, and can exhaust MySQL sort memory. After loading the plan, query its eight newest generations directly with only the columns used by the activity view and set the relation.

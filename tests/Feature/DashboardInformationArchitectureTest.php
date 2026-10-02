@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\ContentGeneration;
 use App\Models\ContentPlan;
 use App\Models\ContentRequest;
 use App\Models\Form;
@@ -10,7 +11,39 @@ use App\Models\Website;
 use App\Models\WebsiteHealthReport;
 use App\Models\WebsiteRepository;
 use App\Support\MembershipPlan;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+
+it('loads recent content runs on the Search page without sorting large prompts', function (): void {
+    $user = User::factory()->create(['membership_tier' => MembershipPlan::GROWTH, 'membership_status' => 'active']);
+    $website = Website::factory()->for($user, 'owner')->create();
+    $plan = ContentPlan::factory()->for($website)->for($user, 'creator')->create();
+    $repository = WebsiteRepository::factory()->for($website)->create();
+    $generationIds = [];
+
+    foreach (range(11, 1) as $daysAgo) {
+        $generationIds[] = ContentGeneration::factory()->for($plan, 'plan')->for($repository, 'repository')->for($user, 'requester')->create([
+            'scheduled_for' => today()->subDays($daysAgo),
+            'created_at' => now()->subDays($daysAgo),
+            'prompt' => str_repeat('Long prompt. ', 2500),
+        ])->id;
+    }
+
+    $queries = [];
+    DB::listen(function (QueryExecuted $query) use (&$queries): void {
+        if (str_contains($query->sql, 'content_generations')) {
+            $queries[] = $query->sql;
+        }
+    });
+
+    $this->actingAs($user)->get(route('admin.websites.section', [$website, 'search']))
+        ->assertSuccessful()
+        ->assertViewHas('website', fn (Website $loaded): bool => $loaded->contentPlan->generations->pluck('id')->all() === array_reverse(array_slice($generationIds, -8)));
+
+    expect(implode(' ', $queries))->not->toContain('row_number()')
+        ->and(implode(' ', $queries))->not->toContain('`prompt`');
+});
 
 it('prioritises the selected websites latest health and content work on the dashboard', function (): void {
     $user = User::factory()->create();

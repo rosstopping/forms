@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\GoogleAdsCampaignDraft;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Cache;
 use RuntimeException;
 
@@ -25,7 +26,15 @@ class GoogleAdsCampaignCreator
             $operations = $this->operations($draft);
             $this->client->mutate($connection, $operations, validateOnly: true);
             $draft->update(['status' => GoogleAdsCampaignDraft::STATUS_UNCERTAIN]);
-            $response = $this->client->mutate($connection, $operations);
+            try {
+                $response = $this->client->mutate($connection, $operations);
+            } catch (RequestException $exception) {
+                if (in_array($exception->response->status(), [400, 401, 403, 404, 422], true)) {
+                    $draft->update(['status' => GoogleAdsCampaignDraft::STATUS_FAILED]);
+                }
+
+                throw $exception;
+            }
             $resourceName = data_get($response, 'mutateOperationResponses.1.campaignResult.resourceName');
             if (! is_string($resourceName) || $resourceName === '') {
                 throw new RuntimeException('Google Ads did not confirm the campaign resource name. Inspect the account before trying again.');

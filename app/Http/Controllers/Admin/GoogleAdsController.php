@@ -31,6 +31,7 @@ class GoogleAdsController extends Controller
     {
         $this->authorizeWebsite($request, $website);
         $connection = $website->googleAdsConnection;
+        $oauthConfigured = filled(config('services.google_ads.client_id')) && filled(config('services.google_ads.client_secret'));
         $searchGaps = $this->opportunities->searchGaps($website);
         $drafts = $website->googleAdsCampaignDrafts()->latest()->limit(10)->get();
         $availableAccounts = [];
@@ -55,7 +56,7 @@ class GoogleAdsController extends Controller
             }
         }
 
-        return view('admin.websites.google-ads', compact('website', 'connection', 'availableAccounts', 'unavailableAccountCount', 'connectionError', 'conversionActions', 'conversionError', 'searchGaps', 'drafts'));
+        return view('admin.websites.google-ads', compact('website', 'connection', 'oauthConfigured', 'availableAccounts', 'unavailableAccountCount', 'connectionError', 'conversionActions', 'conversionError', 'searchGaps', 'drafts'));
     }
 
     public function connect(Request $request, Website $website): RedirectResponse
@@ -71,7 +72,7 @@ class GoogleAdsController extends Controller
         try {
             return Redirect::away($this->oauth->authorizationUrl($state));
         } catch (RuntimeException $exception) {
-            return back()->with('error', $exception->getMessage());
+            return Redirect::route('admin.google-ads.index', $website)->with('error', 'Google Ads connection is not configured here. Ask an administrator to check the Google OAuth credentials.');
         }
     }
 
@@ -96,7 +97,7 @@ class GoogleAdsController extends Controller
         $data = $request->validate(['code' => ['required', 'string']]);
         try {
             $this->oauth->authorize($website, $request->user(), $data['code']);
-        } catch (RequestException|RuntimeException) {
+        } catch (ConnectionException|RequestException|RuntimeException) {
             return Redirect::route('admin.google-ads.index', $website)->with('error', 'Google Ads could not complete the connection. Check your Google OAuth settings and try again.');
         }
 
@@ -183,6 +184,31 @@ class GoogleAdsController extends Controller
         CreateGoogleAdsCampaign::dispatch($draft->id);
 
         return Redirect::route('admin.google-ads.index', $website)->with('status', 'Campaign queued. It will be created paused; refresh this page shortly to see the result.');
+    }
+
+    public function checkCampaign(Request $request, Website $website, GoogleAdsCampaignDraft $draft): RedirectResponse
+    {
+        $this->authorizeWebsite($request, $website);
+        abort_unless($draft->website_id === $website->id, 404);
+        abort_unless($draft->status === GoogleAdsCampaignDraft::STATUS_UNCERTAIN, 404);
+        $connection = $website->googleAdsConnection;
+
+        if (! $connection || $connection->customer_id !== $draft->customer_id) {
+            return Redirect::route('admin.google-ads.index', $website)
+                ->with('error', 'Select Ads account '.$draft->customer_id.' before checking this campaign request.');
+        }
+
+        try {
+            $matches = $this->client->campaignsNamed($connection, $draft->name);
+        } catch (ConnectionException|RequestException|RuntimeException) {
+            return Redirect::route('admin.google-ads.index', $website)
+                ->with('error', 'Google Ads could not check this campaign right now. Its creation status is still unconfirmed.');
+        }
+
+        return Redirect::route('admin.google-ads.index', $website)->with('campaign_check', [
+            'draft_id' => $draft->id,
+            'matches' => $matches,
+        ]);
     }
 
     public function suggest(GenerateGoogleAdsSuggestionsRequest $request, Website $website): RedirectResponse

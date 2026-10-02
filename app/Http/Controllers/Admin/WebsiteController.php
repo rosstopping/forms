@@ -138,9 +138,13 @@ class WebsiteController extends Controller
             'searchOpportunities' => fn ($query) => $query->whereIn('status', ['open', 'queued'])->orderByDesc('priority_score')->limit(20),
             'businessProfileConnection.audits' => fn ($query) => $query->with('recommendations')->latest()->limit(8),
             'contentPlan.creator.githubAuthorization',
-            'contentPlan.generations' => fn ($query) => $query->latest('created_at')->limit(8),
             'contentRequests' => fn ($query) => $query->with(['creator', 'generation'])->latest('created_at')->limit(50),
         ]);
+        if ($website->contentPlan) {
+            $website->contentPlan->setRelation('generations', $website->contentPlan->generations()
+                ->select(['id', 'content_plan_id', 'scheduled_for', 'status', 'skip_reason', 'error', 'pull_request_url', 'pull_request_number', 'copilot_task_id', 'created_at'])
+                ->latest('created_at')->latest('id')->limit(8)->get());
+        }
         $website->loadCount([
             'pixelPages',
             'optimisations as active_pixel_optimisations_count' => fn ($query) => $query

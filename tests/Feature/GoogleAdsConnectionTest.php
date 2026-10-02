@@ -38,6 +38,20 @@ test('Google Ads requests its own offline OAuth scope', function (): void {
     ]);
 });
 
+test('missing local OAuth credentials explain why connect returns to the workspace', function (): void {
+    config(['services.google_ads.client_id' => null, 'services.google_ads.client_secret' => null]);
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $website = Website::factory()->for($admin, 'owner')->create();
+
+    $this->actingAs($admin)->get(route('admin.google-ads.connect', $website))
+        ->assertRedirect(route('admin.google-ads.index', $website))
+        ->assertSessionHas('error');
+    $this->actingAs($admin)->get(route('admin.google-ads.index', $website))
+        ->assertSuccessful()
+        ->assertSee('GOOGLE_ADS_CLIENT_ID')
+        ->assertSee('Google Ads connection is not configured here.');
+});
+
 test('a website manager can authorize Google Ads for only that website', function (): void {
     $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
     $website = Website::factory()->for($owner, 'owner')->create();
@@ -310,6 +324,72 @@ test('an uncertain Ads response cannot trigger a second campaign mutation', func
     $this->actingAs($owner)->post(route('admin.google-ads.campaigns.store', $website), $data)
         ->assertRedirect(route('admin.google-ads.index', $website));
     Http::assertSentCount(2);
+});
+
+test('a definite Google Ads rejection is marked failed so its reason is visible', function (): void {
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $website->domains()->create(['domain' => 'example.com', 'is_primary' => true]);
+    $connection = GoogleAdsConnection::factory()->for($website)->create(['customer_id' => '1234567890', 'currency_code' => 'GBP']);
+    $draft = GoogleAdsCampaignDraft::factory()->for($website)->for($connection, 'connection')->create();
+    Http::fakeSequence()->push([])->push(['error' => ['message' => 'Invalid campaign settings']], 400);
+
+    expect(fn (): mixed => (new CreateGoogleAdsCampaign($draft->id))->handle(app(GoogleAdsCampaignCreator::class)))
+        ->toThrow(RequestException::class);
+    expect($draft->fresh()->status)->toBe(GoogleAdsCampaignDraft::STATUS_FAILED)
+        ->and($draft->fresh()->error)->toBe('Invalid campaign settings');
+    Http::assertSentCount(2);
+});
+
+test('an uncertain campaign can be checked without creating another campaign', function (): void {
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $connection = GoogleAdsConnection::factory()->for($website)->create(['customer_id' => '1234567890']);
+    $draft = GoogleAdsCampaignDraft::factory()->for($website)->for($connection, 'connection')->create([
+        'name' => "Ross's search",
+        'status' => GoogleAdsCampaignDraft::STATUS_UNCERTAIN,
+    ]);
+    Http::fake(['https://googleads.test/v25/customers/1234567890/googleAds:searchStream' => Http::response([['results' => [
+        ['campaign' => ['id' => '987654321', 'name' => "Ross's search", 'status' => 'PAUSED']],
+    ]]])]);
+
+    $this->actingAs($owner)->post(route('admin.google-ads.campaigns.check', [$website, $draft]))
+        ->assertRedirect(route('admin.google-ads.index', $website))
+        ->assertSessionHas('campaign_check.matches.0.id', '987654321');
+
+    expect($draft->fresh()->status)->toBe(GoogleAdsCampaignDraft::STATUS_UNCERTAIN);
+    Http::assertSentCount(1);
+    Http::assertSent(fn (ClientRequest $request): bool => str_contains($request['query'], "campaign.name = 'Ross\\'s search'")
+        && ! str_contains($request->url(), 'googleAds:mutate'));
+});
+
+test('a no-match campaign check leaves an uncertain request unchanged', function (): void {
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $connection = GoogleAdsConnection::factory()->for($website)->create(['customer_id' => '1234567890']);
+    $draft = GoogleAdsCampaignDraft::factory()->for($website)->for($connection, 'connection')->create(['status' => GoogleAdsCampaignDraft::STATUS_UNCERTAIN]);
+    Http::fake(['*' => Http::response([['results' => []]])]);
+
+    $this->actingAs($owner)->post(route('admin.google-ads.campaigns.check', [$website, $draft]))
+        ->assertSessionHas('campaign_check.matches', []);
+
+    expect($draft->fresh()->status)->toBe(GoogleAdsCampaignDraft::STATUS_UNCERTAIN);
+    Http::assertSentCount(1);
+});
+
+test('campaign checks cannot read another website or a different Ads account', function (): void {
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $otherWebsite = Website::factory()->for($owner, 'owner')->create();
+    $connection = GoogleAdsConnection::factory()->for($website)->create(['customer_id' => '1234567890']);
+    $draft = GoogleAdsCampaignDraft::factory()->for($website)->for($connection, 'connection')->create(['status' => GoogleAdsCampaignDraft::STATUS_UNCERTAIN]);
+    Http::fake();
+
+    $this->actingAs($owner)->post(route('admin.google-ads.campaigns.check', [$otherWebsite, $draft]))->assertNotFound();
+    $connection->update(['customer_id' => '9999999999']);
+    $this->actingAs($owner)->post(route('admin.google-ads.campaigns.check', [$website, $draft]))
+        ->assertSessionHas('error', 'Select Ads account 1234567890 before checking this campaign request.');
+    Http::assertNothingSent();
 });
 
 test('a Google Ads timeout fails safely without a 500 or a second mutation', function (): void {

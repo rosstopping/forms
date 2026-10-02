@@ -62,7 +62,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | resources/views/{marketing/home,layouts/marketing}.blade.php | .ai/rules/homelayouts.md |
 | resources/views/{emails/customer-review-invitation*.blade.php,components/email-layout.blade.php,vendor/mail/html/**} | .ai/rules/html.md |
 | app/Http/Controllers/Admin/**,resources/views/admin/websites/**, app/Http/Controllers/Admin/{WebsiteController,SeoImpactController}.php,resources/views/admin/websites/** | .ai/rules/http-controllers-admin-views-admin-websites.md |
-| app/Http/Controllers/Admin/ProspectController.php, app/Http/Controllers/Admin/OnboardingCallController.php, app/Http/Controllers/Admin/ContentPlanController.php | .ai/rules/http-controllers-admin.md |
+| app/Http/Controllers/Admin/ProspectController.php, app/Http/Controllers/Admin/OnboardingCallController.php, app/Http/Controllers/Admin/ContentPlanController.php, app/Http/Controllers/Admin/WebsiteController.php | .ai/rules/http-controllers-admin.md |
 | app/{Services,Http/Controllers}/**/*ProspectOutreach*.php,app/Http/Controllers/ProspectReportController.php,config/outreach.php | .ai/rules/http-controllers.md |
 | app/Http/Controllers/Admin/DashboardController.php,resources/views/admin/overview.blade.php,app/Http/Middleware/ResolveCurrentWebsite.php | .ai/rules/http-middleware.md |
 | resources/views/{auth/**,layouts/auth.blade.php,components/auth/**},app/Http/Controllers/Auth/**,app/Http/Requests/{ResetPasswordRequest,SendPasswordResetLinkRequest}.php | .ai/rules/http-requests.md |

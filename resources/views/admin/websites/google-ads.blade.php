@@ -8,6 +8,16 @@
             <p class="mt-2 text-slate-600">Connect the Ads account for {{ $website->name }}.</p>
         </header>
 
+        @if (session('status'))
+            <p role="status" class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">{{ session('status') }}</p>
+        @endif
+        @if (session('error'))
+            <p role="alert" class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">{{ session('error') }}</p>
+        @endif
+        @if (! $oauthConfigured)
+            <p role="alert" class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">Google Ads connection is not configured in this environment. {{ Auth::user()?->isAdmin() ? 'Set GOOGLE_ADS_CLIENT_ID and GOOGLE_ADS_CLIENT_SECRET, or the shared GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET, then refresh this page.' : 'Ask Sitewell to check the Google connection settings.' }}</p>
+        @endif
+
         @if ($connectionError)
             <p role="alert" class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">{{ $connectionError }}</p>
         @endif
@@ -105,7 +115,38 @@
             </section>
 
             @if ($drafts->isNotEmpty())
-                <section class="ui-panel p-5 sm:p-6"><div class="flex items-center justify-between gap-4"><h2 class="text-lg font-semibold text-slate-950">Campaign requests</h2><a href="{{ route('admin.google-ads.index', $website) }}" class="text-sm font-medium text-teal-700 hover:text-teal-900">Refresh status</a></div><div class="mt-4 divide-y divide-slate-200">@foreach ($drafts as $draft)<div class="flex flex-wrap items-start justify-between gap-2 py-3 text-sm"><div><strong class="text-slate-900">{{ $draft->name }}</strong><span class="ml-2 text-slate-500">{{ $draft->created_at->format('j M Y') }}</span>@if ($draft->error)<p class="mt-1 max-w-xl text-sm text-slate-600">{{ $draft->error }}</p>@endif</div><span class="font-medium {{ $draft->status === 'created' ? 'text-emerald-700' : ($draft->status === 'pending' ? 'text-sky-700' : 'text-amber-800') }}">{{ match ($draft->status) { 'created' => 'Created · paused', 'pending' => 'Creating…', 'uncertain' => 'Check Ads before retrying', default => 'Not created' } }}</span></div>@endforeach</div></section>
+                <section class="ui-panel p-5 sm:p-6">
+                    <div class="flex items-center justify-between gap-4"><h2 class="text-lg font-semibold text-slate-950">Campaign requests</h2><a href="{{ route('admin.google-ads.index', $website) }}" class="text-sm font-medium text-teal-700 hover:text-teal-900">Refresh status</a></div>
+                    <div class="mt-4 divide-y divide-slate-200">
+                        @foreach ($drafts as $draft)
+                            <div class="flex flex-wrap items-start justify-between gap-2 py-3 text-sm">
+                                <div>
+                                    <strong class="text-slate-900">{{ $draft->name }}</strong><span class="ml-2 text-slate-500">{{ $draft->created_at->format('j M Y') }}</span>
+                                    <p class="mt-1 text-xs text-slate-500">Ads account {{ $draft->customer_id }}@if ($draft->campaign_resource_name) · Campaign ID {{ \Illuminate\Support\Str::afterLast($draft->campaign_resource_name, '/') }}@endif</p>
+                                    @if ($draft->status === 'pending' && $draft->created_at->lt(now()->subMinutes(3)))
+                                        <p class="mt-1 max-w-xl text-sm text-amber-800">Still queued. Ask Sitewell to check the campaign worker before submitting again.</p>
+                                    @endif
+                                    @if ($draft->error)<p class="mt-1 max-w-xl text-sm text-slate-600">{{ $draft->error }}</p>@endif
+                                    @if ($draft->status === 'uncertain')
+                                        <form method="POST" action="{{ route('admin.google-ads.campaigns.check', [$website, $draft]) }}" class="mt-2">
+                                            @csrf
+                                            <button type="submit" class="text-sm font-medium text-teal-700 underline hover:text-teal-900">Check this Ads account</button>
+                                        </form>
+                                        @if (session('campaign_check.draft_id') === $draft->id)
+                                            @if (count(session('campaign_check.matches', [])) > 0)
+                                                <p class="mt-2 text-sm font-medium text-emerald-800">Matching campaign{{ count(session('campaign_check.matches')) === 1 ? '' : 's' }} found in account {{ $draft->customer_id }}:</p>
+                                                <ul class="mt-1 text-sm text-emerald-800">@foreach (session('campaign_check.matches') as $match)<li>ID {{ $match['id'] }} · {{ ucfirst(strtolower($match['status'])) }}</li>@endforeach</ul>
+                                            @else
+                                                <p class="mt-2 max-w-xl text-sm text-amber-800">No campaign with this name was found in account {{ $draft->customer_id }}. This request is still unconfirmed; check the same account in Google Ads before creating another.</p>
+                                            @endif
+                                        @endif
+                                    @endif
+                                </div>
+                                <span class="font-medium {{ $draft->status === 'created' ? 'text-emerald-700' : ($draft->status === 'pending' ? 'text-sky-700' : 'text-amber-800') }}">{{ match ($draft->status) { 'created' => 'Created · paused', 'pending' => 'Creating…', 'uncertain' => 'Check Ads before retrying', default => 'Not created' } }}</span>
+                            </div>
+                        @endforeach
+                    </div>
+                </section>
             @endif
         @endif
 
