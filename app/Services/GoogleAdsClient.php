@@ -176,21 +176,23 @@ class GoogleAdsClient
         return $response;
     }
 
-    /** @return list<array{name: string, category: string, primary: bool}> */
+    /** @return list<array{id: string, name: string, category: string, type: string, primary: bool}> */
     public function conversionActions(GoogleAdsConnection $connection): array
     {
         $customerId = (string) $connection->customer_id;
         $this->assertCustomerId($customerId);
         $response = $this->request($connection, $connection->login_customer_id)
             ->post($this->url("customers/{$customerId}/googleAds:searchStream"), [
-                'query' => "SELECT conversion_action.name, conversion_action.category, conversion_action.primary_for_goal FROM conversion_action WHERE conversion_action.status = 'ENABLED' LIMIT 20",
+                'query' => "SELECT conversion_action.id, conversion_action.name, conversion_action.category, conversion_action.type, conversion_action.primary_for_goal FROM conversion_action WHERE conversion_action.status = 'ENABLED' LIMIT 100",
             ])->throw()->json();
 
         return collect($response)
             ->flatMap(fn (mixed $batch): array => is_array($batch) ? ($batch['results'] ?? []) : [])
             ->map(fn (array $result): array => [
+                'id' => (string) data_get($result, 'conversionAction.id', ''),
                 'name' => (string) data_get($result, 'conversionAction.name', ''),
                 'category' => (string) data_get($result, 'conversionAction.category', ''),
+                'type' => (string) data_get($result, 'conversionAction.type', ''),
                 'primary' => (bool) data_get($result, 'conversionAction.primaryForGoal', false),
             ])->filter(fn (array $action): bool => $action['name'] !== '')
             ->values()->all();

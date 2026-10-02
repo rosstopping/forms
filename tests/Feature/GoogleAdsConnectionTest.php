@@ -411,6 +411,31 @@ test('campaigns open first when the selected Ads account has campaigns', functio
     Http::assertSentCount(2);
 });
 
+test('conversion setup explains how to verify a website lead action', function (): void {
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $website->domains()->create(['domain' => 'example.com', 'is_primary' => true]);
+    GoogleAdsConnection::factory()->for($website)->create(['customer_id' => '1234567890', 'currency_code' => 'GBP']);
+    Http::fake([
+        'https://googleads.test/v25/customers:listAccessibleCustomers' => Http::response(['resourceNames' => []]),
+        'https://googleads.test/v25/customers/1234567890/googleAds:searchStream' => Http::response([['results' => [
+            ['conversionAction' => ['id' => '456', 'name' => 'Audit submitted', 'category' => 'SUBMIT_LEAD_FORM', 'type' => 'WEBPAGE', 'primaryForGoal' => true]],
+        ]]]),
+    ]);
+
+    $this->actingAs($owner)->get(route('admin.google-ads.index', ['website' => $website, 'tab' => 'settings']))
+        ->assertSuccessful()
+        ->assertSee('Tag Assistant')
+        ->assertSee('Open conversion goals')
+        ->assertSee('https://example.com', false)
+        ->assertSee('Audit submitted')
+        ->assertSee('Website tag')
+        ->assertSee('Primary')
+        ->assertSee('cannot yet verify that a website tag fired');
+
+    Http::assertSent(fn (ClientRequest $request): bool => str_contains((string) ($request['query'] ?? ''), 'conversion_action.type'));
+});
+
 test('campaign status filters keep account-wide performance totals', function (): void {
     $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
     $website = Website::factory()->for($owner, 'owner')->create();

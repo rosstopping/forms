@@ -85,14 +85,28 @@
             @if ($tab === 'settings')
             <section class="ui-panel p-5 sm:p-6">
                 <h2 class="text-lg font-semibold text-slate-950">Conversion tracking</h2>
-                <p class="mt-1 text-sm text-slate-600">Check which lead actions exist in this Ads account. An action here does not prove its tag is installed or firing on the website.</p>
+                <p class="mt-1 text-sm text-slate-600">Use one real enquiry to check that Google Ads receives the right lead action before you enable a campaign.</p>
+                <ol class="mt-5 grid gap-3 sm:grid-cols-3">
+                    <li class="ui-well p-4"><span class="text-xs font-semibold text-teal-700">1 · Choose the lead</span><p class="mt-2 text-sm text-slate-700">In Google Ads, use an action for a completed enquiry, such as a submitted form. A page view or button click is not a lead.</p></li>
+                    <li class="ui-well p-4"><span class="text-xs font-semibold text-teal-700">2 · Run a real test</span><p class="mt-2 text-sm text-slate-700">For a website-tag action, choose Troubleshoot in Google Ads to launch Tag Assistant. Complete the form once and check the conversion fires only after it succeeds.</p></li>
+                    <li class="ui-well p-4"><span class="text-xs font-semibold text-teal-700">3 · Confirm in Ads</span><p class="mt-2 text-sm text-slate-700">Check the action in Google Ads. Tag Assistant can confirm the tag fired; Ads may take around 30 minutes to update its status.</p></li>
+                </ol>
+                <div class="mt-4 flex flex-wrap gap-3">
+                    <a href="https://tagassistant.google.com/" target="_blank" rel="noopener noreferrer" class="ui-button ui-button-secondary ui-button-small">Tag Assistant ↗</a>
+                    <a href="https://ads.google.com/aw/conversions" target="_blank" rel="noopener noreferrer" class="ui-button ui-button-secondary ui-button-small">Open conversion goals ↗</a>
+                    @if ($website->primaryDomain())
+                        <a href="https://{{ $website->primaryDomain()->domain }}" target="_blank" rel="noopener noreferrer" class="ui-button ui-button-secondary ui-button-small">Open website ↗</a>
+                    @endif
+                </div>
+                <p class="mt-3 text-xs text-slate-500">Check account {{ $connection->customer_id }} in Google Ads. Sitewell can list its actions, but cannot yet verify that a website tag fired or that a test lead was attributed.</p>
                 @if ($conversionError)
-                    <p class="mt-4 text-sm text-amber-900">{{ $conversionError }}</p>
+                    <p class="mt-5 text-sm text-amber-900">{{ $conversionError }}</p>
                 @elseif (count($conversionActions) === 0)
-                    <p class="mt-4 text-sm font-medium text-amber-900">No enabled conversion actions found. Set up and test a lead conversion before enabling a campaign.</p>
+                    <p class="mt-5 text-sm font-medium text-amber-900">No enabled conversion actions found. Create a lead conversion in this Ads account, then come back to test it.</p>
                 @else
-                    <ul class="mt-4 divide-y divide-slate-200">@foreach ($conversionActions as $action)<li class="flex items-center justify-between gap-4 py-2 text-sm"><span class="font-medium text-slate-900">{{ $action['name'] }}</span><span class="text-slate-500">{{ str_replace('_', ' ', ucfirst(strtolower($action['category']))) }}{{ $action['primary'] ? ' · Primary' : '' }}</span></li>@endforeach</ul>
-                    <p class="mt-3 text-xs text-slate-500">Confirm a real test conversion is recorded in Google Ads before switching on spend.</p>
+                    <h3 class="mt-6 text-sm font-semibold text-slate-950">Enabled actions in this account</h3>
+                    <ul class="mt-2 divide-y divide-slate-200">@foreach ($conversionActions as $action)<li class="flex flex-wrap items-center justify-between gap-2 py-3 text-sm"><span class="font-medium text-slate-900">{{ $action['name'] }}</span><span class="text-xs text-slate-600">{{ str_replace('_', ' ', ucfirst(strtolower($action['category']))) }} · {{ match ($action['type']) { 'WEBPAGE', 'WEBPAGE_CODELESS' => 'Website tag', 'GOOGLE_ANALYTICS_4_CUSTOM', 'GOOGLE_ANALYTICS_4_GENERATE_LEAD' => 'Imported from GA4', 'UPLOAD_CLICKS' => 'Click upload', default => str_replace('_', ' ', ucfirst(strtolower($action['type'] ?: 'Unknown source'))) } }}{{ $action['primary'] ? ' · Primary' : ' · Secondary' }}</span></li>@endforeach</ul>
+                    <p class="mt-3 text-xs text-slate-500">For GA4 imports, check the event in GA4 DebugView and its import in Ads. Click-upload actions need an upload test; Tag Assistant checks website tags.</p>
                 @endif
             </section>
             @endif
@@ -189,6 +203,7 @@
                                                 @method('PATCH')
                                                 <input type="hidden" name="status" value="ENABLED">
                                                 <label class="flex max-w-md items-start gap-2 text-xs text-slate-600"><input type="checkbox" name="tracking_confirmed" value="1" class="mt-0.5" required><span>I’ve tested conversion tracking and checked the ad and budget. Enabling can start spend.</span></label>
+                                                <a href="{{ route('admin.google-ads.index', ['website' => $website, 'tab' => 'settings']) }}" class="inline-block text-xs font-medium text-teal-700 underline hover:text-teal-900">How to test tracking →</a>
                                                 <button type="submit" class="ui-button ui-button-primary ui-button-small">Enable campaign</button>
                                             </form>
                                         @elseif ($campaign['status'] === 'ENABLED')
