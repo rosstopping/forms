@@ -1,8 +1,7 @@
 /**
- * Vendor-neutral hooks. A future consent-aware GTM/GA4 adapter can drain
- * window.sitewellEvents, then listen for sitewell:marketing-event.
- * Use event_id to deduplicate; choose either browser or server delivery for
- * conversions, never both. No analytics requests or dataLayer writes happen here.
+ * Publish the existing marketing hooks and hand accepted audits to GTM.
+ * The GTM conversion tag must respect consent; do not also send this lead
+ * through a server-side Ads conversion or a GA4 import.
  */
 export function publishMarketingEvent(payload, target = window) {
     target.sitewellEvents ??= [];
@@ -17,6 +16,10 @@ export function publishMarketingEvent(payload, target = window) {
     }
 
     target.sitewellEvents.push(payload);
+    if (payload.event === 'audit_submitted' && payload.is_conversion === true) {
+        target.dataLayer ??= [];
+        target.dataLayer.push({ event: 'sitewell_audit_submitted', event_id: payload.event_id });
+    }
     target.dispatchEvent(new CustomEvent('sitewell:marketing-event', { detail: payload }));
 }
 

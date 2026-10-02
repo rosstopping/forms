@@ -87,7 +87,7 @@
                 <h2 class="text-lg font-semibold text-slate-950">Conversion tracking</h2>
                 <p class="mt-1 text-sm text-slate-600">Use one real enquiry to check that Google Ads receives the right lead action before you enable a campaign.</p>
                 <ol class="mt-5 grid gap-3 sm:grid-cols-3">
-                    <li class="ui-well p-4"><span class="text-xs font-semibold text-teal-700">1 · Choose the lead</span><p class="mt-2 text-sm text-slate-700">In Google Ads, use an action for a completed enquiry, such as a submitted form. A page view or button click is not a lead.</p></li>
+                    <li class="ui-well p-4"><span class="text-xs font-semibold text-teal-700">1 · Create the lead action</span><p class="mt-2 text-sm text-slate-700">In this Ads account, create a Website conversion for a submitted lead. Choose manual setup with a Google Ads tag, not an event from an unrelated GA4 property. GA4 is optional.</p></li>
                     <li class="ui-well p-4"><span class="text-xs font-semibold text-teal-700">2 · Run a real test</span><p class="mt-2 text-sm text-slate-700">For a website-tag action, choose Troubleshoot in Google Ads to launch Tag Assistant. Complete the form once and check the conversion fires only after it succeeds.</p></li>
                     <li class="ui-well p-4"><span class="text-xs font-semibold text-teal-700">3 · Confirm in Ads</span><p class="mt-2 text-sm text-slate-700">Check the action in Google Ads. Tag Assistant can confirm the tag fired; Ads may take around 30 minutes to update its status.</p></li>
                 </ol>
@@ -102,7 +102,7 @@
                 @if ($conversionError)
                     <p class="mt-5 text-sm text-amber-900">{{ $conversionError }}</p>
                 @elseif (count($conversionActions) === 0)
-                    <p class="mt-5 text-sm font-medium text-amber-900">No enabled conversion actions found. Create a lead conversion in this Ads account, then come back to test it.</p>
+                    <p class="mt-5 text-sm font-medium text-amber-900">No enabled conversion actions found. In Google Ads, create a Website → Submit lead form conversion using manual setup, then refresh this page. An empty GA4 event picker does not prevent this.</p>
                 @else
                     <h3 class="mt-6 text-sm font-semibold text-slate-950">Enabled actions in this account</h3>
                     <ul class="mt-2 divide-y divide-slate-200">@foreach ($conversionActions as $action)<li class="flex flex-wrap items-center justify-between gap-2 py-3 text-sm"><span class="font-medium text-slate-900">{{ $action['name'] }}</span><span class="text-xs text-slate-600">{{ str_replace('_', ' ', ucfirst(strtolower($action['category']))) }} · {{ match ($action['type']) { 'WEBPAGE', 'WEBPAGE_CODELESS' => 'Website tag', 'GOOGLE_ANALYTICS_4_CUSTOM', 'GOOGLE_ANALYTICS_4_GENERATE_LEAD' => 'Imported from GA4', 'UPLOAD_CLICKS' => 'Click upload', default => str_replace('_', ' ', ucfirst(strtolower($action['type'] ?: 'Unknown source'))) } }}{{ $action['primary'] ? ' · Primary' : ' · Secondary' }}</span></li>@endforeach</ul>
@@ -115,7 +115,7 @@
                         <p class="mt-3 text-sm text-amber-800">Connect an authorized GitHub repository and verify this website’s domain to prepare a tracking pull request.</p>
                         <div class="mt-3 flex flex-wrap gap-3"><a href="{{ route('admin.website-repositories.create', $website) }}" class="ui-button ui-button-secondary ui-button-small">Connect repository</a>@if ($website->repository && ! auth()->user()->githubAuthorization)<a href="{{ route('admin.github.connect', $website) }}" class="ui-button ui-button-secondary ui-button-small">Authorize GitHub</a>@endif</div>
                     @elseif (collect($conversionActions)->where('type', 'WEBPAGE')->whereIn('category', \App\Services\GoogleAdsClient::LEAD_CONVERSION_CATEGORIES)->isEmpty())
-                        <p class="mt-3 text-sm text-amber-800">Create an enabled website-tag lead action in Google Ads first.</p>
+                        <p class="mt-3 text-sm text-amber-800">In Google Ads, create a Website → Submit lead form conversion using manual setup with a Google Ads tag. Leave the GA4 event picker if it shows another website’s property. Then refresh this page.</p>
                     @else
                         <form method="POST" action="{{ route('admin.google-ads.tracking.store', $website) }}" class="mt-4 space-y-4">
                             @csrf

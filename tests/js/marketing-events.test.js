@@ -21,7 +21,8 @@ test('deduplicates server conversions across polling reloads', () => {
     publishMarketingEvent(payload, reloaded);
     assert.equal(first.dispatched.length, 1);
     assert.equal(reloaded.dispatched.length, 0);
-    assert.equal(first.dataLayer, undefined);
+    assert.deepEqual(first.dataLayer, [{ event: 'sitewell_audit_submitted', event_id: 'audit-one' }]);
+    assert.equal(reloaded.dataLayer, undefined);
 });
 
 test('still queues hooks when session storage is unavailable', () => {
@@ -49,6 +50,7 @@ test('page views and form interaction are separate non-conversion events', () =>
     assert.equal(target.sitewellEvents.length, 2);
     assert.equal(target.sitewellEvents[1].event, 'audit_started');
     assert.ok(target.sitewellEvents.every((event) => event.is_conversion === false));
+    assert.equal(target.dataLayer, undefined);
 });
 
 test('publishes actual server event ids without manufacturing submission on a click', () => {
@@ -60,4 +62,5 @@ test('publishes actual server event ids without manufacturing submission on a cl
     };
     bootMarketingEvents(document, target);
     assert.deepEqual(target.sitewellEvents, [payload]);
+    assert.deepEqual(target.dataLayer, [{ event: 'sitewell_audit_submitted', event_id: 'server-event-id' }]);
 });

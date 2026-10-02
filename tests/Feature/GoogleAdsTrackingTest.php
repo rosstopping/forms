@@ -37,6 +37,7 @@ test('connected managers can prepare a tracking pull request from the Ads settin
     $this->actingAs($owner)->get(route('admin.google-ads.index', ['website' => $website, 'tab' => 'settings']))
         ->assertSuccessful()
         ->assertSee('Prepare tracking PR')
+        ->assertSee('GA4 is optional.')
         ->assertSee('value="456"', false);
 });
 
