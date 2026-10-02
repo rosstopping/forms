@@ -18,6 +18,7 @@ class WebsiteNavigation
         'wordpress',
         'pixel',
         'business-profile',
+        'google-ads',
         'forms',
         'leads',
         'settings',
@@ -56,6 +57,10 @@ class WebsiteNavigation
     {
         if ($section === 'leads') {
             return route('admin.form-submissions.index');
+        }
+
+        if ($section === 'google-ads') {
+            return route('admin.google-ads.index', $website);
         }
 
         return route('admin.websites.section', [

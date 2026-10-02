@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Website;
+use App\Support\MembershipPlan;
 use App\Support\WebsiteNavigation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -24,6 +25,12 @@ class CurrentWebsiteController extends Controller
 
         $request->user()->forceFill(['current_website_id' => $website->id])->save();
 
-        return redirect(WebsiteNavigation::routeFor($website, $data['section'] ?? WebsiteNavigation::DEFAULT_SECTION));
+        $section = $data['section'] ?? WebsiteNavigation::DEFAULT_SECTION;
+        if ($section === 'google-ads' && (! $website->isManageableBy($request->user())
+            || (! $request->user()->isAdmin() && ! $website->owner?->hasMembershipFeature(MembershipPlan::FEATURE_COMPLETE)))) {
+            $section = WebsiteNavigation::DEFAULT_SECTION;
+        }
+
+        return redirect(WebsiteNavigation::routeFor($website, $section));
     }
 }

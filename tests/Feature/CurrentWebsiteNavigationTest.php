@@ -2,6 +2,7 @@
 
 use App\Models\User;
 use App\Models\Website;
+use App\Support\MembershipPlan;
 
 it('uses a customers only website as their current website', function (): void {
     $user = User::factory()->create();
@@ -47,6 +48,38 @@ it('switches to another accessible website and preserves the section', function 
         ->assertRedirect(route('admin.websites.section', [$secondWebsite, 'settings']));
 
     expect($user->fresh()->current_website_id)->toBe($secondWebsite->id);
+});
+
+it('switches websites from Google Ads and opens the selected website Ads page', function (): void {
+    $user = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
+    $firstWebsite = Website::factory()->for($user, 'owner')->create();
+    $secondWebsite = Website::factory()->for($user, 'owner')->create();
+
+    $this->actingAs($user)
+        ->get(route('admin.google-ads.index', $firstWebsite))
+        ->assertOk()
+        ->assertSee('name="section" value="google-ads"', false);
+
+    $this->post(route('admin.current-website.update'), [
+        'website_id' => $secondWebsite->id,
+        'section' => 'google-ads',
+    ])->assertRedirect(route('admin.google-ads.index', $secondWebsite));
+
+    expect($user->fresh()->current_website_id)->toBe($secondWebsite->id);
+});
+
+it('switches to website health when the selected site cannot use Google Ads', function (): void {
+    $user = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::GROWTH, 'membership_status' => 'active']);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $website->members()->attach($user, ['role' => Website::MEMBER_ROLE_MANAGER]);
+
+    $this->actingAs($user)->post(route('admin.current-website.update'), [
+        'website_id' => $website->id,
+        'section' => 'google-ads',
+    ])->assertRedirect(route('admin.websites.section', [$website, 'health']));
+
+    expect($user->fresh()->current_website_id)->toBe($website->id);
 });
 
 it('does not allow users to switch to inaccessible websites', function (): void {
