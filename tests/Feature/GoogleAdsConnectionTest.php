@@ -411,6 +411,47 @@ test('campaigns open first when the selected Ads account has campaigns', functio
     Http::assertSentCount(2);
 });
 
+test('campaign status filters keep account-wide performance totals', function (): void {
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    GoogleAdsConnection::factory()->for($website)->create(['customer_id' => '1234567890', 'currency_code' => 'GBP']);
+    Http::fake(function (ClientRequest $request) {
+        if (str_contains($request['query'], 'metrics.impressions')) {
+            return Http::response([['results' => [
+                ['campaign' => ['id' => '101'], 'metrics' => ['impressions' => '100', 'clicks' => '10', 'costMicros' => '2500000', 'conversions' => 2]],
+                ['campaign' => ['id' => '102'], 'metrics' => ['impressions' => '50', 'clicks' => '5', 'costMicros' => '1000000', 'conversions' => 1]],
+            ]]]);
+        }
+
+        return Http::response([['results' => [
+            ['campaign' => ['id' => '101', 'resourceName' => 'customers/1234567890/campaigns/101', 'name' => 'Active search', 'status' => 'ENABLED', 'advertisingChannelType' => 'SEARCH'], 'campaignBudget' => ['amountMicros' => '20000000']],
+            ['campaign' => ['id' => '102', 'resourceName' => 'customers/1234567890/campaigns/102', 'name' => 'Paused search', 'status' => 'PAUSED', 'advertisingChannelType' => 'SEARCH'], 'campaignBudget' => ['amountMicros' => '20000000']],
+        ]]]);
+    });
+
+    $this->actingAs($owner)->get(route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns', 'status' => 'enabled']))
+        ->assertSuccessful()
+        ->assertSee('All campaigns · last 30 days')
+        ->assertSee('3.50')
+        ->assertSee('150')
+        ->assertSee('Active search')
+        ->assertDontSee('Paused search');
+
+    $this->actingAs($owner)->get(route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns', 'status' => 'paused']))
+        ->assertSuccessful()
+        ->assertSee('Paused search')
+        ->assertDontSee('Active search')
+        ->assertSee('3.50');
+
+    $this->actingAs($owner)->get(route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns', 'status' => 'unexpected']))
+        ->assertSuccessful()
+        ->assertSee('Active search')
+        ->assertSee('Paused search');
+
+    Http::assertSent(fn (ClientRequest $request): bool => str_contains($request['query'], 'metrics.impressions')
+        && ! str_contains($request['query'], 'LIMIT 100'));
+});
+
 test('the create tab opens first when the selected Ads account has no campaigns', function (): void {
     $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
     $website = Website::factory()->for($owner, 'owner')->create();

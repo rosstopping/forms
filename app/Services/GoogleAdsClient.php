@@ -224,13 +224,13 @@ class GoogleAdsClient
     /** @return list<array{id: string, resource_name: string, name: string, status: string, type: string, daily_budget_micros: int}> */
     public function campaigns(GoogleAdsConnection $connection): array
     {
-        return $this->searchCampaigns($connection, "campaign.status != 'REMOVED' ORDER BY campaign.id DESC LIMIT 100");
+        return $this->searchCampaigns($connection, "campaign.status != 'REMOVED' ORDER BY campaign.id DESC");
     }
 
     /** @return array<string, array{impressions: int, clicks: int, cost_micros: int, conversions: float}> */
     public function campaignPerformance(GoogleAdsConnection $connection): array
     {
-        $rows = $this->searchRows($connection, "SELECT campaign.id, metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions FROM campaign WHERE campaign.status != 'REMOVED' AND segments.date DURING LAST_30_DAYS LIMIT 100");
+        $rows = $this->searchRows($connection, "SELECT campaign.id, metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions FROM campaign WHERE campaign.status != 'REMOVED' AND segments.date DURING LAST_30_DAYS");
         $performance = [];
         foreach ($rows as $row) {
             $id = (string) data_get($row, 'campaign.id', '');

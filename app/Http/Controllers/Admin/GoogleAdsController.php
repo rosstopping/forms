@@ -42,6 +42,7 @@ class GoogleAdsController extends Controller
 
         $campaigns = [];
         $campaignPerformance = [];
+        $campaignPerformanceAvailable = false;
         $campaignError = null;
         if ($connection?->customer_id && ($tab === null || $tab === 'campaigns')) {
             try {
@@ -49,6 +50,7 @@ class GoogleAdsController extends Controller
                 if ($campaigns !== []) {
                     try {
                         $campaignPerformance = $this->client->campaignPerformance($connection);
+                        $campaignPerformanceAvailable = true;
                     } catch (ConnectionException|RequestException|RuntimeException $exception) {
                         report($exception);
                     }
@@ -58,6 +60,21 @@ class GoogleAdsController extends Controller
             }
         }
         $tab ??= $campaignError || $campaigns !== [] ? 'campaigns' : 'create';
+        $statusFilter = in_array($request->query('status'), ['enabled', 'paused'], true) ? $request->query('status') : 'all';
+        $visibleCampaigns = $statusFilter === 'all'
+            ? $campaigns
+            : array_values(array_filter($campaigns, fn (array $campaign): bool => $campaign['status'] === strtoupper($statusFilter)));
+        $campaignCounts = [
+            'all' => count($campaigns),
+            'enabled' => count(array_filter($campaigns, fn (array $campaign): bool => $campaign['status'] === 'ENABLED')),
+            'paused' => count(array_filter($campaigns, fn (array $campaign): bool => $campaign['status'] === 'PAUSED')),
+        ];
+        $campaignTotals = $campaignPerformanceAvailable ? [
+            'impressions' => array_sum(array_column($campaignPerformance, 'impressions')),
+            'clicks' => array_sum(array_column($campaignPerformance, 'clicks')),
+            'cost_micros' => array_sum(array_column($campaignPerformance, 'cost_micros')),
+            'conversions' => array_sum(array_column($campaignPerformance, 'conversions')),
+        ] : null;
 
         $searchGaps = $tab === 'create' ? $this->opportunities->searchGaps($website) : collect();
         $drafts = $tab === 'campaigns' ? $website->googleAdsCampaignDrafts()->latest()->limit(10)->get() : collect();
@@ -83,7 +100,7 @@ class GoogleAdsController extends Controller
             }
         }
 
-        return view('admin.websites.google-ads', compact('website', 'connection', 'formDraft', 'oauthConfigured', 'tab', 'campaigns', 'campaignPerformance', 'campaignError', 'availableAccounts', 'unavailableAccountCount', 'connectionError', 'conversionActions', 'conversionError', 'searchGaps', 'drafts'));
+        return view('admin.websites.google-ads', compact('website', 'connection', 'formDraft', 'oauthConfigured', 'tab', 'campaigns', 'visibleCampaigns', 'statusFilter', 'campaignCounts', 'campaignTotals', 'campaignPerformance', 'campaignError', 'availableAccounts', 'unavailableAccountCount', 'connectionError', 'conversionActions', 'conversionError', 'searchGaps', 'drafts'));
     }
 
     public function showCampaign(Request $request, Website $website, string $campaignId): View|RedirectResponse

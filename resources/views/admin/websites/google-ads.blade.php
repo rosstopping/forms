@@ -143,8 +143,29 @@
                     @elseif ($campaigns === [])
                         <p class="mt-5 text-sm text-slate-600">No campaigns in this account yet.</p>
                     @else
+                        <div class="mt-6 border-t border-slate-200 pt-5">
+                            <h3 class="text-sm font-semibold text-slate-950">All campaigns · last 30 days</h3>
+                            <dl class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-5">
+                                <div class="ui-well p-3"><dt class="text-xs text-slate-600">Campaigns</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-slate-950">{{ number_format($campaignCounts['all']) }}</dd></div>
+                                <div class="ui-well p-3"><dt class="text-xs text-slate-600">Impressions</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-slate-950">{{ $campaignTotals === null ? '—' : number_format($campaignTotals['impressions']) }}</dd></div>
+                                <div class="ui-well p-3"><dt class="text-xs text-slate-600">Clicks</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-slate-950">{{ $campaignTotals === null ? '—' : number_format($campaignTotals['clicks']) }}</dd></div>
+                                <div class="ui-well p-3"><dt class="text-xs text-slate-600">Spend</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-slate-950">{{ $campaignTotals === null ? '—' : $connection->currency_code.' '.number_format($campaignTotals['cost_micros'] / 1000000, 2) }}</dd></div>
+                                <div class="ui-well p-3"><dt class="text-xs text-slate-600">Conversions</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-slate-950">{{ $campaignTotals === null ? '—' : number_format($campaignTotals['conversions'], 1) }}</dd></div>
+                            </dl>
+                            @if ($campaignTotals === null)
+                                <p class="mt-2 text-xs text-amber-800">Performance is temporarily unavailable. Refresh to try again.</p>
+                            @endif
+                        </div>
+                        <nav class="mt-7 flex flex-wrap gap-2" aria-label="Filter campaigns by status">
+                            @foreach (['all' => 'All', 'enabled' => 'Enabled', 'paused' => 'Paused'] as $filter => $label)
+                                <a href="{{ route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns', 'status' => $filter]) }}" class="ui-button ui-button-small {{ $statusFilter === $filter ? 'ui-button-primary' : 'ui-button-secondary' }}" @if ($statusFilter === $filter) aria-current="page" @endif>{{ $label }} <span class="tabular-nums">{{ $campaignCounts[$filter] }}</span></a>
+                            @endforeach
+                        </nav>
+                        @if ($visibleCampaigns === [])
+                            <p class="mt-5 text-sm text-slate-600">No {{ $statusFilter }} campaigns in this account.</p>
+                        @else
                         <div class="mt-5 divide-y divide-slate-200">
-                            @foreach ($campaigns as $campaign)
+                            @foreach ($visibleCampaigns as $campaign)
                                 <article class="py-5 first:pt-0 last:pb-0">
                                     <div class="flex flex-wrap items-start justify-between gap-3">
                                         <div class="min-w-0">
@@ -192,6 +213,7 @@
                                 </article>
                             @endforeach
                         </div>
+                        @endif
                     @endif
                 </section>
 
