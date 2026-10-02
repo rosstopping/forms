@@ -6,8 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\GenerateGoogleAdsSuggestionsRequest;
 use App\Http\Requests\SaveGoogleAdsCampaignFormDraftRequest;
 use App\Http\Requests\StoreGoogleAdsCampaignDraftRequest;
+use App\Http\Requests\StoreGoogleAdsTrackingRequest;
 use App\Jobs\CreateGoogleAdsCampaign;
+use App\Jobs\StartGoogleAdsTrackingRequest;
 use App\Models\GoogleAdsCampaignDraft;
+use App\Models\GoogleAdsTrackingRequest;
 use App\Models\Website;
 use App\Services\GoogleAdsClient;
 use App\Services\GoogleAdsOAuthClient;
@@ -19,6 +22,7 @@ use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 use InvalidArgumentException;
@@ -83,6 +87,8 @@ class GoogleAdsController extends Controller
         $connectionError = null;
         $conversionActions = [];
         $conversionError = null;
+        $trackingRequests = $tab === 'settings' ? GoogleAdsTrackingRequest::query()->where('website_id', $website->id)->latest()->limit(10)->get() : collect();
+        $canPrepareTracking = $tab === 'settings' && $website->repository !== null && $request->user()->githubAuthorization !== null && $website->primaryDomain()?->isVerified();
         if ($connection && $tab === 'settings') {
             try {
                 $accountList = $this->client->availableAccounts($connection);
@@ -100,7 +106,55 @@ class GoogleAdsController extends Controller
             }
         }
 
-        return view('admin.websites.google-ads', compact('website', 'connection', 'formDraft', 'oauthConfigured', 'tab', 'campaigns', 'visibleCampaigns', 'statusFilter', 'campaignCounts', 'campaignTotals', 'campaignPerformance', 'campaignError', 'availableAccounts', 'unavailableAccountCount', 'connectionError', 'conversionActions', 'conversionError', 'searchGaps', 'drafts'));
+        return view('admin.websites.google-ads', compact('website', 'connection', 'formDraft', 'oauthConfigured', 'tab', 'campaigns', 'visibleCampaigns', 'statusFilter', 'campaignCounts', 'campaignTotals', 'campaignPerformance', 'campaignError', 'availableAccounts', 'unavailableAccountCount', 'connectionError', 'conversionActions', 'conversionError', 'trackingRequests', 'canPrepareTracking', 'searchGaps', 'drafts'));
+    }
+
+    public function prepareTracking(StoreGoogleAdsTrackingRequest $request, Website $website): RedirectResponse
+    {
+        $connection = $website->googleAdsConnection;
+        $repository = $website->repository;
+        $authorization = $request->user()->githubAuthorization;
+        if (! $connection?->customer_id || ! $repository || ! $authorization || ! $website->primaryDomain()?->isVerified()) {
+            return back()->with('error', 'Connect an Ads account, a verified website domain, and an authorized GitHub repository first.');
+        }
+
+        $data = $request->validated();
+        try {
+            $action = $this->client->websiteConversionAction($connection, $data['conversion_action_id']);
+        } catch (ConnectionException|RequestException|RuntimeException $exception) {
+            report($exception);
+
+            return back()->with('error', 'Could not check the conversion action in Google Ads. Try again shortly.');
+        }
+        if (! $action) {
+            return back()->with('error', 'Select an enabled website-tag conversion with an available event snippet.');
+        }
+
+        return Cache::lock('ads-tracking-'.$website->id.'-'.$action['id'], 10)->block(5, function () use ($website, $connection, $repository, $request, $data, $action): RedirectResponse {
+            if (GoogleAdsTrackingRequest::query()->where('website_id', $website->id)
+                ->where('customer_id', $connection->customer_id)
+                ->where('conversion_action_id', $action['id'])
+                ->whereIn('status', [GoogleAdsTrackingRequest::STATUS_QUEUED, GoogleAdsTrackingRequest::STATUS_RUNNING, GoogleAdsTrackingRequest::STATUS_PULL_REQUEST_OPEN, GoogleAdsTrackingRequest::STATUS_UNCERTAIN])
+                ->exists()) {
+                return back()->with('error', 'A tracking request for this conversion already exists. Review it below before starting another.');
+            }
+
+            $trackingRequest = GoogleAdsTrackingRequest::query()->create([
+                'website_id' => $website->id,
+                'website_repository_id' => $repository->id,
+                'requested_by' => $request->user()->id,
+                'customer_id' => $connection->customer_id,
+                'conversion_action_id' => $action['id'],
+                'conversion_action_name' => $action['name'],
+                'send_to' => $action['send_to'],
+                'lead_success_description' => trim($data['lead_success_description']),
+                'status' => GoogleAdsTrackingRequest::STATUS_QUEUED,
+            ]);
+            StartGoogleAdsTrackingRequest::dispatch($trackingRequest);
+
+            return Redirect::route('admin.google-ads.index', ['website' => $website, 'tab' => 'settings'])
+                ->with('status', 'Tracking implementation queued. Review the Copilot pull request before testing it on the live site.');
+        });
     }
 
     public function showCampaign(Request $request, Website $website, string $campaignId): View|RedirectResponse

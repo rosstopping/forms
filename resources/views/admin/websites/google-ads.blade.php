@@ -98,7 +98,7 @@
                         <a href="https://{{ $website->primaryDomain()->domain }}" target="_blank" rel="noopener noreferrer" class="ui-button ui-button-secondary ui-button-small">Open website ↗</a>
                     @endif
                 </div>
-                <p class="mt-3 text-xs text-slate-500">Check account {{ $connection->customer_id }} in Google Ads. Sitewell can list its actions, but cannot yet verify that a website tag fired or that a test lead was attributed.</p>
+                <p class="mt-3 text-xs text-slate-500">Check account {{ $connection->customer_id }} in Google Ads. Sitewell can prepare the code change, but cannot confirm a live conversion until you test it.</p>
                 @if ($conversionError)
                     <p class="mt-5 text-sm text-amber-900">{{ $conversionError }}</p>
                 @elseif (count($conversionActions) === 0)
@@ -108,6 +108,25 @@
                     <ul class="mt-2 divide-y divide-slate-200">@foreach ($conversionActions as $action)<li class="flex flex-wrap items-center justify-between gap-2 py-3 text-sm"><span class="font-medium text-slate-900">{{ $action['name'] }}</span><span class="text-xs text-slate-600">{{ str_replace('_', ' ', ucfirst(strtolower($action['category']))) }} · {{ match ($action['type']) { 'WEBPAGE', 'WEBPAGE_CODELESS' => 'Website tag', 'GOOGLE_ANALYTICS_4_CUSTOM', 'GOOGLE_ANALYTICS_4_GENERATE_LEAD' => 'Imported from GA4', 'UPLOAD_CLICKS' => 'Click upload', default => str_replace('_', ' ', ucfirst(strtolower($action['type'] ?: 'Unknown source'))) } }}{{ $action['primary'] ? ' · Primary' : ' · Secondary' }}</span></li>@endforeach</ul>
                     <p class="mt-3 text-xs text-slate-500">For GA4 imports, check the event in GA4 DebugView and its import in Ads. Click-upload actions need an upload test; Tag Assistant checks website tags.</p>
                 @endif
+                <div class="mt-6 border-t border-slate-200 pt-6">
+                    <h3 class="text-base font-semibold text-slate-950">Prepare the tracking change</h3>
+                    <p class="mt-1 text-sm text-slate-600">Choose a website-tag lead action. Sitewell will ask Copilot to implement it in the connected repository and open a pull request for review. Nothing goes live from this button.</p>
+                    @if (! $canPrepareTracking)
+                        <p class="mt-3 text-sm text-amber-800">Connect an authorized GitHub repository and verify this website’s domain to prepare a tracking pull request.</p>
+                    @elseif (collect($conversionActions)->where('type', 'WEBPAGE')->isEmpty())
+                        <p class="mt-3 text-sm text-amber-800">Create an enabled website-tag lead action in Google Ads first.</p>
+                    @else
+                        <form method="POST" action="{{ route('admin.google-ads.tracking.store', $website) }}" class="mt-4 space-y-4">
+                            @csrf
+                            <div><label for="tracking_action" class="ui-label">Lead conversion</label><select id="tracking_action" name="conversion_action_id" class="ui-input mt-1 w-full" required><option value="">Choose an action</option>@foreach ($conversionActions as $action)@if ($action['type'] === 'WEBPAGE' && ctype_digit($action['id']))<option value="{{ $action['id'] }}" @selected(old('conversion_action_id') === $action['id'])>{{ $action['name'] }} · {{ $action['primary'] ? 'Primary' : 'Secondary' }}</option>@endif @endforeach</select>@error('conversion_action_id')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror</div>
+                            <div><label for="tracking_success" class="ui-label">What counts as a successful lead?</label><textarea id="tracking_success" name="lead_success_description" rows="2" maxlength="500" class="ui-input mt-1 w-full" placeholder="E.g. the contact form is accepted and the thank-you message appears" required>{{ old('lead_success_description') }}</textarea><p class="mt-1 text-xs text-slate-500">Describe the completed action, not a button click or page view.</p>@error('lead_success_description')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror</div>
+                            <button type="submit" class="ui-button ui-button-primary">Prepare tracking PR</button>
+                        </form>
+                    @endif
+                    @if ($trackingRequests->isNotEmpty())
+                        <div class="mt-6 border-t border-slate-200 pt-4"><h4 class="text-sm font-semibold text-slate-950">Tracking requests</h4><ul class="mt-2 divide-y divide-slate-200">@foreach ($trackingRequests as $trackingRequest)<li class="flex flex-wrap items-start justify-between gap-3 py-3 text-sm"><div><span class="font-medium text-slate-950">{{ $trackingRequest->conversion_action_name }}</span><p class="mt-1 text-xs text-slate-600">{{ $trackingRequest->created_at->format('j M Y') }} · {{ str_replace('_', ' ', ucfirst($trackingRequest->status)) }}</p>@if ($trackingRequest->error)<p class="mt-1 text-xs text-amber-800">{{ $trackingRequest->error }}</p>@endif</div>@if ($trackingRequest->pull_request_url)<a href="{{ $trackingRequest->pull_request_url }}" target="_blank" rel="noopener noreferrer" class="font-medium text-teal-700 underline">Review pull request ↗</a>@elseif ($trackingRequest->copilot_task_url)<a href="{{ $trackingRequest->copilot_task_url }}" target="_blank" rel="noopener noreferrer" class="font-medium text-teal-700 underline">View Copilot task ↗</a>@endif</li>@endforeach</ul></div>
+                    @endif
+                </div>
             </section>
             @endif
             @if ($tab === 'create')

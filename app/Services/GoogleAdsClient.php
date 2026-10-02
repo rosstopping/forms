@@ -198,6 +198,28 @@ class GoogleAdsClient
             ->values()->all();
     }
 
+    /** @return array{id: string, name: string, send_to: string}|null */
+    public function websiteConversionAction(GoogleAdsConnection $connection, string $actionId): ?array
+    {
+        if (preg_match('/^[1-9]\d*$/', $actionId) !== 1) {
+            return null;
+        }
+
+        $rows = $this->searchRows($connection, "SELECT conversion_action.id, conversion_action.name, conversion_action.type, conversion_action.tag_snippets FROM conversion_action WHERE conversion_action.id = {$actionId} AND conversion_action.status = 'ENABLED' LIMIT 1");
+        $action = data_get($rows, '0.conversionAction');
+        if (! is_array($action) || (string) ($action['id'] ?? '') !== $actionId || ($action['type'] ?? null) !== 'WEBPAGE') {
+            return null;
+        }
+
+        foreach ($action['tagSnippets'] ?? [] as $snippet) {
+            if (is_array($snippet) && preg_match('~AW-[1-9]\d*/[A-Za-z0-9_-]+~', (string) ($snippet['eventSnippet'] ?? ''), $matches) === 1) {
+                return ['id' => $actionId, 'name' => (string) ($action['name'] ?? ''), 'send_to' => $matches[0]];
+            }
+        }
+
+        return null;
+    }
+
     /** @return list<array{id: string, name: string, status: string}> */
     public function campaignsNamed(GoogleAdsConnection $connection, string $name): array
     {

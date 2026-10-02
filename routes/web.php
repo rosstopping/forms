@@ -327,6 +327,7 @@ Route::middleware(['web', 'auth', ResolveCurrentWebsite::class])->prefix('admin'
         Route::post('websites/{website}/google-ads/suggestions', [GoogleAdsController::class, 'suggest'])->middleware('throttle:3,1')->name('google-ads.suggestions');
         Route::post('websites/{website}/google-ads/campaign-draft', [GoogleAdsController::class, 'saveFormDraft'])->middleware('throttle:20,1')->name('google-ads.campaign-draft.save');
         Route::post('websites/{website}/google-ads/campaigns', [GoogleAdsController::class, 'storeDraft'])->middleware('throttle:3,1')->name('google-ads.campaigns.store');
+        Route::post('websites/{website}/google-ads/tracking', [GoogleAdsController::class, 'prepareTracking'])->middleware('throttle:3,1')->name('google-ads.tracking.store');
         Route::get('websites/{website}/google-ads/live-campaigns/{campaignId}', [GoogleAdsController::class, 'showCampaign'])->name('google-ads.live-campaigns.show');
         Route::patch('websites/{website}/google-ads/live-campaigns/{campaignId}/name', [GoogleAdsController::class, 'updateCampaignName'])->middleware('throttle:10,1')->name('google-ads.live-campaigns.name');
         Route::patch('websites/{website}/google-ads/live-campaigns/{campaignId}/budget', [GoogleAdsController::class, 'updateCampaignBudget'])->middleware('throttle:10,1')->name('google-ads.live-campaigns.budget');
