@@ -215,15 +215,17 @@
                                         <div><dt class="text-xs text-slate-500">Spend · 30 days</dt><dd class="mt-1 font-semibold tabular-nums text-slate-900">{{ isset($campaignPerformance[$campaign['id']]) ? $connection->currency_code.' '.number_format($campaignPerformance[$campaign['id']]['cost_micros'] / 1000000, 2) : '—' }}</dd></div>
                                         <div><dt class="text-xs text-slate-500">Conversions · 30 days</dt><dd class="mt-1 font-semibold tabular-nums text-slate-900">{{ isset($campaignPerformance[$campaign['id']]) ? number_format($campaignPerformance[$campaign['id']]['conversions'], 1) : '—' }}</dd></div>
                                     </dl>
-                                    <div class="mt-3 flex flex-wrap gap-4 text-sm font-medium"><a href="{{ route('admin.google-ads.live-campaigns.show', [$website, $campaign['id']]) }}" class="text-teal-700 underline hover:text-teal-900">View &amp; edit campaign →</a><a href="https://ads.google.com/aw/overview?campaignId={{ $campaign['id'] }}" target="_blank" rel="noopener noreferrer" class="text-slate-600 underline hover:text-slate-900">Open Google Ads ↗</a></div>
-                                    <div class="mt-4 flex flex-wrap items-start gap-4">
+                                    <div class="mt-4 flex flex-wrap items-center gap-3">
+                                        <a href="{{ route('admin.google-ads.live-campaigns.show', [$website, $campaign['id']]) }}" class="ui-button ui-button-secondary ui-button-small">Review campaign</a>
+                                        <a href="https://ads.google.com/aw/overview?campaignId={{ $campaign['id'] }}" target="_blank" rel="noopener noreferrer" class="text-sm font-medium text-slate-600 underline underline-offset-2 hover:text-slate-900">Open in Google Ads ↗</a>
+                                    </div>
+                                    <div class="mt-5 border-t border-slate-900/10 pt-4">
                                         @if ($campaign['status'] === 'PAUSED')
-                                            <form method="POST" action="{{ route('admin.google-ads.live-campaigns.status', [$website, $campaign['id']]) }}" class="space-y-2">
+                                            <form method="POST" action="{{ route('admin.google-ads.live-campaigns.status', [$website, $campaign['id']]) }}" class="grid justify-items-start gap-3">
                                                 @csrf
                                                 @method('PATCH')
                                                 <input type="hidden" name="status" value="ENABLED">
-                                                <label class="flex max-w-md items-start gap-2 text-xs text-slate-600"><input type="checkbox" name="tracking_confirmed" value="1" class="mt-0.5" required><span>I’ve tested conversion tracking and checked the ad and budget. Enabling can start spend.</span></label>
-                                                <a href="{{ route('admin.google-ads.index', ['website' => $website, 'tab' => 'settings']) }}" class="inline-block text-xs font-medium text-teal-700 underline hover:text-teal-900">How to test tracking →</a>
+                                                <label class="flex max-w-xl items-start gap-3 text-base text-slate-700 sm:text-sm"><input type="checkbox" name="tracking_confirmed" value="1" class="mt-1 size-5 shrink-0 accent-teal-700 sm:mt-0.5 sm:size-4" required><span>I’ve tested conversion tracking and reviewed the ad and budget. Enabling can start spend.</span></label>
                                                 <button type="submit" class="ui-button ui-button-primary ui-button-small">Enable campaign</button>
                                             </form>
                                         @elseif ($campaign['status'] === 'ENABLED')
@@ -234,17 +236,17 @@
                                                 <button type="submit" class="ui-button ui-button-secondary ui-button-small">Pause campaign</button>
                                             </form>
                                         @endif
-                                        <details class="text-sm">
-                                            <summary class="cursor-pointer font-medium text-red-700">Remove campaign</summary>
-                                            <form method="POST" action="{{ route('admin.google-ads.live-campaigns.destroy', [$website, $campaign['id']]) }}" class="mt-2 max-w-sm space-y-2">
-                                                @csrf
-                                                @method('DELETE')
-                                                <p class="text-xs text-slate-600">Removal is permanent. Type the campaign name to confirm.</p>
-                                                <input name="confirmation" class="ui-input w-full" aria-label="Confirm campaign name" placeholder="{{ $campaign['name'] }}" required>
-                                                <button type="submit" class="ui-button ui-button-danger ui-button-small">Remove permanently</button>
-                                            </form>
-                                        </details>
                                     </div>
+                                    <details class="mt-5 border-t border-slate-900/10 pt-4 text-sm">
+                                        <summary class="w-fit cursor-pointer font-medium text-slate-500 hover:text-red-700">Remove campaign</summary>
+                                        <form method="POST" action="{{ route('admin.google-ads.live-campaigns.destroy', [$website, $campaign['id']]) }}" class="mt-3 max-w-sm space-y-3">
+                                            @csrf
+                                            @method('DELETE')
+                                            <p class="text-base text-slate-600 sm:text-sm">Removal is permanent. Type the campaign name to confirm.</p>
+                                            <input name="confirmation" class="ui-input w-full" aria-label="Confirm campaign name" placeholder="{{ $campaign['name'] }}" required>
+                                            <button type="submit" class="ui-button ui-button-danger ui-button-small">Remove permanently</button>
+                                        </form>
+                                    </details>
                                 </article>
                             @endforeach
                         </div>
