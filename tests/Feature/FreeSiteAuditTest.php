@@ -75,6 +75,20 @@ it('shows audit progress and exposes only its processing state', function (): vo
         ->assertExactJson(['status' => 'pending', 'completed' => false, 'failed' => false, 'ai_visibility_status' => null]);
 });
 
+it('contains long website addresses in the audit heading while retaining the full address', function (): void {
+    $domain = str_repeat('long-subdomain-', 12).'example.com';
+    $audit = WebsiteAudit::factory()->create(['domain' => $domain, 'website_url' => 'https://'.$domain]);
+
+    $response = $this->get(route('marketing.website-audits.show', $audit))->assertSuccessful();
+    $document = new DOMDocument;
+    @$document->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
+    $heading = (new DOMXPath($document))->query('//*[@id="audit-title"]')->item(0);
+
+    expect($heading->textContent)->toBe($domain)
+        ->and($heading->getAttribute('title'))->toBe($domain)
+        ->and(explode(' ', $heading->getAttribute('class')))->toContain('truncate', 'min-w-0');
+});
+
 it('stores an anonymous audit result for the live report', function (): void {
     $audit = WebsiteAudit::factory()->create([
         'website_url' => 'https://northfield.example',
