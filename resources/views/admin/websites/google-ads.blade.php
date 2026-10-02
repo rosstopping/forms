@@ -168,85 +168,86 @@
 
             @if ($tab === 'campaigns')
                 <section class="ui-panel p-5 sm:p-6">
-                    <div class="flex flex-wrap items-center justify-between gap-3">
-                        <div><h2 class="text-lg font-semibold text-slate-950">Campaigns</h2><p class="mt-1 text-sm text-slate-600">In {{ $connection->customer_name ?: 'Ads account '.$connection->customer_id }}.</p></div>
-                        <a href="{{ route('admin.google-ads.index', ['website' => $website, 'tab' => 'create']) }}" class="ui-button ui-button-secondary">Create campaign</a>
+                    <div>
+                        <h2 class="text-xl font-semibold tracking-tight text-slate-950">Campaigns</h2>
+                        <p class="mt-1 text-base text-slate-600 sm:text-sm">{{ $connection->customer_name ?: 'Ads account '.$connection->customer_id }}</p>
                     </div>
                     @if ($campaignError)
                         <p role="alert" class="mt-5 text-sm text-amber-800">{{ $campaignError }}</p>
                     @elseif ($campaigns === [])
                         <p class="mt-5 text-sm text-slate-600">No campaigns in this account yet.</p>
                     @else
-                        <div class="mt-6 border-t border-slate-200 pt-5">
-                            <h3 class="text-sm font-semibold text-slate-950">All campaigns · last 30 days</h3>
-                            <dl class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-5">
-                                <div class="ui-well p-3"><dt class="text-xs text-slate-600">Campaigns</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-slate-950">{{ number_format($campaignCounts['all']) }}</dd></div>
-                                <div class="ui-well p-3"><dt class="text-xs text-slate-600">Impressions</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-slate-950">{{ $campaignTotals === null ? '—' : number_format($campaignTotals['impressions']) }}</dd></div>
-                                <div class="ui-well p-3"><dt class="text-xs text-slate-600">Clicks</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-slate-950">{{ $campaignTotals === null ? '—' : number_format($campaignTotals['clicks']) }}</dd></div>
-                                <div class="ui-well p-3"><dt class="text-xs text-slate-600">Spend</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-slate-950">{{ $campaignTotals === null ? '—' : $connection->currency_code.' '.number_format($campaignTotals['cost_micros'] / 1000000, 2) }}</dd></div>
-                                <div class="ui-well p-3"><dt class="text-xs text-slate-600">Conversions</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-slate-950">{{ $campaignTotals === null ? '—' : number_format($campaignTotals['conversions'], 1) }}</dd></div>
-                            </dl>
+                        <div class="mt-6 border-y border-slate-900/10 py-5">
+                            <div class="flex flex-wrap items-baseline justify-between gap-2"><h3 class="text-sm font-semibold text-slate-950">Last 30 days</h3><p class="text-sm text-slate-500">Across {{ number_format($campaignCounts['all']) }} {{ \Illuminate\Support\Str::plural('campaign', $campaignCounts['all']) }}</p></div>
+                            <div class="@container mt-4">
+                                <dl class="grid grid-cols-2 gap-x-6 gap-y-4 @lg:grid-cols-4">
+                                    <div><dt class="truncate text-base font-medium text-slate-600 sm:text-sm">Impressions</dt><dd class="mt-1 text-2xl font-semibold tabular-nums text-slate-950">{{ $campaignTotals === null ? '—' : number_format($campaignTotals['impressions']) }}</dd></div>
+                                    <div><dt class="truncate text-base font-medium text-slate-600 sm:text-sm">Clicks</dt><dd class="mt-1 text-2xl font-semibold tabular-nums text-slate-950">{{ $campaignTotals === null ? '—' : number_format($campaignTotals['clicks']) }}</dd></div>
+                                    <div><dt class="truncate text-base font-medium text-slate-600 sm:text-sm">Spend</dt><dd class="mt-1 text-2xl font-semibold tabular-nums text-slate-950">{{ $campaignTotals === null ? '—' : $connection->currency_code.' '.number_format($campaignTotals['cost_micros'] / 1000000, 2) }}</dd></div>
+                                    <div><dt class="truncate text-base font-medium text-slate-600 sm:text-sm">Conversions</dt><dd class="mt-1 text-2xl font-semibold tabular-nums text-slate-950">{{ $campaignTotals === null ? '—' : number_format($campaignTotals['conversions'], 1) }}</dd></div>
+                                </dl>
+                            </div>
                             @if ($campaignTotals === null)
-                                <p class="mt-2 text-xs text-amber-800">Performance is temporarily unavailable. Refresh to try again.</p>
+                                <p class="mt-3 text-base text-amber-800 sm:text-sm">Performance is temporarily unavailable. Refresh to try again.</p>
                             @endif
                         </div>
-                        <nav class="mt-7 flex flex-wrap gap-2" aria-label="Filter campaigns by status">
+                        <nav class="mt-6 flex max-w-full gap-6 overflow-x-auto border-b border-slate-900/10" aria-label="Filter campaigns by status">
                             @foreach (['all' => 'All', 'enabled' => 'Enabled', 'paused' => 'Paused'] as $filter => $label)
-                                <a href="{{ route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns', 'status' => $filter]) }}" class="ui-button ui-button-small {{ $statusFilter === $filter ? 'ui-button-primary' : 'ui-button-secondary' }}" @if ($statusFilter === $filter) aria-current="page" @endif>{{ $label }} <span class="tabular-nums">{{ $campaignCounts[$filter] }}</span></a>
+                                <a href="{{ route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns', 'status' => $filter]) }}" class="flex shrink-0 items-center gap-2 border-b-2 pb-3 text-base font-medium sm:text-sm {{ $statusFilter === $filter ? 'border-teal-700 text-teal-800' : 'border-transparent text-slate-500 hover:text-slate-900' }}" @if ($statusFilter === $filter) aria-current="page" @endif>{{ $label }} <span class="tabular-nums">{{ $campaignCounts[$filter] }}</span></a>
                             @endforeach
                         </nav>
                         @if ($visibleCampaigns === [])
                             <p class="mt-5 text-sm text-slate-600">No {{ $statusFilter }} campaigns in this account.</p>
                         @else
-                        <div class="mt-5 divide-y divide-slate-200">
+                        <div class="divide-y divide-slate-900/10">
                             @foreach ($visibleCampaigns as $campaign)
-                                <article class="py-5 first:pt-0 last:pb-0">
-                                    <div class="flex flex-wrap items-start justify-between gap-3">
+                                <article class="py-6 last:pb-0">
+                                    <div class="flex flex-wrap items-start justify-between gap-4">
                                         <div class="min-w-0">
-                                            <h3 class="font-semibold text-slate-950">{{ $campaign['name'] }}</h3>
-                                            <p class="mt-1 text-xs text-slate-500">{{ ucfirst(strtolower($campaign['type'])) }} · ID {{ $campaign['id'] }}</p>
+                                            <h3 class="text-lg font-semibold text-slate-950">{{ $campaign['name'] }}</h3>
+                                            <p class="mt-1 text-base text-slate-600 sm:text-sm">{{ ucfirst(strtolower($campaign['type'])) }} · {{ $campaign['daily_budget_micros'] > 0 ? $connection->currency_code.' '.number_format($campaign['daily_budget_micros'] / 1000000, 2).' daily budget' : 'Budget unavailable' }} <span class="text-slate-400">· ID {{ $campaign['id'] }}</span></p>
                                         </div>
-                                        <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $campaign['status'] === 'ENABLED' ? 'bg-emerald-50 text-emerald-800' : 'bg-amber-50 text-amber-900' }}">{{ ucfirst(strtolower($campaign['status'])) }}</span>
+                                        <span class="shrink-0 rounded-full px-3 py-1 text-sm font-medium {{ $campaign['status'] === 'ENABLED' ? 'bg-emerald-50 text-emerald-800' : 'bg-amber-50 text-amber-900' }}">{{ ucfirst(strtolower($campaign['status'])) }}</span>
                                     </div>
-                                    <dl class="mt-4 grid grid-cols-2 gap-3 rounded-xl bg-slate-50 p-4 sm:grid-cols-5">
-                                        <div><dt class="text-xs text-slate-500">Daily budget</dt><dd class="mt-1 font-semibold text-slate-900">{{ $campaign['daily_budget_micros'] > 0 ? $connection->currency_code.' '.number_format($campaign['daily_budget_micros'] / 1000000, 2) : '—' }}</dd></div>
-                                        <div><dt class="text-xs text-slate-500">Impressions · 30 days</dt><dd class="mt-1 font-semibold tabular-nums text-slate-900">{{ isset($campaignPerformance[$campaign['id']]) ? number_format($campaignPerformance[$campaign['id']]['impressions']) : '—' }}</dd></div>
-                                        <div><dt class="text-xs text-slate-500">Clicks · 30 days</dt><dd class="mt-1 font-semibold tabular-nums text-slate-900">{{ isset($campaignPerformance[$campaign['id']]) ? number_format($campaignPerformance[$campaign['id']]['clicks']) : '—' }}</dd></div>
-                                        <div><dt class="text-xs text-slate-500">Spend · 30 days</dt><dd class="mt-1 font-semibold tabular-nums text-slate-900">{{ isset($campaignPerformance[$campaign['id']]) ? $connection->currency_code.' '.number_format($campaignPerformance[$campaign['id']]['cost_micros'] / 1000000, 2) : '—' }}</dd></div>
-                                        <div><dt class="text-xs text-slate-500">Conversions · 30 days</dt><dd class="mt-1 font-semibold tabular-nums text-slate-900">{{ isset($campaignPerformance[$campaign['id']]) ? number_format($campaignPerformance[$campaign['id']]['conversions'], 1) : '—' }}</dd></div>
-                                    </dl>
-                                    <div class="mt-4 flex flex-wrap items-center gap-3">
+                                    @if ($campaignCounts['all'] > 1)
+                                        <div class="@container mt-4 border-t border-slate-900/10 pt-4">
+                                            <dl class="grid grid-cols-2 gap-x-6 gap-y-3 @lg:grid-cols-4">
+                                                <div><dt class="truncate text-base font-medium text-slate-600 sm:text-sm">Impressions</dt><dd class="mt-1 font-semibold tabular-nums text-slate-950">{{ isset($campaignPerformance[$campaign['id']]) ? number_format($campaignPerformance[$campaign['id']]['impressions']) : '—' }}</dd></div>
+                                                <div><dt class="truncate text-base font-medium text-slate-600 sm:text-sm">Clicks</dt><dd class="mt-1 font-semibold tabular-nums text-slate-950">{{ isset($campaignPerformance[$campaign['id']]) ? number_format($campaignPerformance[$campaign['id']]['clicks']) : '—' }}</dd></div>
+                                                <div><dt class="truncate text-base font-medium text-slate-600 sm:text-sm">Spend</dt><dd class="mt-1 font-semibold tabular-nums text-slate-950">{{ isset($campaignPerformance[$campaign['id']]) ? $connection->currency_code.' '.number_format($campaignPerformance[$campaign['id']]['cost_micros'] / 1000000, 2) : '—' }}</dd></div>
+                                                <div><dt class="truncate text-base font-medium text-slate-600 sm:text-sm">Conversions</dt><dd class="mt-1 font-semibold tabular-nums text-slate-950">{{ isset($campaignPerformance[$campaign['id']]) ? number_format($campaignPerformance[$campaign['id']]['conversions'], 1) : '—' }}</dd></div>
+                                            </dl>
+                                        </div>
+                                    @endif
+                                    <div class="mt-5 flex flex-wrap items-center gap-3">
                                         <a href="{{ route('admin.google-ads.live-campaigns.show', [$website, $campaign['id']]) }}" class="ui-button ui-button-secondary ui-button-small">Review campaign</a>
-                                        <a href="https://ads.google.com/aw/overview?campaignId={{ $campaign['id'] }}" target="_blank" rel="noopener noreferrer" class="text-sm font-medium text-slate-600 underline underline-offset-2 hover:text-slate-900">Open in Google Ads ↗</a>
-                                    </div>
-                                    <div class="mt-5 border-t border-slate-900/10 pt-4">
                                         @if ($campaign['status'] === 'PAUSED')
-                                            <form method="POST" action="{{ route('admin.google-ads.live-campaigns.status', [$website, $campaign['id']]) }}" class="grid justify-items-start gap-3">
+                                            <form method="POST" action="{{ route('admin.google-ads.live-campaigns.status', [$website, $campaign['id']]) }}" class="flex basis-full flex-wrap items-center gap-3 sm:basis-auto">
                                                 @csrf
                                                 @method('PATCH')
                                                 <input type="hidden" name="status" value="ENABLED">
-                                                <label class="flex max-w-xl items-start gap-3 text-base text-slate-700 sm:text-sm"><input type="checkbox" name="tracking_confirmed" value="1" class="mt-1 size-5 shrink-0 accent-teal-700 sm:mt-0.5 sm:size-4" required><span>I’ve tested conversion tracking and reviewed the ad and budget. Enabling can start spend.</span></label>
-                                                <button type="submit" class="ui-button ui-button-primary ui-button-small">Enable campaign</button>
+                                                <label class="flex max-w-sm items-start gap-2 text-base text-slate-600 sm:text-sm"><input type="checkbox" name="tracking_confirmed" value="1" class="mt-1 size-5 shrink-0 accent-teal-700 sm:mt-0.5 sm:size-4" required><span>Tracking, ad and budget checked. Enabling can start spend.</span></label>
+                                                <button type="submit" class="ui-button ui-button-secondary ui-button-small">Enable</button>
                                             </form>
                                         @elseif ($campaign['status'] === 'ENABLED')
                                             <form method="POST" action="{{ route('admin.google-ads.live-campaigns.status', [$website, $campaign['id']]) }}">
                                                 @csrf
                                                 @method('PATCH')
                                                 <input type="hidden" name="status" value="PAUSED">
-                                                <button type="submit" class="ui-button ui-button-secondary ui-button-small">Pause campaign</button>
+                                                <button type="submit" class="ui-button ui-button-secondary ui-button-small">Pause</button>
                                             </form>
                                         @endif
+                                        <details class="basis-full text-sm sm:basis-auto">
+                                            <summary class="w-fit cursor-pointer py-2 text-base font-medium text-slate-500 hover:text-slate-900 sm:text-sm">More actions</summary>
+                                            <form method="POST" action="{{ route('admin.google-ads.live-campaigns.destroy', [$website, $campaign['id']]) }}" class="mt-2 max-w-xs space-y-3 rounded-xl bg-slate-50 p-4">
+                                                @csrf
+                                                @method('DELETE')
+                                                <p class="text-base text-slate-600 sm:text-sm">To remove this campaign permanently, type its name.</p>
+                                                <input name="confirmation" class="ui-input w-full" aria-label="Confirm campaign name" placeholder="{{ $campaign['name'] }}" required>
+                                                <button type="submit" class="ui-button ui-button-danger ui-button-small">Remove campaign</button>
+                                            </form>
+                                        </details>
                                     </div>
-                                    <details class="mt-5 border-t border-slate-900/10 pt-4 text-sm">
-                                        <summary class="w-fit cursor-pointer font-medium text-slate-500 hover:text-red-700">Remove campaign</summary>
-                                        <form method="POST" action="{{ route('admin.google-ads.live-campaigns.destroy', [$website, $campaign['id']]) }}" class="mt-3 max-w-sm space-y-3">
-                                            @csrf
-                                            @method('DELETE')
-                                            <p class="text-base text-slate-600 sm:text-sm">Removal is permanent. Type the campaign name to confirm.</p>
-                                            <input name="confirmation" class="ui-input w-full" aria-label="Confirm campaign name" placeholder="{{ $campaign['name'] }}" required>
-                                            <button type="submit" class="ui-button ui-button-danger ui-button-small">Remove permanently</button>
-                                        </form>
-                                    </details>
                                 </article>
                             @endforeach
                         </div>

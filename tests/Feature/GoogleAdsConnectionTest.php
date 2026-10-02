@@ -398,18 +398,21 @@ test('campaigns open first when the selected Ads account has campaigns', functio
         ['campaign' => ['id' => '987654321', 'resourceName' => 'customers/1234567890/campaigns/987654321', 'name' => 'Local search', 'status' => 'PAUSED', 'advertisingChannelType' => 'SEARCH'], 'campaignBudget' => ['amountMicros' => '20000000']],
     ]]])]);
 
-    $this->actingAs($owner)->get(route('admin.google-ads.index', $website))
+    $response = $this->actingAs($owner)->get(route('admin.google-ads.index', $website));
+    $response
         ->assertSuccessful()
         ->assertSee('aria-current="page" >Campaigns', false)
         ->assertSee('Local search')
-        ->assertSee('https://ads.google.com/aw/overview?campaignId=987654321', false)
+        ->assertDontSee('https://ads.google.com/aw/overview?campaignId=987654321', false)
         ->assertSee('Review campaign')
-        ->assertSee('Open in Google Ads')
+        ->assertSee('More actions')
         ->assertDontSee('How to test tracking')
-        ->assertSee('Impressions · 30 days')
-        ->assertSee('Conversions · 30 days')
-        ->assertSee('Enable campaign')
+        ->assertSee('Last 30 days')
+        ->assertSee('Impressions')
+        ->assertSee('Conversions')
+        ->assertSee('Enable')
         ->assertDontSee('Search opportunities');
+    expect(substr_count($response->getContent(), '>Impressions<'))->toBe(1);
     Http::assertSentCount(2);
 });
 
@@ -458,7 +461,7 @@ test('campaign status filters keep account-wide performance totals', function ()
 
     $this->actingAs($owner)->get(route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns', 'status' => 'enabled']))
         ->assertSuccessful()
-        ->assertSee('All campaigns · last 30 days')
+        ->assertSee('Last 30 days')
         ->assertSee('3.50')
         ->assertSee('150')
         ->assertSee('Active search')
@@ -617,6 +620,7 @@ test('campaign details show targeting keywords and a responsive search ad previe
     $this->actingAs($owner)->get(route('admin.google-ads.live-campaigns.show', [$website, '987654321']))
         ->assertSuccessful()
         ->assertSee('Local search')
+        ->assertSee('https://ads.google.com/aw/overview?campaignId=987654321', false)
         ->assertSee('Doncaster')
         ->assertSee('seo doncaster')
         ->assertSee('Local SEO | Better rankings | Get found')

@@ -24,7 +24,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | {app/Support/MembershipPlan.php,app/Http/Middleware/EnsureMembershipFeature.php,app/Http/Controllers/Admin/{WebsiteController.php,WebsiteHealthReportController.php,SearchConsoleController.php},resources/views/admin/websites/**,routes/web.php} | .ai/rules/admin-views-admin-websites.md |
 | {app/{Models/WebsiteSetup.php,Services/WebsiteSetupService.php,Http/Controllers/Admin/WebsiteSetupController.php,Http/Requests/*WebsiteSetupRequest.php},resources/views/admin/websites/{setup.blade.php,partials/setup-*.blade.php},tests/Feature/WebsiteSetupTest.php} | .ai/rules/admin-websites-feature.md |
 | app/{Services,Jobs,Console/Commands,Http/Controllers/Admin}/**/*BusinessProfile*.php,resources/views/admin/websites/partials/business-profile*.blade.php | .ai/rules/admin-websites-partials.md |
-| resources/views/admin/websites/**,routes/web.php, resources/views/admin/websites/show.blade.php | .ai/rules/admin-websites.md |
+| resources/views/admin/websites/**,routes/web.php, resources/views/admin/websites/show.blade.php, resources/views/admin/websites/google-ads.blade.php | .ai/rules/admin-websites.md |
 | app/{Ai,Jobs,Mail,Models,Http/Controllers/Admin}/**/*Prospect*.php | .ai/rules/admin.md |
 | app/{Http/Controllers/Admin/WebsiteAiQuestion*Controller.php,Mail/WebsiteAiQuestionReported.php,Models/WebsiteAiQuestion.php},resources/views/admin/{websites/show.blade.php,website-ai-question-report.blade.php} | .ai/rules/adminwebsites.md |
 | {config/agencies.php,app/Http/Controllers/AgencyMarketingController.php,app/Http/Requests/StoreAgencyBetaRequest.php,resources/views/marketing/agencies/**} | .ai/rules/agencies.md |
