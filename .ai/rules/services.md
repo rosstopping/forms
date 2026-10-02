@@ -7,6 +7,7 @@ paths:
   - app/Services/SearchConsoleClient.php
   - 'app/Services/GoogleAds*'
   - app/Services/GoogleAdsClient.php
+  - 'app/Services/{WebsiteHealthAuditor,WebsiteCrawler,ProspectWebsiteAnalyzer}.php'
 ---
 
 # Services
@@ -34,3 +35,6 @@ Read live campaign, ad, and budget values from the website's selected Ads custom
 
 ## Treat Search Console positions as sampled observations
 Dashboard query summaries must show impressions alongside clicks and average position. Search Console returns rows by clicks with arbitrary zero-click ties, so fetch a bounded wider sample and order ties by impressions before showing ten. Label it a sample; never present a low-impression average position as a live or guaranteed rank.
+
+## Score verifiable audit findings, not fixed content lengths
+Do not mark a page unhealthy solely because its title or meta description exceeds a fixed character count or its body has fewer than a set number of words. Keep lengths as observations if useful; assess clarity and usefulness with context. A working skip link must target the page's main content and is an accessibility finding, not a GEO ranking claim. Never score optional llms.txt as a Google AI requirement.

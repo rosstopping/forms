@@ -76,7 +76,6 @@ class WebsiteHealthAuditor
         $missingDescriptions = $successfulPages->whereNull('meta_description')->count();
         $noindexPages = $successfulPages->where('is_indexable', false)->count();
         $missingAlt = $successfulPages->sum('missing_alt_count');
-        $thinPages = $successfulPages->where('word_count', '<', 150)->count();
 
         return [
             $this->check('site_wide_seo', 'crawl_coverage', 'Pages analysed', $pages === [] ? 'failed' : 'passed', count($pages).' internal pages were analysed.'),
@@ -88,7 +87,6 @@ class WebsiteHealthAuditor
             $this->check('site_wide_seo', 'missing_descriptions', 'Missing descriptions', $missingDescriptions > 0 ? 'warning' : 'passed', "{$missingDescriptions} pages have no meta description."),
             $this->check('site_wide_seo', 'noindex_pages', 'Noindex pages', $noindexPages > 0 ? 'warning' : 'passed', "{$noindexPages} pages contain a noindex directive."),
             $this->check('site_wide_seo', 'missing_alt_text', 'Missing image descriptions', $missingAlt > 0 ? 'warning' : 'passed', "{$missingAlt} images are missing alternative text across the site."),
-            $this->check('site_wide_seo', 'thin_content', 'Thin content', $thinPages > 0 ? 'warning' : 'passed', "{$thinPages} pages contain fewer than 150 words."),
         ];
     }
 
@@ -121,6 +119,11 @@ class WebsiteHealthAuditor
         $viewport = trim((string) $xpath->evaluate('string(//meta[translate(@name, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz")="viewport"]/@content)'));
         $images = (int) $xpath->evaluate('count(//img)');
         $imagesWithoutAlt = (int) $xpath->evaluate('count(//img[not(@alt) or normalize-space(@alt)=""])');
+        $mainTargets = collect($xpath->query('//main[@id]'))->map(fn ($node) => $node->attributes->getNamedItem('id')?->nodeValue)->filter()->all();
+        $hasNavigationBeforeMain = (int) $xpath->evaluate('count(//nav[following::main])') > 0;
+        $skipLink = collect($xpath->query('//a[starts-with(@href, "#") and following::main]'))
+            ->contains(fn ($node) => in_array(substr($node->attributes->getNamedItem('href')?->nodeValue ?? '', 1), $mainTargets, true)
+                && trim($node->textContent) !== '');
         $structuredDataNodes = $xpath->query('//script[translate(@type, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz")="application/ld+json"]');
         $invalidStructuredData = 0;
 
@@ -138,14 +141,15 @@ class WebsiteHealthAuditor
         $expectedHost = parse_url($url, PHP_URL_HOST);
 
         return [
-            $this->check('seo', 'page_title', 'Page title', $title === '' ? 'failed' : (Str::length($title) > 65 ? 'warning' : 'passed'), $title === '' ? 'The homepage has no title.' : (Str::length($title) > 65 ? 'The homepage title is '.Str::length($title).' characters long. Aim for 65 or fewer so it is less likely to be truncated in search results. Current title: '.$title : 'Title: '.$title), ['value' => $title]),
-            $this->check('seo', 'meta_description', 'Meta description', $description === '' ? 'warning' : (Str::length($description) > 170 ? 'warning' : 'passed'), $description === '' ? 'The homepage has no meta description.' : (Str::length($description) > 170 ? 'The homepage meta description is '.Str::length($description).' characters long. Aim for 170 or fewer so it is less likely to be truncated in search results.' : 'Meta description is present.'), ['value' => $description]),
+            $this->check('seo', 'page_title', 'Page title', $title === '' ? 'failed' : 'passed', $title === '' ? 'The homepage has no title.' : 'Title: '.$title, ['value' => $title]),
+            $this->check('seo', 'meta_description', 'Meta description', $description === '' ? 'warning' : 'passed', $description === '' ? 'The homepage has no meta description.' : 'Meta description is present.', ['value' => $description]),
             $this->check('seo', 'h1', 'Primary heading', $h1Count === 1 ? 'passed' : 'warning', $h1Count === 1 ? 'The homepage has one H1.' : "The homepage has {$h1Count} H1 elements.", ['count' => $h1Count]),
             $this->check('seo', 'canonical', 'Canonical URL', $canonical === '' || $canonicalHost !== $expectedHost ? 'warning' : 'passed', $canonical === '' ? 'No canonical URL was found.' : 'Canonical: '.$canonical, ['value' => $canonical]),
             $this->check('seo', 'indexable', 'Indexing directive', Str::contains($robots, 'noindex') ? 'failed' : 'passed', Str::contains($robots, 'noindex') ? 'The homepage contains a noindex directive.' : 'No noindex directive was found.'),
             $this->check('seo', 'language', 'Page language', $language === '' ? 'warning' : 'passed', $language === '' ? 'The HTML element has no language.' : 'Language: '.$language),
             $this->check('seo', 'viewport', 'Mobile viewport', $viewport === '' ? 'warning' : 'passed', $viewport === '' ? 'No mobile viewport was found.' : 'A mobile viewport is configured.'),
             $this->check('seo', 'image_alt_text', 'Image alternative text', $imagesWithoutAlt > 0 ? 'warning' : 'passed', $imagesWithoutAlt > 0 ? "{$imagesWithoutAlt} of {$images} images have no alternative text." : 'All images have alternative text.', ['images' => $images, 'missing' => $imagesWithoutAlt]),
+            $this->check('accessibility', 'skip_link', 'Skip to content link', ! $hasNavigationBeforeMain || $skipLink ? 'passed' : 'warning', ! $hasNavigationBeforeMain ? 'No navigation appears before the main content.' : ($skipLink ? 'A link to the main content is available for keyboard users.' : 'Add a link near the start of the page that lets keyboard users skip repeated navigation.')),
             $this->check('seo', 'structured_data', 'Structured data syntax', $invalidStructuredData > 0 ? 'warning' : 'passed', $invalidStructuredData > 0 ? "{$invalidStructuredData} structured data blocks contain invalid JSON." : 'No invalid structured data JSON was found.'),
         ];
     }

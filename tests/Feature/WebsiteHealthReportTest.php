@@ -345,8 +345,8 @@ it('shows a friendly report through a signed link without authentication', funct
         'title' => str_repeat('Long services title ', 5),
         'meta_description' => str_repeat('Long services description ', 8),
         'checks' => [
-            ['key' => 'page_title', 'label' => 'Page title', 'status' => 'warning', 'message' => 'Title: present'],
-            ['key' => 'meta_description', 'label' => 'Meta description', 'status' => 'warning', 'message' => 'Meta description is present.'],
+            ['key' => 'page_title', 'label' => 'Page title', 'status' => 'warning', 'message' => 'Review the title for clarity.'],
+            ['key' => 'meta_description', 'label' => 'Meta description', 'status' => 'warning', 'message' => 'Review the description for clarity.'],
             ['key' => 'h1', 'label' => 'Primary heading', 'status' => 'passed', 'message' => 'The page has one H1.'],
         ],
     ]);
@@ -364,9 +364,10 @@ it('shows a friendly report through a signed link without authentication', funct
         ->assertSee('500')
         ->assertSee('What needs attention')
         ->assertSee('Content Security Policy')
-        ->assertSee('Aim for 65 or fewer')
-        ->assertSee('Aim for 170 or fewer')
-        ->assertDontSee('Meta description is present.')
+        ->assertSee('Review the title for clarity.')
+        ->assertDontSee('Aim for 65 or fewer')
+        ->assertDontSee('Aim for 170 or fewer')
+        ->assertSee('Review the description for clarity.')
         ->assertDontSee('HTTPS enabled')
         ->assertDontSee('AI remediation prompt')
         ->assertDontSee('Copilot');
@@ -377,13 +378,15 @@ it('shows a friendly report through a signed link without authentication', funct
     $this->actingAs($admin)
         ->get(route('admin.website-health-reports.show', [$website, $report]))
         ->assertSuccessful()
-        ->assertSee('Aim for 65 or fewer')
-        ->assertSee('Aim for 170 or fewer');
+        ->assertSee('Review the title for clarity.')
+        ->assertDontSee('Aim for 65 or fewer')
+        ->assertDontSee('Aim for 170 or fewer');
 
     expect(app(WebsiteHealthReportPromptGenerator::class)->generate($report->fresh(['website', 'pages'])))
-        ->toContain('Aim for 65 or fewer')
-        ->toContain('Aim for 170 or fewer')
-        ->not->toContain('[WARNING] Meta description: Meta description is present.');
+        ->toContain('Review the title for clarity.')
+        ->not->toContain('Aim for 65 or fewer')
+        ->not->toContain('Aim for 170 or fewer')
+        ->toContain('[WARNING] Meta description: Review the description for clarity.');
 });
 
 it('shows administrators a copyable AI prompt containing every report issue', function (): void {
@@ -540,7 +543,9 @@ it('audits a website and queues role-appropriate reports for all website users',
     $report->refresh();
     expect($report->status)->toBe(WebsiteHealthReport::STATUS_COMPLETED)
         ->and($report->passed_checks)->toBeGreaterThan(0)
+        ->and(collect($report->checks)->pluck('key'))->not->toContain('thin_content')
         ->and($report->pages)->toHaveCount(1)
+        ->and(collect($report->pages->first()->checks)->pluck('key'))->not->toContain('content_depth')
         ->and($report->metrics['pages_analyzed'])->toBe(1)
         ->and($report->metrics['forms_count'])->toBe(1)
         ->and($report->metrics['pagespeed'][0]['strategy'])->toBe('mobile')

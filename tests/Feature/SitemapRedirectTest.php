@@ -30,6 +30,22 @@ beforeEach(function (): void {
     Http::preventStrayRequests();
 });
 
+it('includes a verified skip link in public findings without imposing metadata length limits', function (): void {
+    $this->mock(ProspectContactFinder::class)->shouldReceive('find')->once()->andReturn([]);
+    Http::fake([
+        'https://example.com' => Http::response('<html><head><title>'.str_repeat('Long title ', 8).'</title><meta name="description" content="'.str_repeat('Long description ', 12).'"></head><body><a href="#main">Skip to content</a><nav>Links</nav><main id="main">Content</main></body></html>'),
+        'https://example.com/robots.txt' => Http::response('User-agent: *'),
+        'https://example.com/sitemap.xml' => Http::response('<urlset></urlset>'),
+    ]);
+
+    $findings = collect(app(ProspectWebsiteAnalyzer::class)->analyze('https://example.com')['findings'])->keyBy('key');
+
+    expect($findings['skip_link']['category'])->toBe('Accessibility')
+        ->and($findings['skip_link']['severity'])->toBe('passed')
+        ->and($findings['page_title']['severity'])->toBe('passed')
+        ->and($findings['meta_description']['severity'])->toBe('passed');
+});
+
 it('accepts sitemap redirects to a successful WordPress sitemap index', function (string $auditType, int $status, string $location): void {
     Http::fake([
         'https://example.com' => Http::response('<html><body>Homepage</body></html>'),

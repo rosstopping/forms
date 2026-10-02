@@ -5,17 +5,6 @@
     $siteIssues = collect($report->checks)->whereIn('status', ['warning', 'failed']);
     $pagesWithIssues = $report->pages->filter(fn ($page) => collect($page->checks)->whereIn('status', ['warning', 'failed'])->isNotEmpty());
     $issueCount = $siteIssues->count() + $pagesWithIssues->sum(fn ($page) => collect($page->checks)->whereIn('status', ['warning', 'failed'])->count());
-    $pageFindingMessage = function ($page, array $check): string {
-        if ($check['status'] === 'warning' && $check['key'] === 'page_title' && Str::length((string) $page->title) > 65) {
-            return 'The title is '.Str::length($page->title).' characters long. Aim for 65 or fewer so it is less likely to be truncated in search results. Current title: '.$page->title;
-        }
-
-        if ($check['status'] === 'warning' && $check['key'] === 'meta_description' && Str::length((string) $page->meta_description) > 170) {
-            return 'The meta description is '.Str::length($page->meta_description).' characters long. Aim for 170 or fewer so it is less likely to be truncated in search results.';
-        }
-
-        return $check['message'];
-    };
 @endphp
 
 <main class="mx-auto max-w-5xl space-y-6">
@@ -168,7 +157,7 @@
                                     <a class="break-all text-xs font-medium text-blue-700 hover:underline" href="{{ $page->url }}" target="_blank" rel="noreferrer">{{ parse_url($page->url, PHP_URL_PATH) ?: '/' }}</a>
                                 </div>
                                 <h3 class="mt-3 font-semibold text-slate-900">{{ $check['label'] }}</h3>
-                                <p class="mt-1 text-sm leading-6 text-slate-600">{{ $pageFindingMessage($page, $check) }}</p>
+                                <p class="mt-1 text-sm leading-6 text-slate-600">{{ $check['message'] }}</p>
                             </article>
                         @endforeach
                     @endforeach

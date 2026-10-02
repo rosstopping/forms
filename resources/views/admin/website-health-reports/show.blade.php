@@ -246,16 +246,8 @@
                                 </dl>
                                 <div class="space-y-3 lg:col-span-2">
                                     @foreach ($page->checks as $check)
-                                        @php
-                                            $message = $check['message'];
-                                            if ($check['status'] === 'warning' && $check['key'] === 'page_title' && Str::length((string) $page->title) > 65) {
-                                                $message = 'The title is '.Str::length($page->title).' characters long. Aim for 65 or fewer so it is less likely to be truncated in search results. Current title: '.$page->title;
-                                            } elseif ($check['status'] === 'warning' && $check['key'] === 'meta_description' && Str::length((string) $page->meta_description) > 170) {
-                                                $message = 'The meta description is '.Str::length($page->meta_description).' characters long. Aim for 170 or fewer so it is less likely to be truncated in search results.';
-                                            }
-                                        @endphp
                                         <div class="flex items-start justify-between gap-3 text-sm">
-                                            <div><p class="font-medium text-slate-900">{{ $check['label'] }}</p><p class="text-slate-600">{{ $message }}</p></div>
+                                            <div><p class="font-medium text-slate-900">{{ $check['label'] }}</p><p class="text-slate-600">{{ $check['message'] }}</p></div>
                                             <span @class(['shrink-0 rounded-full px-2 py-0.5 text-xs font-medium capitalize', 'bg-emerald-100 text-emerald-800' => $check['status'] === 'passed', 'bg-amber-100 text-amber-800' => $check['status'] === 'warning', 'bg-red-100 text-red-800' => $check['status'] === 'failed'])>{{ $check['status'] }}</span>
                                         </div>
                                     @endforeach

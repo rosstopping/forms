@@ -154,7 +154,7 @@ it('gives healthy pages a one audit cooldown while rechecking pages with issues'
     Http::assertNotSent(fn ($request): bool => $request->url() === 'https://example.com/healthy');
 });
 
-it('explains why long search metadata is worth improving', function (): void {
+it('does not flag metadata solely for its length', function (): void {
     config()->set('forms.health_reports.max_pages', 1);
     config()->set('forms.health_reports.crawl_delay_ms', 0);
 
@@ -170,10 +170,8 @@ it('explains why long search metadata is worth improving', function (): void {
 
     $checks = collect(app(WebsiteCrawler::class)->crawl($website)[0]['checks'])->keyBy('key');
 
-    expect($checks['page_title']['status'])->toBe('warning')
-        ->and($checks['page_title']['message'])->toContain('characters long', 'Aim for 65 or fewer', 'truncated in search results')
-        ->and($checks['meta_description']['status'])->toBe('warning')
-        ->and($checks['meta_description']['message'])->toContain('characters long', 'Aim for 170 or fewer', 'truncated in search results');
+    expect($checks['page_title']['status'])->toBe('passed')
+        ->and($checks['meta_description']['status'])->toBe('passed');
 });
 
 it('records an empty successful page response without crashing the crawl', function (): void {

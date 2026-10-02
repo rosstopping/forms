@@ -110,7 +110,7 @@ class ProspectWebsiteAnalyzer
     protected function categoryFor(string $key): string
     {
         return match ($key) {
-            'language', 'viewport', 'image_alt_text' => 'Accessibility',
+            'language', 'viewport', 'image_alt_text', 'skip_link' => 'Accessibility',
             'structured_data' => 'Structured data',
             default => 'Search essentials',
         };
