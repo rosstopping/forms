@@ -404,13 +404,15 @@ test('campaigns open first when the selected Ads account has campaigns', functio
         ->assertSee('aria-current="page" >Campaigns', false)
         ->assertSee('Local search')
         ->assertDontSee('https://ads.google.com/aw/overview?campaignId=987654321', false)
-        ->assertSee('Review campaign')
-        ->assertSee('More actions')
+        ->assertSee('href="'.route('admin.google-ads.live-campaigns.show', [$website, '987654321']).'"', false)
+        ->assertDontSee('Review campaign')
+        ->assertDontSee('More actions')
+        ->assertDontSee('name="tracking_confirmed"', false)
         ->assertDontSee('How to test tracking')
         ->assertSee('Last 30 days')
         ->assertSee('Impressions')
         ->assertSee('Conversions')
-        ->assertSee('Enable')
+        ->assertDontSee('Enable campaign')
         ->assertDontSee('Search opportunities');
     expect(substr_count($response->getContent(), '>Impressions<'))->toBe(1);
     Http::assertSentCount(2);
@@ -511,7 +513,7 @@ test('enabling a campaign requires tracking confirmation and updates only the se
     $this->actingAs($owner)->patch($url, ['status' => 'ENABLED'])->assertSessionHasErrors('tracking_confirmed');
     Http::assertNothingSent();
     $this->actingAs($owner)->patch($url, ['status' => 'ENABLED', 'tracking_confirmed' => '1'])
-        ->assertRedirect(route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns']))
+        ->assertRedirect(route('admin.google-ads.live-campaigns.show', [$website, '987654321']))
         ->assertSessionHas('status', 'Campaign enabled in Google Ads.');
 
     Http::assertSentCount(2);
@@ -577,7 +579,7 @@ test('campaign controls reject stale status and users without website management
     $this->actingAs($viewer)->patch($statusUrl, ['status' => 'ENABLED', 'tracking_confirmed' => '1'])->assertForbidden();
     $this->actingAs($viewer)->delete($removeUrl, ['confirmation' => 'Local search'])->assertForbidden();
     $this->actingAs($owner)->patch($statusUrl, ['status' => 'ENABLED', 'tracking_confirmed' => '1'])
-        ->assertSessionHas('error', 'This campaign changed in Google Ads. Refresh the list before trying again.');
+        ->assertSessionHas('error', 'This campaign changed in Google Ads. Refresh the review page before trying again.');
 
     Http::assertSentCount(1);
     Http::assertNotSent(fn (ClientRequest $request): bool => str_ends_with($request->url(), '/campaigns:mutate'));
@@ -625,8 +627,10 @@ test('campaign details show targeting keywords and a responsive search ad previe
         ->assertSee('seo doncaster')
         ->assertSee('Local SEO | Better rankings | Get found')
         ->assertSee('Save budget')
-        ->assertSee('Save ad copy');
-    Http::assertSentCount(4);
+        ->assertSee('Save ad copy')
+        ->assertSee('Enable campaign')
+        ->assertSee('Remove campaign');
+    Http::assertSentCount(5);
 });
 
 test('campaign name budget and ad copy updates use account-scoped mutations', function (): void {

@@ -21,8 +21,8 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 use InvalidArgumentException;
@@ -106,7 +106,7 @@ class GoogleAdsController extends Controller
             }
         }
 
-        return view('admin.websites.google-ads', compact('website', 'connection', 'formDraft', 'oauthConfigured', 'tab', 'campaigns', 'visibleCampaigns', 'statusFilter', 'campaignCounts', 'campaignTotals', 'campaignPerformance', 'campaignError', 'availableAccounts', 'unavailableAccountCount', 'connectionError', 'conversionActions', 'conversionError', 'trackingRequests', 'canPrepareTracking', 'searchGaps', 'drafts'));
+        return view('admin.websites.google-ads', compact('website', 'connection', 'formDraft', 'oauthConfigured', 'tab', 'campaigns', 'visibleCampaigns', 'statusFilter', 'campaignCounts', 'campaignTotals', 'campaignError', 'availableAccounts', 'unavailableAccountCount', 'connectionError', 'conversionActions', 'conversionError', 'trackingRequests', 'canPrepareTracking', 'searchGaps', 'drafts'));
     }
 
     public function prepareTracking(StoreGoogleAdsTrackingRequest $request, Website $website): RedirectResponse
@@ -177,7 +177,14 @@ class GoogleAdsController extends Controller
                 ->with('error', 'Could not load this campaign from Google Ads. Try again shortly.');
         }
 
-        return view('admin.websites.google-ads-campaign', compact('website', 'connection', 'campaign', 'ads', 'keywords', 'proximities'));
+        $performance = null;
+        try {
+            $performance = $this->client->campaignPerformance($connection)[$campaignId] ?? null;
+        } catch (ConnectionException|RequestException|RuntimeException $exception) {
+            report($exception);
+        }
+
+        return view('admin.websites.google-ads-campaign', compact('website', 'connection', 'campaign', 'ads', 'keywords', 'proximities', 'performance'));
     }
 
     public function updateCampaignName(Request $request, Website $website, string $campaignId): RedirectResponse
@@ -376,24 +383,24 @@ class GoogleAdsController extends Controller
                     ->with('error', 'This campaign is no longer available in the selected Ads account.');
             }
             if ($campaign['status'] === $status) {
-                return Redirect::route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns'])
+                return Redirect::route('admin.google-ads.live-campaigns.show', [$website, $campaignId])
                     ->with('status', 'This campaign is already '.strtolower($status).'.');
             }
             if (($status === 'ENABLED' && $campaign['status'] !== 'PAUSED')
                 || ($status === 'PAUSED' && $campaign['status'] !== 'ENABLED')) {
-                return Redirect::route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns'])
-                    ->with('error', 'This campaign changed in Google Ads. Refresh the list before trying again.');
+                return Redirect::route('admin.google-ads.live-campaigns.show', [$website, $campaignId])
+                    ->with('error', 'This campaign changed in Google Ads. Refresh the review page before trying again.');
             }
 
             $this->client->updateCampaignStatus($connection, $campaignId, $status);
         } catch (ConnectionException|RequestException|RuntimeException $exception) {
             report($exception);
 
-            return Redirect::route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns'])
-                ->with('error', 'Google Ads did not confirm the status change. Refresh the campaign list before trying again.');
+            return Redirect::route('admin.google-ads.live-campaigns.show', [$website, $campaignId])
+                ->with('error', 'Google Ads did not confirm the status change. Refresh the review page before trying again.');
         }
 
-        return Redirect::route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns'])
+        return Redirect::route('admin.google-ads.live-campaigns.show', [$website, $campaignId])
             ->with('status', $status === 'ENABLED' ? 'Campaign enabled in Google Ads.' : 'Campaign paused in Google Ads.');
     }
 
@@ -412,7 +419,7 @@ class GoogleAdsController extends Controller
                     ->with('error', 'This campaign is no longer available in the selected Ads account.');
             }
             if (! hash_equals($campaign['name'], $data['confirmation'])) {
-                return Redirect::route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns'])
+                return Redirect::route('admin.google-ads.live-campaigns.show', [$website, $campaignId])
                     ->with('error', 'The campaign name did not match. Nothing was removed.');
             }
 
@@ -420,8 +427,8 @@ class GoogleAdsController extends Controller
         } catch (ConnectionException|RequestException|RuntimeException $exception) {
             report($exception);
 
-            return Redirect::route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns'])
-                ->with('error', 'Google Ads did not confirm removal. Refresh the campaign list before trying again.');
+            return Redirect::route('admin.google-ads.live-campaigns.show', [$website, $campaignId])
+                ->with('error', 'Google Ads did not confirm removal. Refresh the review page before trying again.');
         }
 
         return Redirect::route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns'])

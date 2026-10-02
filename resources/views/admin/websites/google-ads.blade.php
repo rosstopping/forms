@@ -204,49 +204,10 @@
                                 <article class="py-6 last:pb-0">
                                     <div class="flex flex-wrap items-start justify-between gap-4">
                                         <div class="min-w-0">
-                                            <h3 class="text-lg font-semibold text-slate-950">{{ $campaign['name'] }}</h3>
+                                            <h3 class="text-lg font-semibold text-slate-950"><a href="{{ route('admin.google-ads.live-campaigns.show', [$website, $campaign['id']]) }}" class="hover:text-teal-700 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700">{{ $campaign['name'] }}</a></h3>
                                             <p class="mt-1 text-base text-slate-600 sm:text-sm">{{ ucfirst(strtolower($campaign['type'])) }} · {{ $campaign['daily_budget_micros'] > 0 ? $connection->currency_code.' '.number_format($campaign['daily_budget_micros'] / 1000000, 2).' daily budget' : 'Budget unavailable' }} <span class="text-slate-400">· ID {{ $campaign['id'] }}</span></p>
                                         </div>
                                         <span class="shrink-0 rounded-full px-3 py-1 text-sm font-medium {{ $campaign['status'] === 'ENABLED' ? 'bg-emerald-50 text-emerald-800' : 'bg-amber-50 text-amber-900' }}">{{ ucfirst(strtolower($campaign['status'])) }}</span>
-                                    </div>
-                                    @if ($campaignCounts['all'] > 1)
-                                        <div class="@container mt-4 border-t border-slate-900/10 pt-4">
-                                            <dl class="grid grid-cols-2 gap-x-6 gap-y-3 @lg:grid-cols-4">
-                                                <div><dt class="truncate text-base font-medium text-slate-600 sm:text-sm">Impressions</dt><dd class="mt-1 font-semibold tabular-nums text-slate-950">{{ isset($campaignPerformance[$campaign['id']]) ? number_format($campaignPerformance[$campaign['id']]['impressions']) : '—' }}</dd></div>
-                                                <div><dt class="truncate text-base font-medium text-slate-600 sm:text-sm">Clicks</dt><dd class="mt-1 font-semibold tabular-nums text-slate-950">{{ isset($campaignPerformance[$campaign['id']]) ? number_format($campaignPerformance[$campaign['id']]['clicks']) : '—' }}</dd></div>
-                                                <div><dt class="truncate text-base font-medium text-slate-600 sm:text-sm">Spend</dt><dd class="mt-1 font-semibold tabular-nums text-slate-950">{{ isset($campaignPerformance[$campaign['id']]) ? $connection->currency_code.' '.number_format($campaignPerformance[$campaign['id']]['cost_micros'] / 1000000, 2) : '—' }}</dd></div>
-                                                <div><dt class="truncate text-base font-medium text-slate-600 sm:text-sm">Conversions</dt><dd class="mt-1 font-semibold tabular-nums text-slate-950">{{ isset($campaignPerformance[$campaign['id']]) ? number_format($campaignPerformance[$campaign['id']]['conversions'], 1) : '—' }}</dd></div>
-                                            </dl>
-                                        </div>
-                                    @endif
-                                    <div class="mt-5 flex flex-wrap items-center gap-3">
-                                        <a href="{{ route('admin.google-ads.live-campaigns.show', [$website, $campaign['id']]) }}" class="ui-button ui-button-secondary ui-button-small">Review campaign</a>
-                                        @if ($campaign['status'] === 'PAUSED')
-                                            <form method="POST" action="{{ route('admin.google-ads.live-campaigns.status', [$website, $campaign['id']]) }}" class="flex basis-full flex-wrap items-center gap-3 sm:basis-auto">
-                                                @csrf
-                                                @method('PATCH')
-                                                <input type="hidden" name="status" value="ENABLED">
-                                                <label class="flex max-w-sm items-start gap-2 text-base text-slate-600 sm:text-sm"><input type="checkbox" name="tracking_confirmed" value="1" class="mt-1 size-5 shrink-0 accent-teal-700 sm:mt-0.5 sm:size-4" required><span>Tracking, ad and budget checked. Enabling can start spend.</span></label>
-                                                <button type="submit" class="ui-button ui-button-secondary ui-button-small">Enable</button>
-                                            </form>
-                                        @elseif ($campaign['status'] === 'ENABLED')
-                                            <form method="POST" action="{{ route('admin.google-ads.live-campaigns.status', [$website, $campaign['id']]) }}">
-                                                @csrf
-                                                @method('PATCH')
-                                                <input type="hidden" name="status" value="PAUSED">
-                                                <button type="submit" class="ui-button ui-button-secondary ui-button-small">Pause</button>
-                                            </form>
-                                        @endif
-                                        <details class="basis-full text-sm sm:basis-auto">
-                                            <summary class="w-fit cursor-pointer py-2 text-base font-medium text-slate-500 hover:text-slate-900 sm:text-sm">More actions</summary>
-                                            <form method="POST" action="{{ route('admin.google-ads.live-campaigns.destroy', [$website, $campaign['id']]) }}" class="mt-2 max-w-xs space-y-3 rounded-xl bg-slate-50 p-4">
-                                                @csrf
-                                                @method('DELETE')
-                                                <p class="text-base text-slate-600 sm:text-sm">To remove this campaign permanently, type its name.</p>
-                                                <input name="confirmation" class="ui-input w-full" aria-label="Confirm campaign name" placeholder="{{ $campaign['name'] }}" required>
-                                                <button type="submit" class="ui-button ui-button-danger ui-button-small">Remove campaign</button>
-                                            </form>
-                                        </details>
                                     </div>
                                 </article>
                             @endforeach

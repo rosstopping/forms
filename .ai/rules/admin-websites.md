@@ -3,6 +3,7 @@ paths:
   - 'resources/views/admin/websites/**,routes/web.php'
   - resources/views/admin/websites/show.blade.php
   - resources/views/admin/websites/google-ads.blade.php
+  - 'resources/views/admin/websites/google-ads*.blade.php'
 ---
 
 # Admin Websites
@@ -15,3 +16,6 @@ Render the website data assistant as a fixed bottom-right chat widget only on th
 
 ## Keep campaigns list focused on review
 The Campaigns tab shows one account-wide 30-day summary, then status-filtered campaign rows. Avoid repeating the same performance figures within a single campaign, and use the Create campaign tab instead of a second create button. Keep the external Google Ads link on the individual campaign review page only; group status controls and tuck removal under More actions.
+
+## Keep campaign rows minimal
+The Campaigns tab has one account-wide performance summary and status-filtered rows. Each campaign title links to its review page; per-campaign metrics and enable, pause, and removal controls belong on that review page. Keep the Google Ads external link there too. This supersedes the earlier list-level controls guidance.

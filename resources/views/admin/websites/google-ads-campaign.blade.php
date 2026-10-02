@@ -18,6 +18,42 @@
         @if (session('error')) <p role="alert" class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">{{ session('error') }}</p> @endif
         @if ($errors->any()) <p role="alert" class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">Check the highlighted fields and try again.</p> @endif
 
+        <section class="ui-panel p-5 sm:p-6">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+                <div><h2 class="text-lg font-semibold text-slate-950">Last 30 days</h2><p class="mt-1 text-sm text-slate-600">Performance for this campaign</p></div>
+                @if ($campaign['status'] === 'ENABLED')
+                    <form method="POST" action="{{ route('admin.google-ads.live-campaigns.status', [$website, $campaign['id']]) }}">
+                        @csrf @method('PATCH')
+                        <input type="hidden" name="status" value="PAUSED">
+                        <button type="submit" class="ui-button ui-button-secondary ui-button-small">Pause campaign</button>
+                    </form>
+                @endif
+            </div>
+            <dl class="mt-5 grid grid-cols-2 gap-5 border-y border-slate-900/10 py-5 sm:grid-cols-4">
+                <div><dt class="text-sm text-slate-600">Impressions</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-slate-950">{{ $performance === null ? '—' : number_format($performance['impressions']) }}</dd></div>
+                <div><dt class="text-sm text-slate-600">Clicks</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-slate-950">{{ $performance === null ? '—' : number_format($performance['clicks']) }}</dd></div>
+                <div><dt class="text-sm text-slate-600">Spend</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-slate-950">{{ $performance === null ? '—' : $connection->currency_code.' '.number_format($performance['cost_micros'] / 1000000, 2) }}</dd></div>
+                <div><dt class="text-sm text-slate-600">Conversions</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-slate-950">{{ $performance === null ? '—' : number_format($performance['conversions'], 1) }}</dd></div>
+            </dl>
+            @if ($campaign['status'] === 'PAUSED')
+                <form method="POST" action="{{ route('admin.google-ads.live-campaigns.status', [$website, $campaign['id']]) }}" class="mt-5 flex flex-wrap items-center gap-4">
+                    @csrf @method('PATCH')
+                    <input type="hidden" name="status" value="ENABLED">
+                    <label class="flex max-w-lg items-start gap-2 text-sm text-slate-600"><input type="checkbox" name="tracking_confirmed" value="1" class="mt-0.5 size-4 shrink-0 accent-teal-700" required><span>Tracking, ad and budget checked. Enabling can start spend.</span></label>
+                    <button type="submit" class="ui-button ui-button-primary ui-button-small">Enable campaign</button>
+                </form>
+            @endif
+            <details class="mt-5 border-t border-slate-900/10 pt-4">
+                <summary class="w-fit cursor-pointer text-sm font-medium text-slate-600 hover:text-slate-900">Remove campaign</summary>
+                <form method="POST" action="{{ route('admin.google-ads.live-campaigns.destroy', [$website, $campaign['id']]) }}" class="mt-4 max-w-sm space-y-3">
+                    @csrf @method('DELETE')
+                    <label for="remove_campaign_confirmation" class="ui-label">Type “{{ $campaign['name'] }}” to remove this campaign permanently.</label>
+                    <input id="remove_campaign_confirmation" name="confirmation" class="ui-input w-full" autocomplete="off" required>
+                    <button type="submit" class="ui-button ui-button-danger ui-button-small">Remove campaign</button>
+                </form>
+            </details>
+        </section>
+
         <div class="grid gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(18rem,1fr)]">
             <div class="space-y-6">
                 <section class="ui-panel p-5 sm:p-6">
