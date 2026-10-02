@@ -431,7 +431,7 @@ test('conversion setup explains how to verify a website lead action', function (
         ->assertSee('Audit submitted')
         ->assertSee('Website tag')
         ->assertSee('Primary')
-        ->assertSee('cannot yet verify that a website tag fired');
+        ->assertSee('cannot confirm a live conversion until you test it');
 
     Http::assertSent(fn (ClientRequest $request): bool => str_contains((string) ($request['query'] ?? ''), 'conversion_action.type'));
 });
@@ -949,6 +949,8 @@ test('Google Ads is hidden and all website routes require the owners active Comp
     $this->actingAs($owner)->post(route('admin.google-ads.account', $website), ['customer_id' => '1234567890'])
         ->assertRedirect(route('admin.billing.index'));
     $this->actingAs($owner)->post(route('admin.google-ads.campaigns.store', $website), [])
+        ->assertRedirect(route('admin.billing.index'));
+    $this->actingAs($owner)->post(route('admin.google-ads.tracking.store', $website), [])
         ->assertRedirect(route('admin.billing.index'));
     $this->actingAs($owner)->post(route('admin.google-ads.campaign-draft.save', $website), [])
         ->assertRedirect(route('admin.billing.index'));

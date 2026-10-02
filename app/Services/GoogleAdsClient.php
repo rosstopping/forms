@@ -12,6 +12,8 @@ use RuntimeException;
 
 class GoogleAdsClient
 {
+    public const LEAD_CONVERSION_CATEGORIES = ['SUBMIT_LEAD_FORM', 'BOOK_APPOINTMENT', 'REQUEST_QUOTE', 'CONTACT'];
+
     public function __construct(protected GoogleAdsOAuthClient $oauth) {}
 
     /** @return list<string> */
@@ -205,9 +207,10 @@ class GoogleAdsClient
             return null;
         }
 
-        $rows = $this->searchRows($connection, "SELECT conversion_action.id, conversion_action.name, conversion_action.type, conversion_action.tag_snippets FROM conversion_action WHERE conversion_action.id = {$actionId} AND conversion_action.status = 'ENABLED' LIMIT 1");
+        $rows = $this->searchRows($connection, "SELECT conversion_action.id, conversion_action.name, conversion_action.category, conversion_action.type, conversion_action.tag_snippets FROM conversion_action WHERE conversion_action.id = {$actionId} AND conversion_action.status = 'ENABLED' LIMIT 1");
         $action = data_get($rows, '0.conversionAction');
-        if (! is_array($action) || (string) ($action['id'] ?? '') !== $actionId || ($action['type'] ?? null) !== 'WEBPAGE') {
+        if (! is_array($action) || (string) ($action['id'] ?? '') !== $actionId || ($action['type'] ?? null) !== 'WEBPAGE'
+            || ! in_array($action['category'] ?? null, self::LEAD_CONVERSION_CATEGORIES, true)) {
             return null;
         }
 
