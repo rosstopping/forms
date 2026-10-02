@@ -34,7 +34,7 @@
 @section('content')
     <section class="bg-white px-3 pt-1 pb-6 text-[#151618] sm:px-6 sm:pt-2 sm:pb-8" aria-labelledby="hero-spotlight">
         <div class="mx-auto grid max-w-7xl justify-items-center gap-6 rounded-3xl bg-[#faf7f4] px-5 py-10 text-center sm:gap-8 sm:px-10 sm:py-12 lg:py-16">
-            <p class="flex max-w-full items-center gap-2.5 rounded-full bg-[#fafaf9] py-2 pr-4 pl-2 text-base font-medium text-[#151618] ring-1 ring-black/8"><span class="size-6 shrink-0 rounded-full border-[6px] border-[#ff5035] bg-white" aria-hidden="true"></span>We’ll get you more customers.</p>
+            <p class="flex max-w-full items-center gap-2.5 rounded-full bg-[#fafaf9] py-2 pr-4 pl-2 text-sm md:text-base font-medium text-[#151618] ring-1 ring-black/8"><span class="size-5 md:size-6 shrink-0 rounded-full border-[5px] md:border-[6px] border-[#ff5035] bg-white" aria-hidden="true"></span>We’ll get you more customers.</p>
             <h1 id="hero-spotlight" class="max-w-[19ch] text-4xl font-medium leading-[1.12] tracking-tight text-balance sm:text-6xl lg:text-7xl">Turn more searches into <span class="underline decoration-[#d63d24]/50 decoration-2 underline-offset-8 sm:decoration-4">your next customer.</span></h1>
             <p class="w-full max-w-3xl text-pretty text-base text-[#62666d] sm:text-xl">Your customers search Google, ask ChatGPT and read the sites that shape AI answers. We find the searches that count and help you get found.</p>
             <div class="grid w-full max-w-xl justify-items-center gap-2">
