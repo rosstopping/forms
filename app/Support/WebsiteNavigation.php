@@ -25,6 +25,10 @@ class WebsiteNavigation
 
     public static function sectionForRequest(Request $request): string
     {
+        if ($request->routeIs('admin.google-ads.*')) {
+            return 'google-ads';
+        }
+
         $routeSection = $request->route('section');
 
         if (is_string($routeSection) && in_array($routeSection, self::SECTIONS, true)) {
@@ -39,7 +43,7 @@ class WebsiteNavigation
 
         return match (true) {
             $request->routeIs('admin.website-health-reports.*', 'admin.website-health-report-pages.*') => 'health',
-            $request->routeIs('admin.search-console.*', 'admin.search-opportunities.*', 'admin.google-ads.*') => 'search',
+            $request->routeIs('admin.search-console.*', 'admin.search-opportunities.*') => 'search',
             $request->routeIs('admin.ai-visibility.*') => 'ai-visibility',
             $request->routeIs('admin.seo-*') => 'seo',
             $request->routeIs('admin.forms.*') => 'forms',

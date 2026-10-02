@@ -53,6 +53,20 @@ test('missing local OAuth credentials explain why connect returns to the workspa
         ->assertSee('Google Ads connection is not configured here.');
 });
 
+test('Google Ads has its own active navigation item and no Search performance breadcrumb', function (): void {
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
+    $website = Website::factory()->for($owner, 'owner')->create();
+
+    $response = $this->actingAs($owner)->get(route('admin.google-ads.index', ['website' => $website, 'tab' => 'search']))
+        ->assertSuccessful()
+        ->assertDontSee('← Search performance');
+
+    preg_match('/<a[^>]*class="([^"]*)"[^>]*>Search performance<\/a>/', $response->getContent(), $searchLink);
+    preg_match('/<a[^>]*class="([^"]*)"[^>]*>Google Ads<\/a>/', $response->getContent(), $adsLink);
+    expect($searchLink[1] ?? '')->not->toContain('bg-white/10')
+        ->and($adsLink[1] ?? '')->toContain('bg-white/10');
+});
+
 test('a website manager can authorize Google Ads for only that website', function (): void {
     $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
     $website = Website::factory()->for($owner, 'owner')->create();
@@ -256,6 +270,7 @@ test('a reviewed campaign is validated then created paused exactly once', functi
         'request_key' => (string) Str::uuid(),
         'name' => 'Sitewell | Doncaster',
         'daily_budget' => '20',
+        'max_cpc' => '3.25',
         'city_name' => 'Doncaster',
         'radius_miles' => 20,
         'final_url' => 'https://example.com/get-started',
@@ -275,16 +290,58 @@ test('a reviewed campaign is validated then created paused exactly once', functi
     $draft->refresh();
     expect($draft->status)->toBe(GoogleAdsCampaignDraft::STATUS_CREATED)
         ->and($draft->daily_budget_micros)->toBe(20000000)
+        ->and($draft->max_cpc_micros)->toBe(3250000)
         ->and($draft->campaign_resource_name)->toBe('customers/1234567890/campaigns/987');
     Http::assertSentCount(2);
     Http::assertSent(fn ($request): bool => $request['validateOnly'] === true
         && $request['mutateOperations'][1]['campaignOperation']['create']['status'] === 'PAUSED'
+        && $request['mutateOperations'][3]['adGroupOperation']['create']['cpcBidMicros'] === '3250000'
         && $request['mutateOperations'][2]['campaignCriterionOperation']['create']['proximity']['radius'] === 20);
 
     $this->actingAs($owner)->post(route('admin.google-ads.campaigns.store', $website), $data)
         ->assertRedirect(route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns']));
     expect(GoogleAdsCampaignDraft::query()->count())->toBe(1);
     Http::assertSentCount(2);
+});
+
+test('a new campaign requires a deliberate max CPC above one penny', function (): void {
+    Queue::fake();
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $website->domains()->create(['domain' => 'example.com', 'is_primary' => true]);
+    GoogleAdsConnection::factory()->for($website)->create(['customer_id' => '1234567890', 'currency_code' => 'GBP']);
+
+    $campaign = [
+        'request_key' => (string) Str::uuid(),
+        'name' => 'Local search',
+        'daily_budget' => '20',
+        'city_name' => 'Doncaster',
+        'radius_miles' => 20,
+        'final_url' => 'https://example.com/',
+        'keywords_text' => 'local seo services',
+        'headlines' => ['Local SEO', 'Talk to Our Team', 'Get a Free Audit'],
+        'descriptions' => ['Find customers in your area.', 'See how your website could improve.'],
+    ];
+
+    $this->actingAs($owner)->post(route('admin.google-ads.campaigns.store', $website), $campaign)
+        ->assertSessionHasErrors('max_cpc');
+    $this->actingAs($owner)->post(route('admin.google-ads.campaigns.store', $website), [...$campaign, 'max_cpc' => '0.01'])
+        ->assertSessionHasErrors('max_cpc');
+
+    expect(GoogleAdsCampaignDraft::query()->count())->toBe(0);
+    Queue::assertNothingPushed();
+});
+
+test('older campaign requests without a max CPC fail before contacting Google Ads', function (): void {
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    $connection = GoogleAdsConnection::factory()->for($website)->create(['customer_id' => '1234567890']);
+    $draft = GoogleAdsCampaignDraft::factory()->for($website)->for($connection, 'connection')->create(['max_cpc_micros' => null]);
+    Http::fake();
+
+    expect(fn (): array => app(GoogleAdsCampaignCreator::class)->operations($draft))
+        ->toThrow(RuntimeException::class, 'Set a max CPC bid before creating this campaign.');
+    Http::assertNothingSent();
 });
 
 test('a partial Google Ads form draft saves and restores AI copy without creating a campaign', function (): void {
@@ -300,6 +357,7 @@ test('a partial Google Ads form draft saves and restores AI copy without creatin
     $this->actingAs($owner)->post(route('admin.google-ads.campaign-draft.save', $website), [
         'name' => 'Local search campaign',
         'daily_budget' => '20',
+        'max_cpc' => '3.25',
         'city_name' => 'Doncaster',
         'radius_miles' => '20',
         'final_url' => 'https://example.com/',
@@ -307,12 +365,14 @@ test('a partial Google Ads form draft saves and restores AI copy without creatin
         'keywords_text' => "local seo agency\nseo doncaster",
         'headlines' => ['AI headline one', 'AI headline two', ''],
         'descriptions' => ['AI description one', ''],
+        'max_cpc' => '3.25',
     ])->assertRedirect(route('admin.google-ads.index', ['website' => $website, 'tab' => 'create']))
         ->assertSessionHas('status', 'Campaign draft saved. You can return and finish it later.');
 
     expect($connection->fresh()->campaign_form_draft)->toMatchArray([
         'name' => 'Local search campaign',
         'keywords_text' => "local seo agency\nseo doncaster",
+        'max_cpc' => '3.25',
         'headlines' => ['AI headline one', 'AI headline two', ''],
         'descriptions' => ['AI description one', ''],
     ]);
@@ -326,6 +386,7 @@ test('a partial Google Ads form draft saves and restores AI copy without creatin
         ->assertSee('AI headline one')
         ->assertSee('AI description one')
         ->assertSee('local seo agency')
+        ->assertSee('3.25')
         ->assertSee('Save draft');
 });
 
@@ -579,7 +640,7 @@ test('a campaign cannot send visitors to an unverified or different website', fu
 
     $this->actingAs($owner)->post(route('admin.google-ads.campaigns.store', $website), [
         'request_key' => (string) Str::uuid(),
-        'name' => 'Wrong domain', 'daily_budget' => 20, 'city_name' => 'Doncaster', 'radius_miles' => 20,
+        'name' => 'Wrong domain', 'daily_budget' => 20, 'max_cpc' => '3.25', 'city_name' => 'Doncaster', 'radius_miles' => 20,
         'final_url' => 'https://another.example.com/', 'keywords_text' => 'local seo services',
         'headlines' => ['Headline one', 'Headline two', 'Headline three'],
         'descriptions' => ['A useful first description.', 'A useful second description.'],
@@ -599,7 +660,7 @@ test('an uncertain Ads response cannot trigger a second campaign mutation', func
 
     $data = [
         'request_key' => (string) Str::uuid(),
-        'name' => 'Example search', 'daily_budget' => 20, 'city_name' => 'Doncaster', 'radius_miles' => 20,
+        'name' => 'Example search', 'daily_budget' => 20, 'max_cpc' => '3.25', 'city_name' => 'Doncaster', 'radius_miles' => 20,
         'final_url' => 'https://example.com/', 'keywords_text' => 'local seo services',
         'headlines' => ['Headline one', 'Headline two', 'Headline three'],
         'descriptions' => ['A useful first description.', 'A useful second description.'],
@@ -705,6 +766,7 @@ test('an old unconfirmed request can be cleared only after a fresh no-match chec
         'request_key' => (string) Str::uuid(),
         'name' => $draft->name,
         'daily_budget' => 20,
+        'max_cpc' => '3.25',
         'city_name' => 'Doncaster',
         'radius_miles' => 20,
         'final_url' => 'https://example.com/',
@@ -780,7 +842,7 @@ test('a Google Ads timeout fails safely without a 500 or a second mutation', fun
 
     $data = [
         'request_key' => (string) Str::uuid(),
-        'name' => 'Example search', 'daily_budget' => 20, 'city_name' => 'Doncaster', 'radius_miles' => 20,
+        'name' => 'Example search', 'daily_budget' => 20, 'max_cpc' => '3.25', 'city_name' => 'Doncaster', 'radius_miles' => 20,
         'final_url' => 'https://example.com/', 'keywords_text' => 'local seo services',
         'headlines' => ['Headline one', 'Headline two', 'Headline three'],
         'descriptions' => ['A useful first description.', 'A useful second description.'],

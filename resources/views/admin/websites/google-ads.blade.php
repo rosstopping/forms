@@ -3,8 +3,7 @@
 @section('content')
     <div class="mx-auto max-w-4xl space-y-6">
         <header>
-            <a href="{{ \App\Support\WebsiteNavigation::routeFor($website, 'search') }}" class="text-sm font-medium text-teal-700 hover:text-teal-900">← Search performance</a>
-            <h1 class="mt-3 text-3xl font-semibold tracking-tight text-slate-950">Google Ads</h1>
+            <h1 class="text-3xl font-semibold tracking-tight text-slate-950">Google Ads</h1>
             <p class="mt-2 text-slate-600">{{ $connection?->customer_id ? ($connection->customer_name ?: 'Ads account').' · '.$connection->customer_id : 'Connect an Ads account for '.$website->name.'.' }}</p>
         </header>
 
@@ -115,6 +114,7 @@
                     <div class="grid gap-4 sm:grid-cols-2">
                         <div><label for="ad_name" class="ui-label">Campaign name</label><input id="ad_name" name="name" class="ui-input mt-1 w-full" maxlength="120" value="{{ old('name', $formDraft['name'] ?? $website->name.' | Local Search') }}" required>@error('name') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror</div>
                         <div><label for="ad_budget" class="ui-label">Average daily budget ({{ $connection->currency_code }})</label><input id="ad_budget" name="daily_budget" class="ui-input mt-1 w-full" type="number" min="1" max="1000" step="0.01" value="{{ old('daily_budget', $formDraft['daily_budget'] ?? '20') }}" required><p class="mt-1 text-xs text-slate-500">Google can spend up to twice this on a day, within its monthly limit.</p>@error('daily_budget') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror</div>
+                        <div><label for="ad_max_cpc" class="ui-label">Max CPC bid ({{ $connection->currency_code }})</label><input id="ad_max_cpc" name="max_cpc" class="ui-input mt-1 w-full" type="number" min="0.02" max="1000" step="0.01" placeholder="e.g. 3.00" value="{{ old('max_cpc', $formDraft['max_cpc'] ?? '') }}" required><p class="mt-1 text-xs text-slate-500">The most you are willing to bid for one click. Set this separately from the daily budget.</p>@error('max_cpc') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror</div>
                         <div><label for="ad_city" class="ui-label">Target city</label><input id="ad_city" name="city_name" class="ui-input mt-1 w-full" value="{{ old('city_name', $formDraft['city_name'] ?? 'Doncaster') }}" required>@error('city_name') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror</div>
                         <div><label for="ad_radius" class="ui-label">Radius (miles)</label><input id="ad_radius" name="radius_miles" class="ui-input mt-1 w-full" type="number" min="1" max="50" value="{{ old('radius_miles', $formDraft['radius_miles'] ?? '20') }}" required>@error('radius_miles') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror</div>
                     </div>

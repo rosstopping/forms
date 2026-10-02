@@ -833,7 +833,11 @@ test('search console reporting returns totals and top queries and pages', functi
     ]);
     Http::fakeSequence()
         ->push(['rows' => [['clicks' => 125, 'impressions' => 2500, 'ctr' => 0.05, 'position' => 6.4]]])
-        ->push(['rows' => [['keys' => ['example services'], 'clicks' => 40, 'impressions' => 500, 'ctr' => 0.08, 'position' => 3.2]]])
+        ->push(['rows' => [
+            ['keys' => ['low-volume query'], 'clicks' => 0, 'impressions' => 1, 'ctr' => 0, 'position' => 5.7],
+            ['keys' => ['more visible query'], 'clicks' => 0, 'impressions' => 12, 'ctr' => 0, 'position' => 18.0],
+            ['keys' => ['example services'], 'clicks' => 40, 'impressions' => 500, 'ctr' => 0.08, 'position' => 3.2],
+        ]])
         ->push(['rows' => [['keys' => ['https://example.com/services'], 'clicks' => 40, 'impressions' => 500, 'ctr' => 0.08, 'position' => 3.2]]])
         ->push(['rows' => [['keys' => ['example services', 'https://example.com/services'], 'clicks' => 40, 'impressions' => 500, 'ctr' => 0.08, 'position' => 3.2]]]);
 
@@ -842,11 +846,13 @@ test('search console reporting returns totals and top queries and pages', functi
     expect($report['totals'])->toMatchArray(['clicks' => 125.0, 'impressions' => 2500.0, 'ctr' => 0.05, 'position' => 6.4])
         ->and($report['queries'][0]['query'])->toBe('example services')
         ->and($report['queries'][0]['position'])->toBe(3.2)
+        ->and($report['queries'][1]['query'])->toBe('more visible query')
+        ->and($report['queries'][2]['impressions'])->toBe(1.0)
         ->and($report['pages'][0]['page'])->toBe('https://example.com/services')
         ->and($report['pages'][0]['position'])->toBe(3.2);
 
     Http::assertSent(fn ($request): bool => $request['dimensions'] === ['query']
-        && $request['rowLimit'] === 10
+        && $request['rowLimit'] === 250
         && $request['startRow'] === 0);
 
     $queryPages = app(SearchConsoleClient::class)->queryPagePerformance($connection, 100, 200);

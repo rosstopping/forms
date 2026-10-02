@@ -31,3 +31,6 @@ Campaigns are created paused. Before enabling, pausing, or removing, fetch the c
 
 ## Edit live Ads from fresh account data
 Read live campaign, ad, and budget values from the website's selected Ads customer before editing. Only change an unshared DAILY campaign budget; shared budgets can affect other campaigns. Keep ad text edits scoped to the current responsive search ad, preserving pinned assets and rejecting stale forms.
+
+## Treat Search Console positions as sampled observations
+Dashboard query summaries must show impressions alongside clicks and average position. Search Console returns rows by clicks with arbitrary zero-click ties, so fetch a bounded wider sample and order ties by impressions before showing ten. Label it a sample; never present a low-impression average position as a live or guaranteed rank.

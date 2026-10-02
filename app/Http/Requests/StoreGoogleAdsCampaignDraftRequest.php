@@ -22,6 +22,7 @@ class StoreGoogleAdsCampaignDraftRequest extends FormRequest
             'request_key' => ['required', 'uuid'],
             'name' => ['required', 'string', 'max:120'],
             'daily_budget' => ['required', 'numeric', 'min:1', 'max:1000'],
+            'max_cpc' => ['required', 'numeric', 'min:0.02', 'max:1000', 'decimal:0,2'],
             'city_name' => ['required', 'string', 'max:80'],
             'radius_miles' => ['required', 'integer', 'between:1,50'],
             'final_url' => ['required', 'url:https', 'max:2048', function (string $attribute, mixed $value, \Closure $fail): void {

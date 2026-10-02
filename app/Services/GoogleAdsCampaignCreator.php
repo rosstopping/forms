@@ -48,6 +48,10 @@ class GoogleAdsCampaignCreator
     /** @return list<array<string, mixed>> */
     public function operations(GoogleAdsCampaignDraft $draft): array
     {
+        if (! $draft->max_cpc_micros || $draft->max_cpc_micros < 20000) {
+            throw new RuntimeException('Set a max CPC bid before creating this campaign.');
+        }
+
         $customer = $draft->customer_id;
         $budget = "customers/{$customer}/campaignBudgets/-1";
         $campaign = "customers/{$customer}/campaigns/-2";
@@ -88,6 +92,7 @@ class GoogleAdsCampaignCreator
                 'resourceName' => $adGroup,
                 'name' => 'Search opportunities',
                 'campaign' => $campaign,
+                'cpcBidMicros' => (string) $draft->max_cpc_micros,
                 'type' => 'SEARCH_STANDARD',
                 'status' => 'ENABLED',
             ]]],

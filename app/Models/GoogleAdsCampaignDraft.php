@@ -20,13 +20,13 @@ class GoogleAdsCampaignDraft extends Model
     /** @use HasFactory<GoogleAdsCampaignDraftFactory> */
     use HasFactory;
 
-    protected $fillable = ['website_id', 'google_ads_connection_id', 'created_by', 'request_key', 'customer_id', 'name', 'daily_budget_micros', 'city_name', 'country_code', 'radius_miles', 'final_url', 'keywords', 'headlines', 'descriptions', 'status', 'campaign_resource_name', 'error'];
+    protected $fillable = ['website_id', 'google_ads_connection_id', 'created_by', 'request_key', 'customer_id', 'name', 'daily_budget_micros', 'max_cpc_micros', 'city_name', 'country_code', 'radius_miles', 'final_url', 'keywords', 'headlines', 'descriptions', 'status', 'campaign_resource_name', 'error'];
 
     protected $attributes = ['status' => self::STATUS_PENDING];
 
     protected function casts(): array
     {
-        return ['keywords' => 'array', 'headlines' => 'array', 'descriptions' => 'array', 'daily_budget_micros' => 'integer', 'radius_miles' => 'integer'];
+        return ['keywords' => 'array', 'headlines' => 'array', 'descriptions' => 'array', 'daily_budget_micros' => 'integer', 'max_cpc_micros' => 'integer', 'radius_miles' => 'integer'];
     }
 
     public function website(): BelongsTo

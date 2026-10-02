@@ -89,7 +89,9 @@ class SearchConsoleClient
     public function report(SearchConsoleConnection $connection): array
     {
         $totals = $this->formatRow($this->performanceRows($connection, [], 1)[0] ?? []);
-        $queries = $this->queryPerformance($connection, 10);
+        $queries = collect($this->queryPerformance($connection, 250))
+            ->sort(fn (array $first, array $second): int => ($second['clicks'] <=> $first['clicks']) ?: ($second['impressions'] <=> $first['impressions']))
+            ->take(10)->values()->all();
         $pages = $this->pagePerformance($connection, 10);
 
         return [

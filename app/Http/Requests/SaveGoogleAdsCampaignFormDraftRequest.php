@@ -20,6 +20,7 @@ class SaveGoogleAdsCampaignFormDraftRequest extends FormRequest
         return [
             'name' => ['nullable', 'string', 'max:120'],
             'daily_budget' => ['nullable', 'string', 'max:20'],
+            'max_cpc' => ['nullable', 'string', 'max:20'],
             'city_name' => ['nullable', 'string', 'max:80'],
             'radius_miles' => ['nullable', 'string', 'max:20'],
             'final_url' => ['nullable', 'string', 'max:2048'],

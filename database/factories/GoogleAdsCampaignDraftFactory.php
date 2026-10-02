@@ -27,6 +27,7 @@ class GoogleAdsCampaignDraftFactory extends Factory
             'customer_id' => '1234567890',
             'name' => 'Example search campaign',
             'daily_budget_micros' => 10000000,
+            'max_cpc_micros' => 2000000,
             'city_name' => 'Doncaster',
             'country_code' => 'GB',
             'radius_miles' => 20,

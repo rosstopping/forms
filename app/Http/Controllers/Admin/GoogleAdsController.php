@@ -389,6 +389,7 @@ class GoogleAdsController extends Controller
             'customer_id' => $connection->customer_id,
             'name' => $data['name'],
             'daily_budget_micros' => (int) round((float) $data['daily_budget'] * 1000000),
+            'max_cpc_micros' => (int) round((float) $data['max_cpc'] * 1000000),
             'city_name' => $data['city_name'],
             'country_code' => 'GB',
             'radius_miles' => $data['radius_miles'],
@@ -414,7 +415,7 @@ class GoogleAdsController extends Controller
 
         $data = $request->validated();
         $formDraft = [];
-        foreach (['name', 'daily_budget', 'city_name', 'radius_miles', 'final_url', 'campaign_brief', 'keywords_text'] as $field) {
+        foreach (['name', 'daily_budget', 'max_cpc', 'city_name', 'radius_miles', 'final_url', 'campaign_brief', 'keywords_text'] as $field) {
             $formDraft[$field] = (string) ($data[$field] ?? '');
         }
         foreach (['headlines' => 3, 'descriptions' => 2] as $field => $count) {
