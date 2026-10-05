@@ -32,7 +32,7 @@ class ContentRequestPixelOptimisationGenerator
         }
 
         if (app(SeoImpactTracker::class)->requestIsProtected($contentRequest)) {
-            $contentRequest->update(['pixel_error' => 'These pages or search terms are being measured. Review their SEO impact before preparing more changes.']);
+            $contentRequest->update(['pixel_error' => 'These pages changed within the last 14 days. Wait until their page cooldown expires.']);
 
             return 0;
         }

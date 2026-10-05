@@ -64,11 +64,9 @@ class SeoImpactTracker
     /** @return Collection<int, string> */
     public function protectedKeys(Website $website): Collection
     {
-        return SeoImpact::where('website_id', $website->id)->whereIn('status', ['measuring', 'review_required'])
-            ->get(['target_urls', 'target_queries', 'control_url'])->flatMap(fn (SeoImpact $impact): array => [
-                ...array_map(fn (string $url): string => $this->urlKey($url), [...$impact->target_urls, ...($impact->control_url ? [$impact->control_url] : [])]),
-                ...array_map(fn (string $term): string => 'term:'.mb_strtolower(trim($term)), $impact->target_queries),
-            ])->filter()->unique()->values();
+        return SeoImpact::where('website_id', $website->id)->where('live_at', '>', now()->subDays(14))
+            ->get(['target_urls'])->flatMap(fn (SeoImpact $impact): array => array_map(fn (string $url): string => $this->urlKey($url), $impact->target_urls)
+            )->filter()->unique()->values();
     }
 
     public function urlKey(string $url): string

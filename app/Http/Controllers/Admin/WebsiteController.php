@@ -497,7 +497,13 @@ class WebsiteController extends Controller
     {
         abort_unless($request->user()?->isAdmin(), 403);
 
-        $website->delete();
+        DB::transaction(function () use ($website): void {
+            CopilotSdkTestRun::query()
+                ->whereIn('website_repository_id', $website->repository()->select('id'))
+                ->delete();
+
+            $website->delete();
+        });
 
         return Redirect::route('admin.websites.index')->with('status', 'Website deleted.');
     }

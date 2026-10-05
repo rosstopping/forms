@@ -153,14 +153,14 @@ test('reviews distinguish sparse data noise declines position changes and wider 
         ->and($evaluator->assess([...impactMeasurementSample(), 'control' => impactPerformanceSample()], [...impactMeasurementSample(150), 'control' => impactPerformanceSample(150)], 'clicks')['outcome'])->toBe('inconclusive');
 });
 
-test('measurement protection applies beyond the old cooldown and learns from review decisions', function (): void {
+test('measurement does not extend the page cooldown and retains review learning', function (): void {
     $plan = ContentPlan::factory()->for($this->website)->create();
     $generation = ContentGeneration::factory()->for($plan, 'plan')->create();
     $this->impact->update(['status' => 'measuring', 'live_at' => now()->subDays(40)]);
     $blocked = ContentRequest::factory()->for($this->website)->create(['instructions' => 'Rewrite https://www.example.com/services/']);
     $eligible = ContentRequest::factory()->for($this->website)->create(['instructions' => 'Improve https://example.com/contact']);
     $work = app(ContentWorkSelector::class)->select($generation);
-    expect($work['requests']->values()->modelKeys())->toBe([$eligible->id]);
+    expect($work['requests']->values()->modelKeys())->toBe([$blocked->id, $eligible->id]);
     $this->actingAs($this->owner)->post(route('admin.seo-impacts.review', [$this->website, $this->impact]), ['decision' => 'iterate', 'decision_notes' => 'Clicks declined; check the search intent before changing the page again.'])->assertRedirect();
     expect($this->impact->fresh()->status)->toBe('completed')->and($this->website->contentRequests()->count())->toBe(3);
     $followup = $this->website->contentRequests()->latest('id')->first();
@@ -279,14 +279,14 @@ test('removing unstarted work cancels its tracking but cannot remove a live meas
     $this->delete(route('admin.content-requests.destroy', [$this->website, $liveRequest]))->assertUnprocessable();
 });
 
-test('a request under measurement cannot create Pixel drafts', function (): void {
+test('a request inside the page cooldown cannot create Pixel drafts', function (): void {
     config(['forms.pixel_ui_enabled' => true]);
-    $this->impact->update(['status' => 'measuring', 'live_at' => now()->subDays(20)]);
+    $this->impact->update(['status' => 'measuring', 'live_at' => now()->subDays(13)]);
     $request = ContentRequest::factory()->for($this->website)->create(['instructions' => 'Improve https://example.com/services']);
     ContentRequestPixelWriter::fake()->preventStrayPrompts();
     expect(app(ContentRequestPixelOptimisationGenerator::class)->generate($request, $this->owner))->toBe(0);
     ContentRequestPixelWriter::assertNeverPrompted();
-    expect($request->fresh()->pixel_error)->toContain('being measured');
+    expect($request->fresh()->pixel_error)->toContain('last 14 days');
 });
 
 test('generation briefs include frozen measurement goals and prior learning', function (): void {
@@ -311,10 +311,10 @@ test('outside reference links never become automatic target pages', function ():
     ])->assertUnprocessable();
 });
 
-test('comparison pages are protected while their baseline is used', function (): void {
+test('unchanged comparison pages are eligible during measurement', function (): void {
     $this->impact->update(['status' => 'measuring', 'control_url' => 'https://example.com/comparison']);
     $request = ContentRequest::factory()->for($this->website)->create(['instructions' => 'Rewrite https://www.example.com/comparison/']);
-    expect(app(SeoImpactTracker::class)->requestIsProtected($request))->toBeTrue();
+    expect(app(SeoImpactTracker::class)->requestIsProtected($request))->toBeFalse();
 });
 
 test('SEO impact stays inside SEO Intelligence after recommended actions', function (): void {
@@ -364,3 +364,13 @@ test('embedded impacts remain website scoped and hidden from lower tiers', funct
     $this->get(route('admin.websites.section', [$this->website, 'seo', 'seo_section' => 'impact', 'seo_impact' => $this->impact->id]))
         ->assertSuccessful()->assertDontSee($this->impact->title)->assertDontSee('Save brief');
 });
+
+test('only changed pages retain a full fourteen day cooldown regardless of measurement status', function (string $status): void {
+    $this->impact->update(['status' => $status, 'live_at' => now()->subDays(14)->addSecond(), 'control_url' => 'https://example.com/comparison']);
+    $tracker = app(SeoImpactTracker::class);
+    expect($tracker->protectedKeys($this->website)->all())->toBe(['url:example.com/services']);
+    $request = ContentRequest::factory()->for($this->website)->create(['instructions' => 'Rewrite https://www.example.com/services/']);
+    expect($tracker->requestIsProtected($request))->toBeTrue();
+    $this->travel(1)->seconds();
+    expect($tracker->requestIsProtected($request))->toBeFalse();
+})->with(['measuring', 'review_required', 'completed']);

@@ -1,9 +1,11 @@
 <?php
 
+use App\Models\CopilotSdkTestRun;
 use App\Models\Form;
 use App\Models\FormSubmission;
 use App\Models\User;
 use App\Models\Website;
+use App\Models\WebsiteRepository;
 use App\Support\MembershipPlan;
 use Dom\HTMLDocument;
 use Illuminate\Support\Facades\Hash;
@@ -263,6 +265,28 @@ it('allows an administrator to rename and delete a website', function (): void {
 
     $this->assertModelMissing($website);
     $this->assertModelMissing($form);
+});
+
+it('deletes website SDK history without affecting another website sharing the repository', function (): void {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $repository = WebsiteRepository::factory()->create();
+    $website = $repository->website;
+    $run = CopilotSdkTestRun::factory()->for($repository, 'repository')->create();
+    $otherRepository = WebsiteRepository::factory()->create([
+        'github_installation_id' => $repository->github_installation_id,
+        'repository_id' => $repository->repository_id,
+        'full_name' => $repository->full_name,
+    ]);
+    $otherRun = CopilotSdkTestRun::factory()->for($otherRepository, 'repository')->create();
+
+    $this->actingAs($admin)->delete(route('admin.websites.destroy', $website))
+        ->assertRedirect(route('admin.websites.index'));
+
+    $this->assertModelMissing($website);
+    $this->assertModelMissing($repository);
+    $this->assertModelMissing($run);
+    $this->assertModelExists($otherRepository);
+    $this->assertModelExists($otherRun);
 });
 
 it('allows an administrator to configure website webhook settings', function (): void {

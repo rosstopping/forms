@@ -92,7 +92,7 @@ class SeoImpactController extends Controller
             ]);
         });
 
-        return Redirect::route('admin.websites.section', [$website, 'seo', 'seo_section' => 'impact', 'seo_impact' => $seoImpact->id])->with('status', 'Live date recorded. The affected pages are protected while results are measured.');
+        return Redirect::route('admin.websites.section', [$website, 'seo', 'seo_section' => 'impact', 'seo_impact' => $seoImpact->id])->with('status', 'Live date recorded. The affected pages have a 14-day cooldown; measurement continues separately.');
     }
 
     public function review(ReviewSeoImpactRequest $request, Website $website, SeoImpact $seoImpact, SeoImpactTracker $tracker): RedirectResponse

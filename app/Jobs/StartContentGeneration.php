@@ -130,7 +130,7 @@ class StartContentGeneration implements ShouldBeEncrypted, ShouldBeUnique, Shoul
         $protected = $impactTracker->protectedKeys($this->generation->plan->website);
         if (($hadRequests && $contentRequests->isEmpty()) || ($selected && ($protected->contains('term:'.mb_strtolower(trim($selected['term'])))
             || (! empty($selected['ranking_url']) && $protected->contains($impactTracker->urlKey($selected['ranking_url'])))))) {
-            $this->skipGeneration('The selected pages or search terms are being measured. Review their SEO impact before making another change.');
+            $this->skipGeneration('The selected pages changed within the last 14 days. Wait until their page cooldown expires.');
 
             return;
         }

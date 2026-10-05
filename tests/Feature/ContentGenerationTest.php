@@ -700,6 +700,9 @@ test('content generation prompts keep every section within the generation reques
         ->and($prompt)->toContain('Do not force a blog')
         ->and($prompt)->toContain('It may touch multiple pages and files')
         ->and($prompt)->toContain('Requirements:')
+        ->and($prompt)->toContain('Measurement status does not block content work')
+        ->and($prompt)->toContain("excluding this task's own pull request and branch")
+        ->and($prompt)->toContain('continue useful independent work')
         ->and($prompt)->toContain('Search Console top query/page rows');
 });
 

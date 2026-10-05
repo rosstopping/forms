@@ -146,7 +146,7 @@ test('automatic briefs skip unavailable stale irrelevant and protected evidence'
         'market' => $opportunity->audit->update(['location_code' => 2840]),
         'research' => $this->plan->update(['competitor_research_mode' => 'research']),
         'manual' => $this->plan->update(['competitor_research_mode' => 'manual']),
-        'protected' => SeoImpact::factory()->for($this->website)->create(['status' => 'measuring', 'target_urls' => ['https://example.com/offices/'], 'target_queries' => []]),
+        'protected' => SeoImpact::factory()->for($this->website)->create(['live_at' => now()->subDay(), 'status' => 'measuring', 'target_urls' => ['https://example.com/offices/'], 'target_queries' => []]),
     };
     $generation = ContentGeneration::factory()->for($this->plan, 'plan')->create(['trigger' => 'scheduled']);
     expect(app(ContentWorkSelector::class)->select($generation)['requests'])->toBeEmpty()

@@ -8,6 +8,7 @@ paths:
   - 'app/Services/GoogleAds*'
   - app/Services/GoogleAdsClient.php
   - 'app/Services/{WebsiteHealthAuditor,WebsiteCrawler,ProspectWebsiteAnalyzer}.php'
+  - 'app/Services/{SeoImpactTracker,ContentWorkSelector,ContentGenerationPromptGenerator}.php'
 ---
 
 # Services
@@ -38,3 +39,6 @@ Dashboard query summaries must show impressions alongside clicks and average pos
 
 ## Score verifiable audit findings, not fixed content lengths
 Do not mark a page unhealthy solely because its title or meta description exceeds a fixed character count or its body has fewer than a set number of words. Keep lengths as observations if useful; assess clarity and usefulness with context. A working skip link must target the page's main content and is an accessibility finding, not a GEO ranking claim. Never score optional llms.txt as a Google AI requirement.
+
+## Content changes use a fourteen-day page cooldown, not measurement locks
+Product decision 5 October 2026 supersedes measurement-period protection: changed pages/files require a full 14-day gap from their latest merge/direct change; SEO measurement status, query groups and unchanged control pages add no locks. Other open PRs retain overlap protection; exclude the current task's own PR. Deliver eligible independent parts of queued requests and defer protected supporting edits, preserving required sitemap/listing/inbound-link integration.
