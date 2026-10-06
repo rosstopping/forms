@@ -9,6 +9,7 @@ paths:
   - app/Services/GoogleAdsClient.php
   - 'app/Services/{WebsiteHealthAuditor,WebsiteCrawler,ProspectWebsiteAnalyzer}.php'
   - 'app/Services/{SeoImpactTracker,ContentWorkSelector,ContentGenerationPromptGenerator}.php'
+  - app/Services/ContentGenerationPromptGenerator.php
 ---
 
 # Services
@@ -42,3 +43,6 @@ Do not mark a page unhealthy solely because its title or meta description exceed
 
 ## Content changes use a fourteen-day page cooldown, not measurement locks
 Product decision 5 October 2026 supersedes measurement-period protection: changed pages/files require a full 14-day gap from their latest merge/direct change; SEO measurement status, query groups and unchanged control pages add no locks. Other open PRs retain overlap protection; exclude the current task's own PR. Deliver eligible independent parts of queued requests and defer protected supporting edits, preserving required sitemap/listing/inbound-link integration.
+
+## Bound hosted Copilot prompts by UTF-8 bytes
+Use a conservative 28,000-byte UTF-8 budget for hosted content prompts, leaving headroom below the 30,000-character boundary. Str::limit measures display width, so it cannot enforce a byte/character payload ceiling for arbitrary Unicode. Keep fixed safety and request-handling requirements before variable request text; truncate with mb_strcut to preserve UTF-8.

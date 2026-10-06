@@ -706,6 +706,29 @@ test('content generation prompts keep every section within the generation reques
         ->and($prompt)->toContain('Search Console top query/page rows');
 });
 
+test('content generation prompts bound Unicode requests without losing fixed requirements', function (string $instructions) {
+    $website = Website::factory()->create();
+    $repository = WebsiteRepository::factory()->for($website)->create();
+    $plan = ContentPlan::factory()->for($website)->create();
+    $generation = ContentGeneration::factory()->for($plan, 'plan')->for($repository, 'repository')->create();
+    ContentRequest::factory()->for($website)->create([
+        'content_generation_id' => $generation->id,
+        'instructions' => $instructions,
+    ]);
+
+    $prompt = app(ContentGenerationPromptGenerator::class)->generate($generation);
+
+    expect(strlen($prompt))->toBeLessThanOrEqual(28000)
+        ->and(mb_strlen($prompt, 'UTF-8'))->toBeLessThanOrEqual(28000)
+        ->and(mb_check_encoding($prompt, 'UTF-8'))->toBeTrue()
+        ->and($prompt)->toContain('Do not alter CI workflows, secrets, authentication, dependencies, or unrelated code.')
+        ->and($prompt)->toContain('Preserve important qualifications in the request');
+})->with([
+    'ASCII' => str_repeat('Requested content. ', 3000),
+    'combining characters' => str_repeat("e\u{0301}", 25000),
+    'emoji' => str_repeat('🧑‍💻', 15000),
+]);
+
 test('manual content requests remain pending when automation does not accept the task', function () {
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     GithubUserAuthorization::factory()->for($admin)->create();

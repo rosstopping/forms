@@ -15,7 +15,7 @@ class ContentGenerationPromptGenerator
 
     protected const TARGET_LIMIT = 4500;
 
-    protected const PROMPT_LIMIT = 30000;
+    protected const PROMPT_LIMIT = 28000;
 
     public function generate(ContentGeneration $generation): string
     {
@@ -78,9 +78,9 @@ Measurement status does not block content work or extend the 14-day page/file co
 {$impactContext}
 
 ## Manual requests
-{$manualRequests}
-
 When manual requests are present, treat them as the primary editorial objectives for this run and satisfy them as one coherent, reviewable initiative where possible. Preserve important qualifications in the request and do not imply an official affiliation, endorsement, product, service, or factual claim that the request does not support. If a request conflicts with the repository, verified website facts, or the safety requirements below, choose the safest accurate interpretation and explain the constraint in the pull request.
+
+{$manualRequests}
 
 ## Active strategic target terms
 {$targetExplanation}
@@ -91,12 +91,12 @@ Audience: {$audience}
 Editorial guidance: {$guidance}{$searchConsoleSection}
 PROMPT;
 
-        $available = max(0, self::PROMPT_LIMIT - mb_strlen($prompt) - 50);
+        $available = max(0, self::PROMPT_LIMIT - strlen($prompt) - 50);
         $competitorContext = app(CompetitorContentContext::class)->forPrompt($generation->competitor_context ?? [], min(5500, $available));
-        $available = max(0, $available - mb_strlen($competitorContext));
+        $available = max(0, $available - strlen($competitorContext));
         $backlinkContext = app(BacklinkContentContext::class)->forPrompt($generation->backlink_context ?? [], min(4000, $available));
 
-        return Str::limit($prompt.$competitorContext.$backlinkContext, self::PROMPT_LIMIT, '');
+        return mb_strcut($prompt.$competitorContext.$backlinkContext, 0, self::PROMPT_LIMIT, 'UTF-8');
     }
 
     protected function recentWorkForPrompt(ContentGeneration $generation): string
