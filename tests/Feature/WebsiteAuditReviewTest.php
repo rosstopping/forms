@@ -122,3 +122,21 @@ it('shows an unselected marketing choice and the review offer immediately after 
         ->assertSee('<span class="max-sm:hidden">Book a call with Ross</span>', false);
     expect($response->getContent())->toMatch('/name="marketing_consent" value="1"\s+class=/');
 });
+
+it('clearly confirms a pending personal review after the email request', function (): void {
+    $audit = WebsiteAudit::factory()->create([
+        'status' => WebsiteAudit::STATUS_COMPLETED,
+        'created_at' => now()->subMinute(),
+        'email' => 'owner@example.com',
+        'report_requested_at' => now(),
+        'personal_review_requested_at' => now(),
+    ]);
+
+    $this->get(route('marketing.website-audits.show', $audit))
+        ->assertSuccessful()
+        ->assertSee('Request received')
+        ->assertSee('Ross has your request and will be in touch via email shortly.')
+        ->assertSee('aria-labelledby="audit-request-received-title"', false)
+        ->assertSee('bg-black p-6 text-white', false)
+        ->assertDontSee('Want to know what to fix first?');
+});

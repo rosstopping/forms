@@ -152,7 +152,15 @@
                         <p class="text-base text-white/65 sm:text-sm">Within one working day. No obligation to book a call.</p>
                     </section>
                 @elseif ($audit->personal_review_requested_at && ! $audit->personal_review_queued_at)
-                    <p role="status" class="rounded-2xl bg-lichen p-5 text-base text-ink">Ross has your request and will email your three priorities within one working day.</p>
+                    <section role="status" aria-labelledby="audit-request-received-title" class="flex items-start gap-4 rounded-3xl bg-black p-6 text-white ring-1 ring-black sm:p-8">
+                        <span class="grid size-10 shrink-0 place-items-center rounded-full bg-emerald-400/15 text-emerald-300" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="size-6"><path stroke-linecap="round" stroke-linejoin="round" d="m5 12 4 4L19 6" /></svg>
+                        </span>
+                        <div class="grid gap-2">
+                            <h2 id="audit-request-received-title" class="text-2xl font-medium tracking-tight sm:text-3xl">Request received</h2>
+                            <p class="max-w-[60ch] text-base text-white/80">Ross has your request and will be in touch via email shortly.</p>
+                        </div>
+                    </section>
                 @endif
 
 
