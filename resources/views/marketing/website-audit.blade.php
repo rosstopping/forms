@@ -373,7 +373,7 @@
         <div class="relative p-6 sm:p-8">
             <button type="button" data-audit-email-close aria-label="Close email prompt" class="absolute top-3 right-3 grid size-12 place-items-center rounded-full text-xl text-ink/60 hover:bg-lichen focus-visible:outline-2 focus-visible:outline-garden">×</button>
             <div class="grid gap-4">
-                <img data-audit-review-portrait src="{{ asset('ross-topping.jpg') }}" alt="Ross" width="56" height="56" class="size-14 justify-self-center rounded-full object-cover outline-1 -outline-offset-1 outline-black/10">
+                <img data-audit-review-portrait src="{{ asset('ross-topping.jpg') }}" alt="Ross" width="72" height="72" class="size-18 justify-self-center rounded-full object-cover outline-1 -outline-offset-1 outline-black/10">
                 <h2 id="audit-email-title" class="max-w-[40ch] text-3xl font-medium tracking-tight text-balance">Want to know what to fix first?</h2>
                 <p id="audit-email-description" class="max-w-[56ch] text-pretty text-base text-ink/65">I’ll personally review your results and email three priorities with practical next steps within one working day. You’ll also get your report link, available for 14 days.</p>
             </div>
