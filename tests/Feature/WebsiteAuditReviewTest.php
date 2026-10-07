@@ -120,9 +120,16 @@ it('shows an unselected marketing choice and the review offer immediately after 
         ->assertSee('bg-black p-6 text-white', false)
         ->assertSee('src="'.asset('ross-topping.jpg').'"', false)
         ->assertSee('<span class="max-sm:hidden">Book a call with Ross</span>', false);
+    $dom = new DOMDocument;
+    @$dom->loadHTML($response->getContent());
+    $xpath = new DOMXPath($dom);
+    expect($xpath->query('//*[@data-audit-review-copy]//h2')->length)->toBe(1)
+        ->and($xpath->query('//*[@data-audit-review-copy]//p')->length)->toBe(1)
+        ->and($xpath->query('//*[@data-audit-review-copy]//button[@data-audit-email-open]')->length)->toBe(1);
     expect(substr_count($response->getContent(), 'data-audit-review-portrait'))->toBe(2);
     expect(substr_count($response->getContent(), 'width="56" height="56"'))->toBe(2);
-    $response->assertSeeInOrder(['id="audit-email-title"', 'data-audit-review-portrait', 'id="audit-email-description"'], false);
+    expect($xpath->query('//dialog//*[@data-audit-review-portrait and contains(@class, "justify-self-center")]')->length)->toBe(1);
+    $response->assertSeeInOrder(['id="audit-email-dialog"', 'data-audit-review-portrait', 'id="audit-email-title"', 'id="audit-email-description"'], false);
     expect($response->getContent())->toMatch('/name="marketing_consent" value="1"\s+class=/');
 });
 

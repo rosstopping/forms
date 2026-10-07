@@ -51,3 +51,9 @@ The six-month projection comparison uses an inline downward arrow SVG while its 
 
 ## Emphasise personal review and show Ross beside booking
 The inline personal-review offer uses a black background with white heading and readable muted white supporting text. The booking button includes Ross's supplied portrait (public/ross-topping.jpg) as a small circular image. Use whole responsive label spans for 'Book a call' and 'Book a call with Ross' to preserve desktop word spacing.
+
+## Align review call to action with the copy
+Keep the portrait left of a single flexible content column containing the personal-review heading, paragraph and CTA. The button aligns with the text, not the portrait edge. Keep the portrait fixed at 56px, content min-w-0, and readable paragraph width so the card wraps within narrow screens.
+
+## Center the popup portrait above its copy
+In the personal-review email dialog, place Ross's small circular portrait at the top centre. Keep the heading and paragraph below it at full available width and left aligned. This supersedes the popup portrait beside the heading or paragraph; the inline black offer retains its portrait beside the content.
