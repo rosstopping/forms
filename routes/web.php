@@ -440,6 +440,8 @@ Route::middleware(['web', 'auth', ResolveCurrentWebsite::class])->prefix('admin'
     Route::middleware(EnsureAdmin::class)->group(function (): void {
         Route::get('overview', [DashboardController::class, 'overview'])->name('overview');
         Route::get('onboarding/audits/{websiteAudit}/full', [FreeSiteAuditController::class, 'show'])->name('onboarding.audits.show');
+        Route::post('onboarding/audits/{websiteAudit}/full', [FreeSiteAuditController::class, 'requestFullReport'])->middleware('throttle:10,1')->name('onboarding.audits.generate');
+        Route::get('onboarding/audits/{websiteAudit}/full-status', [FreeSiteAuditController::class, 'fullReportStatus'])->middleware('throttle:30,1')->name('onboarding.audits.status');
         Route::post('onboarding/audits/{websiteAudit}/review', [WebsiteAuditReviewController::class, 'send'])->name('onboarding.audits.review');
         Route::patch('onboarding/audits/{websiteAudit}/lead', [WebsiteAuditReviewController::class, 'update'])->name('onboarding.audits.lead');
         Route::get('onboarding', OnboardingLeadController::class)->name('onboarding.index');

@@ -66,9 +66,6 @@ class GenerateWebsiteAudit implements ShouldBeUnique, ShouldQueue
 
         $journey->record('audit_completed', $this->audit->public_id, $this->audit->marketing_attribution ?? []);
 
-        if (data_get($insights, 'ai_visibility.status') === 'pending') {
-            CheckMarketingAuditAiVisibility::dispatch($this->audit);
-        }
     }
 
     public function failed(?Throwable $exception): void

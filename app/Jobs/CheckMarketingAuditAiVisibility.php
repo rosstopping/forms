@@ -29,8 +29,16 @@ class CheckMarketingAuditAiVisibility implements ShouldBeUnique, ShouldQueue
     public function handle(MarketingAuditAiVisibility $visibility): void
     {
         $audit = $this->audit->fresh();
-        $questions = data_get($audit->insights, 'ai_visibility.questions', []);
-        if ($audit->status !== WebsiteAudit::STATUS_COMPLETED || ! is_array($questions) || $questions === [] || ! $visibility->available()) {
+        $questions = data_get($audit?->insights, 'ai_visibility.questions', []);
+        if ($audit === null || $audit->status !== WebsiteAudit::STATUS_COMPLETED
+            || data_get($audit->insights, 'full_report.status') !== 'completed'
+            || data_get($audit->insights, 'ai_visibility.status') !== 'pending'
+            || ! is_array($questions) || $questions === []) {
+            return;
+        }
+        if (! $visibility->available()) {
+            $this->failed(null);
+
             return;
         }
 
@@ -57,7 +65,7 @@ class CheckMarketingAuditAiVisibility implements ShouldBeUnique, ShouldQueue
     public function failed(?Throwable $exception): void
     {
         $audit = $this->audit->fresh();
-        if (data_get($audit->insights, 'ai_visibility.status') === 'pending') {
+        if ($audit !== null && data_get($audit->insights, 'ai_visibility.status') === 'pending') {
             $audit->update(['insights' => [...$audit->insights, 'ai_visibility' => [
                 'status' => 'unavailable',
                 'questions' => data_get($audit->insights, 'ai_visibility.questions', []),

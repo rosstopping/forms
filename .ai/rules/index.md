@@ -33,6 +33,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Http/Requests/StoreFreeSiteAuditRequest.php | .ai/rules/app-http-requests.md |
 | app/{Jobs/Send*RankingReport.php,Services/GoogleAdsEmailSummary.php,Services/GoogleAdsClient.php,Mail/*RankingReport.php},resources/views/emails/*ranking-report.blade.php | .ai/rules/app-jobs-views-emails.md |
 | app/{Jobs/StartContentGeneration.php,Services/ContentGenerationPromptGenerator.php,Services/SeoTargetKeywordSelector.php,Models/ContentGeneration.php} | .ai/rules/app-jobs.md |
+| {app/Services/MarketingAuditScreenshot.php,package.json,.npmrc} | .ai/rules/app-services-2.md |
 | app/{Services/MarketingAudit*.php,Services/WebsiteHealthAuditor.php,Services/AiVisibility*.php},resources/views/marketing/** | .ai/rules/app-services-views-marketing.md |
 | app/{Services/Github*,Models/GithubUserAuthorization.php,Jobs/{StartCopilotRemediation,SyncCopilotRemediation}.php}, app/{Services/SearchConsoleHistoryStore.php,Services/WebsiteAiContext.php,Jobs/SyncSearchConsoleHistory.php}, app/{Services/Content*,Jobs/StartContentGeneration.php}, app/{Services/ProspectPersonalisedVideo.php,Models/ProspectOutreachState.php,Mail/ProspectOutreach.php} | .ai/rules/app-services.md |
 | app/** | .ai/rules/app.md |
@@ -160,6 +161,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | resources/views/** | .ai/rules/views.md |
 | app/{Console/Commands,Jobs,Mail,Models,Http/Controllers/Admin}/**/*Ranking*.php,resources/views/{admin/websites/**,emails/*ranking*},routes/web.php | .ai/rules/viewsadmin-websites.md |
 | resources/views/{layouts/marketing.blade.php,marketing/**} | .ai/rules/viewslayouts.md |
+| {app/Jobs/{GenerateWebsiteAudit,GenerateWebsiteAuditFullReport,CheckMarketingAuditAiVisibility}.php,app/Services/MarketingAuditResearch.php,app/Http/Controllers/FreeSiteAuditController.php,resources/views/{marketing/website-audit,admin/onboarding-leads/index}.blade.php} | .ai/rules/website-auditadmin-onboarding-leads.md |
 | {app/Http/Controllers/FreeSiteAuditController.php,app/Http/Requests/UpdateWebsiteAuditGoalRequest.php,app/Mail/WebsiteAuditReport.php,resources/views/{marketing/website-audit,mail/website-audit*}.blade.php} | .ai/rules/website-auditmail.md |
 | app/Models/Website.php,resources/views/admin/websites/**,resources/views/admin/website-health-reports/** | .ai/rules/website-health-reports.md |
 | app/{Http/Controllers/Admin/WebsiteMemberController,Http/Requests/{StoreWebsiteMemberRequest,UpdateWebsiteMemberRequest}}.php | .ai/rules/website-member-controller-http-requests.md |

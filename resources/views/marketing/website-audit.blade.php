@@ -16,6 +16,7 @@
     $seo = data_get($audit->insights, 'seo');
     $competitors = data_get($audit->insights, 'competitors');
     $aiVisibility = data_get($audit->insights, 'ai_visibility');
+    $fullReportStatus = data_get($audit->insights, 'full_report.status', 'completed');
     $visitorRange = $projection !== null ? number_format($projection['six_month_low']).'–'.number_format($projection['six_month_high']) : null;
 @endphp
 <section @if ($engagementUrl) data-audit-engagement-url="{{ $engagementUrl }}" data-audit-id="{{ $audit->public_id }}" data-csrf-token="{{ csrf_token() }}" @endif data-marketing-events="{{ json_encode($marketingEvents) }}" class="px-3 pt-1 pb-16 sm:px-6 sm:pt-2 sm:pb-24" aria-labelledby="audit-title">
@@ -50,6 +51,38 @@
 
         @if (session('report_email_status') && (! $audit->personal_review_requested_at || $audit->personal_review_queued_at))
             <p role="status" class="rounded-2xl bg-emerald-50 px-5 py-4 text-base text-emerald-900 ring-1 ring-emerald-200/70">{{ session('report_email_status') }}</p>
+        @endif
+        @if ($showDetails && $audit->isReadyToDisplay() && $fullReportStatus !== 'completed')
+            <section role="status" class="grid gap-3 rounded-2xl bg-white p-5 ring-1 ring-ink/10 sm:p-6" aria-labelledby="audit-full-research-title">
+                <h2 id="audit-full-research-title" class="text-xl font-medium tracking-tight">{{ in_array($fullReportStatus, ['queued', 'running'], true) ? 'Preparing the rest of this report.' : ($fullReportStatus === 'failed' ? 'The extra research couldn’t finish.' : 'The extra research hasn’t been run yet.') }}</h2>
+                <p class="max-w-[60ch] text-pretty text-base text-ink/65">{{ in_array($fullReportStatus, ['queued', 'running'], true) ? 'Page-one rankings, sitemap counts, backlinks and competitor comparisons are loading. AI checks follow.' : 'The public summary is ready. Load the extra research when you need the detailed report.' }}</p>
+                @if (auth()->user()?->isAdmin() && in_array($fullReportStatus, ['deferred', 'failed'], true))
+                    <form method="POST" action="{{ route('admin.onboarding.audits.generate', $audit) }}">
+                        @csrf
+                        <button type="submit" class="inline-flex min-h-12 items-center justify-center rounded-full bg-garden px-5 py-3 text-base font-medium text-white hover:bg-moss focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden">{{ $fullReportStatus === 'failed' ? 'Retry full research' : 'Load full research' }}</button>
+                    </form>
+                @endif
+            </section>
+        @endif
+        @if ($showDetails && auth()->user()?->isAdmin() && (in_array($fullReportStatus, ['queued', 'running'], true) || data_get($aiVisibility, 'status') === 'pending'))
+            <script>
+                (() => {
+                    const statusUrl = @js(route('admin.onboarding.audits.status', $audit));
+                    const initialStatus = @js($fullReportStatus);
+                    const initialAiStatus = @js(data_get($aiVisibility, 'status'));
+                    const timer = window.setInterval(async () => {
+                        try {
+                            const response = await fetch(statusUrl, { headers: { Accept: 'application/json' } });
+                            if (! response.ok) return;
+                            const result = await response.json();
+                            if (result.full_report_status !== initialStatus || result.ai_visibility_status !== initialAiStatus) {
+                                window.clearInterval(timer);
+                                window.location.reload();
+                            }
+                        } catch (_) {}
+                    }, 5000);
+                })();
+            </script>
         @endif
 
         @if ($audit->status !== \App\Models\WebsiteAudit::STATUS_FAILED && ! $audit->isReadyToDisplay())
@@ -308,7 +341,7 @@
                     </section>
                 @endif
 
-                @if ($seo !== null)
+                @if ($seo !== null && $fullReportStatus === 'completed')
                     <section class="grid gap-5 border-t border-ink/10 pt-8" aria-labelledby="audit-competitors-title">
                         <div class="grid gap-2">
                             <h2 id="audit-competitors-title" class="text-2xl font-medium tracking-tight text-balance">Your Google search competitors.</h2>
@@ -343,6 +376,7 @@
                     </section>
                 @endif
 
+                @if ($fullReportStatus === 'completed')
                 <section class="grid gap-4 border-t border-ink/10 pt-8" aria-labelledby="audit-ai-title">
                         <div class="grid gap-2">
                             <h2 id="audit-ai-title" class="text-2xl font-medium tracking-tight text-balance">AI search check.</h2>
@@ -371,7 +405,7 @@
                         @endif
                 </section>
                 @if (is_array($aiVisibility))
-                    @if ($aiVisibility['status'] === 'pending')
+                    @if ($aiVisibility['status'] === 'pending' && ! auth()->user()?->isAdmin())
                         <script>
                             (() => {
                                 const statusUrl = @js(route('marketing.website-audits.status', $audit));
@@ -388,6 +422,7 @@
                             })();
                         </script>
                     @endif
+                @endif
                 @endif
 
                 <section class="grid gap-6 rounded-3xl bg-white p-5 ring-1 ring-ink/10 sm:p-8" aria-labelledby="audit-projection-title">

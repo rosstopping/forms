@@ -31,25 +31,105 @@ class MarketingAuditResearch
         $findings = collect($analysis['findings'] ?? []);
         $totalChecks = $findings->count();
         $passedChecks = $findings->where('severity', 'passed')->count();
-        $pages = $this->pageCounter->count($websiteUrl);
         $seo = $this->seoForDomain($domain);
-        $aiQuestions = $this->aiVisibility->questions($domain, $seo);
 
         return [
             'health_score' => $totalChecks > 0 ? (int) round($passedChecks / $totalChecks * 100) : null,
-            'pages_listed' => $pages['count'],
-            'pages_partial' => $pages['partial'],
-            'pages_matching_domain' => $pages['matching_domain'] ?? $pages['count'],
-            'pages_mismatched_domain' => $pages['mismatched_domain'] ?? 0,
-            'pages_mismatched_host' => $pages['mismatched_host'] ?? null,
             'seo' => $seo,
-            'competitors' => $seo !== null ? $this->competitors->forDomain($domain, $seo) : null,
-            'ai_visibility' => $aiQuestions !== [] ? [
-                'status' => $this->aiVisibility->available() ? 'pending' : 'unavailable',
-                'questions' => $aiQuestions,
-            ] : null,
             'projection' => $seo !== null ? $this->projection($seo) : null,
+            'full_report' => ['status' => 'deferred'],
         ];
+    }
+
+    /** @return array<string, mixed> */
+    public function forFullReport(WebsiteAudit $audit): array
+    {
+        $insights = $audit->insights ?? [];
+        $seo = $insights['seo'] ?? $this->seoForDomain($audit->domain);
+        $seo = is_array($seo) ? $this->fullSeoForDomain($audit->domain, $seo) : null;
+        if (! array_key_exists('pages_listed', $insights)) {
+            $pages = $this->pageCounter->count(data_get($insights, 'audited_url', $audit->website_url));
+            $insights = [...$insights,
+                'pages_listed' => $pages['count'],
+                'pages_partial' => $pages['partial'],
+                'pages_matching_domain' => $pages['matching_domain'] ?? $pages['count'],
+                'pages_mismatched_domain' => $pages['mismatched_domain'] ?? 0,
+                'pages_mismatched_host' => $pages['mismatched_host'] ?? null,
+            ];
+        }
+
+        if (! array_key_exists('competitors', $insights)) {
+            $insights['competitors'] = $seo !== null ? $this->competitors->forDomain($audit->domain, $seo) : null;
+        }
+        if (! array_key_exists('ai_visibility', $insights)) {
+            $questions = $this->aiVisibility->questions($audit->domain, $seo);
+            $insights['ai_visibility'] = $questions !== [] ? [
+                'status' => $this->aiVisibility->available() ? 'pending' : 'unavailable',
+                'questions' => $questions,
+            ] : null;
+        }
+
+        return [...$insights, 'seo' => $seo];
+    }
+
+    /**
+     * @param  array<string, mixed>  $seo
+     * @return array<string, mixed>
+     */
+    private function fullSeoForDomain(string $domain, array $seo): array
+    {
+        if (blank(config('services.dataforseo.login')) || blank(config('services.dataforseo.password'))) {
+            return $seo;
+        }
+
+        $key = 'marketing-audit-full-seo:'.hash('sha256', strtolower($domain).'|'.$seo['location_code'].'|'.$seo['language_code'].'|'.($seo['retrieved_at'] ?? ''));
+
+        return Cache::remember($key, now()->addDays(7), function () use ($domain, $seo): array {
+            $keywords = $seo['keywords'];
+            $cost = (float) ($seo['cost_usd'] ?? 0);
+            if (($seo['keyword_sample_strategy'] ?? null) === 'striking_distance' && $seo['organic_keywords'] > 0) {
+                try {
+                    $response = $this->rankedKeywords->forRange($domain, $seo['location_code'], $seo['language_code'], 1, 10, 10);
+                    $keywords = [...array_map(fn ($keyword): array => [
+                        'term' => $keyword->keyword,
+                        'position' => $keyword->position,
+                        'monthly_searches' => $keyword->searchVolume,
+                        'url' => $keyword->rankingUrl,
+                    ], $response->keywords), ...$keywords];
+                    $cost += $response->cost;
+                    if ($keywords === []) {
+                        $response = $this->rankedKeywords->forRange($domain, $seo['location_code'], $seo['language_code'], 1, 100, 20);
+                        $keywords = array_map(fn ($keyword): array => [
+                            'term' => $keyword->keyword,
+                            'position' => $keyword->position,
+                            'monthly_searches' => $keyword->searchVolume,
+                            'url' => $keyword->rankingUrl,
+                        ], $response->keywords);
+                        $cost += $response->cost;
+                    }
+                } catch (DataForSEOException $exception) {
+                    report($exception);
+                }
+            }
+            if (($seo['backlinks_checked'] ?? true) === false) {
+                try {
+                    $backlinks = $this->backlinks->overview($domain);
+                    $seo['referring_domains'] = $backlinks->overview->referringDomains;
+                    $seo['backlinks'] = $backlinks->overview->backlinks;
+                    $cost += $backlinks->cost;
+                } catch (DataForSEOException $exception) {
+                    report($exception);
+                }
+            }
+
+            return [...$seo,
+                'keywords' => $keywords,
+                'sample_size' => count($keywords),
+                'keyword_sample_strategy' => 'page_one_and_striking_distance',
+                'backlinks_checked' => true,
+                'cost_usd' => round($cost, 5),
+            ];
+        });
     }
 
     /** @return array<string, mixed>|null */
@@ -84,32 +164,13 @@ class MarketingAuditResearch
         $keywords = [];
         $keywordCost = 0.0;
         if ($overview->overview->organicKeywords > 0) {
-            foreach ([[1, 10], [11, 30]] as [$minimum, $maximum]) {
-                try {
-                    $response = $this->rankedKeywords->forRange($domain, $locationCode, $languageCode, $minimum, $maximum, 10);
-                    $keywords = array_merge($keywords, $response->keywords);
-                    $keywordCost += $response->cost;
-                } catch (DataForSEOException $exception) {
-                    report($exception);
-                }
+            try {
+                $response = $this->rankedKeywords->forRange($domain, $locationCode, $languageCode, 11, 30, 10);
+                $keywords = $response->keywords;
+                $keywordCost += $response->cost;
+            } catch (DataForSEOException $exception) {
+                report($exception);
             }
-
-            if ($keywords === []) {
-                try {
-                    $response = $this->rankedKeywords->forRange($domain, $locationCode, $languageCode, 1, 100, 20);
-                    $keywords = $response->keywords;
-                    $keywordCost += $response->cost;
-                } catch (DataForSEOException $exception) {
-                    report($exception);
-                }
-            }
-        }
-
-        $backlinks = null;
-        try {
-            $backlinks = $this->backlinks->overview($domain);
-        } catch (DataForSEOException $exception) {
-            report($exception);
         }
 
         $seo = [
@@ -117,15 +178,16 @@ class MarketingAuditResearch
             'location_code' => $locationCode,
             'language_code' => $languageCode,
             'retrieved_at' => now()->toIso8601String(),
-            'cost_usd' => round($overview->cost + $keywordCost + ($backlinks?->cost ?? 0), 5),
-            'keyword_sample_strategy' => 'page_one_and_striking_distance',
+            'cost_usd' => round($overview->cost + $keywordCost, 5),
+            'keyword_sample_strategy' => 'striking_distance',
             'organic_keywords' => $overview->overview->organicKeywords,
             'estimated_monthly_visits' => (int) round($overview->overview->estimatedOrganicTraffic),
             'top_3_keywords' => $overview->overview->top3Keywords,
             'top_10_keywords' => $overview->overview->top10Keywords,
             'top_20_keywords' => $overview->overview->top20Keywords,
-            'referring_domains' => $backlinks?->overview->referringDomains,
-            'backlinks' => $backlinks?->overview->backlinks,
+            'referring_domains' => null,
+            'backlinks' => null,
+            'backlinks_checked' => false,
             'sample_size' => count($keywords),
             'keywords' => array_map(fn ($keyword): array => [
                 'term' => $keyword->keyword,
@@ -163,7 +225,7 @@ class MarketingAuditResearch
             if (! is_array($seo)
                 || (int) ($seo['location_code'] ?? 0) !== $locationCode
                 || ($seo['language_code'] ?? null) !== $languageCode
-                || ($requireFocusedSample && ($seo['keyword_sample_strategy'] ?? null) !== 'page_one_and_striking_distance')
+                || ($requireFocusedSample && ! in_array($seo['keyword_sample_strategy'] ?? null, ['striking_distance', 'page_one_and_striking_distance'], true))
                 || ! isset($seo['retrieved_at'], $seo['organic_keywords'], $seo['estimated_monthly_visits'], $seo['keywords'])) {
                 continue;
             }

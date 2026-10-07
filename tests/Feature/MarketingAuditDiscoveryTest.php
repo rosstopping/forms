@@ -46,8 +46,8 @@ it('records only observed AI mentions and citations for one unbranded question',
     expect($service->check('example.com', $question))->toBe($result);
 });
 
-it('finishes a public AI check without blocking the saved audit', function (): void {
-    $audit = WebsiteAudit::factory()->create(['status' => WebsiteAudit::STATUS_COMPLETED, 'insights' => ['ai_visibility' => ['status' => 'pending', 'questions' => ['Which businesses would you recommend for garden offices?', 'Which businesses would you recommend for garden office fitters?']]]]);
+it('finishes a requested private AI check without blocking the saved audit', function (): void {
+    $audit = WebsiteAudit::factory()->create(['status' => WebsiteAudit::STATUS_COMPLETED, 'insights' => ['full_report' => ['status' => 'completed'], 'ai_visibility' => ['status' => 'pending', 'questions' => ['Which businesses would you recommend for garden offices?', 'Which businesses would you recommend for garden office fitters?']]]]);
     $service = Mockery::mock(MarketingAuditAiVisibility::class);
     $service->shouldReceive('available')->once()->andReturn(true);
     $service->shouldReceive('check')->twice()->andReturn(['status' => 'completed', 'website_mentioned' => false, 'website_cited' => false, 'checked_at' => now()->toIso8601String()]);

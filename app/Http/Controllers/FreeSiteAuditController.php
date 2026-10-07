@@ -6,6 +6,7 @@ use App\Http\Requests\EmailWebsiteAuditReportRequest;
 use App\Http\Requests\StoreFreeSiteAuditRequest;
 use App\Http\Requests\UpdateWebsiteAuditGoalRequest;
 use App\Jobs\GenerateWebsiteAudit;
+use App\Jobs\GenerateWebsiteAuditFullReport;
 use App\Mail\WebsiteAuditLeadReceived;
 use App\Mail\WebsiteAuditReport;
 use App\Models\MarketingConversion;
@@ -108,6 +109,41 @@ class FreeSiteAuditController extends Controller
         abort_unless(Storage::disk('local')->exists($path), 404);
 
         return Storage::disk('local')->response($path, null, ['Cache-Control' => 'private, max-age=3600', 'Content-Type' => 'image/jpeg']);
+    }
+
+    public function requestFullReport(Request $request, WebsiteAudit $websiteAudit): RedirectResponse
+    {
+        abort_unless($request->user()?->isAdmin(), 403);
+        abort_unless($websiteAudit->isReadyToDisplay(), 409);
+
+        DB::transaction(function () use ($websiteAudit): void {
+            $audit = WebsiteAudit::query()->lockForUpdate()->findOrFail($websiteAudit->id);
+            $status = data_get($audit->insights, 'full_report.status');
+            $hasLegacyResearch = $status === null && array_key_exists('pages_listed', $audit->insights ?? [])
+                && array_key_exists('competitors', $audit->insights ?? [])
+                && array_key_exists('ai_visibility', $audit->insights ?? [])
+                && data_get($audit->insights, 'ai_visibility.status') !== 'pending';
+            if ($hasLegacyResearch || in_array($status, ['queued', 'running', 'completed'], true)) {
+                return;
+            }
+            $audit->update(['insights' => [...($audit->insights ?? []), 'full_report' => [
+                'status' => 'queued',
+                'requested_at' => now()->toIso8601String(),
+            ]]]);
+            GenerateWebsiteAuditFullReport::dispatch($audit)->afterCommit();
+        });
+
+        return redirect()->route('admin.onboarding.audits.show', $websiteAudit);
+    }
+
+    public function fullReportStatus(Request $request, WebsiteAudit $websiteAudit): JsonResponse
+    {
+        abort_unless($request->user()?->isAdmin(), 403);
+
+        return response()->json([
+            'full_report_status' => data_get($websiteAudit->insights, 'full_report.status', 'completed'),
+            'ai_visibility_status' => data_get($websiteAudit->insights, 'ai_visibility.status'),
+        ]);
     }
 
     public function emailReport(EmailWebsiteAuditReportRequest $request, WebsiteAudit $websiteAudit): RedirectResponse
