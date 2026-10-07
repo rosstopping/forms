@@ -369,7 +369,7 @@
     </div>
 @endif
 @if ($audit->isReadyToDisplay() && $audit->report_requested_at === null)
-    <dialog id="audit-email-dialog" aria-labelledby="audit-email-title" aria-describedby="audit-email-description" class="fixed inset-0 m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md overflow-y-auto border-0 bg-transparent p-0 pt-9 text-ink backdrop:bg-ink/60">
+    <dialog id="audit-email-dialog" aria-labelledby="audit-email-title" aria-describedby="audit-email-description" class="fixed inset-0 m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md overflow-y-auto border-0 bg-transparent p-0 pt-10 text-ink backdrop:bg-ink/60">
         <div class="relative rounded-3xl bg-white p-6 pt-14 sm:p-8 sm:pt-14">
             <img data-audit-review-portrait src="{{ asset('ross-topping.jpg') }}" alt="Ross" width="72" height="72" class="absolute top-0 left-1/2 size-18 -translate-x-1/2 -translate-y-1/2 rounded-full object-cover ring-4 ring-white">
             <button type="button" data-audit-email-close aria-label="Close email prompt" class="absolute top-3 right-3 grid size-12 place-items-center rounded-full text-xl text-ink/60 hover:bg-lichen focus-visible:outline-2 focus-visible:outline-garden">×</button>
