@@ -4,7 +4,7 @@
 The automated audit has checked {{ $audit->domain }} and outlined the website fixes and search opportunities we found.
 
 @if ($audit->personal_review_requested_at)
-I’ll personally review your results and email the three improvements I’d prioritise, with a next step for each, within one working day. There’s no obligation to book a call.
+I’ll personally review your results and email the improvements I’d prioritise.
 @endif
 
 <x-mail::button :url="$reportUrl">

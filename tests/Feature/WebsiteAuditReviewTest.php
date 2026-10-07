@@ -21,7 +21,7 @@ it('requests a personal review without enrolling the visitor in marketing', func
         ->and($audit->user_id)->toBeNull();
     Mail::assertQueued(WebsiteAuditReport::class);
     Mail::assertQueued(WebsiteAuditLeadReceived::class);
-    (new WebsiteAuditReport($audit))->assertSeeInHtml('within one working day');
+    (new WebsiteAuditReport($audit))->assertSeeInHtml('personally review your results');
     expect((new WebsiteAuditLeadReceived($audit))->envelope()->replyTo[0]->address)->toBe('owner@example.com');
     (new WebsiteAuditLeadReceived($audit))->assertSeeInHtml('Personal review due')->assertSeeInHtml('No marketing opt-in');
 });
@@ -116,6 +116,9 @@ it('shows an unselected marketing choice and the review offer immediately after 
     $response = $this->get(route('marketing.website-audits.show', $audit))->assertSuccessful()
         ->assertSeeInOrder(['What we found.', 'Want to know what to fix first?', 'Get Ross’s recommendations'])
         ->assertSee('name="personal_review" value="1"', false)
-        ->assertSee(WebsiteAudit::MARKETING_CONSENT_TEXT);
+        ->assertSee(WebsiteAudit::MARKETING_CONSENT_TEXT)
+        ->assertSee('bg-black p-6 text-white', false)
+        ->assertSee('src="'.asset('ross-topping.jpg').'"', false)
+        ->assertSee('<span class="max-sm:hidden">Book a call with Ross</span>', false);
     expect($response->getContent())->toMatch('/name="marketing_consent" value="1"\s+class=/');
 });

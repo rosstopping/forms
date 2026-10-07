@@ -145,11 +145,11 @@
                     @endif
                 </section>
                 @if ($audit->report_requested_at === null)
-                    <section aria-labelledby="audit-review-title" class="grid gap-4 rounded-3xl bg-lichen p-6 ring-1 ring-ink/10 sm:p-8">
+                    <section aria-labelledby="audit-review-title" class="grid gap-4 rounded-3xl bg-black p-6 text-white ring-1 ring-black sm:p-8">
                         <h2 id="audit-review-title" class="text-3xl font-medium tracking-tight text-balance">Want to know what to fix first?</h2>
-                        <p class="max-w-[60ch] text-base text-ink/65">I’ll review your results and email you the three improvements I’d prioritise for your website, with a clear next step for each.</p>
+                        <p class="max-w-[60ch] text-base text-white/75">I’ll review your results and email you the three improvements I’d prioritise for your website, with a clear next step for each.</p>
                         <div><button type="button" data-audit-email-open aria-haspopup="dialog" aria-controls="audit-email-dialog" class="inline-flex min-h-12 items-center justify-center rounded-full bg-garden px-5 py-3 text-base font-medium text-white hover:bg-moss focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden">Get Ross’s recommendations</button></div>
-                        <p class="text-base text-ink/60 sm:text-sm">Within one working day. No obligation to book a call.</p>
+                        <p class="text-base text-white/65 sm:text-sm">Within one working day. No obligation to book a call.</p>
                     </section>
                 @elseif ($audit->personal_review_requested_at && ! $audit->personal_review_queued_at)
                     <p role="status" class="rounded-2xl bg-lichen p-5 text-base text-ink">Ross has your request and will email your three priorities within one working day.</p>
@@ -353,7 +353,7 @@
         @if ($audit->report_requested_at === null)
             <button type="button" data-audit-email-open aria-label="Get Ross’s recommendations" aria-haspopup="dialog" aria-controls="audit-email-dialog" class="inline-flex min-h-12 items-center justify-center rounded-full bg-garden px-4 py-3 text-sm font-medium text-white shadow-md hover:bg-moss focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden"><span class="sm:hidden">Get my next steps</span><span class="max-sm:hidden">Get Ross’s recommendations</span></button>
         @endif
-        <a data-audit-book-call href="{{ route('marketing.ppc.book') }}" aria-label="Book a call with Ross" class="inline-flex min-h-12 items-center justify-center rounded-full bg-white px-4 py-3 text-sm font-medium text-garden shadow-md ring-1 ring-ink/10 hover:bg-lichen focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden">Book a call<span class="max-sm:hidden"> with Ross</span></a>
+        <a data-audit-book-call href="{{ route('marketing.ppc.book') }}" aria-label="Book a call with Ross" class="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-white py-2 pr-4 pl-2 text-sm font-medium text-garden shadow-md ring-1 ring-ink/10 hover:bg-lichen focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden"><img src="{{ asset('ross-topping.jpg') }}" alt="" width="32" height="32" class="size-8 shrink-0 rounded-full object-cover"><span class="sm:hidden">Book a call</span><span class="max-sm:hidden">Book a call with Ross</span></a>
     </div>
 @endif
 @if ($audit->isReadyToDisplay() && $audit->report_requested_at === null)

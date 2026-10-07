@@ -48,3 +48,6 @@ In the public audit competitor comparison, lower Google position numbers indicat
 
 ## Use directional SVGs in the six-month comparison
 The six-month projection comparison uses an inline downward arrow SVG while its cards stack below sm, and an inline rightward arrow SVG at sm and wider. Keep the arrows decorative and aligned with the card direction; do not restore the text arrow.
+
+## Emphasise personal review and show Ross beside booking
+The inline personal-review offer uses a black background with white heading and readable muted white supporting text. The booking button includes Ross's supplied portrait (public/ross-topping.jpg) as a small circular image. Use whole responsive label spans for 'Book a call' and 'Book a call with Ross' to preserve desktop word spacing.
