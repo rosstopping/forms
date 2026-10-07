@@ -10,6 +10,7 @@ paths:
   - 'app/Services/{WebsiteHealthAuditor,WebsiteCrawler,ProspectWebsiteAnalyzer}.php'
   - 'app/Services/{SeoImpactTracker,ContentWorkSelector,ContentGenerationPromptGenerator}.php'
   - app/Services/ContentGenerationPromptGenerator.php
+  - app/Services/ProspectWebsiteAnalyzer.php
 ---
 
 # Services
@@ -46,3 +47,6 @@ Product decision 5 October 2026 supersedes measurement-period protection: change
 
 ## Bound hosted Copilot prompts by UTF-8 bytes
 Use a conservative 28,000-byte UTF-8 budget for hosted content prompts, leaving headroom below the 30,000-character boundary. Str::limit measures display width, so it cannot enforce a byte/character payload ceiling for arbitrary Unicode. Keep fixed safety and request-handling requirements before variable request text; truncate with mb_strcut to preserve UTF-8.
+
+## Follow public audit redirects with destination validation
+Prospect/public audit fetching follows at most five HTTP(S) redirects, including public cross-domain destinations, validating all A/AAAA answers at every hop and pinning the connection to a checked address. Reject credentials, private/reserved destinations, unsupported ports and loops. This does not change WebsiteHealthAuditor redirect reporting or SitemapFetcher’s same-host policy. Use final_url for page checks and public audit research; retain the submitted website_url.

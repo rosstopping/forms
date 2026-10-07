@@ -44,7 +44,10 @@ class GenerateWebsiteAudit implements ShouldBeUnique, ShouldQueue
         ]);
 
         $analysis = $analyzer->analyze($this->audit->website_url);
-        $insights = $research->forAudit($this->audit->domain, $this->audit->website_url, $analysis);
+        $finalUrl = $analysis['final_url'] ?? $this->audit->website_url;
+        $finalDomain = isset($analysis['final_url']) ? strtolower((string) parse_url($finalUrl, PHP_URL_HOST)) : $this->audit->domain;
+        $insights = $research->forAudit($finalDomain, $finalUrl, $analysis);
+        $insights['audited_url'] = $finalUrl;
         try {
             $screenshot->capture($this->audit);
         } catch (Throwable $exception) {
@@ -53,6 +56,7 @@ class GenerateWebsiteAudit implements ShouldBeUnique, ShouldQueue
 
         $this->audit->update([
             'status' => WebsiteAudit::STATUS_COMPLETED,
+            'domain' => $finalDomain,
             'opportunity_score' => $analysis['score'],
             'findings' => $analysis['findings'],
             'insights' => $insights,

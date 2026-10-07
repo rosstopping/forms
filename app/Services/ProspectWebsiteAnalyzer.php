@@ -2,7 +2,10 @@
 
 namespace App\Services;
 
+use GuzzleHttp\Psr7\Uri;
+use GuzzleHttp\Psr7\UriResolver;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -11,18 +14,11 @@ class ProspectWebsiteAnalyzer
 {
     public function __construct(protected WebsiteHealthAuditor $auditor, protected ProspectContactFinder $contactFinder) {}
 
-    /** @return array{score: int, findings: array<int, array<string, mixed>>, contacts: array<string, mixed>} */
+    /** @return array{final_url: string, score: int, findings: array<int, array<string, mixed>>, contacts: array<string, mixed>} */
     public function analyze(string $url): array
     {
-        $host = parse_url($url, PHP_URL_HOST);
-
-        if (! is_string($host) || ! $this->isPublicHost($host)) {
-            throw new RuntimeException('The prospect website must resolve to a public address.');
-        }
-
         $startedAt = microtime(true);
-        $response = Http::accept('text/html')->withUserAgent(config('app.name').' Prospect Research')
-            ->connectTimeout(5)->timeout(12)->withOptions(['allow_redirects' => false])->get($url);
+        [$response, $url] = $this->fetchPage($url);
         $responseTime = (int) round((microtime(true) - $startedAt) * 1000);
 
         if (! $response->successful()) {
@@ -30,9 +26,9 @@ class ProspectWebsiteAnalyzer
         }
 
         $checks = [
-            $this->check('Availability & speed', 'website_reachable', 'Website reachable', 'passed', 'The homepage returned HTTP '.$response->status().'.'),
-            $this->check('Availability & speed', 'response_time', 'Homepage response time', $responseTime > 2000 ? 'warning' : 'passed', "The homepage responded in {$responseTime} ms."),
-            $this->check('Security', 'https', 'HTTPS enabled', parse_url($url, PHP_URL_SCHEME) === 'https' ? 'passed' : 'warning', parse_url($url, PHP_URL_SCHEME) === 'https' ? 'The homepage is available over HTTPS.' : 'The homepage is not being checked over HTTPS.'),
+            $this->check('Availability & speed', 'website_reachable', 'Website reachable', 'passed', 'The page returned HTTP '.$response->status().'.'),
+            $this->check('Availability & speed', 'response_time', 'Page response time', $responseTime > 2000 ? 'warning' : 'passed', "The page responded in {$responseTime} ms."),
+            $this->check('Security', 'https', 'HTTPS enabled', parse_url($url, PHP_URL_SCHEME) === 'https' ? 'passed' : 'warning', parse_url($url, PHP_URL_SCHEME) === 'https' ? 'The page is available over HTTPS.' : 'The page is not being checked over HTTPS.'),
             ...$this->securityChecks($response->headers()),
             ...$this->htmlChecks($response->body(), $url),
             $this->endpointCheck($this->baseUrl($url).'/robots.txt', 'robots_txt', 'robots.txt available'),
@@ -41,18 +37,62 @@ class ProspectWebsiteAnalyzer
         $findings = collect($checks)->values()->all();
         $score = min(100, collect($findings)->sum(fn (array $finding): int => $finding['severity'] === 'failed' ? 25 : ($finding['severity'] === 'warning' ? 10 : 0)));
 
-        return ['score' => $score, 'findings' => $findings, 'contacts' => $this->contactFinder->find($url, $response->body())];
+        return ['final_url' => $url, 'score' => $score, 'findings' => $findings, 'contacts' => $this->contactFinder->find($url, $response->body())];
     }
 
-    protected function isPublicHost(string $host): bool
+    /** @return array{Response, string} */
+    protected function fetchPage(string $url): array
     {
-        if (app()->environment('testing')) {
-            return true;
+        $current = (new Uri($url))->withFragment('');
+        $visited = [];
+
+        for ($redirects = 0; ; $redirects++) {
+            $url = (string) $current;
+            $host = $current->getHost();
+            if (! in_array($current->getScheme(), ['http', 'https'], true)
+                || $current->getUserInfo() !== ''
+                || ! in_array($current->getPort(), [null, 80, 443], true)
+                || $host === '') {
+                throw new RuntimeException('The website address must be a public HTTP or HTTPS URL without credentials.');
+            }
+            if (isset($visited[$url])) {
+                throw new RuntimeException('The website has a redirect loop.');
+            }
+            $visited[$url] = true;
+            $addresses = $this->addresses($host);
+            if ($addresses === [] || collect($addresses)->contains(fn (string $address): bool => ! filter_var($address, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE))) {
+                throw new RuntimeException('The prospect website must resolve to a public address.');
+            }
+            $address = str_contains($addresses[0], ':') ? '['.$addresses[0].']' : $addresses[0];
+            $port = $current->getPort() ?? ($current->getScheme() === 'https' ? 443 : 80);
+            $response = $this->request()->withOptions([
+                'proxy' => '',
+                'curl' => [CURLOPT_RESOLVE => [$host.':'.$port.':'.$address]],
+            ])->get($url);
+
+            if (! in_array($response->status(), [301, 302, 303, 307, 308], true)) {
+                return [$response, $url];
+            }
+            if ($redirects >= 5 || ! $response->header('Location')) {
+                throw new RuntimeException('The website redirect could not be followed.');
+            }
+            $current = UriResolver::resolve($current, new Uri($response->header('Location')))->withFragment('');
         }
+    }
 
-        $addresses = gethostbynamel($host);
+    /** @return array<int, string> */
+    protected function addresses(string $host): array
+    {
+        $literal = trim($host, '[]');
+        if (filter_var($literal, FILTER_VALIDATE_IP)) {
+            return [$literal];
+        }
+        if (app()->environment('testing')) {
+            return ['93.184.216.34'];
+        }
+        $records = dns_get_record($host, DNS_A | DNS_AAAA);
 
-        return $addresses !== false && $addresses !== [] && collect($addresses)->every(fn (string $address): bool => filter_var($address, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false);
+        return array_values(array_filter(array_map(fn (array $record): ?string => $record['ip'] ?? $record['ipv6'] ?? null, $records ?: [])));
     }
 
     /** @param array<string, array<int, string>> $headers
@@ -82,7 +122,7 @@ class ProspectWebsiteAnalyzer
     protected function htmlChecks(string $html, string $url): array
     {
         return collect($this->auditor->inspectHtml(substr($html, 0, 2_000_000), $url))
-            ->map(fn (array $check): array => $this->check($this->categoryFor($check['key']), $check['key'], $check['label'], $check['status'], $check['message']))
+            ->map(fn (array $check): array => $this->check($this->categoryFor($check['key']), $check['key'], $check['label'], $check['status'], str_replace(['The homepage', 'Homepage'], ['The page', 'Page'], $check['message'])))
             ->all();
     }
 

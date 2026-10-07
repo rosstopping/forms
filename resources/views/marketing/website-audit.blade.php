@@ -75,8 +75,9 @@
         @elseif ($audit->status === \App\Models\WebsiteAudit::STATUS_FAILED)
             <div class="grid gap-4 border-t border-ink/10 pt-8">
                 <h2 class="max-w-[35ch] text-2xl font-medium tracking-tight text-balance">We could not review your website.</h2>
-                <p class="max-w-[56ch] text-pretty text-base text-ink/65">It may be unavailable or blocking automated checks. Check the address and try again.</p>
+                <p class="max-w-[56ch] text-pretty text-base text-ink/65">{{ preg_match('/HTTP (401|403)\b/', (string) $audit->analysis_error) ? 'Your website restricted access to our automated check. We can help review it with you.' : 'It may be unavailable or blocking automated checks. Check the address and try again.' }}</p>
                 <p><a href="{{ route('marketing.free-site-audit') }}" class="font-medium text-garden underline decoration-garden/30 underline-offset-4 hover:decoration-garden">Try another website address</a></p>
+                <p><a href="{{ route('marketing.ppc.book') }}" class="font-medium text-garden underline decoration-garden/30 underline-offset-4 hover:decoration-garden">Book a call with Ross for help reviewing your website</a></p>
             </div>
         @else
             <div class="grid gap-10 border-t border-ink/10 pt-8">

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Requests\StoreFreeSiteAuditRequest;
 use App\Jobs\GenerateFreeSiteAudit;
 use App\Jobs\GenerateWebsiteAudit;
 use App\Mail\FreeSiteAuditResults;
@@ -726,6 +727,13 @@ it('does not rate limit report views and status checks for signed-in admins', fu
 
 it('allows repeated audit submissions and report polling while developing locally', function (): void {
     Queue::fake();
+    app()->bind(StoreFreeSiteAuditRequest::class, fn () => new class extends StoreFreeSiteAuditRequest
+    {
+        protected function domainResolvesToPublicAddress(string $host): bool
+        {
+            return true;
+        }
+    });
     $this->withoutMiddleware(PreventRequestForgery::class);
     $this->app->detectEnvironment(fn (): string => 'local');
 

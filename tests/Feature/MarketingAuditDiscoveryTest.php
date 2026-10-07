@@ -92,3 +92,32 @@ it('renders competitor positions and a sampled AI citation on the public report'
         ->and($rows->item(2)->getElementsByTagName('td')->item(1)->getAttribute('class'))->toContain('text-ink/65')
         ->and($rows->item(2)->getElementsByTagName('td')->item(2)->getAttribute('class'))->toContain('text-ink/65');
 });
+
+it('excludes the audited domain and its www alias from competitor selection', function (): void {
+    Cache::flush();
+    config(['services.dataforseo.login' => 'test', 'services.dataforseo.password' => 'test']);
+    Http::preventStrayRequests();
+    Http::fake([
+        '*/competitors_domain/live' => Http::response(['status_code' => 20000, 'tasks' => [['status_code' => 20000, 'cost' => 0.01, 'result' => [['items' => [
+            ['domain' => 'EXAMPLE.COM', 'intersections' => 100],
+            ['domain' => 'www.example.com', 'intersections' => 90],
+            ['domain' => 'rival.example', 'intersections' => 12],
+            ['domain' => 'second.example', 'intersections' => 8],
+        ]]]]]]),
+        '*/domain_intersection/live' => Http::response(['status_code' => 20000, 'tasks' => [['status_code' => 20000, 'cost' => 0.02, 'result' => [['items' => []]]]]]),
+    ]);
+    $result = app(MarketingAuditCompetitors::class)->forDomain('www.example.com', ['organic_keywords' => 42, 'location_code' => 2826, 'language_code' => 'en']);
+
+    expect($result['domain'])->toBe('rival.example')
+        ->and(array_column($result['others'], 'domain'))->toBe(['second.example']);
+    Http::assertSentCount(2);
+});
+
+it('does not request a comparison when all candidate competitors are the audited site', function (): void {
+    Cache::flush();
+    config(['services.dataforseo.login' => 'test', 'services.dataforseo.password' => 'test']);
+    Http::preventStrayRequests();
+    Http::fake(['*/competitors_domain/live' => Http::response(['status_code' => 20000, 'tasks' => [['status_code' => 20000, 'result' => [['items' => [['domain' => 'example.com', 'intersections' => 42]]]]]]])]);
+    expect(app(MarketingAuditCompetitors::class)->forDomain('www.example.com', ['organic_keywords' => 42, 'location_code' => 2826, 'language_code' => 'en']))->toBe([]);
+    Http::assertSentCount(1);
+});

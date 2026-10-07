@@ -20,7 +20,7 @@ class MarketingAuditCompetitors
 
         $location = (int) $seo['location_code'];
         $language = (string) $seo['language_code'];
-        $key = 'marketing-audit-competitors:'.hash('sha256', strtolower($domain)."|{$location}|{$language}");
+        $key = 'marketing-audit-competitors:v2:'.hash('sha256', strtolower($domain)."|{$location}|{$language}");
 
         $cached = Cache::get($key);
         if (is_array($cached)) {
@@ -29,7 +29,9 @@ class MarketingAuditCompetitors
 
         try {
             $response = $this->competitors->forDomain($domain, $location, $language, 5);
-            $competitor = collect($response->competitors)->first(fn ($item): bool => $item->commonKeywords > 0);
+            $candidates = collect($response->competitors)->filter(fn ($item): bool => $item->commonKeywords > 0
+                && $this->normaliseDomain($item->domain) !== $this->normaliseDomain($domain));
+            $competitor = $candidates->first();
             if ($competitor === null) {
                 Cache::put($key, [], now()->addDays(7));
 
@@ -54,7 +56,7 @@ class MarketingAuditCompetitors
                 'domain' => $competitor->domain,
                 'shared_terms' => $competitor->commonKeywords,
                 'terms' => $terms,
-                'others' => collect($response->competitors)
+                'others' => $candidates
                     ->filter(fn ($item): bool => $item->commonKeywords > 0 && $item->domain !== $competitor->domain)
                     ->take(2)
                     ->map(fn ($item): array => ['domain' => $item->domain, 'shared_terms' => $item->commonKeywords])
@@ -71,5 +73,12 @@ class MarketingAuditCompetitors
 
             return null;
         }
+    }
+
+    private function normaliseDomain(string $domain): string
+    {
+        $host = parse_url(str_contains($domain, '://') ? $domain : 'https://'.$domain, PHP_URL_HOST);
+
+        return preg_replace('/^www\./', '', strtolower(rtrim((string) $host, '.'))) ?? '';
     }
 }
