@@ -298,6 +298,7 @@ it('explains every website connection option and shows the walkthrough video', f
 it('publishes legal pages suitable for connected Google services', function (): void {
     $this->get(route('marketing.privacy'))
         ->assertSuccessful()
+        ->assertSee('Ongoing website advice and promotional follow-up require the separate optional opt-in')
         ->assertSee('Google Search Console data')
         ->assertSee('Google Business Profile data')
         ->assertSee('encrypted access and refresh tokens')

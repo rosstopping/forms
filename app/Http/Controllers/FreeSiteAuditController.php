@@ -103,7 +103,7 @@ class FreeSiteAuditController extends Controller
     {
         $email = $request->validated('email');
 
-        DB::transaction(function () use ($websiteAudit, $email): void {
+        $savedAudit = DB::transaction(function () use ($websiteAudit, $email, $request): WebsiteAudit {
             $audit = WebsiteAudit::query()->lockForUpdate()->findOrFail($websiteAudit->id);
 
             if ($audit->report_requested_at !== null) {
@@ -111,20 +111,42 @@ class FreeSiteAuditController extends Controller
                     throw ValidationException::withMessages(['email' => 'This report has already been requested by email.']);
                 }
 
-                return;
+                return $audit;
             }
 
             $audit->update([
                 'email' => $email,
+                'personal_review_requested_at' => $request->boolean('personal_review') ? now() : null,
+                'personal_review_due_at' => $request->boolean('personal_review') ? now()->addWeekday() : null,
+                'marketing_consent_at' => $request->boolean('marketing_consent') ? now() : null,
+                'marketing_consent_version' => $request->boolean('marketing_consent') ? WebsiteAudit::MARKETING_CONSENT_VERSION : null,
                 'report_requested_at' => now(),
                 'expires_at' => now()->addDays(14),
             ]);
 
             Mail::to($email)->queue(new WebsiteAuditReport($audit));
             Mail::to(config('marketing.audit_notification_email'))->queue(new WebsiteAuditLeadReceived($audit));
+
+            return $audit;
         });
 
-        return back()->with('report_email_status', 'Your report is on its way.');
+        return back()->with('report_email_status', $savedAudit->personal_review_requested_at ? 'Your report is on its way. Ross will email your recommendations within one working day.' : 'Your report is on its way.');
+    }
+
+    public function emailPreferences(Request $request, WebsiteAudit $websiteAudit): View
+    {
+        return view('marketing.audit-email-preferences', ['audit' => $websiteAudit]);
+    }
+
+    public function unsubscribe(Request $request, WebsiteAudit $websiteAudit): RedirectResponse
+    {
+        abort_unless($websiteAudit->email, 404);
+        WebsiteAudit::query()->where('email', $websiteAudit->email)->update([
+            'marketing_consent_at' => null,
+            'marketing_consent_withdrawn_at' => now(),
+        ]);
+
+        return back()->with('status', 'You have unsubscribed from ongoing website advice.');
     }
 
     public function status(WebsiteAudit $websiteAudit): JsonResponse

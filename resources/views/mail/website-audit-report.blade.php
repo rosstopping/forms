@@ -1,7 +1,11 @@
 <x-mail::message>
 # Your search audit is ready
 
-We’ve reviewed {{ $audit->domain }} and outlined the website fixes and search opportunities we found.
+The automated audit has checked {{ $audit->domain }} and outlined the website fixes and search opportunities we found.
+
+@if ($audit->personal_review_requested_at)
+I’ll personally review your results and email the three improvements I’d prioritise, with a next step for each, within one working day. There’s no obligation to book a call.
+@endif
 
 <x-mail::button :url="$reportUrl">
 View your report
@@ -20,4 +24,8 @@ Book a call with Ross
 </x-mail::button>
 
 Ross at Sitewell
+
+@if ($audit->marketing_consent_at)
+You opted into ongoing website advice. [Unsubscribe]({{ $preferencesUrl }}) at any time.
+@endif
 </x-mail::message>

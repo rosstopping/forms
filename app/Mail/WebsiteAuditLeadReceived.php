@@ -26,6 +26,7 @@ class WebsiteAuditLeadReceived extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
+            replyTo: [$this->audit->email],
             subject: 'Search audit requested: '.$this->audit->domain,
         );
     }

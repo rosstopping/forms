@@ -6,6 +6,13 @@
         <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{{ session('status') }}</div>
     @endif
 
+    @if ($errors->any())
+        <div role="alert" class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            <p class="font-semibold">Please check the recommendations before sending.</p>
+            <ul class="mt-2 list-disc pl-5">@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
+        </div>
+    @endif
+
     <header>
         <p class="font-mono font-medium uppercase tracking-widest text-teal-700 text-base sm:text-sm">Lead management</p>
         <h1 class="mt-1 text-2xl font-semibold text-slate-950 sm:text-3xl">Onboarding</h1>
@@ -51,6 +58,13 @@
         </div>
     </form>
 
+    <dl class="grid grid-cols-2 gap-3 lg:grid-cols-6">
+        @foreach ($summary['audit_funnel'] as $label => $count)
+            <div class="ui-panel p-4"><dt class="text-sm text-slate-500">{{ $label }}</dt><dd class="mt-1 text-2xl font-semibold tabular-nums">{{ $count }}</dd></div>
+        @endforeach
+    </dl>
+    <p class="text-sm text-slate-500">Audit funnel counts are per report, not unique people. Replies, booked calls and paying clients are recorded manually below.</p>
+
     <section class="space-y-4">
         <header>
             <h2 class="text-lg font-semibold text-slate-950">Website audits</h2>
@@ -77,6 +91,42 @@
                                 <a href="{{ route('marketing.website-audits.show', $unclaimedAudit) }}" class="mt-2 inline-flex text-sm font-medium text-teal-700 hover:text-teal-900">View report</a>
                             @endif
                         </div>
+                        @if ($unclaimedAudit->personal_review_requested_at)
+                            <div class="grid gap-3 border-t border-slate-100 pt-3 sm:col-span-3">
+                                <p class="text-sm text-slate-600">{{ $unclaimedAudit->marketing_consent_at ? 'Opted into ongoing website advice.' : 'Requested review only; no marketing opt-in.' }}</p>
+                                @if (! $unclaimedAudit->personal_review_queued_at)
+                                    <p @class(['text-sm font-semibold', 'text-red-700' => $unclaimedAudit->personal_review_due_at->isPast(), 'text-amber-800' => ! $unclaimedAudit->personal_review_due_at->isPast()])>Review due {{ $unclaimedAudit->personal_review_due_at->format('j M, H:i') }}</p>
+                                    <details @if (old('review_audit_id') === $unclaimedAudit->public_id) open @endif>
+                                        <summary class="cursor-pointer text-sm font-medium text-teal-700">Write and send three priorities</summary>
+                                        <form method="POST" action="{{ route('admin.onboarding.audits.review', $unclaimedAudit) }}" class="mt-4 grid gap-4">
+                                            @csrf
+                                            <input type="hidden" name="review_audit_id" value="{{ $unclaimedAudit->public_id }}">
+                                            @for ($i = 0; $i < 3; $i++)
+                                                <fieldset class="grid gap-2 rounded-xl bg-slate-50 p-4">
+                                                    <legend class="text-sm font-semibold">Priority {{ $i + 1 }}</legend>
+                                                    @foreach (['title' => 'What to improve', 'impact' => 'Why it matters to their business', 'next_step' => 'Practical next step'] as $field => $label)
+                                                        <label class="grid gap-1 text-sm">{{ $label }}<textarea name="priorities[{{ $i }}][{{ $field }}]" rows="2" required maxlength="{{ $field === 'title' ? 150 : 1000 }}" class="ui-input">{{ old('review_audit_id') === $unclaimedAudit->public_id ? old('priorities.'.$i.'.'.$field) : '' }}</textarea></label>
+                                                    @endforeach
+                                                </fieldset>
+                                            @endfor
+                                            <p class="text-sm text-slate-600">The email asks whether they want enquiries, bookings or sales, and includes the report and an optional call link. Replies go to {{ config('marketing.audit_notification_email') }}.</p>
+                                            <div><button type="submit" class="ui-button ui-button-primary">Send recommendations to {{ $unclaimedAudit->email }}</button></div>
+                                        </form>
+                                    </details>
+                                @else
+                                    <p class="text-sm text-slate-600">Recommendations queued {{ $unclaimedAudit->personal_review_queued_at->diffForHumans() }}. Check failed mail jobs if delivery is uncertain.</p>
+                                @endif
+                                <div class="flex flex-wrap gap-2">
+                                    @foreach (['replied' => ['Reply received', 'lead_replied_at'], 'call_booked' => ['Call booked', 'lead_call_booked_at'], 'converted' => ['Paying client', 'lead_converted_at']] as $stage => [$label, $column])
+                                        @if ($unclaimedAudit->{$column})
+                                            <span class="rounded-full bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{{ $label }} · {{ $unclaimedAudit->{$column}->format('j M') }}</span>
+                                        @else
+                                            <form method="POST" action="{{ route('admin.onboarding.audits.lead', $unclaimedAudit) }}">@csrf @method('PATCH')<input type="hidden" name="stage" value="{{ $stage }}"><button type="submit" class="ui-button ui-button-secondary">Mark {{ strtolower($label) }}</button></form>
+                                        @endif
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
                     </article>
                 @empty
                     <div class="p-8 text-center text-sm text-slate-500">No website audits match these filters.</div>

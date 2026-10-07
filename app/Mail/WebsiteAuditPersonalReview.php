@@ -12,7 +12,7 @@ use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\URL;
 
-class WebsiteAuditReport extends Mailable implements ShouldQueue
+class WebsiteAuditPersonalReview extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
@@ -28,7 +28,7 @@ class WebsiteAuditReport extends Mailable implements ShouldQueue
     {
         return new Envelope(
             replyTo: [config('marketing.audit_notification_email')],
-            subject: 'Your Sitewell search audit for '.$this->audit->domain,
+            subject: 'Your three website priorities for '.$this->audit->domain,
         );
     }
 
@@ -38,7 +38,7 @@ class WebsiteAuditReport extends Mailable implements ShouldQueue
     public function content(): Content
     {
         return new Content(
-            markdown: 'mail.website-audit-report',
+            markdown: 'mail.website-audit-personal-review',
             with: [
                 'reportUrl' => route('marketing.website-audits.show', $this->audit),
                 'preferencesUrl' => URL::signedRoute('marketing.website-audits.email-preferences', $this->audit),

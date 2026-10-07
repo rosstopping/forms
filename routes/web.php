@@ -73,6 +73,7 @@ use App\Http\Controllers\Admin\WebsiteAiChatController;
 use App\Http\Controllers\Admin\WebsiteAiQuestionCreditController;
 use App\Http\Controllers\Admin\WebsiteAiQuestionReportController;
 use App\Http\Controllers\Admin\WebsiteAiQuestionStatusController;
+use App\Http\Controllers\Admin\WebsiteAuditReviewController;
 use App\Http\Controllers\Admin\WebsiteAutoresponderController;
 use App\Http\Controllers\Admin\WebsiteBuilderController;
 use App\Http\Controllers\Admin\WebsiteController;
@@ -186,6 +187,8 @@ Route::get('/website-audits/{websiteAudit}', [FreeSiteAuditController::class, 's
 Route::get('/website-audits/{websiteAudit}/preview', [FreeSiteAuditController::class, 'preview'])
     ->middleware('throttle:website-audit-reports')
     ->name('marketing.website-audits.preview');
+Route::get('/website-audits/{websiteAudit}/email-preferences', [FreeSiteAuditController::class, 'emailPreferences'])->middleware('signed')->name('marketing.website-audits.email-preferences');
+Route::post('/website-audits/{websiteAudit}/email-preferences', [FreeSiteAuditController::class, 'unsubscribe'])->middleware(['signed', 'throttle:10,1']);
 Route::post('/website-audits/{websiteAudit}/email-report', [FreeSiteAuditController::class, 'emailReport'])
     ->middleware('throttle:website-audit-email')
     ->name('marketing.website-audits.email-report');
@@ -424,6 +427,8 @@ Route::middleware(['web', 'auth', ResolveCurrentWebsite::class])->prefix('admin'
     Route::get('onboarding/call', OnboardingCallController::class)->middleware('throttle:30,1')->name('onboarding-call');
     Route::middleware(EnsureAdmin::class)->group(function (): void {
         Route::get('overview', [DashboardController::class, 'overview'])->name('overview');
+        Route::post('onboarding/audits/{websiteAudit}/review', [WebsiteAuditReviewController::class, 'send'])->name('onboarding.audits.review');
+        Route::patch('onboarding/audits/{websiteAudit}/lead', [WebsiteAuditReviewController::class, 'update'])->name('onboarding.audits.lead');
         Route::get('onboarding', OnboardingLeadController::class)->name('onboarding.index');
         Route::patch('users/{user}/onboarding-call', UserOnboardingCallController::class)->name('users.onboarding-call.update');
         Route::get('assistant/reports/{websiteAiQuestion}', [WebsiteAiQuestionReportController::class, 'show'])->name('website-ai-question-reports.show');

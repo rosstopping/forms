@@ -9,11 +9,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 
-#[Fillable(['marketing_attribution', 'user_id', 'website_id', 'website_url', 'domain', 'email', 'status', 'opportunity_score', 'findings', 'insights', 'contact_details', 'analysis_error', 'started_at', 'completed_at', 'claim_email_sent_at', 'report_requested_at', 'claimed_at', 'expires_at'])]
+#[Fillable(['personal_review_requested_at', 'personal_review_due_at', 'personal_review_queued_at', 'personal_review', 'marketing_consent_at', 'marketing_consent_withdrawn_at', 'marketing_consent_version', 'lead_replied_at', 'lead_call_booked_at', 'lead_converted_at', 'marketing_attribution', 'user_id', 'website_id', 'website_url', 'domain', 'email', 'status', 'opportunity_score', 'findings', 'insights', 'contact_details', 'analysis_error', 'started_at', 'completed_at', 'claim_email_sent_at', 'report_requested_at', 'claimed_at', 'expires_at'])]
 class WebsiteAudit extends Model
 {
     /** @use HasFactory<WebsiteAuditFactory> */
     use HasFactory;
+
+    public const MARKETING_CONSENT_VERSION = 'website-advice-v1';
+
+    public const MARKETING_CONSENT_TEXT = 'Email me practical advice and follow-up about improving my website. Unsubscribe any time.';
 
     public const STATUS_PENDING = 'pending';
 
@@ -35,6 +39,15 @@ class WebsiteAudit extends Model
     protected function casts(): array
     {
         return [
+            'personal_review' => 'array',
+            'personal_review_requested_at' => 'datetime',
+            'personal_review_due_at' => 'datetime',
+            'personal_review_queued_at' => 'datetime',
+            'marketing_consent_at' => 'datetime',
+            'marketing_consent_withdrawn_at' => 'datetime',
+            'lead_replied_at' => 'datetime',
+            'lead_call_booked_at' => 'datetime',
+            'lead_converted_at' => 'datetime',
             'findings' => 'array',
             'insights' => 'array',
             'marketing_attribution' => 'array',

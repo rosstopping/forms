@@ -189,12 +189,12 @@ it('offers an email copy after the results and extends the requested report to f
 
     $this->get(route('marketing.website-audits.show', $audit))
         ->assertSuccessful()
-        ->assertSee('Want a copy by email?')
+        ->assertSee('Want to know what to fix first?')
         ->assertSee('data-audit-actions', false)
         ->assertSee('data-audit-book-call', false)
         ->assertSee('data-audit-email-open', false)
-        ->assertSee('aria-label="Get a copy by email"', false)
-        ->assertSee('class="size-6 sm:hidden"', false)
+        ->assertSee('aria-label="Get Ross’s recommendations"', false)
+        ->assertSee('Get my next steps')
         ->assertSee('aria-controls="audit-email-dialog"', false)
         ->assertSee('fixed inset-0 m-auto max-h-[calc(100dvh-2rem)]', false)
         ->assertSee('30000')
@@ -227,7 +227,7 @@ it('offers an email copy after the results and extends the requested report to f
         ->assertSee('Your report is on its way.')
         ->assertSee('data-audit-book-call', false)
         ->assertDontSee('data-audit-email-open', false)
-        ->assertDontSee('Want a copy by email?');
+        ->assertDontSee('Want to know what to fix first?');
 });
 
 it('rejects invalid report email requests and requests before completion', function (): void {

@@ -9,7 +9,7 @@
             <p class="text-base font-medium sm:text-sm text-garden">Legal</p>
             <h1 class="mt-5 font-sans text-4xl font-medium tracking-tight text-balance sm:text-6xl">Privacy policy</h1>
             <p class="mt-6 max-w-2xl text-pretty text-lg text-ink/65">How Sitewell uses personal information when you visit our website, use our services, contact us, or connect a third-party service.</p>
-            <p class="mt-4 text-sm text-ink/50">Effective date: 2 September 2026</p>
+            <p class="mt-4 text-sm text-ink/50">Effective date: 7 October 2026</p>
 
             <div class="mt-14 space-y-12 text-base leading-7 text-ink/70">
                 <section class="space-y-4">
@@ -37,6 +37,7 @@
                     <h2 class="font-sans text-3xl font-medium tracking-tight text-ink">3. How and why we use information</h2>
                     <p>We use personal information to provide and secure Sitewell, authenticate users, process subscriptions, respond to enquiries, deliver requested audits and communications, monitor website health, manage forms and leads, provide connected features, generate reviewable recommendations and drafts, improve reliability, prevent fraud and spam, and comply with legal obligations.</p>
                     <p>Our lawful bases under UK data-protection law are performance of a contract, steps requested before entering a contract, legitimate interests in operating and improving our services and communicating with relevant businesses, consent where requested, and compliance with legal obligations. Where we rely on legitimate interests, we consider the effect on the people concerned and provide a way to object.</p>
+                    <p>If you request a personal website review, we store your email address with your audit, send your report link and personal recommendations, and record follow-up progress such as replies, booked calls and becoming a customer. No account is created by requesting a review. Ongoing website advice and promotional follow-up require the separate optional opt-in on this form. We record your choice and its date; you can withdraw it using the unsubscribe link in your emails or by contacting us.</p>
                     <p>Some features use artificial intelligence to prepare drafts or recommendations. These outputs are intended for human review. We may send the minimum necessary content to our configured AI service provider to deliver the feature; we do not use Google user data to train general-purpose AI models.</p>
                 </section>
 

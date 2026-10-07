@@ -28,6 +28,8 @@ class EmailWebsiteAuditReportRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'personal_review' => ['sometimes', 'boolean'],
+            'marketing_consent' => ['sometimes', 'boolean'],
             'email' => ['required', 'string', 'lowercase', 'email:rfc', 'max:255'],
             '_sitewell_check' => ['nullable', 'prohibited'],
         ];

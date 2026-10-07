@@ -15,7 +15,7 @@
     <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
     <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}" sizes="180x180">
     <meta name="description" content="@yield('meta_description', 'Sitewell manages website and SEO improvements for UK businesses.')">
-    @if (request()->routeIs('marketing.website-audits.show'))
+    @if (request()->routeIs('marketing.website-audits.show', 'marketing.website-audits.email-preferences'))
         <meta name="robots" content="noindex">
     @else
         <link rel="canonical" href="{{ request()->url() }}">

@@ -27,6 +27,14 @@ class OnboardingLeadController extends Controller
         $summary = [
             'total' => (clone $baseQuery)->count() + $reportRequests,
             'report_requests' => $reportRequests,
+            'audit_funnel' => [
+                'Successful reports' => WebsiteAudit::query()->where('status', WebsiteAudit::STATUS_COMPLETED)->count(),
+                'Review requests' => WebsiteAudit::query()->whereNotNull('personal_review_requested_at')->count(),
+                'Recommendations queued' => WebsiteAudit::query()->whereNotNull('personal_review_queued_at')->count(),
+                'Replies' => WebsiteAudit::query()->whereNotNull('lead_replied_at')->count(),
+                'Booked calls' => WebsiteAudit::query()->whereNotNull('lead_call_booked_at')->count(),
+                'Paying clients' => WebsiteAudit::query()->whereNotNull('lead_converted_at')->count(),
+            ],
             'active' => (clone $baseQuery)->where('onboarding_trial_ends_at', '>', now())->count(),
             'needs_verification' => (clone $baseQuery)->whereHas('websiteAudits.website.domains', fn (Builder $query) => $query->where('is_primary', true)->where('ownership_status', '!=', WebsiteDomain::OWNERSHIP_VERIFIED))->count(),
             'call_not_booked' => (clone $baseQuery)->whereNull('onboarding_call_booked_at')->count(),
@@ -67,6 +75,8 @@ class OnboardingLeadController extends Controller
                     ->where('domain', 'like', $search)
                     ->orWhere('email', 'like', $search));
             })
+            ->orderByRaw('CASE WHEN personal_review_requested_at IS NOT NULL AND personal_review_queued_at IS NULL THEN 0 ELSE 1 END')
+            ->orderBy('personal_review_due_at')
             ->latest('created_at')
             ->paginate(20, ['*'], 'unclaimed_page')
             ->withQueryString();
