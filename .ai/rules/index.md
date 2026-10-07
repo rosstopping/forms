@@ -30,6 +30,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | {config/agencies.php,app/Http/Controllers/AgencyMarketingController.php,app/Http/Requests/StoreAgencyBetaRequest.php,resources/views/marketing/agencies/**} | .ai/rules/agencies.md |
 | app/{Ai/Agents/PixelOptimisationWriter.php,Services/PixelOptimisationGenerator.php,Http/Controllers/Admin/*PageOptimisationsController.php} | .ai/rules/agents-controllers-admin.md |
 | app/{Ai/Agents/CompetitorAnalyst.php,Services/CompetitorBriefGenerator.php} | .ai/rules/agents.md |
+| app/Http/Requests/StoreFreeSiteAuditRequest.php | .ai/rules/app-http-requests.md |
 | app/{Jobs/Send*RankingReport.php,Services/GoogleAdsEmailSummary.php,Services/GoogleAdsClient.php,Mail/*RankingReport.php},resources/views/emails/*ranking-report.blade.php | .ai/rules/app-jobs-views-emails.md |
 | app/{Jobs/StartContentGeneration.php,Services/ContentGenerationPromptGenerator.php,Services/SeoTargetKeywordSelector.php,Models/ContentGeneration.php} | .ai/rules/app-jobs.md |
 | app/{Services/MarketingAudit*.php,Services/WebsiteHealthAuditor.php,Services/AiVisibility*.php},resources/views/marketing/** | .ai/rules/app-services-views-marketing.md |
@@ -90,6 +91,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | resources/views/marketing/website-audit.blade.php,app/{Jobs/GenerateWebsiteAudit.php,Services/MarketingAudit*.php,Models/WebsiteAudit.php} | .ai/rules/marketing-jobs.md |
 | {config/ppc.php,resources/views/marketing/ppc.blade.php,resources/js/marketing-events.js} | .ai/rules/marketing-js.md |
 | {config/ppc.php,app/Support/MarketingJourney.php,app/Models/MarketingConversion.php,app/Events/MarketingConversionRecorded.php,app/Http/Controllers/{PpcLandingController,CalWebhookController,FreeSiteAuditController}.php,resources/{js/marketing-events.js,views/marketing/ppc.blade.php,views/layouts/ppc.blade.php}} | .ai/rules/marketing-layouts.md |
+| resources/views/{marketing/**,layouts/marketing.blade.php,components/marketing/cta.blade.php,mail/website-audit*} | .ai/rules/marketing-marketing.md |
 | app/{Http/Controllers/FreeSiteAuditController.php,Http/Requests/StoreFreeSiteAuditRequest.php,Jobs/GenerateFreeSiteAudit.php,Mail/FreeSiteAuditResults.php},resources/views/{marketing/free-site-audit.blade.php,prospects/report.blade.php,mail/free-site-audit-results.blade.php} | .ai/rules/marketing.md |
 | app/{Support/MembershipPlan.php,Http/Middleware/EnsureMembershipFeature.php,Http/Controllers/Admin/WebsiteController.php},resources/views/admin/websites/**,routes/web.php | .ai/rules/middleware-controllers-admin-views-admin-websites.md |
 | app/{Models/User,Http/Controllers/Admin/{WebsiteController,UserController},Http/Middleware/ResolveCurrentWebsite}.php | .ai/rules/middleware.md |
@@ -104,6 +106,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | resources/views/{emails/**,mail/**,vendor/mail/**,vendor/notifications/**,components/email-layout.blade.php} | .ai/rules/notifications.md |
 | app/{Models/User.php,Http/Controllers/Admin/OnboardingLeadController.php},resources/views/{admin/onboarding-leads/**,layouts/app.blade.php},routes/web.php,tests/Feature/OnboardingLeadTest.php | .ai/rules/onboarding-leads-feature.md |
 | {app/Http/Requests/SendWebsiteAuditReviewRequest.php,app/Http/Controllers/Admin/WebsiteAuditReviewController.php,app/Mail/WebsiteAuditPersonalReview.php,resources/views/{admin/onboarding-leads/index,mail/website-audit*,marketing/website-audit}.blade.php} | .ai/rules/onboarding-leads-indexmail.md |
+| app/{Models/WebsiteAudit*,Http/Controllers/{FreeSiteAuditController,WebsiteAuditEngagementController,PpcLandingController,CalWebhookController,Admin/OnboardingLeadController}.php},resources/{views/{marketing/website-audit,admin/onboarding-leads/index}.blade.php,js/{audit-engagement,audit-review,cal-booking}.js} | .ai/rules/onboarding-leads.md |
 | resources/views/admin/websites/partials/content*.blade.php,app/Http/Controllers/Admin/ContentPlanController.php | .ai/rules/partials-http-controllers-admin.md |
 | app/{Http/Controllers/Admin/BusinessProfileController.php,Services/BusinessProfileClient.php},resources/views/admin/websites/partials/business-profile.blade.php | .ai/rules/partials.md |
 | app/{Jobs,Services,Http/Controllers/Admin}/**/*SeoProspect*.php,resources/views/admin/prospect-discoveries/seo-show.blade.php | .ai/rules/prospect-discoveries.md |
@@ -152,10 +155,12 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Http/Controllers/Admin/DashboardController.php,resources/views/admin/{dashboard,overview}.blade.php,resources/views/layouts/app.blade.php | .ai/rules/views-layouts.md |
 | app/Services/Prospect*.php,resources/views/mail/prospects/** | .ai/rules/views-mail-prospects.md |
 | {app/Http/Controllers/MarketingController.php,config/marketing.php,resources/views/marketing/{landing,features}.blade.php,routes/web.php,tests/Feature/MarketingPagesTest.php} | .ai/rules/views-marketing-feature.md |
+| resources/views/marketing/website-audit.blade.php,resources/js/{audit-review,marketing-events}.js | .ai/rules/views-marketing-js.md |
 | app/{Http/Controllers/FreeSiteAuditController.php,Http/Requests/StoreFreeSiteAuditRequest.php,Jobs/GenerateWebsiteAudit.php,Models/WebsiteAudit.php,Services/MarketingTurnstileVerifier.php},resources/views/marketing/{free-site-audit,website-audit}.blade.php,routes/web.php | .ai/rules/views-marketing.md |
 | resources/views/** | .ai/rules/views.md |
 | app/{Console/Commands,Jobs,Mail,Models,Http/Controllers/Admin}/**/*Ranking*.php,resources/views/{admin/websites/**,emails/*ranking*},routes/web.php | .ai/rules/viewsadmin-websites.md |
 | resources/views/{layouts/marketing.blade.php,marketing/**} | .ai/rules/viewslayouts.md |
+| {app/Http/Controllers/FreeSiteAuditController.php,app/Http/Requests/UpdateWebsiteAuditGoalRequest.php,app/Mail/WebsiteAuditReport.php,resources/views/{marketing/website-audit,mail/website-audit*}.blade.php} | .ai/rules/website-auditmail.md |
 | app/Models/Website.php,resources/views/admin/websites/**,resources/views/admin/website-health-reports/** | .ai/rules/website-health-reports.md |
 | app/{Http/Controllers/Admin/WebsiteMemberController,Http/Requests/{StoreWebsiteMemberRequest,UpdateWebsiteMemberRequest}}.php | .ai/rules/website-member-controller-http-requests.md |
 | app/{Services/AutoresponderHtmlSanitizer.php,Services/FormSettingsResolver.php,Mail/FormSubmissionAcknowledgement.php,Http/Controllers/Admin/{FormController.php,WebsiteAutoresponderController.php}},resources/{js/app.js,views/admin/forms/show.blade.php,views/admin/websites/show.blade.php,views/emails/form-submission-acknowledgement*.blade.php} | .ai/rules/websites-emails.md |

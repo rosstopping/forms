@@ -9,7 +9,7 @@
             <p class="text-base font-medium sm:text-sm text-garden">Our services</p>
             <h1 class="mt-5 max-w-[20ch] font-sans text-4xl font-medium tracking-tight text-balance sm:text-6xl">Website care. SEO. Content.</h1>
             <p class="mt-6 max-w-[52ch] text-pretty text-lg text-ink/65 sm:text-base">Choose the support you need, from website maintenance to SEO, content and local search.</p>
-            <a href="{{ route('marketing.free-site-audit') }}" class="mt-8 inline-flex rounded-full bg-garden px-4 py-3 text-base font-medium text-white ring-1 ring-garden hover:bg-moss focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden sm:text-sm">Get your free search audit</a>
+            <a href="{{ route('marketing.free-site-audit') }}" class="mt-8 inline-flex rounded-full bg-garden px-4 py-3 text-base font-medium text-white ring-1 ring-garden hover:bg-moss focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden sm:text-sm">See what we’d fix</a>
         </div>
     </section>
 

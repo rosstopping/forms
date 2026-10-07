@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Models\WebsiteAudit;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class EmailWebsiteAuditReportRequest extends FormRequest
 {
@@ -28,6 +29,8 @@ class EmailWebsiteAuditReportRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'engagement_visit_id' => ['nullable', 'uuid'],
+            'customer_goal' => ['nullable', Rule::in(['enquiries', 'bookings', 'sales'])],
             'personal_review' => ['sometimes', 'boolean'],
             'marketing_consent' => ['sometimes', 'boolean'],
             'email' => ['required', 'string', 'lowercase', 'email:rfc', 'max:255'],

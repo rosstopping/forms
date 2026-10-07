@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\EmailWebsiteAuditReportRequest;
 use App\Http\Requests\StoreFreeSiteAuditRequest;
+use App\Http\Requests\UpdateWebsiteAuditGoalRequest;
 use App\Jobs\GenerateWebsiteAudit;
 use App\Mail\WebsiteAuditLeadReceived;
 use App\Mail\WebsiteAuditReport;
@@ -19,6 +20,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -64,7 +66,11 @@ class FreeSiteAuditController extends Controller
 
     public function show(Request $request, WebsiteAudit $websiteAudit, MarketingAuditResearch $research, MarketingAuditScreenshot $screenshot): View
     {
-        abort_if($websiteAudit->hasExpired(), 404);
+        $showDetails = $request->routeIs('marketing.website-audits.full', 'admin.onboarding.audits.show');
+        if ($request->routeIs('admin.onboarding.audits.show')) {
+            abort_unless($request->user()?->isAdmin(), 403);
+        }
+        abort_if(! $showDetails && $websiteAudit->hasExpired(), 404);
 
         $request->session()->put('marketing.website_audit_id', $websiteAudit->public_id);
 
@@ -79,10 +85,15 @@ class FreeSiteAuditController extends Controller
 
         return view('marketing.website-audit', [
             'audit' => $websiteAudit,
-            'marketingEvents' => $events,
+            'showDetails' => $showDetails,
+            'goalUrl' => ! $showDetails && $websiteAudit->report_requested_at !== null && $request->session()->get('marketing.website_audit_review_ids.'.$websiteAudit->public_id) === true
+                ? URL::temporarySignedRoute('marketing.website-audits.goal', $websiteAudit->expires_at, $websiteAudit)
+                : null,
+            'engagementUrl' => ! $showDetails && ! $request->user()?->isAdmin() && $websiteAudit->isReadyToDisplay() ? URL::temporarySignedRoute('marketing.website-audits.engagement', $websiteAudit->expires_at, $websiteAudit) : null,
+            'marketingEvents' => $showDetails ? [] : $events,
             'projection' => is_array($seo) ? $research->projection($seo) : null,
             'rankings' => is_array($seo) ? $research->rankingHighlights($seo) : ['page_one' => [], 'striking_distance' => [], 'other' => []],
-            'screenshotUrl' => $websiteAudit->isReadyToDisplay() && Storage::disk('local')->exists($screenshot->pathFor($websiteAudit))
+            'screenshotUrl' => ! $websiteAudit->hasExpired() && $websiteAudit->isReadyToDisplay() && Storage::disk('local')->exists($screenshot->pathFor($websiteAudit))
                 ? route('marketing.website-audits.preview', $websiteAudit)
                 : null,
         ]);
@@ -115,6 +126,7 @@ class FreeSiteAuditController extends Controller
             }
 
             $audit->update([
+                'customer_goal' => $request->validated('customer_goal'),
                 'email' => $email,
                 'personal_review_requested_at' => $request->boolean('personal_review') ? now() : null,
                 'personal_review_due_at' => $request->boolean('personal_review') ? now()->addWeekday() : null,
@@ -124,13 +136,31 @@ class FreeSiteAuditController extends Controller
                 'expires_at' => now()->addDays(14),
             ]);
 
+            if ($request->filled('engagement_visit_id')) {
+                $audit->visits()->firstOrCreate(['visit_id' => $request->validated('engagement_visit_id')])
+                    ->update(['email_submitted_at' => now()]);
+            }
+
             Mail::to($email)->queue(new WebsiteAuditReport($audit));
             Mail::to(config('marketing.audit_notification_email'))->queue(new WebsiteAuditLeadReceived($audit));
 
             return $audit;
         });
 
-        return back()->with('report_email_status', $savedAudit->personal_review_requested_at ? 'Your report is on its way. Ross will email your recommendations within one working day.' : 'Your report is on its way.');
+        if ($savedAudit->wasChanged('report_requested_at')) {
+            $request->session()->put('marketing.website_audit_review_ids.'.$savedAudit->public_id, true);
+        }
+
+        return redirect()->to(route('marketing.website-audits.show', $savedAudit).'#audit-follow-up')
+            ->with('report_email_status', $savedAudit->personal_review_requested_at ? 'Thanks. Ross will email your video within one working day.' : 'Your report is on its way.');
+    }
+
+    public function updateGoal(UpdateWebsiteAuditGoalRequest $request, WebsiteAudit $websiteAudit): RedirectResponse
+    {
+        $websiteAudit->update(['customer_goal' => $request->validated('customer_goal')]);
+
+        return redirect()->to(route('marketing.website-audits.show', $websiteAudit).'#audit-follow-up')
+            ->with('audit_goal_status', 'Thanks. Ross will keep that in mind for your review.');
     }
 
     public function emailPreferences(Request $request, WebsiteAudit $websiteAudit): View

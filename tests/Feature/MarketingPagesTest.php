@@ -27,7 +27,7 @@ it('shows each public marketing page', function (string $route, string $copy): v
     expect($xpath->query('//main')->length)->toBe(1);
 
 })->with([
-    'home' => ['marketing.home', 'Turn more searches'],
+    'home' => ['marketing.home', 'Turn more searches into'],
     'how it works' => ['marketing.how-it-works', 'We take care of your website.'],
     'features' => ['marketing.features', 'Website care. SEO. Content.'],
     'pricing' => ['marketing.pricing', 'Choose your level of support.'],
@@ -35,7 +35,7 @@ it('shows each public marketing page', function (string $route, string $copy): v
     'comparison' => ['marketing.comparison', 'Compare your options.'],
     'about' => ['marketing.about', 'Your website needs looking after.'],
     'faqs' => ['marketing.faqs', 'Your questions, answered.'],
-    'get started' => ['marketing.free-site-audit', 'Enter your website and'],
+    'get started' => ['marketing.free-site-audit', 'Show us your website.'],
     'journal' => ['marketing.journal', 'Practical website and SEO guides.'],
     'contact' => ['marketing.contact', 'Talk to Sitewell.'],
     'privacy policy' => ['marketing.privacy', 'How Sitewell uses personal information'],
@@ -316,12 +316,12 @@ it('publishes legal pages suitable for connected Google services', function (): 
 it('keeps get started focused on one protected website form', function (): void {
     $response = $this->get(route('marketing.free-site-audit'))
         ->assertSuccessful()
-        ->assertSee("Enter your website and we'll tell you what to do next.", false)
-        ->assertSee('What your audit shows.')
+        ->assertSee('Show us your website. We’ll show you where we’d start.', false)
+        ->assertSee('Where we’d look first.')
         ->assertSee('Where you show up.')
         ->assertSee('What needs fixing.')
         ->assertSee('Whether AI mentions you.')
-        ->assertSee('Where to go next.')
+        ->assertSee('What we’d work on.')
         ->assertDontSee('browser security headers')
         ->assertSee('Get your free search audit')
         ->assertSee('action="'.route('marketing.free-site-audit.store').'"', false)
@@ -345,10 +345,10 @@ it('keeps the audit action visible on the home page without a branded video', fu
         ->assertDontSee('href="'.route('marketing.contact').'"', false);
 });
 
-it('leads with search outcomes and the website check without invented proof', function (): void {
+it('keeps the original search hero without invented proof', function (): void {
     $this->get(route('marketing.home'))
         ->assertSuccessful()
-        ->assertSee('Turn more searches')
+        ->assertSee('Turn more searches into')
         ->assertSee('your next customer.')
         ->assertSee('Get your free search audit')
         ->assertSee('href="'.route('marketing.free-site-audit').'"', false)
@@ -729,7 +729,7 @@ it('returns to standard pricing after the growth offer expires', function (): vo
 it('renders the homepage website form with configured spam protection', function (): void {
     config()->set('services.turnstile.marketing', ['enabled' => true, 'site_key' => 'homepage-key', 'secret_key' => 'test-secret']);
     $this->get(route('marketing.home'))->assertSuccessful()
-        ->assertSee('Your customers search Google, ask ChatGPT and read the sites that shape AI answers.')
+        ->assertSee('Your customers search Google, ask ChatGPT')
         ->assertSee('We find the searches that count and help you get found.')
         ->assertSee('name="website_url"', false)
         ->assertSee('name="_sitewell_check"', false)
@@ -767,12 +767,12 @@ it('returns audit validation errors and the entered address to the homepage', fu
         ->assertSee('aria-describedby="hero-website-error"', false);
 });
 
-it('keeps the streamlined homepage focused on services proof and the audit', function (): void {
+it('keeps the homepage focused on personal service delivery and ongoing progress', function (): void {
     $response = $this->get(route('marketing.home'))->assertSuccessful()
-        ->assertSee('The changes your website needs.')
-        ->assertSee('Sharper page copy.')
-        ->assertSee('Useful new content.')
-        ->assertSee('Technical fixes.')
+        ->assertSee('The improvements, done for you.')
+        ->assertSee('Improve existing pages.')
+        ->assertSee('Create useful content.')
+        ->assertSee('Fix website problems.')
         ->assertDontSee('Find the opportunities.')
         ->assertDontSee('Keep things moving.')
         ->assertDontSee('A clear weekly update.')
@@ -785,15 +785,15 @@ it('keeps the streamlined homepage focused on services proof and the audit', fun
     $document = new DOMDocument;
     @$document->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
     $xpath = new DOMXPath($document);
-    expect($xpath->query('//main/section')->length)->toBe(3)
+    expect($xpath->query('//main/section')->length)->toBe(4)
         ->and($xpath->query('//form[@data-audit-form]')->length)->toBe(1)
         ->and($xpath->query('//main//iframe')->length)->toBe(0)
-        ->and($xpath->query('//main//*[@data-home-reveal]')->length)->toBe(7)
+        ->and($xpath->query('//main//*[@data-home-reveal]')->length)->toBe(9)
         ->and($xpath->query('//main//form[@data-audit-form]//*[@data-home-reveal]')->length)->toBe(0)
         ->and($xpath->query('//footer')->length)->toBe(1);
 });
 
-it('uses only the audit call to action in homepage content and header', function (): void {
+it('uses the website check as the single first step in homepage content and header', function (): void {
     $response = $this->get(route('marketing.home'))->assertSuccessful()
         ->assertDontSee('Book a call')
         ->assertDontSee('I don’t have a website yet');
@@ -805,4 +805,24 @@ it('uses only the audit call to action in homepage content and header', function
             ->and($link->textContent)->toContain('Get your free search audit');
     }
     $this->get(route('marketing.free-site-audit'))->assertSuccessful()->assertSee('name="website_url"', false);
+});
+
+it('restores the original hero while retaining managed delivery below it', function (): void {
+    $response = $this->get(route('marketing.home'))->assertSuccessful()
+        ->assertSee('Your customers search Google, ask ChatGPT')
+        ->assertSee('We agree the priorities and do the work included in your plan.')
+        ->assertSee('See what’s changed. Know what comes next.')
+        ->assertSee('We’ll get you more customers.')
+        ->assertDontSee('48 hours')
+        ->assertDontSee('two working days');
+    $document = new DOMDocument;
+    @$document->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
+    $xpath = new DOMXPath($document);
+    $sections = $xpath->query('//main/section');
+    expect(array_map(fn ($section) => $section->getAttribute('aria-labelledby'), iterator_to_array($sections)))
+        ->toBe(['hero-spotlight', 'homepage-founder', 'homepage-services', 'homepage-progress']);
+    expect($xpath->query('//section[@aria-labelledby="homepage-founder"]//img')->item(0)->getAttribute('src'))
+        ->toBe(asset('ross-topping.jpg'));
+    expect($xpath->query('//section[@aria-labelledby="hero-spotlight"]//ul[@aria-label="Search engines and AI assistants"]')->length)->toBe(1)
+        ->and($xpath->query('//section[@aria-labelledby="homepage-progress"]//ul[@aria-label="Search engines and AI assistants"]')->length)->toBe(0);
 });

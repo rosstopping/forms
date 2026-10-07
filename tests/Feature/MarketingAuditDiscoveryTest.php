@@ -8,6 +8,7 @@ use App\Services\MarketingAuditCompetitors;
 use App\Services\OpenAiVisibilityProvider;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\URL;
 
 it('shows a bounded comparison of real shared Google positions and reuses it', function (): void {
     Cache::flush();
@@ -61,6 +62,7 @@ it('finishes a public AI check without blocking the saved audit', function (): v
 it('renders competitor positions and a sampled AI citation on the public report', function (): void {
     $audit = WebsiteAudit::factory()->create([
         'status' => WebsiteAudit::STATUS_COMPLETED,
+        'report_requested_at' => now(),
         'created_at' => now()->subMinute(),
         'findings' => [['severity' => 'passed']],
         'insights' => [
@@ -72,7 +74,15 @@ it('renders competitor positions and a sampled AI citation on the public report'
         ],
     ]);
 
-    $response = $this->get(route('marketing.website-audits.show', $audit))
+    $audit->update(['report_requested_at' => null]);
+    $this->get(route('marketing.website-audits.show', $audit))
+        ->assertSuccessful()
+        ->assertDontSee('rival.example')
+        ->assertDontSee('garden offices')
+        ->assertDontSee('Your website was cited.');
+    $audit->update(['report_requested_at' => now()]);
+
+    $response = $this->get(URL::temporarySignedRoute('marketing.website-audits.full', now()->addHour(), $audit))
         ->assertSuccessful()
         ->assertSee('rival.example')
         ->assertSee('second.example')

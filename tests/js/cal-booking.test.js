@@ -6,6 +6,7 @@ function fixture() {
     let click;
     const link = { href: 'https://sitewell.test/book', setAttribute() {}, removeAttribute() {}, addEventListener(name, callback) { click = callback; } };
     const calls = [];
+    const engagements = [];
     const navigations = [];
     const target = {
         Cal: (...args) => calls.push(args),
@@ -13,7 +14,7 @@ function fixture() {
         location: { assign: url => navigations.push(url) },
     };
     const event = { button: 0, preventDefault() { this.prevented = true; } };
-    return { link, target, calls, navigations, event, document: { querySelectorAll: () => [link] }, click: () => click(event) };
+    return { link, target, calls, navigations, event, engagements, document: { querySelectorAll: () => [link], dispatchEvent: event => engagements.push(event.detail) }, click: () => click(event) };
 }
 
 test('opens a Cal popup with the attributed booking URL and keeps the report open', async () => {
@@ -23,6 +24,7 @@ test('opens a Cal popup with the attributed booking URL and keeps the report ope
     assert.equal(f.event.prevented, true);
     assert.deepEqual(f.calls, [['init', { origin: 'https://cal.com' }], ['modal', { calLink: 'ross/intro?metadata%5Bsitewell_booking%5D=token' }]]);
     assert.deepEqual(f.navigations, []);
+    assert.deepEqual(f.engagements, ['booking_clicked', 'calendar_opened']);
 });
 
 test('uses the existing booking route if the embed cannot load', async () => {
@@ -38,6 +40,7 @@ test('preserves modified clicks as normal links', async () => {
     bootCalBooking(f.document, f.target, async () => {});
     await f.click();
     assert.equal(f.event.prevented, undefined);
+    assert.deepEqual(f.engagements, []);
     assert.deepEqual(f.calls, []);
 });
 

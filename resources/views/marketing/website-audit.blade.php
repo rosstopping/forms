@@ -16,25 +16,39 @@
     $seo = data_get($audit->insights, 'seo');
     $competitors = data_get($audit->insights, 'competitors');
     $aiVisibility = data_get($audit->insights, 'ai_visibility');
+    $visitorRange = $projection !== null ? number_format($projection['six_month_low']).'–'.number_format($projection['six_month_high']) : null;
 @endphp
-<section data-marketing-events="{{ json_encode($marketingEvents) }}" class="px-3 pt-1 pb-16 sm:px-6 sm:pt-2 sm:pb-24" aria-labelledby="audit-title">
+<section @if ($engagementUrl) data-audit-engagement-url="{{ $engagementUrl }}" data-audit-id="{{ $audit->public_id }}" data-csrf-token="{{ csrf_token() }}" @endif data-marketing-events="{{ json_encode($marketingEvents) }}" class="px-3 pt-1 pb-16 sm:px-6 sm:pt-2 sm:pb-24" aria-labelledby="audit-title">
     <div class="mx-auto grid max-w-7xl gap-8 rounded-3xl bg-lichen px-5 py-10 sm:px-10 sm:py-14">
-        <header class="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start lg:gap-10">
+        <header @class(['grid min-w-0 gap-6 lg:items-center lg:gap-10', 'lg:grid-cols-[minmax(0,1fr)_18rem]' => $screenshotUrl])>
             <div class="grid min-w-0 content-start gap-3">
-                <p class="text-base font-medium text-garden sm:text-sm">Your website review</p>
-                <h1 id="audit-title" class="w-full min-w-0 max-w-[24ch] truncate text-4xl font-medium tracking-tight sm:text-5xl" title="{{ $audit->domain }}">{{ $audit->domain }}</h1>
-                @if ($audit->isReadyToDisplay())
-                    <p class="max-w-[56ch] text-pretty text-base text-ink/65">Your website checks are ready.</p>
+                @if ($audit->isReadyToDisplay() && ! $showDetails)
+                    <div class="flex min-w-0 items-center gap-4">
+                        <div class="grid min-w-0 flex-1 gap-1">
+                            <p class="text-base font-medium text-garden sm:text-sm">Your website review</p>
+                            <p class="truncate text-base font-medium text-ink" title="{{ $audit->domain }}">{{ $audit->domain }}</p>
+                        </div>
+                        @if ($screenshotUrl)
+                            <figure class="w-24 shrink-0 rounded-[calc(var(--preview-radius)+--spacing(1))] bg-white p-1 ring-1 ring-ink/10 [--preview-radius:min(1vw,12px)] lg:hidden">
+                                <img src="{{ $screenshotUrl }}" alt="" width="1024" height="640" class="aspect-[8/5] w-full rounded-(--preview-radius) object-cover object-top outline-1 -outline-offset-1 outline-black/5" loading="eager" decoding="async">
+                            </figure>
+                        @endif
+                    </div>
+                    <h1 id="audit-title" class="max-w-[24ch] text-4xl font-medium tracking-tight text-balance sm:text-5xl lg:text-6xl">Fix your website.<br>Bring in more visitors.</h1>
+                    <p class="max-w-[56ch] text-pretty text-base text-ink/65">We do the work for you. Here’s where we’d start.</p>
+                @else
+                    <p class="text-base font-medium text-garden sm:text-sm">{{ $showDetails ? 'Full website review' : 'Your website review' }}</p>
+                    <h1 id="audit-title" class="w-full min-w-0 max-w-[24ch] truncate text-4xl font-medium tracking-tight text-balance sm:text-5xl" title="{{ $audit->domain }}">{{ $audit->domain }}</h1>
                 @endif
             </div>
             @if ($screenshotUrl)
-                <figure class="max-w-sm rounded-[min(1.5vw,18px)] bg-white p-1.5 ring-1 ring-ink/10 lg:justify-self-end">
-                    <img src="{{ $screenshotUrl }}" alt="" width="1024" height="640" class="aspect-[8/5] w-full rounded-[min(1vw,12px)] object-cover object-top outline-1 -outline-offset-1 outline-black/5" loading="eager" decoding="async">
+                <figure @class(['max-w-sm rounded-[calc(var(--preview-radius)+--spacing(1.5))] bg-white p-1.5 ring-1 ring-ink/10 [--preview-radius:min(1vw,12px)] lg:justify-self-end', 'max-lg:hidden' => $audit->isReadyToDisplay() && ! $showDetails])>
+                    <img src="{{ $screenshotUrl }}" alt="" width="1024" height="640" class="aspect-[8/5] w-full rounded-(--preview-radius) object-cover object-top outline-1 -outline-offset-1 outline-black/5" loading="eager" decoding="async">
                 </figure>
             @endif
         </header>
 
-        @if (session('report_email_status'))
+        @if (session('report_email_status') && (! $audit->personal_review_requested_at || $audit->personal_review_queued_at))
             <p role="status" class="rounded-2xl bg-emerald-50 px-5 py-4 text-base text-emerald-900 ring-1 ring-emerald-200/70">{{ session('report_email_status') }}</p>
         @endif
 
@@ -50,7 +64,7 @@
                         </svg>
                     </div>
                     <div class="grid gap-2">
-                        <h2 class="text-2xl font-medium tracking-tight text-balance sm:text-3xl">Building your audit.</h2>
+                        <h2 class="text-2xl font-medium tracking-tight text-balance sm:text-3xl">Checking your website.</h2>
                         <p class="max-w-[44ch] text-pretty text-base text-ink/65">Checking your website and preparing your report.</p>
                     </div>
                     <p class="text-pretty text-base text-ink/50 sm:text-sm">Your results will appear here automatically.</p>
@@ -77,15 +91,20 @@
                 <h2 class="max-w-[35ch] text-2xl font-medium tracking-tight text-balance">We could not review your website.</h2>
                 <p class="max-w-[56ch] text-pretty text-base text-ink/65">{{ preg_match('/HTTP (401|403)\b/', (string) $audit->analysis_error) ? 'Your website restricted access to our automated check. We can help review it with you.' : 'It may be unavailable or blocking automated checks. Check the address and try again.' }}</p>
                 <p><a href="{{ route('marketing.free-site-audit') }}" class="font-medium text-garden underline decoration-garden/30 underline-offset-4 hover:decoration-garden">Try another website address</a></p>
-                <p><a href="{{ route('marketing.ppc.book') }}" class="font-medium text-garden underline decoration-garden/30 underline-offset-4 hover:decoration-garden">Book a call with Ross for help reviewing your website</a></p>
+                <p><a data-audit-book-call href="{{ route('marketing.ppc.book') }}" class="font-medium text-garden underline decoration-garden/30 underline-offset-4 hover:decoration-garden">Book a call with Ross for help reviewing your website</a></p>
             </div>
         @else
             <div class="grid gap-10 border-t border-ink/10 pt-8">
                 <section class="grid gap-6" aria-labelledby="audit-numbers-title">
+                    @if ($showDetails)
                     <div class="grid gap-2">
                         <h2 id="audit-numbers-title" class="max-w-[35ch] text-3xl font-medium tracking-tight text-balance">What we found.</h2>
                         <p class="max-w-[56ch] text-pretty text-base text-ink/65">A quick look at your website checks and search visibility.</p>
                     </div>
+                    @else
+                        <h2 id="audit-numbers-title" class="sr-only">Your website’s opportunity</h2>
+                    @endif
+                    @if ($showDetails)
                     <dl class="grid gap-3 md:grid-cols-3">
                         <div @class([
                             'grid content-start gap-3 rounded-2xl p-5 ring-1 sm:p-6',
@@ -125,7 +144,7 @@
                             </div>
                         @endif
                     </dl>
-                    @if ($seo !== null)
+                    @if ($showDetails && $seo !== null)
                         <dl class="grid grid-cols-2 gap-x-6 gap-y-6 sm:grid-cols-3 lg:grid-cols-5">
                             <div class="grid content-start gap-1 border-t border-ink/10 pt-4"><dt class="text-base text-ink/65 sm:text-sm">URLs in sitemap</dt><dd class="order-first text-3xl font-medium tracking-tight tabular-nums text-ink">{{ $pagesListed !== null ? number_format($pagesListed).($pagesPartial ? '+' : '') : '—' }}</dd></div>
                             <div class="grid content-start gap-1 border-t border-ink/10 pt-4"><dt class="text-base text-ink/65 sm:text-sm">Google ranking terms</dt><dd class="order-first text-3xl font-medium tracking-tight tabular-nums text-ink">{{ number_format($seo['organic_keywords']) }}</dd></div>
@@ -136,38 +155,117 @@
                             @endif
                         </dl>
                     @endif
-                    @if ($pagesMismatchedDomain > 0)
+                    @if ($showDetails && $pagesMismatchedDomain > 0)
                         <p class="rounded-2xl bg-amber-50 p-4 text-base text-amber-900 ring-1 ring-amber-200/70 sm:text-sm">Sitemap issue: {{ number_format($pagesMismatchedDomain) }} {{ $pagesMismatchedDomain === 1 ? 'URL points' : 'URLs point' }} {{ $pagesMismatchedHost ? 'to '.$pagesMismatchedHost.' instead of '.$audit->domain : 'away from '.$audit->domain }}. Update the sitemap to use your live domain.</p>
                     @endif
-                    <p class="text-pretty text-base text-ink/55 sm:text-sm">Technical health covers the checks we ran. Search and backlink figures are third-party estimates.</p>
+                    <p class="text-pretty text-base text-ink/55 sm:text-sm">This is an initial public check, not a full review of your website. Technical health covers the checks we ran; search figures are third-party estimates.</p>
                     @if ($pagesListed === null || $seo === null)
                         <p class="text-pretty text-base text-ink/55 sm:text-sm">{{ $seo === null ? 'Search estimates are unavailable for this review.' : '' }} {{ $pagesListed === null ? 'A page count needs an accessible XML sitemap.' : '' }}</p>
                     @endif
+                    @else
+                        <div class="@container">
+                            <dl class="grid grid-cols-2 gap-6 @3xl:grid-cols-[1fr_1fr_2fr] @3xl:items-start">
+                                <div data-audit-health-score class="grid min-w-0 content-start gap-3">
+                                    <dt class="truncate text-base font-medium text-ink/65 sm:text-sm"><span class="@xs:hidden">Health score</span><span class="@max-xs:hidden">Health score today</span></dt>
+                                    <dd @class(['text-5xl font-medium tracking-tight tabular-nums sm:text-6xl', 'text-ink' => $healthScore === null, 'text-emerald-800' => $healthScore !== null && $healthScore >= 80, 'text-amber-900' => $healthScore !== null && $healthScore >= 50 && $healthScore < 80, 'text-rose-800' => $healthScore !== null && $healthScore < 50])>{{ $healthScore !== null ? $healthScore.'%' : '—' }}</dd>
+                                    <dd class="text-pretty text-base text-ink/65 sm:text-sm">{{ $healthScore === null ? 'Checks unavailable.' : ($healthScore >= 100 ? 'All these checks passed.' : 'Target: 100%.') }}</dd>
+                                </div>
+                                <div data-audit-fix-count class="grid min-w-0 content-start gap-3 border-l border-ink/10 pl-6">
+                                    <dt class="truncate text-base font-medium text-ink/65 sm:text-sm"><span class="@xs:hidden">To fix</span><span class="@max-xs:hidden">Things to fix</span></dt>
+                                    <dd class="text-5xl font-medium tracking-tight tabular-nums text-ink sm:text-6xl">{{ $findings->isNotEmpty() ? number_format($fixCount) : '—' }}</dd>
+                                    <dd class="text-pretty text-base text-ink/65 sm:text-sm">{{ $findings->isEmpty() ? 'Needs a closer look.' : ($fixCount > 0 ? 'We handle the fixes.' : 'No fixes flagged.') }}</dd>
+                                </div>
+                                <div data-audit-growth-opportunity class="@container/growth col-span-2 grid min-w-0 gap-3 rounded-2xl bg-garden/8 p-5 @3xl:col-span-1 sm:p-6">
+                                    <dt class="truncate text-base font-medium text-garden sm:text-sm">Your six-month opportunity</dt>
+                                    @if ($projection !== null)
+                                        <dd class="break-words text-[clamp(1.5rem,calc(120cqw/var(--range-length)),4.5rem)] font-medium tracking-tight tabular-nums text-ink" style="--range-length: {{ mb_strlen($visitorRange) }}">{{ $visitorRange }}</dd>
+                                        <dd class="text-base font-medium text-ink sm:text-sm">Monthly visitors from Google</dd>
+                                        <dd class="max-w-[56ch] text-pretty text-base text-ink/65 sm:text-sm">Based on your search data. An illustrative range, not a guarantee.</dd>
+                                    @else
+                                        <dd class="max-w-[40ch] text-2xl font-medium tracking-tight text-balance text-ink">Let’s find your growth opportunity.</dd>
+                                        <dd class="max-w-[56ch] text-pretty text-base text-ink/65 sm:text-sm">We need a closer look before putting a visitor number on it. Ross’s review is the next step.</dd>
+                                    @endif
+                                </div>
+                            </dl>
+                        </div>
+                    @endif
                 </section>
-                @if ($audit->report_requested_at === null)
-                    <section aria-labelledby="audit-review-title" class="rounded-3xl bg-black p-6 text-white ring-1 ring-black sm:p-8">
+                @if (! $showDetails)
+                    <section data-audit-growth-plan aria-labelledby="audit-growth-plan-title" class="grid gap-5 border-t border-ink/10 pt-6">
+                        <h2 id="audit-growth-plan-title" class="sr-only">What we’d do for you</h2>
+                        <dl class="grid gap-6 sm:grid-cols-2">
+                            <div class="grid content-start gap-2">
+                                <dt class="max-w-[40ch] text-xl font-medium text-balance">First: fix the website.</dt>
+                                <dd class="max-w-[56ch] text-pretty text-base text-ink/65">@if ($fixCount === 0 && $healthScore !== null && $healthScore >= 100) Your checks already pass. We’ll review the wider site before making changes. @else We start with the fixes, once access and scope are agreed. @endif</dd>
+                            </div>
+                            <div class="grid content-start gap-2">
+                                <dt class="max-w-[40ch] text-xl font-medium text-balance">Next: grow the visitors.</dt>
+                                <dd class="max-w-[56ch] text-pretty text-base text-ink/65">Improve your pages and content to bring in visitors from Google and AI search.</dd>
+                            </div>
+                        </dl>
+                        <p class="text-pretty text-base text-ink/55 sm:text-sm">Health score is based on the checks we ran.</p>
+                    </section>
+                @endif
+                @if ($showDetails)
+                <section data-audit-service-offer aria-labelledby="audit-service-title" class="rounded-3xl bg-black p-6 text-white sm:p-8">
+                    <div class="flex items-start gap-4 sm:gap-5">
+                        <img src="{{ asset('ross-topping.jpg') }}" alt="Ross" width="56" height="56" class="size-14 shrink-0 rounded-full object-cover">
+                        <div class="grid min-w-0 flex-1 gap-4">
+                            <h2 id="audit-service-title" class="max-w-[35ch] text-3xl font-medium tracking-tight text-balance">You don’t have to fix this yourself.</h2>
+                            <p class="max-w-[56ch] text-pretty text-base text-white/75">{{ $fixCount > 0 ? 'These checks flagged '.number_format($fixCount).' '.\Illuminate\Support\Str::plural('website issue', $fixCount).'. Ross will review which need attention first.' : 'This initial check hasn’t flagged technical fixes. Ross can review your pages and search visibility to see where there’s room to improve.' }} We’ll agree the priorities, then handle the website changes, SEO and content work included in your plan.</p>
+                            <p class="max-w-[56ch] text-pretty text-base text-white/75">Start with a short call with Ross. You’ll discuss what matters to your business, what we can take care of and what it costs before deciding.</p>
+                            <div><a data-audit-book-call href="{{ route('marketing.ppc.book') }}" class="inline-flex min-h-12 items-center justify-center rounded-full bg-garden px-5 py-3 text-base font-medium text-white hover:bg-moss focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">Talk to Ross about the fixes</a></div>
+                        </div>
+                    </div>
+                </section>
+                @endif
+                @if (! $showDetails && $audit->report_requested_at === null)
+                    <section data-audit-snapshot-end aria-labelledby="audit-review-title" class="rounded-3xl bg-black p-6 text-white sm:p-8">
                         <div class="flex items-start gap-4 sm:gap-5">
                             <img data-audit-review-portrait src="{{ asset('ross-topping.jpg') }}" alt="Ross" width="56" height="56" class="size-14 shrink-0 rounded-full object-cover outline-1 -outline-offset-1 outline-white/10">
                             <div data-audit-review-copy class="grid min-w-0 flex-1 gap-4">
-                                <h2 id="audit-review-title" class="max-w-[40ch] text-3xl font-medium tracking-tight text-balance">Want to know what to fix first?</h2>
-                                <p class="max-w-[56ch] text-pretty text-base text-white/75">I’ll review your results and email you a personal video walking through what I’d improve and where I’d start.</p>
-                                <div><button type="button" data-audit-email-open aria-haspopup="dialog" aria-controls="audit-email-dialog" class="inline-flex min-h-12 items-center justify-center rounded-full bg-garden px-5 py-3 text-base font-medium text-white hover:bg-moss focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden">Get Ross’s recommendations</button></div>
+                                <h2 id="audit-review-title" class="max-w-[40ch] text-3xl font-medium tracking-tight text-balance">See how we’d get you there.</h2>
+                                <p class="max-w-[56ch] text-pretty text-base text-white/75">Your fixes and growth priorities, in a free personal video from Ross within one working day.</p>
+                                <div><button type="button" data-audit-email-open aria-label="Get my free growth plan" aria-haspopup="dialog" aria-controls="audit-email-dialog" class="inline-flex min-h-12 items-center justify-center rounded-full bg-garden px-4 py-3 text-base font-medium text-white hover:bg-moss focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"><span class="sm:hidden">Get my free plan</span><span class="max-sm:hidden">Get my free growth plan</span></button></div>
                             </div>
-                        </div>
-                    </section>
-                @elseif ($audit->personal_review_requested_at && ! $audit->personal_review_queued_at)
-                    <section role="status" aria-labelledby="audit-request-received-title" class="flex items-start gap-4 rounded-3xl bg-black p-6 text-white ring-1 ring-black sm:p-8">
-                        <span class="grid size-10 shrink-0 place-items-center rounded-full bg-emerald-400/15 text-emerald-300" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="size-6"><path stroke-linecap="round" stroke-linejoin="round" d="m5 12 4 4L19 6" /></svg>
-                        </span>
-                        <div class="grid gap-2">
-                            <h2 id="audit-request-received-title" class="text-2xl font-medium tracking-tight sm:text-3xl">Request received</h2>
-                            <p class="max-w-[60ch] text-base text-white/80">Ross has your request and will be in touch via email shortly.</p>
                         </div>
                     </section>
                 @endif
 
-
+                @if (! $showDetails && $audit->report_requested_at !== null)
+                    <div id="audit-follow-up" class="grid gap-6 scroll-mt-24">
+                        @if ($audit->personal_review_requested_at && ! $audit->personal_review_queued_at)
+                            <section role="status" aria-labelledby="audit-request-received-title" class="flex items-start gap-4 rounded-3xl bg-black p-6 text-white ring-1 ring-black sm:p-8">
+                                <span class="grid size-10 shrink-0 place-items-center rounded-full bg-emerald-400/15 text-emerald-300" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="size-6"><path stroke-linecap="round" stroke-linejoin="round" d="m5 12 4 4L19 6" /></svg>
+                                </span>
+                                <div class="grid gap-2">
+                                    <h2 id="audit-request-received-title" class="text-2xl font-medium tracking-tight text-balance sm:text-3xl">Your video is next.</h2>
+                                    <p class="max-w-[60ch] text-pretty text-base text-white/80">Ross will review {{ $audit->domain }} and email your video within one working day.</p>
+                                </div>
+                            </section>
+                        @endif
+                        @if ($goalUrl)
+                            <section aria-labelledby="audit-goal-title" class="grid gap-3">
+                                <h2 id="audit-goal-title" class="text-2xl font-medium tracking-tight text-balance">What would you like more of?</h2>
+                                <p class="max-w-[56ch] text-pretty text-base text-ink/65">Optional. Help Ross focus on what matters to your business.</p>
+                                <form method="POST" action="{{ $goalUrl }}" class="flex flex-wrap gap-2">
+                                    @csrf
+                                    @method('PATCH')
+                                    @foreach (['enquiries' => 'Enquiries', 'bookings' => 'Bookings', 'sales' => 'Sales'] as $value => $label)
+                                        <button type="submit" name="customer_goal" value="{{ $value }}" aria-pressed="{{ $audit->customer_goal === $value ? 'true' : 'false' }}" @class(['inline-flex min-h-12 items-center justify-center rounded-full px-5 py-3 text-base font-medium ring-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden', 'bg-garden/10 text-garden ring-garden hover:bg-garden/15' => $audit->customer_goal === $value, 'bg-white text-ink ring-ink/15 hover:bg-lichen' => $audit->customer_goal !== $value])>{{ $label }}</button>
+                                    @endforeach
+                                </form>
+                                @if (session('audit_goal_status')) <p role="status" class="text-base text-emerald-800">{{ session('audit_goal_status') }}</p> @endif
+                                @error('customer_goal') <p role="alert" class="text-base text-rose-700">{{ $message }}</p> @enderror
+                            </section>
+                        @endif
+                        <div>
+                            <a data-audit-book-call href="{{ route('marketing.ppc.book') }}" class="inline-flex min-h-12 items-center text-base font-medium text-ink underline decoration-ink/25 underline-offset-4 hover:decoration-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden">Prefer to talk it through with Ross?</a>
+                        </div>
+                    </div>
+                @endif
+                @if ($showDetails)
                 @if ($seo !== null)
                     <section class="grid gap-5 border-t border-ink/10 pt-8" aria-labelledby="audit-search-title">
                         <div class="grid gap-2">
@@ -328,7 +426,8 @@
                 </section>
 
                 <div data-audit-next-step class="grid gap-6 border-t border-ink/10 pt-8" aria-labelledby="audit-plan-title">
-                    <h2 id="audit-plan-title" class="max-w-[35ch] text-3xl font-medium tracking-tight text-balance">What we’d do next.</h2>
+                    <h2 id="audit-plan-title" class="max-w-[35ch] text-3xl font-medium tracking-tight text-balance">The improvements we could take care of.</h2>
+                    <p class="max-w-[60ch] text-pretty text-base text-ink/65">The check gives us a starting point. Ross will review what matters for your business, then we’ll agree the work Sitewell would handle for you.</p>
                     <ol class="grid" role="list">
                         @foreach ([
                             ['Fix the website issues.', 'Resolve the flagged technical problems, then check important pages for crawl, mobile and usability issues.'],
@@ -350,34 +449,36 @@
 
                 <section data-audit-call-section class="grid gap-6 rounded-3xl bg-ink p-6 text-white sm:p-8 md:grid-cols-[minmax(0,1fr)_auto] md:items-center" aria-labelledby="audit-call-title">
                     <div class="grid gap-2">
-                        <h2 id="audit-call-title" class="text-3xl font-medium tracking-tight text-balance">Talk through your audit with Ross.</h2>
-                        <p class="max-w-[52ch] text-base text-white/75">We’ll explain the findings and what we’d work on first.</p>
+                        <h2 id="audit-call-title" class="text-3xl font-medium tracking-tight text-balance">Want us to take care of this?</h2>
+                        <p class="max-w-[52ch] text-base text-white/75">Book a short call with Ross to agree the first priorities, the access we need and the right level of support.</p>
                     </div>
-                    <a href="{{ route('marketing.ppc.book') }}" class="inline-flex min-h-12 items-center justify-center gap-3 rounded-full bg-garden px-5 py-3 text-base font-medium text-white hover:bg-moss focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white md:justify-self-end">Book a call with Ross <span aria-hidden="true">↗</span></a>
+                    <a data-audit-book-call href="{{ route('marketing.ppc.book') }}" class="inline-flex min-h-12 items-center justify-center gap-3 rounded-full bg-garden px-5 py-3 text-base font-medium text-white hover:bg-moss focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white md:justify-self-end">Book a call with Ross <span aria-hidden="true">↗</span></a>
                 </section>
+                @endif
             </div>
         @endif
         <p class="text-pretty text-base text-ink/50 sm:text-sm">This private link expires {{ $audit->expires_at->diffForHumans() }}.</p>
     </div>
 </section>
-@if ($audit->isReadyToDisplay())
+@if ($audit->isReadyToDisplay() && ! $showDetails)
     <div data-audit-actions class="fixed right-4 bottom-4 left-4 z-40 flex justify-end gap-2 sm:right-6 sm:bottom-6 sm:left-auto">
-        @if ($audit->report_requested_at === null)
-            <button type="button" data-audit-email-open aria-label="Get Ross’s recommendations" aria-haspopup="dialog" aria-controls="audit-email-dialog" class="inline-flex min-h-12 items-center justify-center rounded-full bg-garden px-4 py-3 text-sm font-medium text-white shadow-md hover:bg-moss focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden"><span class="sm:hidden">Get my next steps</span><span class="max-sm:hidden">Get Ross’s recommendations</span></button>
+
+        @if (! $showDetails && $audit->report_requested_at === null)
+            <button type="button" data-audit-email-open aria-label="Get my free growth plan" aria-haspopup="dialog" aria-controls="audit-email-dialog" class="inline-flex min-h-12 shrink-0 items-center justify-center rounded-full bg-white px-4 py-3 text-base font-medium whitespace-nowrap text-garden shadow-md ring-1 ring-ink/10 hover:bg-lichen focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden sm:text-sm"><span class="sm:hidden">My free plan</span><span class="max-sm:hidden">Get my free growth plan</span></button>
         @endif
-        <a data-audit-book-call href="{{ route('marketing.ppc.book') }}" aria-label="Book a call with Ross" class="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-white py-2 pr-4 pl-2 text-sm font-medium text-garden shadow-md ring-1 ring-ink/10 hover:bg-lichen focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden"><img src="{{ asset('ross-topping.jpg') }}" alt="" width="32" height="32" class="size-8 shrink-0 rounded-full object-cover"><span class="sm:hidden">Book a call</span><span class="max-sm:hidden">Book a call with Ross</span></a>
+        <a data-audit-book-call href="{{ route('marketing.ppc.book') }}" aria-label="Book a call with Ross" class="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-full bg-white py-2 pr-4 pl-2 text-base font-medium whitespace-nowrap text-ink shadow-md ring-1 ring-ink/10 hover:bg-lichen focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden sm:text-sm"><img src="{{ asset('ross-topping.jpg') }}" alt="" width="32" height="32" class="size-8 shrink-0 rounded-full object-cover"><span>Talk to Ross</span></a>
     </div>
 @endif
-@if ($audit->isReadyToDisplay() && $audit->report_requested_at === null)
-    <dialog id="audit-email-dialog" aria-labelledby="audit-email-title" aria-describedby="audit-email-description" class="fixed inset-0 m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md overflow-y-auto border-0 bg-transparent p-0 pt-10 text-ink backdrop:bg-ink/60">
+@if ($audit->isReadyToDisplay() && ! $showDetails && $audit->report_requested_at === null)
+    <dialog data-audit-review-prompt data-audit-id="{{ $audit->public_id }}" data-has-errors="{{ $errors->any() ? 'true' : 'false' }}" id="audit-email-dialog" aria-labelledby="audit-email-title" aria-describedby="audit-email-description" class="fixed inset-0 m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md overflow-y-auto border-0 bg-transparent p-0 pt-10 text-ink backdrop:bg-ink/60">
         <div class="relative rounded-3xl bg-white p-6 pt-14 sm:p-8 sm:pt-14">
             <img data-audit-review-portrait src="{{ asset('ross-topping.jpg') }}" alt="Ross" width="72" height="72" class="absolute top-0 left-1/2 size-18 -translate-x-1/2 -translate-y-1/2 rounded-full object-cover ring-4 ring-white">
             <button type="button" data-audit-email-close aria-label="Close email prompt" class="absolute top-3 right-3 grid size-12 place-items-center rounded-full text-xl text-ink/60 hover:bg-lichen focus-visible:outline-2 focus-visible:outline-garden">×</button>
             <div class="grid gap-4">
-                <h2 id="audit-email-title" class="max-w-[40ch] text-3xl font-medium tracking-tight text-balance">Want to know what to fix first?</h2>
-                <p id="audit-email-description" class="max-w-[56ch] text-pretty text-base text-ink/65">I’ll personally review your results and email you a video with practical next steps within one working day. You’ll also get your report link, available for 14 days.</p>
+                <h2 id="audit-email-title" class="max-w-[40ch] text-3xl font-medium tracking-tight text-balance">Where should I send your video?</h2>
+                <p id="audit-email-description" class="max-w-[56ch] text-pretty text-base text-ink/65">Ross will send your free video review within one working day, with the fixes and searches he’d work on first.</p>
             </div>
-            <form method="POST" action="{{ route('marketing.website-audits.email-report', $audit) }}" class="grid gap-4 pt-6">
+            <form method="POST" action="{{ route('marketing.website-audits.email-report', $audit) }}" class="mx-auto grid w-full max-w-xs gap-4 pt-6">
                 @csrf
                 <input type="hidden" name="personal_review" value="1">
                 <div class="absolute -left-[9999px]" aria-hidden="true"><label for="audit-email-check">Leave this blank</label><input id="audit-email-check" type="text" name="_sitewell_check" tabindex="-1" autocomplete="off"></div>
@@ -386,57 +487,25 @@
                     <input id="audit-report-email" type="email" name="email" value="{{ old('email') }}" autocomplete="email" required maxlength="255" autofocus class="min-h-12 w-full rounded-xl bg-white px-4 text-base text-ink ring-1 ring-ink/15 outline-none placeholder:text-ink/40 focus-visible:ring-2 focus-visible:ring-garden" placeholder="you@example.com">
                     @error('email') <p class="text-base text-rose-700 sm:text-sm">{{ $message }}</p> @enderror
                 </div>
-                <label class="flex items-start gap-3 text-base text-ink/65 sm:text-sm">
-                    <input type="checkbox" name="marketing_consent" value="1" @checked(old('marketing_consent')) class="mt-1 size-5 shrink-0 accent-garden">
-                    <span>{{ \App\Models\WebsiteAudit::MARKETING_CONSENT_TEXT }}</span>
-                </label>
+                <input type="hidden" name="engagement_visit_id" value="">
+                <div class="flex items-start gap-3 text-base text-ink/65 sm:text-sm">
+                    <div class="flex h-lh shrink-0 items-center">
+                        <span class="group inline-grid size-5 grid-cols-1 sm:size-4">
+                            <input id="audit-marketing-consent" type="checkbox" name="marketing_consent" value="1" @checked(old('marketing_consent')) class="col-start-1 row-start-1 appearance-none rounded-sm border border-ink/20 bg-white checked:border-garden checked:bg-garden indeterminate:border-garden indeterminate:bg-garden focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden disabled:border-ink/20 disabled:bg-lichen disabled:checked:bg-lichen forced-colors:appearance-auto">
+                            <svg viewBox="0 0 14 14" fill="none" aria-hidden="true" class="pointer-events-none col-start-1 row-start-1 size-7/8 self-center justify-self-center stroke-white group-has-disabled:stroke-ink/25">
+                                <path d="M3 8L6 11L11 3.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-not-has-checked:opacity-0" />
+                                <path d="M3 7H11" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-not-has-indeterminate:opacity-0" />
+                            </svg>
+                        </span>
+                    </div>
+                    <label for="audit-marketing-consent" class="min-w-0">{{ \App\Models\WebsiteAudit::MARKETING_CONSENT_TEXT }}</label>
+                </div>
                 @error('marketing_consent') <p class="text-base text-rose-700">{{ $message }}</p> @enderror
                 <p class="text-base text-ink/60 sm:text-sm">No obligation to book a call. <a href="{{ route('marketing.privacy') }}" class="underline underline-offset-4">Privacy policy</a></p>
-                <button type="submit" class="inline-flex min-h-12 items-center justify-center rounded-full bg-garden px-4 text-base font-medium text-white hover:bg-moss focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden">Get Ross’s recommendations</button>
+                <button type="submit" class="inline-flex min-h-12 items-center justify-center rounded-full bg-garden px-4 text-base font-medium text-white hover:bg-moss focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden">Send me my free growth plan</button>
             </form>
         </div>
     </dialog>
-    <script>
-        (() => {
-            const dialog = document.getElementById('audit-email-dialog');
-            if (! dialog?.showModal) return;
 
-            const storageKey = @js('sitewell-audit-email-dismissed:'.$audit->public_id);
-            const hasError = @js($errors->any());
-            let promptTimer;
-            const open = () => {
-                if (document.visibilityState === 'visible' && ! dialog.open) dialog.showModal();
-            };
-
-            document.querySelectorAll('[data-audit-email-open]').forEach(button => button.addEventListener('click', () => {
-                window.clearTimeout(promptTimer);
-                open();
-            }));
-            dialog.querySelector('[data-audit-email-close]').addEventListener('click', () => dialog.close());
-            dialog.addEventListener('close', () => {
-                try { sessionStorage.setItem(storageKey, '1'); } catch (_) {}
-            });
-
-            if (hasError) {
-                open();
-                return;
-            }
-
-            try { if (sessionStorage.getItem(storageKey) === '1') return; } catch (_) {}
-
-            promptTimer = window.setTimeout(() => {
-                if (document.visibilityState === 'visible') {
-                    open();
-                } else {
-                    const openWhenVisible = () => {
-                        if (document.visibilityState !== 'visible') return;
-                        document.removeEventListener('visibilitychange', openWhenVisible);
-                        open();
-                    };
-                    document.addEventListener('visibilitychange', openWhenVisible);
-                }
-            }, 30000);
-        })();
-    </script>
 @endif
 @endsection

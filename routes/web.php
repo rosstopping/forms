@@ -107,6 +107,7 @@ use App\Http\Controllers\ProspectOutreachOpenController;
 use App\Http\Controllers\ProspectReportController;
 use App\Http\Controllers\ProspectUnsubscribeController;
 use App\Http\Controllers\StripeWebhookController;
+use App\Http\Controllers\WebsiteAuditEngagementController;
 use App\Http\Controllers\WebsiteAuditOnboardingController;
 use App\Http\Controllers\WebsiteHealthReportController as PublicWebsiteHealthReportController;
 use App\Http\Middleware\AllowFormSubmissionCors;
@@ -185,6 +186,10 @@ Route::post('/get-started', [FreeSiteAuditController::class, 'store'])
 Route::get('/website-audits/{websiteAudit}', [FreeSiteAuditController::class, 'show'])
     ->middleware('throttle:website-audit-reports')
     ->name('marketing.website-audits.show');
+Route::get('/website-audits/{websiteAudit}/full', [FreeSiteAuditController::class, 'show'])
+    ->middleware(['signed', 'throttle:website-audit-reports'])->name('marketing.website-audits.full');
+Route::post('/website-audits/{websiteAudit}/engagement', WebsiteAuditEngagementController::class)
+    ->middleware(['signed', 'throttle:60,1'])->name('marketing.website-audits.engagement');
 Route::get('/website-audits/{websiteAudit}/preview', [FreeSiteAuditController::class, 'preview'])
     ->middleware('throttle:website-audit-reports')
     ->name('marketing.website-audits.preview');
@@ -193,6 +198,9 @@ Route::post('/website-audits/{websiteAudit}/email-preferences', [FreeSiteAuditCo
 Route::post('/website-audits/{websiteAudit}/email-report', [FreeSiteAuditController::class, 'emailReport'])
     ->middleware('throttle:website-audit-email')
     ->name('marketing.website-audits.email-report');
+Route::patch('/website-audits/{websiteAudit}/goal', [FreeSiteAuditController::class, 'updateGoal'])
+    ->middleware(['signed', 'throttle:10,1'])
+    ->name('marketing.website-audits.goal');
 Route::get('/website-audits/{websiteAudit}/status', [FreeSiteAuditController::class, 'status'])
     ->middleware('throttle:website-audit-status')
     ->name('marketing.website-audits.status');
@@ -431,6 +439,7 @@ Route::middleware(['web', 'auth', ResolveCurrentWebsite::class])->prefix('admin'
     Route::get('onboarding/call', OnboardingCallController::class)->middleware('throttle:30,1')->name('onboarding-call');
     Route::middleware(EnsureAdmin::class)->group(function (): void {
         Route::get('overview', [DashboardController::class, 'overview'])->name('overview');
+        Route::get('onboarding/audits/{websiteAudit}/full', [FreeSiteAuditController::class, 'show'])->name('onboarding.audits.show');
         Route::post('onboarding/audits/{websiteAudit}/review', [WebsiteAuditReviewController::class, 'send'])->name('onboarding.audits.review');
         Route::patch('onboarding/audits/{websiteAudit}/lead', [WebsiteAuditReviewController::class, 'update'])->name('onboarding.audits.lead');
         Route::get('onboarding', OnboardingLeadController::class)->name('onboarding.index');

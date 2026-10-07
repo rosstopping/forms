@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\MarketingConversion;
 use App\Models\User;
 use App\Models\WebsiteAudit;
 use App\Models\WebsiteDomain;
@@ -68,6 +69,15 @@ class OnboardingLeadController extends Controller
             ->withQueryString();
 
         $unclaimedAudits = WebsiteAudit::query()
+            ->withCount('visits')
+            ->withSum('visits', 'active_seconds')
+            ->withMax('visits', 'scroll_percent')
+            ->withMax('visits', 'updated_at')
+            ->withMax('visits', 'review_opened_at')
+            ->withMax('visits', 'email_started_at')
+            ->withMax('visits', 'email_submit_attempted_at')
+            ->withMax('visits', 'booking_clicked_at')
+            ->withMax('visits', 'calendar_opened_at')
             ->whereNull('claimed_at')
             ->when(filled($filters['search'] ?? null), function (Builder $query) use ($filters): void {
                 $search = '%'.$filters['search'].'%';
@@ -81,6 +91,14 @@ class OnboardingLeadController extends Controller
             ->paginate(20, ['*'], 'unclaimed_page')
             ->withQueryString();
 
-        return view('admin.onboarding-leads.index', compact('filters', 'summary', 'unclaimedAudits', 'users'));
+        $bookingClicks = MarketingConversion::query()
+            ->where('name', 'book_call_clicked')
+            ->whereIn('attribution->audit_public_id', $unclaimedAudits->pluck('public_id'))
+            ->select('attribution->audit_public_id as audit_id')
+            ->selectRaw('count(*) as clicks')
+            ->groupBy('attribution->audit_public_id')
+            ->pluck('clicks', 'audit_id');
+
+        return view('admin.onboarding-leads.index', compact('filters', 'summary', 'unclaimedAudits', 'users', 'bookingClicks'));
     }
 }

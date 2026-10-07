@@ -45,7 +45,7 @@ class StoreFreeSiteAuditRequest extends FormRequest
 
     protected function domainResolvesToPublicAddress(string $host): bool
     {
-        if (app()->runningUnitTests()) {
+        if (app()->runningUnitTests() || (app()->environment('local') && PHP_OS_FAMILY === 'Darwin')) {
             return true;
         }
         $records = dns_get_record($host, DNS_A | DNS_AAAA);

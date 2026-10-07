@@ -1,4 +1,6 @@
 import { bootCalBooking } from './cal-booking.js';
+import { bootAuditReview } from './audit-review.js';
+import { bootAuditEngagement } from './audit-engagement.js';
 
 /**
  * Publish the existing marketing hooks and hand accepted audits to GTM.
@@ -26,7 +28,9 @@ export function publishMarketingEvent(payload, target = window) {
 }
 
 export function bootMarketingEvents(document, target = window) {
+    bootAuditEngagement(document, target);
     bootCalBooking(document, target);
+    bootAuditReview(document, target);
     const page = document.querySelector('[data-ppc-page]');
     if (page) {
         publishMarketingEvent({

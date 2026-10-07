@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\WebsiteAudit;
 use App\Support\MarketingJourney;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -31,7 +32,12 @@ class PpcLandingController extends Controller
 
     public function book(Request $request, MarketingJourney $journey): JsonResponse|RedirectResponse
     {
-        $conversion = $journey->record('book_call_clicked', (string) Str::uuid(), $journey->capture($request));
+        $attribution = $journey->capture($request);
+        $auditId = $request->session()->get('marketing.website_audit_id');
+        if (! $request->user()?->isAdmin() && is_string($auditId) && WebsiteAudit::query()->where('public_id', $auditId)->exists()) {
+            $attribution['audit_public_id'] = $auditId;
+        }
+        $conversion = $journey->record('book_call_clicked', (string) Str::uuid(), $attribution);
         $url = Uri::of(config('marketing.booking_url'))->withQuery([
             'metadata' => ['sitewell_booking' => $conversion->event_id],
         ]);

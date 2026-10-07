@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\MarketingConversion;
 use App\Models\User;
+use App\Models\WebsiteAudit;
 use App\Support\MarketingJourney;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -35,6 +36,22 @@ class CalWebhookController extends Controller
                 $journey->record('call_booked', $bookingUid, $click->attribution ?? []);
             }
         }
+        $bookingClick = is_string($bookingToken)
+            ? MarketingConversion::query()->where('event_id', $bookingToken)->where('name', 'book_call_clicked')->first()
+            : null;
+        $auditId = data_get($bookingClick?->attribution, 'audit_public_id');
+        $audit = is_string($auditId) ? WebsiteAudit::query()->where('public_id', $auditId)->first() : null;
+        if (! $audit && is_string($bookingUid) && $bookingUid !== '') {
+            $audit = WebsiteAudit::query()->where('lead_call_booking_uid', $bookingUid)->first();
+        }
+        if ($audit && is_string($bookingUid) && $bookingUid !== '') {
+            if (in_array($trigger, ['BOOKING_CREATED', 'BOOKING_RESCHEDULED'], true)) {
+                $audit->update(['lead_call_booked_at' => $audit->lead_call_booked_at ?? now(), 'lead_call_booking_uid' => $bookingUid]);
+            } elseif (in_array($trigger, ['BOOKING_CANCELLED', 'BOOKING_REJECTED'], true) && $audit->lead_call_booking_uid === $bookingUid) {
+                $audit->update(['lead_call_booked_at' => null, 'lead_call_booking_uid' => null]);
+            }
+        }
+
         $attendeeEmails = collect(data_get($payload, 'attendees', []))
             ->pluck('email')
             ->filter(fn (mixed $email): bool => is_string($email))

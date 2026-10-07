@@ -1,27 +1,25 @@
 <x-mail::message>
-# Your search audit is ready
-
-The automated audit has checked {{ $audit->domain }} and outlined the website fixes and search opportunities we found.
-
 @if ($audit->personal_review_requested_at)
-I’ll personally review your results and email you a video walking through what I’d improve.
-@endif
+# Thanks for sending me your website
+
+I’ve received your request for {{ $audit->domain }}. I’ll take a closer look and email you a personal video within one working day, showing where I’d start to bring you more visitors and customers.
+
+Is there a particular service or product you’d like more customers for? Reply to this email and let me know.
+
+You can [revisit your website snapshot]({{ $reportUrl }}) until {{ $audit->expires_at->format('j F Y') }}.
+@else
+# Your search opportunity review
+
+We’ve checked {{ $audit->domain }}. The next step is to identify which searches could bring you more relevant visitors and customers.
 
 <x-mail::button :url="$reportUrl">
-View your report
+View your search snapshot
 </x-mail::button>
 
 This private link is available until {{ $audit->expires_at->format('j F Y') }}.
+@endif
 
-<x-mail::panel>
-## Talk through the next steps
-
-Want help turning the report into more customers? Book a call with Ross to discuss what we’d do first.
-</x-mail::panel>
-
-<x-mail::button :url="$bookingUrl" color="secondary">
-Book a call with Ross
-</x-mail::button>
+Prefer to talk it through? [Book a call with me]({{ $bookingUrl }}).
 
 Ross at Sitewell
 

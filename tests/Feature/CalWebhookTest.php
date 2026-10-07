@@ -72,3 +72,17 @@ it('does not update users who did not join through Get started', function (): vo
 
     expect($user->fresh()->onboarding_call_booked_at)->toBeNull();
 });
+
+it('confirms an anonymous audit booking only through the signed webhook and clears cancellations', function (): void {
+    $audit = WebsiteAudit::factory()->create(['status' => WebsiteAudit::STATUS_COMPLETED, 'created_at' => now()->subMinute()]);
+    $response = $this->withSession(['marketing.website_audit_id' => $audit->public_id])->getJson(route('marketing.ppc.book'))->assertSuccessful();
+    parse_str(parse_url($response->json('booking_url'), PHP_URL_QUERY), $query);
+    expect($audit->fresh()->lead_call_booked_at)->toBeNull();
+    $event = ['triggerEvent' => 'BOOKING_CREATED', 'payload' => ['uid' => 'audit-booking-one', 'metadata' => $query['metadata'], 'attendees' => [['email' => 'visitor@example.com']]]];
+    sendCalWebhook($event, 'wrong-secret')->assertBadRequest();
+    expect($audit->fresh()->lead_call_booked_at)->toBeNull();
+    sendCalWebhook($event)->assertSuccessful();
+    expect($audit->fresh()->lead_call_booked_at)->not->toBeNull();
+    sendCalWebhook(['triggerEvent' => 'BOOKING_CANCELLED', 'payload' => ['uid' => 'audit-booking-one']])->assertSuccessful();
+    expect($audit->fresh()->lead_call_booked_at)->toBeNull();
+});

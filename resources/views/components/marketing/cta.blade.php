@@ -1,4 +1,4 @@
-@props(['title' => 'See what your website needs.', 'text' => null, 'label' => 'Get your free search audit', 'route' => 'marketing.free-site-audit', 'parameters' => []])
+@props(['title' => 'Show us your website. We’ll show you where we’d start.', 'text' => 'Start with a free website check. Then decide whether you’d like us to take care of the improvements.', 'label' => 'See what we’d fix', 'route' => 'marketing.free-site-audit', 'parameters' => []])
 
 <section class="px-3 py-8 text-ink sm:px-6 sm:py-12">
     <div class="mx-auto grid max-w-7xl gap-10 rounded-3xl bg-lichen px-5 py-10 sm:px-10 sm:py-12 lg:grid-cols-[3fr_2fr] lg:items-center">

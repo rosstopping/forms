@@ -63,7 +63,7 @@
             <div class="ui-panel p-4"><dt class="text-sm text-slate-500">{{ $label }}</dt><dd class="mt-1 text-2xl font-semibold tabular-nums">{{ $count }}</dd></div>
         @endforeach
     </dl>
-    <p class="text-sm text-slate-500">Audit funnel counts are per report, not unique people. Replies, booked calls and paying clients are recorded manually below.</p>
+    <p class="text-sm text-slate-500">Audit funnel counts are per report, not unique people. Replies and paying clients are recorded manually. Attributed Cal bookings are confirmed by the signed webhook; clicks alone are interest signals.</p>
 
     <section class="space-y-4">
         <header>
@@ -87,8 +87,33 @@
                             @else
                                 <p class="text-slate-500 text-base sm:text-sm">No email submitted</p>
                             @endif
-                            @if ($unclaimedAudit->status === \App\Models\WebsiteAudit::STATUS_COMPLETED && ! $unclaimedAudit->hasExpired())
-                                <a href="{{ route('marketing.website-audits.show', $unclaimedAudit) }}" class="mt-2 inline-flex text-sm font-medium text-teal-700 hover:text-teal-900">View report</a>
+                            @if ($unclaimedAudit->status === \App\Models\WebsiteAudit::STATUS_COMPLETED)
+                                <a href="{{ route('admin.onboarding.audits.show', $unclaimedAudit) }}" class="mt-2 inline-flex text-sm font-medium text-teal-700 hover:text-teal-900">View full report</a>
+                            @endif
+                        </div>
+                        <div class="grid gap-3 border-t border-slate-100 pt-3 sm:col-span-3">
+                            <dl class="flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-600">
+                                <div><dt class="inline">Page visits: </dt><dd class="inline font-medium">{{ $unclaimedAudit->visits_count }}</dd></div>
+                                <div><dt class="inline">Active reading: </dt><dd class="inline font-medium">{{ sprintf('%dm %ds', intdiv((int) $unclaimedAudit->visits_sum_active_seconds, 60), (int) $unclaimedAudit->visits_sum_active_seconds % 60) }}</dd></div>
+                                <div><dt class="inline">Scroll depth: </dt><dd class="inline font-medium">{{ (int) $unclaimedAudit->visits_max_scroll_percent }}%</dd></div>
+                                <div><dt class="inline">Review popup: </dt><dd class="inline font-medium">{{ $unclaimedAudit->visits_max_review_opened_at ? 'Opened' : 'Not observed' }}</dd></div>
+                                <div><dt class="inline">Email form: </dt><dd class="inline font-medium">{{ $unclaimedAudit->report_requested_at ? 'Email received' : ($unclaimedAudit->visits_max_email_submit_attempted_at ? 'Submitted; no successful request yet' : ($unclaimedAudit->visits_max_email_started_at ? 'Started; not submitted' : 'Not started')) }}</dd></div>
+                                <div><dt class="inline">Calendar: </dt><dd class="inline font-medium">{{ $unclaimedAudit->lead_call_booked_at ? 'Call booked' : ($unclaimedAudit->visits_max_booking_clicked_at || ($bookingClicks[$unclaimedAudit->public_id] ?? 0) > 0 ? 'Clicked; no confirmed booking yet' : 'No click observed') }}{{ $unclaimedAudit->visits_max_calendar_opened_at ? ' · Popup opened' : '' }}</dd></div>
+                                @if ($unclaimedAudit->visits_max_updated_at)<div><dt class="inline">Last observed: </dt><dd class="inline font-medium">{{ \Illuminate\Support\Carbon::parse($unclaimedAudit->visits_max_updated_at)->diffForHumans() }}</dd></div>@endif
+                                <div><dt class="inline">Source: </dt><dd class="inline font-medium">{{ data_get($unclaimedAudit->marketing_attribution, 'first_touch.utm_source') ?: (data_get($unclaimedAudit->marketing_attribution, 'first_touch.gclid') ? 'Google Ads click' : 'Direct or unknown') }}</dd></div>
+                                @if ($unclaimedAudit->customer_goal)<div><dt class="inline">Wants more: </dt><dd class="inline font-medium">{{ $unclaimedAudit->customer_goal }}</dd></div>@endif
+                            </dl>
+                            <p class="text-xs text-slate-500">Browser signals are approximate, may be blocked, and include repeat visits. Active time excludes hidden tabs and inactivity.</p>
+                            @if ($unclaimedAudit->status === \App\Models\WebsiteAudit::STATUS_COMPLETED)
+                                @php
+                                    $fullReportUrl = \Illuminate\Support\Facades\URL::temporarySignedRoute('marketing.website-audits.full', now()->addDays(14), $unclaimedAudit);
+                                @endphp
+                                <div class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+                                    <label class="sr-only" for="full-report-{{ $unclaimedAudit->public_id }}">Full report share link</label>
+                                    <input id="full-report-{{ $unclaimedAudit->public_id }}" readonly value="{{ $fullReportUrl }}" class="ui-input text-sm">
+                                    <button type="button" class="js-copy-text ui-button ui-button-secondary" data-copy-target="full-report-{{ $unclaimedAudit->public_id }}" data-copy-label="Copy full report link" data-copied-label="Copied">Copy full report link</button>
+                                </div>
+                                <p class="text-xs text-slate-500">Full report link expires in 14 days. Anyone you give this link to can view it; it isn’t included in the automatic emails.</p>
                             @endif
                         </div>
                         @if ($unclaimedAudit->personal_review_requested_at)

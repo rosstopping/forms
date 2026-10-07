@@ -1,3 +1,5 @@
+import { emitAuditEngagement } from './audit-engagement.js';
+
 let embedPromise;
 
 function loadCalEmbed(document, target) {
@@ -22,6 +24,7 @@ export function bootCalBooking(document, target = window, loadEmbed = () => load
             event.preventDefault();
             if (opening) return;
             opening = true;
+            emitAuditEngagement(document, 'booking_clicked');
             link.setAttribute('aria-busy', 'true');
             let bookingUrl;
             try {
@@ -36,6 +39,7 @@ export function bootCalBooking(document, target = window, loadEmbed = () => load
                 if (url.hostname !== 'cal.com' || url.protocol !== 'https:') throw new Error('Unsupported calendar');
                 target.Cal('init', { origin: url.origin });
                 target.Cal('modal', { calLink: url.pathname.replace(/^\//, '') + url.search });
+                emitAuditEngagement(document, 'calendar_opened');
             } catch {
                 target.location.assign(bookingUrl || link.href);
             } finally {

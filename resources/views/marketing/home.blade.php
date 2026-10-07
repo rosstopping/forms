@@ -1,7 +1,7 @@
 @extends('layouts.marketing')
 
 @section('title', 'Managed SEO and website care for UK businesses')
-@section('meta_description', 'Sitewell manages SEO, content and website improvements for UK businesses. See what needs work with a free search audit.')
+@section('meta_description', 'Sitewell fixes and looks after your website, then works on its Google and AI search visibility. Show us your website to see where we’d start.')
 @section('structured_data')
     @php
         $homeUrl = route('marketing.home');
@@ -70,17 +70,34 @@
         </div>
     </section>
 
+    <section class="py-8 text-[#151618] sm:py-12" aria-labelledby="homepage-founder">
+        <div class="mx-auto grid max-w-7xl gap-8 px-5 sm:px-8 lg:grid-cols-[4fr_7fr] lg:px-10">
+            <div data-home-reveal class="flex items-start gap-4">
+                <img src="{{ asset('ross-topping.jpg') }}" alt="Ross Topping, founder of Sitewell" width="80" height="80" class="size-16 shrink-0 rounded-full object-cover sm:size-20" decoding="async">
+                <div class="grid gap-2">
+                    <h2 id="homepage-founder" class="text-2xl font-medium tracking-tight sm:text-3xl">Hi, I’m Ross.</h2>
+                    <p class="text-base text-[#62666d]">Founder & Web Developer. Based in Doncaster.</p>
+                    <p class="text-base font-medium">01302 248 374</p>
+                </div>
+            </div>
+            <div data-home-reveal class="grid content-start gap-4">
+                <p class="max-w-[48ch] text-pretty text-xl">I review the findings, agree the priorities with you and oversee the work. You’ll know who’s looking after your website.</p>
+                <p class="max-w-[56ch] text-pretty text-lg text-[#62666d]">The free check gives us a starting point. If you’d like us to take care of the improvements, we’ll agree the work, arrange access and get started on the first fixes.</p>
+            </div>
+        </div>
+    </section>
+
     <section class="py-12 text-[#151618] sm:py-16" aria-labelledby="homepage-services">
         <div class="mx-auto grid max-w-7xl gap-10 px-5 sm:px-8 lg:grid-cols-[4fr_7fr] lg:px-10">
             <div data-home-reveal class="grid content-start justify-items-start gap-5">
-                <h2 id="homepage-services" class="max-w-[20ch] text-3xl font-medium tracking-tight text-balance sm:text-4xl">The changes your website needs.</h2>
-                <p class="max-w-[40ch] text-pretty text-lg text-[#62666d]">We manage your SEO and website changes, from page copy to technical fixes.</p>
+                <h2 id="homepage-services" class="max-w-[20ch] text-3xl font-medium tracking-tight text-balance sm:text-4xl">The improvements, done for you.</h2>
+                <p class="max-w-[40ch] text-pretty text-lg text-[#62666d]">You don’t need to learn another tool or organise the fixes yourself. We agree the priorities and do the work included in your plan.</p>
             </div>
             <dl class="grid divide-y divide-black/10">
                 @foreach ([
-                    ['Sharper page copy.', 'We rewrite service pages so people can see what you offer and how to enquire.'],
-                    ['Useful new content.', 'We write pages and articles around the questions your customers ask.'],
-                    ['Technical fixes.', 'We resolve website issues that make pages harder to find or use.'],
+                    ['Fix website problems.', 'We resolve technical issues that make your website harder to find or use, and check the changes work.'],
+                    ['Improve existing pages.', 'We make your service pages clearer and more useful, so customers can understand what you offer and how to enquire.'],
+                    ['Create useful content.', 'We write pages and articles around the questions your customers ask, as part of your agreed search and content work.'],
                 ] as [$heading, $copy])
                     <div data-home-reveal class="grid gap-2 py-6 first:pt-0 last:pb-0">
                         <dt class="text-xl font-medium tracking-tight">{{ $heading }}</dt>
@@ -91,15 +108,13 @@
         </div>
     </section>
 
-    <section class="py-12 text-[#151618] sm:py-16" aria-labelledby="homepage-founder">
-        <div class="mx-auto grid max-w-7xl gap-10 px-5 sm:px-8 lg:grid-cols-[4fr_7fr] lg:px-10">
-            <div data-home-reveal class="grid content-start gap-4">
-                <h2 id="homepage-founder" class="text-3xl font-medium tracking-tight text-balance sm:text-4xl">Hi, I’m Ross.</h2>
-                <p class="text-base text-[#62666d]">Founder & Web Developer. Based in Doncaster.</p>
-                <p class="text-base font-medium">01302 248 374</p>
+    <section class="py-12 text-[#151618] sm:py-16" aria-labelledby="homepage-progress">
+        <div class="mx-auto grid max-w-7xl gap-8 px-5 sm:px-8 lg:grid-cols-[4fr_7fr] lg:px-10">
+            <div data-home-reveal>
+                <h2 id="homepage-progress" class="max-w-[22ch] text-3xl font-medium tracking-tight text-balance sm:text-4xl">See what’s changed. Know what comes next.</h2>
             </div>
             <div data-home-reveal class="grid content-start justify-items-start gap-5">
-                <p class="max-w-[40ch] text-pretty text-xl">Start with your website. I’ll help you understand what needs attention and where Sitewell can help.</p>
+                <p class="max-w-[52ch] text-pretty text-lg text-[#62666d]">You get clear updates on completed work, the next priorities and how your search visibility is changing. We keep looking after your website, with ongoing SEO and content improvements at the level of support you choose.</p>
                 <p class="text-base font-medium"><a href="{{ route('marketing.free-site-audit') }}" class="inline-flex min-h-12 items-center gap-3 rounded-full px-5 py-3 ring-1 ring-black/20 hover:bg-[#faf7f4] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#d63d24]">Get your free search audit <span aria-hidden="true">→</span></a></p>
             </div>
         </div>
