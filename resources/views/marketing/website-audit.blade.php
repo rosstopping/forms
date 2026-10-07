@@ -146,7 +146,10 @@
                 </section>
                 @if ($audit->report_requested_at === null)
                     <section aria-labelledby="audit-review-title" class="grid gap-4 rounded-3xl bg-black p-6 text-white ring-1 ring-black sm:p-8">
-                        <h2 id="audit-review-title" class="text-3xl font-medium tracking-tight text-balance">Want to know what to fix first?</h2>
+                        <div class="flex items-start gap-3">
+                            <img data-audit-review-portrait src="{{ asset('ross-topping.jpg') }}" alt="Ross" width="40" height="40" class="size-10 shrink-0 rounded-full object-cover">
+                            <h2 id="audit-review-title" class="text-3xl font-medium tracking-tight text-balance">Want to know what to fix first?</h2>
+                        </div>
                         <p class="max-w-[60ch] text-base text-white/75">I’ll review your results and email you the three improvements I’d prioritise for your website, with a clear next step for each.</p>
                         <div><button type="button" data-audit-email-open aria-haspopup="dialog" aria-controls="audit-email-dialog" class="inline-flex min-h-12 items-center justify-center rounded-full bg-garden px-5 py-3 text-base font-medium text-white hover:bg-moss focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden">Get Ross’s recommendations</button></div>
                         <p class="text-base text-white/65 sm:text-sm">Within one working day. No obligation to book a call.</p>
@@ -369,7 +372,10 @@
         <div class="relative p-6 sm:p-8">
             <button type="button" data-audit-email-close aria-label="Close email prompt" class="absolute top-3 right-3 grid size-12 place-items-center rounded-full text-xl text-ink/60 hover:bg-lichen focus-visible:outline-2 focus-visible:outline-garden">×</button>
             <div class="grid gap-2 pr-8">
-                <h2 id="audit-email-title" class="text-3xl font-medium tracking-tight text-balance">Want to know what to fix first?</h2>
+                <div class="flex items-start gap-3">
+                            <img data-audit-review-portrait src="{{ asset('ross-topping.jpg') }}" alt="Ross" width="40" height="40" class="size-10 shrink-0 rounded-full object-cover">
+                            <h2 id="audit-email-title" class="text-3xl font-medium tracking-tight text-balance">Want to know what to fix first?</h2>
+                        </div>
                 <p id="audit-email-description" class="text-pretty text-base text-ink/65">I’ll personally review your results and email three priorities with practical next steps within one working day. You’ll also get your report link, available for 14 days.</p>
             </div>
             <form method="POST" action="{{ route('marketing.website-audits.email-report', $audit) }}" class="grid gap-4 pt-6">
