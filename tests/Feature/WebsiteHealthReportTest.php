@@ -421,7 +421,7 @@ it('shows administrators a copyable AI prompt containing every report issue', fu
         ->assertDontSee('[PASSED] Primary heading');
 });
 
-it('hides the manual AI prompt when a GitHub repository is connected', function (): void {
+it('keeps the manual AI prompt collapsed for administrators when a GitHub repository is connected', function (): void {
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     GithubUserAuthorization::factory()->for($admin)->create();
     $website = websiteWithDomain();
@@ -435,8 +435,13 @@ it('hides the manual AI prompt when a GitHub repository is connected', function 
     $this->actingAs($admin)
         ->get(route('admin.website-health-reports.show', [$website, $report]))
         ->assertSuccessful()
-        ->assertDontSee('AI remediation prompt')
-        ->assertDontSee('Copy prompt')
+        ->assertSee('<details id="health-report-ai-prompt-disclosure">', false)
+        ->assertDontSee('<details id="health-report-ai-prompt-disclosure" open', false)
+        ->assertSee('Show AI prompt')
+        ->assertSee('AI remediation prompt')
+        ->assertSee('Copy prompt')
+        ->assertSee('data-copy-target="health-report-ai-prompt"', false)
+        ->assertSee('[WARNING] Content Security Policy: The security header is missing.')
         ->assertSee('Prepare available fixes')
         ->assertSee('Prepare fixes')
         ->assertDontSee('Start automated remediation');

@@ -51,7 +51,12 @@
         </div>
     </div>
 
-    @if ($aiPrompt && ! $report->website->repository)
+    @if ($aiPrompt)
+        @if ($report->website->repository)
+            <details id="health-report-ai-prompt-disclosure">
+                <summary class="ui-button ui-button-secondary ui-button-small cursor-pointer">Show AI prompt</summary>
+                <div class="mt-3">
+        @endif
         <section class="rounded-lg border border-violet-200 bg-violet-50 p-4 shadow-sm" aria-labelledby="ai-remediation-prompt-title">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
@@ -63,6 +68,10 @@
             </div>
             <textarea id="health-report-ai-prompt" class="ui-input mt-4 h-72 w-full resize-y font-mono leading-5" readonly>{{ $aiPrompt }}</textarea>
         </section>
+        @if ($report->website->repository)
+                </div>
+            </details>
+        @endif
     @endif
 
     @php
