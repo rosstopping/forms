@@ -19,6 +19,9 @@
                                 <div class="min-w-0">
                                     <div class="flex flex-wrap items-center gap-2">
                                         <span class="rounded-full bg-emerald-100 px-2.5 py-1 text-sm font-medium text-emerald-800">Picked up</span>
+                                        @if ($contentRequest->manual_started_at)
+                                            <span class="rounded-full bg-violet-100 px-2.5 py-1 text-sm font-medium text-violet-800">{{ $contentRequest->manual_completed_at ? 'Manual work complete' : 'Manual work in progress' }}</span>
+                                        @endif
                                         @if ($contentRequest->generation)
                                             <span class="rounded-full bg-slate-100 px-2.5 py-1 text-sm font-medium capitalize text-slate-700">{{ str_replace('_', ' ', $contentRequest->generation->status) }}</span>
                                         @endif

@@ -32,6 +32,7 @@ use App\Http\Controllers\Admin\ImportProspectDiscoveryCandidatesController;
 use App\Http\Controllers\Admin\ImportSeoProspectCandidatesController;
 use App\Http\Controllers\Admin\ManagedPostmarkConnectionController;
 use App\Http\Controllers\Admin\ManagedPostmarkVerificationController;
+use App\Http\Controllers\Admin\ManualContentRequestController;
 use App\Http\Controllers\Admin\OnboardingCallController;
 use App\Http\Controllers\Admin\OnboardingLeadController;
 use App\Http\Controllers\Admin\OptimisationController;
@@ -414,6 +415,9 @@ Route::middleware(['web', 'auth', ResolveCurrentWebsite::class])->prefix('admin'
     Route::post('websites/{website}/content-generations/{contentGeneration}/retry', [ContentPlanController::class, 'retryGeneration'])->middleware('membership:growth')->name('content-generations.retry');
     Route::delete('websites/{website}/content-generations/{contentGeneration}', [ContentPlanController::class, 'cancelGeneration'])->middleware('membership:growth')->name('content-generations.destroy');
     Route::post('websites/{website}/content-requests', [ContentRequestController::class, 'store'])->middleware('membership:growth')->name('content-requests.store');
+    Route::post('websites/{website}/content-requests/{contentRequest}/manual', [ManualContentRequestController::class, 'take'])->middleware('membership:growth')->name('content-requests.manual.take');
+    Route::post('websites/{website}/content-requests/{contentRequest}/manual/release', [ManualContentRequestController::class, 'release'])->middleware('membership:growth')->name('content-requests.manual.release');
+    Route::post('websites/{website}/content-requests/{contentRequest}/manual/complete', [ManualContentRequestController::class, 'complete'])->middleware('membership:growth')->name('content-requests.manual.complete');
     Route::post('websites/{website}/content-requests/{contentRequest}/bump', [ContentRequestController::class, 'bump'])->middleware('membership:growth')->name('content-requests.bump');
     Route::delete('websites/{website}/content-requests/{contentRequest}', [ContentRequestController::class, 'destroy'])->middleware('membership:growth')->name('content-requests.destroy');
     Route::post('forms/{form}/setup-check', FormSetupCheckController::class)->middleware('throttle:10,1')->name('forms.setup-check');

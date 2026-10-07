@@ -11,6 +11,7 @@ use App\Models\WebsiteAiQuestion;
 use App\Models\WebsiteDomain;
 use App\Services\BusinessProfilePostSuggestions;
 use App\Services\ContentSchedule;
+use App\Services\ManualContentRequest;
 use App\Services\PixelInstallationSnippet;
 use App\Services\SearchConsoleClient;
 use App\Services\SearchConsoleHistoryStore;
@@ -180,9 +181,24 @@ class WebsiteController extends Controller
                     ->paginate(20, pageName: 'impact_page')->withQueryString();
             }
         }
+        $manualContentRequests = collect();
+        $contentPromptRequest = null;
+        $contentPrompt = null;
+        if ($request->has('content_prompt')) {
+            abort_unless($user?->isAdmin(), 403);
+            abort_unless(is_string($request->query('content_prompt')) && ctype_digit($request->query('content_prompt')), 404);
+            $contentPromptRequest = $website->contentRequests()->findOrFail($request->query('content_prompt'));
+            abort_if($contentPromptRequest->picked_up_at && ! $contentPromptRequest->manual_started_at, 422, 'This request has already been picked up by automation.');
+            $contentPrompt = app(ManualContentRequest::class)->prompt($contentPromptRequest);
+        }
         $pendingContentRequests = null;
         $actionedContentRequests = collect();
         if ($canUseGrowthFeatures) {
+            $manualContentRequests = $website->contentRequests()->with('manualAssignee')
+                ->select(['id', 'website_id', 'instructions', 'manual_taken_by', 'manual_started_at', 'manual_completed_at'])
+                ->whereNotNull('manual_started_at')->whereNull('manual_completed_at')
+                ->latest('manual_started_at')->latest('id')
+                ->paginate(20, pageName: 'manual_content_page')->withQueryString()->fragment('manual-content-title');
             $pendingContentRequests = $website->contentRequests()
                 ->with(['creator', 'seoImpact'])
                 ->pendingInQueueOrder()
@@ -191,6 +207,7 @@ class WebsiteController extends Controller
                 ->appends(['content_section' => 'queue'])->fragment('content-requests-title');
             $actionedContentRequests = $website->contentRequests()
                 ->with(['creator', 'generation'])
+                ->select(['id', 'website_id', 'created_by', 'content_generation_id', 'instructions', 'picked_up_at', 'manual_started_at', 'manual_completed_at'])
                 ->whereNotNull('picked_up_at')
                 ->latest('picked_up_at')
                 ->latest('id')
@@ -382,7 +399,7 @@ class WebsiteController extends Controller
             'dataForSeoConfigured', 'outreachProspect', 'pixelInstallationSnippet', 'canUseGrowthFeatures', 'canUseCompleteFeatures', 'canUseAutoresponders',
             'websiteAiQuestions', 'websiteAiQuestionsUsed', 'websiteAiWeeklyLimit', 'pixelOptimisations', 'websiteUsers', 'soleManagerId',
             'hasContentDeliveryConnection', 'contentSupportCallUrl', 'contentWeeklyLimit', 'contentScheduleReason', 'nextContentRun',
-            'canUseSdk', 'sdkRuns', 'pendingContentRequests', 'actionedContentRequests', 'impacts', 'seoImpact', 'unifiedActions', 'pageWorkspace',
+            'manualContentRequests', 'contentPromptRequest', 'contentPrompt', 'canUseSdk', 'sdkRuns', 'pendingContentRequests', 'actionedContentRequests', 'impacts', 'seoImpact', 'unifiedActions', 'pageWorkspace',
             'businessPostSuggestions', 'businessQueuedTopics', 'businessPosts', 'businessReviews', 'businessPostCounts', 'businessReviewCounts', 'businessPostFilter', 'businessReviewFilter',
         ));
     }

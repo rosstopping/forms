@@ -15,11 +15,11 @@ class ContentRequest extends Model
     /** @use HasFactory<ContentRequestFactory> */
     use HasFactory;
 
-    protected $fillable = ['action_fingerprint', 'backlink_context', 'backlink_fingerprint', 'competitor_context', 'competitor_fingerprint', 'website_id', 'created_by', 'content_generation_id', 'instructions', 'picked_up_at', 'bumped_at', 'pixel_processed_at', 'pixel_error'];
+    protected $fillable = ['action_fingerprint', 'backlink_context', 'backlink_fingerprint', 'competitor_context', 'competitor_fingerprint', 'website_id', 'created_by', 'content_generation_id', 'instructions', 'picked_up_at', 'bumped_at', 'pixel_processed_at', 'pixel_error', 'manual_taken_by', 'manual_started_at', 'manual_completed_at', 'manual_prompt'];
 
     protected function casts(): array
     {
-        return ['backlink_context' => 'array', 'competitor_context' => 'array', 'picked_up_at' => 'datetime', 'bumped_at' => 'datetime', 'pixel_processed_at' => 'datetime'];
+        return ['backlink_context' => 'array', 'competitor_context' => 'array', 'picked_up_at' => 'datetime', 'bumped_at' => 'datetime', 'pixel_processed_at' => 'datetime', 'manual_started_at' => 'datetime', 'manual_completed_at' => 'datetime'];
     }
 
     public function scopePendingInQueueOrder(Builder $query): Builder
@@ -35,6 +35,11 @@ class ContentRequest extends Model
     public function website(): BelongsTo
     {
         return $this->belongsTo(Website::class);
+    }
+
+    public function manualAssignee(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'manual_taken_by');
     }
 
     public function creator(): BelongsTo

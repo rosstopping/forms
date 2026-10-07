@@ -8,6 +8,7 @@ use App\Services\ContentRequestPixelOptimisationGenerator;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\Cache;
 use Throwable;
 
 class GenerateContentRequestPixelOptimisations implements ShouldBeUnique, ShouldQueue
@@ -35,13 +36,15 @@ class GenerateContentRequestPixelOptimisations implements ShouldBeUnique, Should
      */
     public function handle(ContentRequestPixelOptimisationGenerator $generator): void
     {
-        $contentRequest = $this->contentRequest->fresh();
+        Cache::lock('content-request-work-'.$this->contentRequest->id, 180)->block(5, function () use ($generator): void {
+            $contentRequest = $this->contentRequest->fresh();
 
-        if (! $contentRequest || $contentRequest->pixel_processed_at) {
-            return;
-        }
+            if (! $contentRequest || $contentRequest->pixel_processed_at || $contentRequest->manual_started_at) {
+                return;
+            }
 
-        $generator->generate($contentRequest, $this->author);
+            $generator->generate($contentRequest, $this->author);
+        });
     }
 
     public function failed(?Throwable $exception): void

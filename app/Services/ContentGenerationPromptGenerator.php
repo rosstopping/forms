@@ -111,7 +111,19 @@ PROMPT;
             'requests' => $previous->contentRequests->map(fn ($request): string => Str::limit($request->instructions, 500))->all(),
         ])->values()->all();
 
-        return Str::limit(json_encode($rows, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR), 4500, PHP_EOL.'[Recent history truncated; inspect repository history for full details.]');
+        $manualRows = $generation->plan->website->contentRequests()->whereNotNull('manual_started_at')
+            ->where(fn ($query) => $query->whereNull('manual_completed_at')->orWhere('manual_completed_at', '>', now()->subDays(14)))
+            ->latest('manual_started_at')->latest('id')->limit(10)
+            ->get(['id', 'instructions', 'manual_started_at', 'manual_completed_at'])
+            ->map(fn ($request): array => [
+                'status' => $request->manual_completed_at ? 'manual_work_complete' : 'manual_work_in_progress',
+                'started_at' => $request->manual_started_at->toIso8601String(),
+                'completed_at' => $request->manual_completed_at?->toIso8601String(),
+                'requests' => [Str::limit($request->instructions, 500)],
+                'publication_verified' => false,
+            ])->all();
+
+        return Str::limit(json_encode([...$manualRows, ...$rows], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR), 4500, PHP_EOL.'[Recent history truncated; inspect repository history for full details.]');
     }
 
     /** @param array<int, array<string, mixed>> $rows */

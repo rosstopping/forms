@@ -3,6 +3,52 @@
         <div><h2 id="content-requests-title" class="text-lg font-semibold text-balance text-slate-950">Content queue</h2><p class="mt-1 text-base text-pretty text-slate-600 sm:text-sm">Choose what Sitewell works on next. Move important requests to the top.</p></div>
         <div class="text-sm"><a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'actions']) }}" class="ui-button ui-button-secondary ui-button-small">Find SEO opportunities</a></div>
     </div>
+    @if ($contentPrompt && Auth::user()?->isAdmin())
+        <details id="content-ai-prompt" class="ui-panel mt-5 p-4" open>
+            <summary class="cursor-pointer font-medium text-slate-950">AI content prompt</summary>
+            <p class="mt-3 whitespace-pre-line text-base text-slate-700 sm:text-sm">{{ $contentPromptRequest->instructions }}</p>
+            <p class="mt-2 text-base text-slate-600 sm:text-sm">Paste this into Codex or your preferred coding assistant. Copying keeps the request in its current state. Take it for manual work to prevent automation picking it up.</p>
+            <div class="mt-3 flex flex-wrap gap-2">
+                <button type="button" class="ui-button ui-button-secondary ui-button-small js-copy-text" data-copy-target="content-request-ai-prompt" data-copy-label="Copy prompt" data-copied-label="Copied">Copy prompt</button>
+                @if (! $contentPromptRequest->picked_up_at)
+                    <form method="POST" action="{{ route('admin.content-requests.manual.take', [$website, $contentPromptRequest]) }}">
+                        @csrf
+                        <button type="submit" class="ui-button ui-button-secondary ui-button-small">Take for manual work</button>
+                    </form>
+                @endif
+            </div>
+            <label for="content-request-ai-prompt" class="ui-label mt-4 block">Prompt</label>
+            <textarea id="content-request-ai-prompt" class="ui-input mt-1 h-72 w-full resize-y font-mono text-sm" readonly>{{ $contentPrompt }}</textarea>
+        </details>
+    @endif
+    @if ($manualContentRequests->isNotEmpty())
+        <section class="mt-5 border-t border-slate-950/10 pt-4" aria-labelledby="manual-content-title">
+            <h3 id="manual-content-title" class="text-sm font-semibold text-slate-900">Manual work ({{ $manualContentRequests->total() }})</h3>
+            <p class="mt-1 text-base text-slate-600 sm:text-sm">Reserved requests are excluded from automation until returned to the queue.</p>
+            <div class="mt-3 space-y-3">
+                @foreach ($manualContentRequests as $manualRequest)
+                    <article class="ui-well p-3">
+                        <p class="text-sm font-medium text-violet-700">Taken {{ $manualRequest->manual_started_at->diffForHumans() }}{{ $manualRequest->manualAssignee ? ' by '.$manualRequest->manualAssignee->name : '' }}</p>
+                        <p class="mt-2 whitespace-pre-line break-words text-base text-slate-700 sm:text-sm">{{ $manualRequest->instructions }}</p>
+                        @if (Auth::user()?->isAdmin())
+                            <div class="mt-3 flex flex-wrap gap-2">
+                                <a href="{{ route('admin.websites.section', [$website, 'content', 'content_section' => 'queue', 'content_prompt' => $manualRequest->id]) }}#content-ai-prompt" class="ui-button ui-button-secondary ui-button-small">Show AI prompt</a>
+                                <form method="POST" action="{{ route('admin.content-requests.manual.release', [$website, $manualRequest]) }}">
+                                    @csrf
+                                    <button type="submit" class="ui-button ui-button-secondary ui-button-small">Return to queue</button>
+                                </form>
+                                <form method="POST" action="{{ route('admin.content-requests.manual.complete', [$website, $manualRequest]) }}">
+                                    @csrf
+                                    <button type="submit" class="ui-button ui-button-secondary ui-button-small">Mark complete</button>
+                                </form>
+                            </div>
+                        @endif
+                    </article>
+                @endforeach
+            </div>
+            @if ($manualContentRequests->hasPages())<div class="mt-4">{{ $manualContentRequests->links() }}</div>@endif
+        </section>
+    @endif
     @if ($canManageWebsite && $canSubmitContentRequest)
         <details class="ui-panel mt-5 p-4" @if ($errors->has('instructions') || old('instructions')) open @endif>
             <summary class="cursor-pointer font-medium text-slate-950">Add a content request</summary>
@@ -55,6 +101,9 @@
                             </div>
                             @if ($canManageWebsite)
                                 <div class="flex shrink-0 flex-col gap-2 sm:flex-row">
+                                    @if (Auth::user()?->isAdmin())
+                                        <a href="{{ route('admin.websites.section', [$website, 'content', 'content_section' => 'queue', 'content_prompt' => $contentRequest->id]) }}#content-ai-prompt" class="ui-button ui-button-secondary">Show AI prompt</a>
+                                    @endif
                                     @if ($queuePosition !== 1)
                                         <form method="POST" action="{{ route('admin.content-requests.bump', [$website, $contentRequest]) }}">
                                             @csrf

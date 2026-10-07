@@ -110,7 +110,11 @@ class SeoImpactTracker
 
     public function promptContext(ContentGeneration $generation): string
     {
-        $current = SeoImpact::where('content_generation_id', $generation->id)->get();
+        $current = SeoImpact::where('website_id', $generation->plan->website_id)
+            ->when($generation->exists,
+                fn ($query) => $query->where('content_generation_id', $generation->id),
+                fn ($query) => $query->whereIn('content_request_id', $generation->contentRequests->modelKeys()))
+            ->get();
         $history = SeoImpact::where('website_id', $generation->plan->website_id)
             ->whereNotNull('live_at')->latest('live_at')->limit(10)->get();
         $rows = $current->merge($history)->unique('id')->map(fn (SeoImpact $impact): array => [

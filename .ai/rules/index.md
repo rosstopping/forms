@@ -72,6 +72,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Jobs/CreateGoogleAdsCampaign.php,Services/GoogleAdsCampaignCreator.php,Http/Controllers/Admin/GoogleAdsController.php,Models/GoogleAdsCampaignDraft.php},resources/views/admin/websites/google-ads.blade.php | .ai/rules/jobs-controllers-admin-views-admin-websites.md |
 | app/{Jobs/GeneratePagePixelOptimisations.php,Http/Controllers/Admin/*ReportOptimisationsController.php}, app/{Jobs/BuildWebsite.php,Http/Controllers/Admin/WebsiteBuilderController.php,Models/WebsiteBuild.php} | .ai/rules/jobs-controllers-admin.md |
 | app/{Jobs/GenerateWebsiteAudit.php,Services/MarketingAuditScreenshot.php,Http/Controllers/FreeSiteAuditController.php},resources/views/marketing/website-audit.blade.php | .ai/rules/jobs-controllers-views-marketing.md |
+| {app/Services/{ManualContentRequest,ContentGenerationPromptGenerator,ContentWorkSelector}.php,app/Models/ContentRequest.php,app/Jobs/GenerateContentRequestPixelOptimisations.php,resources/views/admin/websites/partials/content*.blade.php} | .ai/rules/jobs-views-admin-websites-partials.md |
 | app/Jobs/SendWeeklyRankingReport.php,resources/views/emails/weekly-ranking-report.blade.php | .ai/rules/jobs-views-emails.md |
 | app/{Services,Jobs}/MarketingAudit*.php,app/Jobs/CheckMarketingAuditAiVisibility.php,resources/views/marketing/website-audit.blade.php | .ai/rules/jobs-views-marketing.md |
 | app/Jobs/Sync*Copilot*.php,app/Jobs/SyncContentGeneration.php | .ai/rules/jobs.md |
