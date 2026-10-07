@@ -109,3 +109,14 @@ it('does not count unsigned calendar requests or reschedules as new bookings', f
     $this->call('POST', route('cal.webhook'), server: ['CONTENT_TYPE' => 'application/json', 'HTTP_X_CAL_SIGNATURE_256' => hash_hmac('sha256', $payload, 'ppc-secret')], content: $payload)->assertSuccessful();
     expect(MarketingConversion::query()->where('name', 'call_booked')->count())->toBe(0);
 });
+
+it('returns an attributed calendar URL for the popup without counting a confirmed booking', function (): void {
+    $this->get(route('marketing.ppc.local', ['gclid' => 'popup-click']));
+    $response = $this->getJson(route('marketing.ppc.book'))->assertSuccessful();
+    parse_str(parse_url($response->json('booking_url'), PHP_URL_QUERY), $query);
+    $click = MarketingConversion::query()->sole();
+    expect($query['metadata']['sitewell_booking'])->toBe($click->event_id)
+        ->and($click->name)->toBe('book_call_clicked')
+        ->and($click->attribution['first_touch']['gclid'])->toBe('popup-click')
+        ->and($click->payload()['is_conversion'])->toBeFalse();
+});

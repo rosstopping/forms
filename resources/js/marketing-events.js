@@ -1,3 +1,5 @@
+import { bootCalBooking } from './cal-booking.js';
+
 /**
  * Publish the existing marketing hooks and hand accepted audits to GTM.
  * The GTM conversion tag must respect consent; do not also send this lead
@@ -24,6 +26,7 @@ export function publishMarketingEvent(payload, target = window) {
 }
 
 export function bootMarketingEvents(document, target = window) {
+    bootCalBooking(document, target);
     const page = document.querySelector('[data-ppc-page]');
     if (page) {
         publishMarketingEvent({

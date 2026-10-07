@@ -121,6 +121,8 @@ it('shows an unselected marketing choice and the review offer immediately after 
         ->assertSee('src="'.asset('ross-topping.jpg').'"', false)
         ->assertSee('<span class="max-sm:hidden">Book a call with Ross</span>', false);
     expect(substr_count($response->getContent(), 'data-audit-review-portrait'))->toBe(2);
+    expect(substr_count($response->getContent(), 'width="56" height="56"'))->toBe(2);
+    $response->assertSeeInOrder(['id="audit-email-title"', 'data-audit-review-portrait', 'id="audit-email-description"'], false);
     expect($response->getContent())->toMatch('/name="marketing_consent" value="1"\s+class=/');
 });
 

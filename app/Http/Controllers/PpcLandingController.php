@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Support\MarketingJourney;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -28,12 +29,16 @@ class PpcLandingController extends Controller
         ]);
     }
 
-    public function book(Request $request, MarketingJourney $journey): RedirectResponse
+    public function book(Request $request, MarketingJourney $journey): JsonResponse|RedirectResponse
     {
         $conversion = $journey->record('book_call_clicked', (string) Str::uuid(), $journey->capture($request));
         $url = Uri::of(config('marketing.booking_url'))->withQuery([
             'metadata' => ['sitewell_booking' => $conversion->event_id],
         ]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['booking_url' => (string) $url]);
+        }
 
         return redirect()->away((string) $url);
     }

@@ -76,6 +76,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Services,Jobs}/MarketingAudit*.php,app/Jobs/CheckMarketingAuditAiVisibility.php,resources/views/marketing/website-audit.blade.php | .ai/rules/jobs-views-marketing.md |
 | app/Jobs/Sync*Copilot*.php,app/Jobs/SyncContentGeneration.php | .ai/rules/jobs.md |
 | {resources/views/marketing/home.blade.php,resources/js/home-reveal.js,resources/css/app.css} | .ai/rules/js-css.md |
+| {resources/js/cal-booking.js,resources/js/marketing-events.js,app/Http/Controllers/PpcLandingController.php} | .ai/rules/js-http-controllers.md |
 | app/Http/Controllers/Admin/{WebsiteController.php,WebsiteHealthReportController.php},resources/views/admin/{websites/show.blade.php,website-health-reports/show.blade.php},resources/js/app.js | .ai/rules/js.md |
 | routes/web.php,app/Http/Controllers/Admin/GoogleAdsController.php,resources/views/layouts/app.blade.php,tests/Feature/GoogleAdsConnectionTest.php | .ai/rules/layouts-feature.md |
 | app/{Models/FormSubmission.php,Http/Controllers/Admin/FormSubmissionController.php,Http/Requests/*LeadRequest.php},resources/views/{layouts/app.blade.php,admin/form-submissions/**} | .ai/rules/layouts-form-submissions.md |
