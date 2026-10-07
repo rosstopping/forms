@@ -7,29 +7,34 @@ use App\Http\Requests\SendWebsiteAuditReviewRequest;
 use App\Http\Requests\UpdateWebsiteAuditLeadRequest;
 use App\Mail\WebsiteAuditPersonalReview;
 use App\Models\WebsiteAudit;
+use App\Services\LoomVideoThumbnail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 
 class WebsiteAuditReviewController extends Controller
 {
-    public function send(SendWebsiteAuditReviewRequest $request, WebsiteAudit $websiteAudit): RedirectResponse
+    public function send(SendWebsiteAuditReviewRequest $request, WebsiteAudit $websiteAudit, LoomVideoThumbnail $loomVideoThumbnail): RedirectResponse
     {
-        DB::transaction(function () use ($request, $websiteAudit): void {
+        $thumbnailUrl = $websiteAudit->personal_review_queued_at === null
+            ? $loomVideoThumbnail->fetch($request->validated('loom_url'))
+            : null;
+
+        DB::transaction(function () use ($request, $websiteAudit, $thumbnailUrl): void {
             $audit = WebsiteAudit::query()->lockForUpdate()->findOrFail($websiteAudit->id);
             abort_unless($audit->personal_review_requested_at && $audit->email && $audit->status === WebsiteAudit::STATUS_COMPLETED, 422);
             if ($audit->personal_review_queued_at !== null) {
                 return;
             }
             $audit->update([
-                'personal_review' => $request->validated('priorities'),
+                'personal_review' => ['loom_url' => $request->validated('loom_url'), 'thumbnail_url' => $thumbnailUrl],
                 'personal_review_queued_at' => now(),
                 'expires_at' => now()->addDays(14),
             ]);
             Mail::to($audit->email)->queue(new WebsiteAuditPersonalReview($audit));
         });
 
-        return back()->with('status', 'Personal recommendations queued.');
+        return back()->with('status', 'Video review queued.');
     }
 
     public function update(UpdateWebsiteAuditLeadRequest $request, WebsiteAudit $websiteAudit): RedirectResponse

@@ -28,7 +28,7 @@ class WebsiteAuditPersonalReview extends Mailable implements ShouldQueue
     {
         return new Envelope(
             replyTo: [config('marketing.audit_notification_email')],
-            subject: 'Your three website priorities for '.$this->audit->domain,
+            subject: 'Your personal website review for '.$this->audit->domain,
         );
     }
 

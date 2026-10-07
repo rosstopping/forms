@@ -1,6 +1,20 @@
 <x-mail::message>
-# What I’d prioritise for {{ $audit->domain }}
+# Your personal website review for {{ $audit->domain }}
 
+@if (data_get($audit->personal_review, 'loom_url'))
+I’ve recorded a personal video review of {{ $audit->domain }}, walking through what I’d improve and where I’d start.
+
+@if (data_get($audit->personal_review, 'thumbnail_url'))
+<a href="{{ data_get($audit->personal_review, 'loom_url') }}" style="display:block;text-decoration:none;">
+<img src="{{ data_get($audit->personal_review, 'thumbnail_url') }}" alt="Watch the personal website review recorded for {{ $audit->domain }}" width="540" style="display:block;width:100%;max-width:540px;height:auto;border:0;border-radius:8px;">
+</a>
+@endif
+
+<x-mail::button :url="data_get($audit->personal_review, 'loom_url')">
+Watch your website review
+</x-mail::button>
+
+@else
 I’ve reviewed your audit. Here are the three improvements I’d start with.
 
 @foreach ($audit->personal_review as $priority)
@@ -11,6 +25,8 @@ I’ve reviewed your audit. Here are the three improvements I’d start with.
 **Next step:** {{ $priority['next_step'] }}
 
 @endforeach
+
+@endif
 
 What do you most want your website to bring you — enquiries, bookings or sales? Reply to this email and let me know.
 

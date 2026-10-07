@@ -4,7 +4,7 @@
 The automated audit has checked {{ $audit->domain }} and outlined the website fixes and search opportunities we found.
 
 @if ($audit->personal_review_requested_at)
-I’ll personally review your results and email the improvements I’d prioritise.
+I’ll personally review your results and email you a video walking through what I’d improve.
 @endif
 
 <x-mail::button :url="$reportUrl">

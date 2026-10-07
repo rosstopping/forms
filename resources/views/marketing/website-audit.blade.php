@@ -150,7 +150,7 @@
                             <img data-audit-review-portrait src="{{ asset('ross-topping.jpg') }}" alt="Ross" width="56" height="56" class="size-14 shrink-0 rounded-full object-cover outline-1 -outline-offset-1 outline-white/10">
                             <div data-audit-review-copy class="grid min-w-0 flex-1 gap-4">
                                 <h2 id="audit-review-title" class="max-w-[40ch] text-3xl font-medium tracking-tight text-balance">Want to know what to fix first?</h2>
-                                <p class="max-w-[56ch] text-pretty text-base text-white/75">I’ll review your results and email you the three improvements I’d prioritise for your website, with a clear next step for each.</p>
+                                <p class="max-w-[56ch] text-pretty text-base text-white/75">I’ll review your results and email you a personal video walking through what I’d improve and where I’d start.</p>
                                 <div><button type="button" data-audit-email-open aria-haspopup="dialog" aria-controls="audit-email-dialog" class="inline-flex min-h-12 items-center justify-center rounded-full bg-garden px-5 py-3 text-base font-medium text-white hover:bg-moss focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden">Get Ross’s recommendations</button></div>
                             </div>
                         </div>
@@ -375,7 +375,7 @@
             <button type="button" data-audit-email-close aria-label="Close email prompt" class="absolute top-3 right-3 grid size-12 place-items-center rounded-full text-xl text-ink/60 hover:bg-lichen focus-visible:outline-2 focus-visible:outline-garden">×</button>
             <div class="grid gap-4">
                 <h2 id="audit-email-title" class="max-w-[40ch] text-3xl font-medium tracking-tight text-balance">Want to know what to fix first?</h2>
-                <p id="audit-email-description" class="max-w-[56ch] text-pretty text-base text-ink/65">I’ll personally review your results and email three priorities with practical next steps within one working day. You’ll also get your report link, available for 14 days.</p>
+                <p id="audit-email-description" class="max-w-[56ch] text-pretty text-base text-ink/65">I’ll personally review your results and email you a video with practical next steps within one working day. You’ll also get your report link, available for 14 days.</p>
             </div>
             <form method="POST" action="{{ route('marketing.website-audits.email-report', $audit) }}" class="grid gap-4 pt-6">
                 @csrf

@@ -5,6 +5,7 @@ use App\Mail\WebsiteAuditPersonalReview;
 use App\Mail\WebsiteAuditReport;
 use App\Models\User;
 use App\Models\WebsiteAudit;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
 
@@ -60,7 +61,7 @@ it('requires a signed link and explicit confirmation to withdraw consent even af
         ->and($other->refresh()->marketing_consent_at)->toBeNull();
 });
 
-it('lets an admin send exactly three personal priorities once and restores report access', function (): void {
+it('lets an admin send a personal Loom video once and restores report access', function (): void {
     Mail::fake();
     $audit = WebsiteAudit::factory()->create([
         'status' => WebsiteAudit::STATUS_COMPLETED,
@@ -70,29 +71,38 @@ it('lets an admin send exactly three personal priorities once and restores repor
         'expires_at' => now()->subDay(),
     ]);
     $url = route('admin.onboarding.audits.review', $audit);
-    $priorities = array_fill(0, 3, ['title' => 'Improve your enquiry page', 'impact' => 'Help visitors understand the service', 'next_step' => 'Add a clear enquiry action']);
-    $this->post($url, ['priorities' => $priorities])->assertRedirect(route('login'));
-    $this->actingAs(User::factory()->create())->post($url, ['priorities' => $priorities])->assertForbidden();
+    $videoUrl = 'https://www.loom.com/share/abcdef123456?sid=share';
+    $thumbnailUrl = 'https://cdn.loom.com/sessions/thumbnails/review.jpg';
+    Http::fake(['www.loom.com/*' => Http::response('<meta property="og:image" content="'.$thumbnailUrl.'">')]);
+    $this->post($url, ['loom_url' => $videoUrl])->assertRedirect(route('login'));
+    $this->actingAs(User::factory()->create())->post($url, ['loom_url' => $videoUrl])->assertForbidden();
     $this->actingAs(User::factory()->create(['role' => User::ROLE_ADMIN]));
-    $this->post($url, ['priorities' => array_slice($priorities, 0, 2)])->assertSessionHasErrors('priorities');
-    $this->post($url, ['priorities' => $priorities])->assertRedirect();
-    $this->post($url, ['priorities' => $priorities])->assertRedirect();
-    expect($audit->refresh()->personal_review)->toBe($priorities)
+    $this->get(route('admin.onboarding.index'))->assertSuccessful()
+        ->assertSee('name="loom_url"', false)->assertDontSee('name="priorities[', false);
+    foreach (['', 'https://example.com/video', 'http://www.loom.com/share/abcdef', 'https://www.loom.com.evil.test/share/abcdef'] as $invalidUrl) {
+        $this->post($url, ['loom_url' => $invalidUrl])->assertSessionHasErrors('loom_url');
+    }
+    $this->post($url, ['loom_url' => $videoUrl])->assertRedirect();
+    $this->post($url, ['loom_url' => $videoUrl])->assertRedirect();
+    expect($audit->refresh()->personal_review)->toBe(['loom_url' => $videoUrl, 'thumbnail_url' => $thumbnailUrl])
         ->and($audit->personal_review_queued_at)->not->toBeNull()
         ->and($audit->hasExpired())->toBeFalse();
     Mail::assertQueuedCount(1);
     Mail::assertQueued(WebsiteAuditPersonalReview::class, fn ($mail): bool => $mail->hasTo('owner@example.com'));
-    (new WebsiteAuditPersonalReview($audit))->assertSeeInHtml('Improve your enquiry page')
-        ->assertSeeInHtml('Why it matters')->assertSeeInHtml('Next step')->assertSeeInHtml('enquiries, bookings or sales');
+    (new WebsiteAuditPersonalReview($audit))->assertSeeInHtml($videoUrl)
+        ->assertSeeInHtml('Watch your website review')->assertSeeInHtml('enquiries, bookings or sales')
+        ->assertSeeInHtml($thumbnailUrl);
+    Http::assertSentCount(1);
     expect((new WebsiteAuditPersonalReview($audit))->envelope()->replyTo[0]->address)->toBe(config('marketing.audit_notification_email'));
 });
 
 it('does not send unsolicited personal reviews', function (): void {
     Mail::fake();
+    Http::fake();
     $this->actingAs(User::factory()->create(['role' => User::ROLE_ADMIN]));
     $audit = WebsiteAudit::factory()->create(['status' => WebsiteAudit::STATUS_COMPLETED, 'email' => 'owner@example.com']);
-    $priorities = array_fill(0, 3, ['title' => 'Title', 'impact' => 'Impact', 'next_step' => 'Step']);
-    $this->post(route('admin.onboarding.audits.review', $audit), ['priorities' => $priorities])->assertUnprocessable();
+    $videoUrl = 'https://www.loom.com/share/abcdef';
+    $this->post(route('admin.onboarding.audits.review', $audit), ['loom_url' => $videoUrl])->assertUnprocessable();
     Mail::assertNothingQueued();
 });
 
@@ -151,4 +161,21 @@ it('clearly confirms a pending personal review after the email request', functio
         ->assertSee('aria-labelledby="audit-request-received-title"', false)
         ->assertSee('bg-black p-6 text-white', false)
         ->assertDontSee('Want to know what to fix first?');
+});
+
+it('sends the review with a watch link when Loom cannot supply a thumbnail', function (): void {
+    Mail::fake();
+    Http::fake(['www.loom.com/*' => Http::response('', 503)]);
+    $this->actingAs(User::factory()->create(['role' => User::ROLE_ADMIN]));
+    $audit = WebsiteAudit::factory()->create([
+        'status' => WebsiteAudit::STATUS_COMPLETED,
+        'email' => 'owner@example.com',
+        'personal_review_requested_at' => now(),
+    ]);
+    $videoUrl = 'https://www.loom.com/share/abcdef';
+    $this->post(route('admin.onboarding.audits.review', $audit), ['loom_url' => $videoUrl])->assertRedirect();
+    expect($audit->refresh()->personal_review['thumbnail_url'])->toBeNull();
+    Mail::assertQueued(WebsiteAuditPersonalReview::class);
+    (new WebsiteAuditPersonalReview($audit))->assertSeeInHtml('Watch your website review')->assertSeeInHtml($videoUrl)
+        ->assertDontSeeInHtml('cdn.loom.com');
 });

@@ -23,11 +23,7 @@ class SendWebsiteAuditReviewRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'priorities' => ['required', 'array', 'size:3'],
-            'priorities.*' => ['required', 'array:title,impact,next_step'],
-            'priorities.*.title' => ['required', 'string', 'max:150'],
-            'priorities.*.impact' => ['required', 'string', 'max:1000'],
-            'priorities.*.next_step' => ['required', 'string', 'max:1000'],
+            'loom_url' => ['required', 'string', 'max:2048', 'url:https', 'regex:~^https://(?:www\.)?loom\.com/share/[a-zA-Z0-9_-]+(?:\?[^\s]*)?$~'],
         ];
     }
 }
