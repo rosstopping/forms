@@ -478,7 +478,7 @@
                 <h2 id="audit-email-title" class="max-w-[40ch] text-3xl font-medium tracking-tight text-balance">Where should I send your video?</h2>
                 <p id="audit-email-description" class="max-w-[56ch] text-pretty text-base text-ink/65">Ross will send your free video review within one working day, with the fixes and searches he’d work on first.</p>
             </div>
-            <form method="POST" action="{{ route('marketing.website-audits.email-report', $audit) }}" class="mx-auto grid w-full max-w-xs gap-4 pt-6">
+            <form method="POST" action="{{ route('marketing.website-audits.email-report', $audit) }}" class="grid w-full gap-4 pt-6">
                 @csrf
                 <input type="hidden" name="personal_review" value="1">
                 <div class="absolute -left-[9999px]" aria-hidden="true"><label for="audit-email-check">Leave this blank</label><input id="audit-email-check" type="text" name="_sitewell_check" tabindex="-1" autocomplete="off"></div>
