@@ -191,3 +191,33 @@ it('reuses legacy full reports without running their research again', function (
     Queue::assertNothingPushed();
     expect($audit->refresh()->insights['pages_listed'])->toBe(12);
 });
+
+it('shows the shared report header and grades with only the floating booking action', function (): void {
+    Http::preventStrayRequests();
+    Queue::fake();
+    $audit = WebsiteAudit::factory()->create([
+        'status' => WebsiteAudit::STATUS_COMPLETED,
+        'created_at' => now()->subMinute(),
+        'findings' => [['category' => 'Search essentials', 'severity' => 'warning', 'title' => 'Missing page title', 'message' => 'Add a clear title.']],
+        'insights' => ['health_score' => 75, 'pages_listed' => 12],
+    ]);
+    $response = $this->get(URL::temporarySignedRoute('marketing.website-audits.full', now()->addHour(), $audit))
+        ->assertSuccessful()
+        ->assertSee('Your full website audit.')
+        ->assertSee('Missing page title')
+        ->assertSee('Add a clear title.')
+        ->assertDontSee('You don’t have to fix this yourself.')
+        ->assertDontSee('Prefer to talk it through with Ross?')
+        ->assertDontSee('Want us to take care of this?')
+        ->assertDontSee('data-audit-email-gate', false)
+        ->assertDontSee('data-audit-report-preview', false);
+    $document = new DOMDocument;
+    @$document->loadHTML($response->getContent());
+    $xpath = new DOMXPath($document);
+    expect($xpath->query('//*[@data-audit-report-surface]//*[@data-audit-category-score]')->length)->toBe(5)
+        ->and($xpath->query('//*[@data-audit-book-call]')->length)->toBe(1)
+        ->and($xpath->query('//*[@data-audit-actions]//*[@data-audit-book-call]')->length)->toBe(1)
+        ->and($xpath->query('//header//*[@data-audit-health-score]')->item(0)->textContent)->toBe('75%');
+    Http::assertNothingSent();
+    Queue::assertNothingPushed();
+});

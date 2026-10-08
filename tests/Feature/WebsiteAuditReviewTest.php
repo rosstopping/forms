@@ -65,7 +65,7 @@ it('saves the email before offering an optional one-click goal', function (strin
     $leadDetails = $audit->only(['email', 'report_requested_at', 'expires_at', 'personal_review_requested_at', 'personal_review_due_at', 'marketing_consent_at', 'marketing_consent_version']);
 
     $response = $this->get(route('marketing.website-audits.show', $audit))->assertSuccessful()
-        ->assertSeeInOrder(['Your video is next.', 'What would you like more of?', 'Enquiries', 'Bookings', 'Sales', 'Prefer to talk it through with Ross?'])
+        ->assertSeeInOrder(['Your video is next.', 'What would you like more of?', 'Enquiries', 'Bookings', 'Sales', 'Talk to Ross'])
         ->assertDontSee('id="audit-email-dialog"', false)
         ->assertDontSee('Ready to put the plan into action?');
     $goalUrl = $response->viewData('goalUrl');

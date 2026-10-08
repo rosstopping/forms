@@ -101,3 +101,6 @@ Supersedes circle-width wrapping: keep each grade label centered and on one line
 
 ## Use a full-width mobile audit screenshot and one stats row
 On locked ready mobile audits, show the screenshot at the available content width with the coral domain beneath. Keep health, fixes, pages and rankings in a single four-column row with compact labels and values; mobile label Pages expands to Pages found on larger screens. Preserve desktop screenshot placement and supporting stats alignment.
+
+## Continue the unlocked audit with the shared preview layout
+The full audit uses the same compact header, right screenshot/full-width mobile preview, supporting four stats and shared category grade partial as the email gate. Display unlocked details in one white report surface, leading with search overview, rankings, competitors and AI, then website checks and the work plan. Remove service-offer and bottom call panels and the inline Prefer to talk link; only the fixed bottom-right Talk to Ross button remains for completed full reports. Retain legacy requested-video status, optional business-goal form, Cal popup/tracking, server gating and deferred research.

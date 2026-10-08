@@ -3,6 +3,7 @@
 use App\Http\Requests\StoreFreeSiteAuditRequest;
 use App\Jobs\GenerateFreeSiteAudit;
 use App\Jobs\GenerateWebsiteAudit;
+use App\Jobs\GenerateWebsiteAuditFullReport;
 use App\Mail\FreeSiteAuditResults;
 use App\Mail\WebsiteAuditLeadReceived;
 use App\Mail\WebsiteAuditPersonalReview;
@@ -268,15 +269,16 @@ it('shows zero fixes when the initial scan finds no issues', function (): void {
 
     $response = $this->get(URL::temporarySignedRoute('marketing.website-audits.full', now()->addHour(), $audit))
         ->assertSuccessful()
-        ->assertSee('Website fixes flagged');
+        ->assertSee('Website fixes');
 
     $document = new DOMDocument;
     @$document->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
     expect((new DOMXPath($document))->query('//*[@data-audit-fix-count]')->item(0)->textContent)->toBe('0');
-    $response->assertSee('No fixes flagged');
+    $response->assertSee('None flagged');
 });
 
 it('shows measured search estimates and a conditional six-month scenario', function (): void {
+    Queue::fake([GenerateWebsiteAuditFullReport::class]);
     Mail::fake();
     $audit = WebsiteAudit::factory()->create([
         'status' => WebsiteAudit::STATUS_COMPLETED,
@@ -334,20 +336,20 @@ it('shows measured search estimates and a conditional six-month scenario', funct
 
     $this->get(route('marketing.website-audits.show', $audit))->assertSuccessful()
         ->assertSee('128–160')->assertSee('50%')->assertSee('garden office fitters')
-        ->assertSee('Google ranking terms')->assertSee('Est. monthly organic visits')
-        ->assertDontSee('data-audit-email-open', false)->assertSee('Prefer to talk it through with Ross?');
+        ->assertSee('Google rankings')->assertSee('Est. monthly organic visits')
+        ->assertDontSee('data-audit-email-open', false)->assertSee('Talk to Ross')->assertDontSee('Prefer to talk it through with Ross?');
 
     $response = $this->get(URL::temporarySignedRoute('marketing.website-audits.full', now()->addHour(), $audit))
         ->assertSuccessful()
         ->assertSee('50%')
-        ->assertSee('URLs in sitemap')
-        ->assertSee('Google ranking terms')
+        ->assertSee('Pages found')
+        ->assertSee('Google rankings')
         ->assertSee('Referring domains')
         ->assertDontSee('DataForSEO')
         ->assertSee('garden office fitters')
         ->assertSee('1,000')
-        ->assertSee('Needs some work')
-        ->assertSee('Visible on page one')
+        ->assertSee('Needs work')
+        ->assertSee('Terms in the top 10')
         ->assertSee('Today')
         ->assertSee('Possible in six months')
         ->assertSee('128–160')
@@ -469,7 +471,7 @@ it('explains when sitemap URLs point at a different domain', function (): void {
 
     $this->get(URL::temporarySignedRoute('marketing.website-audits.full', now()->addHour(), $audit))
         ->assertSuccessful()
-        ->assertSee('URLs in sitemap')
+        ->assertSee('Pages found')
         ->assertSee('Sitemap issue: 81 URLs point to vvipeventszante.test instead of vvipeventszante.com.')
         ->assertDontSee('0+');
 });
@@ -500,7 +502,7 @@ it('marks poor technical health and missing page-one visibility as needs attenti
     $this->get(URL::temporarySignedRoute('marketing.website-audits.full', now()->addHour(), $audit))
         ->assertSuccessful()
         ->assertSee('Needs attention')
-        ->assertSee('No page-one terms yet')
+        ->assertSee('Terms in the top 10')
         ->assertSee('There isn’t enough ranking data for a useful estimate yet.');
 });
 
