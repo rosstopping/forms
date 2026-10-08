@@ -24,6 +24,7 @@
     $competitors = data_get($audit->insights, 'competitors');
     $aiVisibility = data_get($audit->insights, 'ai_visibility');
     $fullReportStatus = data_get($audit->insights, 'full_report.status', 'completed');
+    $isFinalisingReport = $showDetails && $audit->isReadyToDisplay() && (in_array($fullReportStatus, ['queued', 'running'], true) || ($fullReportStatus === 'completed' && data_get($aiVisibility, 'status') === 'pending'));
     $visitorRange = $projection !== null ? number_format($projection['six_month_low']).'–'.number_format($projection['six_month_high']) : null;
 @endphp
 <section @if ($engagementUrl) data-audit-engagement-url="{{ $engagementUrl }}" data-audit-id="{{ $audit->public_id }}" data-csrf-token="{{ csrf_token() }}" @endif data-marketing-events="{{ json_encode($marketingEvents) }}" class="px-3 pt-1 pb-16 sm:px-6 sm:pt-2 sm:pb-24" aria-labelledby="audit-title">
@@ -86,7 +87,7 @@
         @if (session('report_email_status') && (! $audit->personal_review_requested_at || $audit->personal_review_queued_at))
             <p role="status" class="rounded-2xl bg-emerald-50 px-5 py-4 text-base text-emerald-900 ring-1 ring-emerald-200/70">{{ session('report_email_status') }}</p>
         @endif
-        @if ($showDetails && $audit->isReadyToDisplay() && $fullReportStatus !== 'completed')
+        @if ($showDetails && $audit->isReadyToDisplay() && ! $isFinalisingReport && $fullReportStatus !== 'completed')
             <section role="status" class="grid gap-3 rounded-2xl bg-white p-5 ring-1 ring-ink/10 sm:p-6" aria-labelledby="audit-full-research-title">
                 <h2 id="audit-full-research-title" class="text-xl font-medium tracking-tight">{{ in_array($fullReportStatus, ['queued', 'running'], true) ? 'Preparing the rest of this report.' : ($fullReportStatus === 'failed' ? 'The extra research couldn’t finish.' : 'The extra research hasn’t been run yet.') }}</h2>
                 <p class="max-w-[60ch] text-pretty text-base text-ink/65">{{ in_array($fullReportStatus, ['queued', 'running'], true) ? 'Page-one rankings, sitemap counts, backlinks and competitor comparisons are loading. AI checks follow.' : ($fullReportStatus === 'failed' ? 'Your saved results are below. Talk to Ross if you’d like help with the missing research.' : 'Your saved results are below. The remaining research hasn’t been requested yet.') }}</p>
@@ -98,7 +99,7 @@
                 @endif
             </section>
         @endif
-        @if ($showDetails && (in_array($fullReportStatus, ['queued', 'running'], true) || data_get($aiVisibility, 'status') === 'pending'))
+        @if ($isFinalisingReport)
             <script>
                 (() => {
                     const statusUrl = @js($researchStatusUrl);
@@ -164,7 +165,26 @@
             @include('marketing.audit-email-gate')
         @else
             <div class="border-t border-ink/10 pt-6">
-                <div data-audit-report-surface class="grid overflow-hidden rounded-2xl bg-white">
+                <div @class(['relative isolate overflow-hidden rounded-2xl', 'max-h-104' => $isFinalisingReport])>
+                    @if ($isFinalisingReport)
+                        <div data-audit-full-report-loader role="status" class="absolute inset-0 z-10 grid place-items-center bg-white/65 p-6">
+                            <div class="grid justify-items-center gap-6 text-center">
+                                <div class="relative grid size-20 place-items-center" aria-hidden="true">
+                                    <div class="absolute inset-0 rounded-full border-2 border-garden/15"></div>
+                                    <div class="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-garden motion-reduce:animate-none"></div>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="size-8 text-garden">
+                                        <circle cx="10.8" cy="10.8" r="5.8" />
+                                        <path d="m15.2 15.2 4.3 4.3" />
+                                    </svg>
+                                </div>
+                                <div class="grid gap-2">
+                                    <h2 class="text-2xl font-medium tracking-tight text-balance sm:text-3xl">Finalising your full report.</h2>
+                                    <p class="text-pretty text-base text-ink/65">This won’t take long. Your report will appear automatically.</p>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+                <div data-audit-report-surface @if ($isFinalisingReport) data-audit-full-report-background aria-hidden="true" inert @endif @class(['grid overflow-hidden rounded-2xl bg-white', 'pointer-events-none select-none blur-[3px]' => $isFinalisingReport])>
                     @include('marketing.audit-category-scores')
                     <div class="grid gap-8 px-4 pb-6 sm:px-6 sm:pb-8">
                         <section class="grid gap-6" aria-labelledby="audit-numbers-title">
@@ -420,12 +440,13 @@
 
                     </div>
                 </div>
+                </div>
             </div>
         @endif
         <p class="text-pretty text-base text-ink/50 sm:text-sm">This private link expires {{ $audit->expires_at->diffForHumans() }}.</p>
     </div>
 </section>
-@if ($audit->isReadyToDisplay() && $showDetails)
+@if ($audit->isReadyToDisplay() && $showDetails && ! $isFinalisingReport)
     <div data-audit-actions class="fixed right-4 bottom-4 z-40 sm:right-6 sm:bottom-6">
         <a data-audit-book-call href="{{ route('marketing.ppc.book') }}" class="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-white py-2 pr-4 pl-2 text-base font-medium text-ink shadow-md ring-1 ring-ink/10 hover:bg-lichen focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden"><img src="{{ asset('ross-topping.jpg') }}" alt="" width="32" height="32" class="size-8 rounded-full object-cover"><span>Talk to Ross</span></a>
     </div>

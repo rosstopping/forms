@@ -337,7 +337,9 @@ it('shows measured search estimates and a conditional six-month scenario', funct
     $this->get(route('marketing.website-audits.show', $audit))->assertSuccessful()
         ->assertSee('128–160')->assertSee('50%')->assertSee('garden office fitters')
         ->assertSee('Google rankings')->assertSee('Est. monthly organic visits')
-        ->assertDontSee('data-audit-email-open', false)->assertSee('Talk to Ross')->assertDontSee('Prefer to talk it through with Ross?');
+        ->assertDontSee('data-audit-email-open', false)->assertSee('Finalising your full report.')->assertDontSee('Prefer to talk it through with Ross?');
+
+    $audit->update(['insights' => [...$audit->insights, 'full_report' => ['status' => 'completed']]]);
 
     $response = $this->get(URL::temporarySignedRoute('marketing.website-audits.full', now()->addHour(), $audit))
         ->assertSuccessful()

@@ -54,7 +54,7 @@ it('queues the full research once when an admin chooses to view the full report'
         ->and($audit->status)->toBe(WebsiteAudit::STATUS_COMPLETED);
     Queue::assertPushed(GenerateWebsiteAuditFullReport::class, 1);
     Queue::assertNotPushed(CheckMarketingAuditAiVisibility::class);
-    $this->get(route('admin.onboarding.audits.show', $audit))->assertSuccessful()->assertSee('Preparing the rest of this report.');
+    $this->get(route('admin.onboarding.audits.show', $audit))->assertSuccessful()->assertSee('Finalising your full report.');
     $this->get(route('admin.onboarding.audits.status', $audit))->assertSuccessful()
         ->assertExactJson(['full_report_status' => 'queued', 'ai_visibility_status' => null]);
     Queue::assertPushed(GenerateWebsiteAuditFullReport::class, 1);
@@ -76,8 +76,8 @@ it('queues enrichment once after email capture while keeping every report read f
     Queue::assertNothingPushed();
     $this->post(route('marketing.website-audits.email-report', $audit), ['email' => 'owner@example.com'])->assertRedirect();
     $this->post(route('marketing.website-audits.email-report', $audit), ['email' => 'owner@example.com'])->assertRedirect();
-    $this->get($publicUrl)->assertSuccessful()->assertSee('Preparing the rest of this report.')->assertDontSee('data-audit-email-gate', false);
-    $this->get($shareUrl)->assertSuccessful()->assertSee('Preparing the rest of this report.');
+    $this->get($publicUrl)->assertSuccessful()->assertSee('Finalising your full report.')->assertDontSee('data-audit-email-gate', false);
+    $this->get($shareUrl)->assertSuccessful()->assertSee('Finalising your full report.');
     $this->actingAs(User::factory()->create(['role' => User::ROLE_ADMIN]));
     $this->post(route('admin.onboarding.audits.generate', $audit))->assertRedirect();
     Queue::assertPushed(GenerateWebsiteAuditFullReport::class, 1);
@@ -221,3 +221,50 @@ it('shows the shared report header and grades with only the floating booking act
     Http::assertNothingSent();
     Queue::assertNothingPushed();
 });
+
+it('blurs and disables the report beneath one loader until all queued research finishes', function (string $researchStatus, ?string $aiStatus): void {
+    Queue::fake();
+    Http::preventStrayRequests();
+    $audit = WebsiteAudit::factory()->create([
+        'status' => WebsiteAudit::STATUS_COMPLETED,
+        'created_at' => now()->subMinute(),
+        'findings' => [['severity' => 'passed', 'title' => 'Homepage title', 'message' => 'A title was found.']],
+        'insights' => ['full_report' => ['status' => $researchStatus], 'ai_visibility' => $aiStatus ? ['status' => $aiStatus, 'questions' => []] : null],
+    ]);
+    $url = URL::temporarySignedRoute('marketing.website-audits.full', now()->addHour(), $audit);
+    $response = $this->get($url)->assertSuccessful()
+        ->assertSee('Finalising your full report.')
+        ->assertDontSee('Preparing the rest of this report.')
+        ->assertDontSee('Page-one rankings, sitemap counts, backlinks and competitor comparisons are loading.')
+        ->assertDontSee('data-audit-actions', false);
+    $document = new DOMDocument;
+    @$document->loadHTML($response->getContent());
+    $xpath = new DOMXPath($document);
+    expect($xpath->query('//*[@data-audit-full-report-loader]')->length)->toBe(1)
+        ->and($xpath->query('//*[@data-audit-full-report-background][@inert][@aria-hidden="true"]')->length)->toBe(1)
+        ->and($xpath->query('//*[@data-audit-full-report-background]//*[@id="audit-findings-title"]')->length)->toBe(1);
+    $audit->update(['insights' => ['full_report' => ['status' => 'completed'], 'ai_visibility' => ['status' => 'completed', 'questions' => []]]]);
+    $this->get($url)->assertSuccessful()
+        ->assertDontSee('data-audit-full-report-loader', false)
+        ->assertDontSee('data-audit-full-report-background', false)
+        ->assertSee('data-audit-actions', false)
+        ->assertSee('Homepage title');
+    Queue::assertNothingPushed();
+    Http::assertNothingSent();
+})->with([
+    'queued research' => ['queued', 'pending'],
+    'running research' => ['running', null],
+    'only AI remaining' => ['completed', 'pending'],
+]);
+
+it('does not show a never-ending loader when research has failed or is deferred', function (string $status): void {
+    $audit = WebsiteAudit::factory()->create([
+        'status' => WebsiteAudit::STATUS_COMPLETED,
+        'created_at' => now()->subMinute(),
+        'insights' => ['full_report' => ['status' => $status], 'ai_visibility' => ['status' => 'pending']],
+    ]);
+    $this->get(URL::temporarySignedRoute('marketing.website-audits.full', now()->addHour(), $audit))
+        ->assertSuccessful()
+        ->assertDontSee('data-audit-full-report-loader', false)
+        ->assertSee('data-audit-actions', false);
+})->with(['failed', 'deferred']);

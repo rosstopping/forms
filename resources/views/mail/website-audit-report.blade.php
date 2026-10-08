@@ -10,7 +10,7 @@ You can [view your full website report]({{ $reportUrl }}) until {{ $audit->expir
 @else
 # Your full website report
 
-Your report for {{ $audit->domain }} is unlocked. See your website checks, Google search estimates and growth opportunities. Any remaining research will appear as it finishes.
+Your report for {{ $audit->domain }} is ready. See your website checks, Google search estimates and growth opportunities. Any remaining research will appear as it finishes.
 
 <x-mail::button :url="$reportUrl">
 View your full report
