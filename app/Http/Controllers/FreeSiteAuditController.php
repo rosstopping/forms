@@ -101,9 +101,8 @@ class FreeSiteAuditController extends Controller
             'engagementUrl' => $customerReport && ! $websiteAudit->hasExpired() && ! $request->user()?->isAdmin() && $websiteAudit->isReadyToDisplay() ? URL::temporarySignedRoute('marketing.website-audits.engagement', $websiteAudit->expires_at, $websiteAudit) : null,
             'marketingEvents' => $publicReport ? $events : [],
             'researchStatusUrl' => $showDetails ? URL::temporarySignedRoute('marketing.website-audits.status', now()->addMinutes(30), $websiteAudit) : null,
-            'projection' => array_key_exists('opportunity', $websiteAudit->insights ?? [])
-                ? data_get($websiteAudit->insights, 'opportunity.projection')
-                : (is_array($seo) ? $research->projection($seo) : null),
+            'projection' => data_get($websiteAudit->insights, 'opportunity.projection')
+                ?? (is_array($seo) ? $research->projection($seo) : null),
             'rankings' => is_array($seo) ? $research->rankingHighlights($seo) : ['page_one' => [], 'striking_distance' => [], 'other' => []],
             'screenshotUrl' => (! $websiteAudit->hasExpired() || $request->user()?->isAdmin()) && $websiteAudit->isReadyToDisplay() && Storage::disk('local')->exists($screenshot->pathFor($websiteAudit))
                 ? route('marketing.website-audits.preview', $websiteAudit)

@@ -103,7 +103,9 @@ it('builds the public projection and cached page count before deferring private 
         ->and($full['seo']['referring_domains'])->toBe(12)
         ->and(array_column($full['seo']['keywords'], 'position'))->toBe([3, 15])
         ->and($full['seo']['cost_usd'])->toBe(0.06496)
-        ->and($full['projection'])->toBe($insights['projection']);
+        ->and($full['projection']['model'])->toBe('existing_rankings_v1')
+        ->and($full['projection']['six_month_low'])->toBe(128)
+        ->and($full['projection']['six_month_high'])->toBe(160);
     $audit->update(['insights' => $full]);
     expect($research->forFullReport($audit))->toBe($full);
     Http::assertSentCount(5);
@@ -247,7 +249,7 @@ it('reuses a recent matching search snapshot when live credentials are unavailab
         ->and($insights['seo']['referring_domains'])->toBe(88)
         ->and($insights['seo']['backlinks'])->toBe(168)
         ->and(array_column($insights['seo']['keywords'], 'term'))->toBe(['zante nightlife', 'zante events'])
-        ->and($insights['projection'])->toBeNull();
+        ->and($insights['projection']['model'])->toBe('existing_rankings_v1');
     Http::assertNothingSent();
 });
 
@@ -340,4 +342,51 @@ it('counts sitemap URLs on other hosts and identifies the wrong domain', functio
 
     expect($result)->toBe(['count' => 2, 'partial' => false, 'matching_domain' => 1, 'mismatched_domain' => 1, 'mismatched_host' => 'other.example']);
     Http::assertSentCount(1);
+});
+
+it('revisits an unavailable opportunity once using saved business context and full ranking data', function (bool $supported): void {
+    config(['services.dataforseo.login' => null, 'services.dataforseo.password' => null]);
+    Http::preventStrayRequests();
+    $context = 'We build garden offices in Doncaster. Our independent company serves customers in Doncaster with bespoke offices.';
+    $seo = ['estimated_monthly_visits' => 2000, 'organic_keywords' => 500, 'keywords' => [['term' => 'garden offices doncaster', 'position' => 15, 'monthly_searches' => 1000]]];
+    $comparisonProjection = ['model' => 'comparable_pages_v1', 'six_month_low' => 2100, 'six_month_high' => 2500];
+    $opportunity = Mockery::mock(MarketingAuditOpportunity::class);
+    $opportunity->shouldReceive('forSite')->once()->with('northfield.example', $context, $seo, true)
+        ->andReturn(['status' => $supported ? 'ready' : 'unavailable', 'projection' => $supported ? $comparisonProjection : null, 'reason' => $supported ? null : 'No shared relevant demand.']);
+    $this->instance(MarketingAuditOpportunity::class, $opportunity);
+    $audit = WebsiteAudit::factory()->create([
+        'domain' => 'northfield.example',
+        'insights' => [
+            'business_context' => $context,
+            'seo' => $seo,
+            'pages_listed' => 20,
+            'competitors' => [],
+            'ai_visibility' => ['status' => 'completed'],
+            'opportunity' => ['status' => 'unavailable', 'projection' => null],
+        ],
+    ]);
+    $research = app(MarketingAuditResearch::class);
+    $result = $research->forFullReport($audit);
+    expect($result['opportunity']['full_report_researched_at'])->not->toBeNull()
+        ->and($result['projection']['model'])->toBe($supported ? 'comparable_pages_v1' : 'existing_rankings_v1')
+        ->and($result['projection']['six_month_high'])->toBe($supported ? 2500 : 2040);
+    $audit->update(['insights' => $result]);
+    expect($research->forFullReport($audit))->toBe($result);
+    Http::assertNothingSent();
+})->with([true, false]);
+
+it('keeps a successful comparison forecast without repeating its discovery', function (): void {
+    config(['services.dataforseo.login' => null, 'services.dataforseo.password' => null]);
+    Http::preventStrayRequests();
+    $projection = ['model' => 'comparable_pages_v1', 'six_month_low' => 500, 'six_month_high' => 1000];
+    $opportunity = Mockery::mock(MarketingAuditOpportunity::class);
+    $opportunity->shouldNotReceive('forSite');
+    $this->instance(MarketingAuditOpportunity::class, $opportunity);
+    $audit = WebsiteAudit::factory()->create(['insights' => [
+        'seo' => ['keywords' => [], 'estimated_monthly_visits' => 100],
+        'pages_listed' => 20, 'competitors' => [], 'ai_visibility' => ['status' => 'completed'],
+        'opportunity' => ['status' => 'ready', 'projection' => $projection],
+    ]]);
+    expect(app(MarketingAuditResearch::class)->forFullReport($audit)['projection'])->toBe($projection);
+    Http::assertNothingSent();
 });

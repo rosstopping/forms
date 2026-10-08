@@ -381,7 +381,10 @@
                                     </section>
                                 @endif
                             @else
-                                <p class="max-w-[56ch] text-pretty text-base text-ink/65">There isn’t enough ranking data for a useful estimate yet. We’d set a baseline, improve the site and review progress over the first six months.</p>
+                                <p class="max-w-[56ch] text-pretty text-base text-ink/65">We couldn’t produce a reliable six-month estimate from the data returned. The rankings and checks above still show where to start.</p>
+                                @if (auth()->user()?->isAdmin() && filled(data_get($audit->insights, 'opportunity.reason')))
+                                    <p class="text-base text-ink/55 sm:text-sm">Forecast diagnostic: {{ data_get($audit->insights, 'opportunity.reason') }}</p>
+                                @endif
                             @endif
                         </section>
 

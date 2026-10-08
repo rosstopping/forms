@@ -46,6 +46,7 @@ class MarketingAuditResearch
             'seo' => $seo,
             'projection' => $opportunity['projection'],
             'opportunity' => $opportunity,
+            'business_context' => mb_substr((string) ($analysis['page_context'] ?? ''), 0, 12000),
             'full_report' => ['status' => 'deferred'],
         ];
     }
@@ -77,6 +78,17 @@ class MarketingAuditResearch
                 'questions' => $questions,
             ] : null;
         }
+
+        if (is_array($seo) && data_get($insights, 'opportunity.projection') === null
+            && ! filled(data_get($insights, 'opportunity.full_report_researched_at'))
+            && mb_strlen((string) ($insights['business_context'] ?? '')) >= 80) {
+            $insights['opportunity'] = [
+                ...$this->opportunity->forSite($audit->domain, $insights['business_context'], $seo, retryUnavailable: true),
+                'full_report_researched_at' => now()->toIso8601String(),
+            ];
+        }
+        $insights['projection'] = data_get($insights, 'opportunity.projection')
+            ?? (is_array($seo) ? $this->projection($seo) : null);
 
         return [...$insights, 'seo' => $seo];
     }
@@ -344,6 +356,7 @@ class MarketingAuditResearch
         $upper = $baseline + max(2, (int) round($midPageSearches * 0.04));
 
         return [
+            'model' => 'existing_rankings_v1',
             'baseline_monthly_visits' => $baseline,
             'six_month_low' => $lower,
             'six_month_high' => max($lower + 1, $upper),

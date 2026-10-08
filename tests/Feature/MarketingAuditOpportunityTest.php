@@ -124,7 +124,7 @@ it('researches and caches evidenced local comparables even with no existing rank
     $result = $service->forSite('northfield.example', $context, $seo);
     expect($result['status'])->toBe('ready')->and($result['comparables'])->toHaveCount(3)
         ->and($result['requests'])->toHaveCount(5)->and($result['projection']['six_month_high'])->toBe(10);
-    $again = $service->forSite('northfield.example', $context, $seo);
+    $again = $service->forSite('northfield.example', $context, $seo, retryUnavailable: true);
     expect($again['cached'])->toBeTrue();
     Http::assertSentCount(5);
 });
@@ -151,13 +151,13 @@ it('keeps the supported broader range and its evidence behind the report gate', 
     Http::assertNothingSent();
 });
 
-it('does not fall back to the narrower formula after broader research is unavailable', function (): void {
+it('uses a labelled measured ranking scenario when broader research is unavailable', function (): void {
     $audit = WebsiteAudit::factory()->create(['status' => WebsiteAudit::STATUS_COMPLETED, 'created_at' => now()->subMinute(), 'insights' => [
         'opportunity' => ['status' => 'unavailable', 'projection' => null],
         'seo' => ['keywords' => [['term' => 'old term', 'position' => 15, 'monthly_searches' => 1000]], 'estimated_monthly_visits' => 0],
     ]]);
     $this->get(route('marketing.website-audits.show', $audit))->assertSuccessful()
-        ->assertViewHas('projection', null)->assertSee('View my report')
+        ->assertViewHas('projection', fn (array $projection): bool => $projection['model'] === 'existing_rankings_v1' && $projection['six_month_high'] === 40)->assertSee('View my report')
         ->assertDontSee('Monthly visitors from Google');
 });
 
@@ -185,7 +185,7 @@ it('does not add existing provider-estimated clicks again or include the prospec
 it('fails gracefully without retrying paid discovery when the provider is unavailable', function (): void {
     config()->set(['services.dataforseo.login' => 'fake', 'services.dataforseo.password' => 'fake', 'ai.default' => 'openai', 'ai.providers.openai.key' => 'fake']);
     $context = 'We build garden offices in Doncaster. Our independent company serves customers in Doncaster with bespoke offices.';
-    AuditBusinessProfiler::fake([['supported' => true, 'name' => 'Test', 'market' => 'local', 'location' => 'Doncaster', 'market_evidence' => 'garden offices in Doncaster', 'seeds' => [['term' => 'garden office doncaster', 'evidence' => 'garden offices in Doncaster']]]])->preventStrayPrompts();
+    AuditBusinessProfiler::fake(fn (): array => ['supported' => true, 'name' => 'Test', 'market' => 'local', 'location' => 'Doncaster', 'market_evidence' => 'garden offices in Doncaster', 'seeds' => [['term' => 'garden office doncaster', 'evidence' => 'garden offices in Doncaster']]])->preventStrayPrompts();
     AuditOpportunitySelector::fake()->preventStrayPrompts();
     Http::fake(['*' => Http::response([], 500)]);
     $service = app(MarketingAuditOpportunity::class);
@@ -196,4 +196,26 @@ it('fails gracefully without retrying paid discovery when the provider is unavai
     expect($again['cached'])->toBeTrue();
     Http::assertSentCount(1);
     AuditOpportunitySelector::assertNeverPrompted();
+    $retried = $service->forSite('failure.example', $context, $seo, retryUnavailable: true);
+    expect($retried['status'])->toBe('unavailable')->and($retried['projection'])->toBeNull();
+    Http::assertSentCount(2);
+});
+
+it('shows the measured existing-ranking scenario on an affected full report without provider calls', function (): void {
+    Http::preventStrayRequests();
+    $audit = WebsiteAudit::factory()->create([
+        'status' => WebsiteAudit::STATUS_COMPLETED, 'created_at' => now()->subMinute(),
+        'insights' => [
+            'opportunity' => ['status' => 'unavailable', 'projection' => null, 'reason' => 'Fewer than three supported comparable businesses.'],
+            'seo' => ['keywords' => [['term' => 'garden office fitters', 'position' => 15, 'monthly_searches' => 1000]], 'estimated_monthly_visits' => 2000, 'organic_keywords' => 500, 'top_10_keywords' => 20, 'top_3_keywords' => 5, 'location_code' => 2826, 'referring_domains' => null, 'sample_size' => 1],
+        ],
+    ]);
+    $response = $this->get(URL::temporarySignedRoute('marketing.website-audits.full', now()->addHour(), $audit))
+        ->assertSuccessful()->assertSee('2,008–2,040')
+        ->assertSee('pages already ranking just outside page one')
+        ->assertDontSee('What supports this estimate')
+        ->assertDontSee('Forecast diagnostic:')
+        ->assertDontSee('We couldn’t produce a reliable six-month estimate');
+    expect($response->viewData('projection')['model'])->toBe('existing_rankings_v1');
+    Http::assertNothingSent();
 });

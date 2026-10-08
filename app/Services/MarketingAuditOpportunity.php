@@ -19,7 +19,7 @@ class MarketingAuditOpportunity
     /** @param array<string, mixed>|null $seo
      * @return array<string, mixed>
      */
-    public function forSite(string $domain, string $context, ?array $seo): array
+    public function forSite(string $domain, string $context, ?array $seo, bool $retryUnavailable = false): array
     {
         $unavailable = ['version' => self::VERSION, 'status' => 'unavailable', 'projection' => null];
         if ($seo === null || mb_strlen($context) < 80 || blank(config('services.dataforseo.login')) || blank(config('services.dataforseo.password')) || blank(config('ai.providers.'.config('ai.default', 'openai').'.key'))) {
@@ -28,7 +28,7 @@ class MarketingAuditOpportunity
         $context = mb_substr($context, 0, 12000);
         $key = 'marketing-audit-opportunity:v'.self::VERSION.':'.hash('sha256', strtolower($domain).'|'.$seo['location_code'].'|'.$seo['language_code'].'|'.$context.'|'.($seo['retrieved_at'] ?? ''));
         $cached = Cache::get($key);
-        if (is_array($cached)) {
+        if (is_array($cached) && (! $retryUnavailable || ($cached['status'] ?? null) === 'ready')) {
             return [...$cached, 'cached' => true];
         }
         $lock = Cache::lock($key.':lock', 180);

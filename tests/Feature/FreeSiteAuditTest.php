@@ -505,7 +505,7 @@ it('marks poor technical health and missing page-one visibility as needs attenti
         ->assertSuccessful()
         ->assertSee('Needs attention')
         ->assertSee('Terms in the top 10')
-        ->assertSee('There isn’t enough ranking data for a useful estimate yet.');
+        ->assertSee('We couldn’t produce a reliable six-month estimate from the data returned.');
 });
 
 it('keeps the progress experience visible for at least ten seconds', function (): void {
