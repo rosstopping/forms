@@ -4,12 +4,13 @@ export function bootAuditReview(document, target = window) {
     const dialog = document.querySelector('[data-audit-review-prompt]');
     if (!dialog?.showModal) return;
 
-    const end = document.querySelector('[data-audit-snapshot-end]');
     const storageKey = `sitewell-audit-email-dismissed:${dialog.dataset.auditId}`;
     let stopped = false;
+    let timer;
+    let visibleSeconds = 0;
     const stop = () => {
         stopped = true;
-        target.removeEventListener('scroll', onScroll);
+        target.clearInterval(timer);
         try { target.sessionStorage.setItem(storageKey, '1'); } catch {}
     };
     const open = () => {
@@ -18,11 +19,6 @@ export function bootAuditReview(document, target = window) {
             dialog.showModal();
             emitAuditEngagement(document, 'review_opened');
         }
-    };
-    const onScroll = () => {
-        if (stopped || target.scrollY < 32 || document.visibilityState !== 'visible') return;
-        if (document.querySelector('dialog[open]')) return;
-        if (end && end.getBoundingClientRect().top <= target.innerHeight - 80) open();
     };
 
     document.querySelectorAll('[data-audit-email-open]').forEach(button => button.addEventListener('click', open));
@@ -38,5 +34,9 @@ export function bootAuditReview(document, target = window) {
         return;
     }
     try { if (target.sessionStorage.getItem(storageKey) === '1') return; } catch {}
-    target.addEventListener('scroll', onScroll, { passive: true });
+    timer = target.setInterval(() => {
+        if (stopped || document.visibilityState !== 'visible' || document.querySelector('dialog[open]')) return;
+        visibleSeconds++;
+        if (visibleSeconds >= 30) open();
+    }, 1000);
 }

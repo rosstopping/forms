@@ -7,6 +7,21 @@
 @php
     $findings = collect($audit->findings ?? []);
     $fixCount = $findings->whereIn('severity', ['warning', 'failed'])->count();
+    $findingExplanations = [
+        'indexable' => ['Google is being told not to list your homepage.', 'We’d check whether that instruction is intentional before changing it.'],
+        'page_title' => ['Your homepage is missing its page title.', 'A clear title helps people and search engines understand what you offer.'],
+        'viewport' => ['Your homepage is missing its mobile display setting.', 'We’d check how it looks and works for visitors on their phones.'],
+        'meta_description' => ['Your homepage is missing its search description.', 'A useful description can give people a clearer reason to click your result.'],
+        'response_time' => ['Your homepage was slow to respond in our check.', 'We’d investigate what’s keeping visitors waiting. One check isn’t a full speed test.'],
+        'h1' => ['Your homepage heading structure needs a look.', 'A clear main heading helps visitors understand the page quickly.'],
+        'image_alt_text' => ['Some homepage images are missing descriptions.', 'Useful image descriptions help people using screen readers understand your content.'],
+        'https' => ['Your homepage wasn’t checked over a secure connection.', 'We’d check that visitors are sent to the secure version of your website.'],
+    ];
+    $findingPriority = array_flip(array_keys($findingExplanations));
+    $publicFindings = $findings->whereIn('severity', ['warning', 'failed'])
+        ->filter(fn (array $finding): bool => ! empty($finding['title']) && ! empty($finding['message']))
+        ->sortBy(fn (array $finding): int => $findingPriority[$finding['key'] ?? ''] ?? 99)
+        ->unique('key')->take(2);
     $healthScore = data_get($audit->insights, 'health_score');
     $healthScore ??= $findings->isNotEmpty() ? (int) round($findings->where('severity', 'passed')->count() / $findings->count() * 100) : null;
     $pagesListed = data_get($audit->insights, 'pages_listed');
@@ -224,6 +239,25 @@
                     @endif
                 </section>
                 @if (! $showDetails)
+                    @if ($publicFindings->isNotEmpty())
+                        <section data-audit-finding-preview aria-labelledby="audit-findings-title" class="grid gap-5 border-t border-ink/10 pt-6">
+                            <h2 id="audit-findings-title" class="text-2xl font-medium tracking-tight">What we found on your website.</h2>
+                            <dl class="grid gap-5 sm:grid-cols-2">
+                                @foreach ($publicFindings as $finding)
+                                    <div data-audit-finding class="grid content-start gap-2 rounded-2xl bg-white/70 p-5 ring-1 ring-ink/10">
+                                        <dt class="text-lg font-medium text-ink">{{ $findingExplanations[$finding['key'] ?? ''][0] ?? $finding['title'] }}</dt>
+                                        <dd class="text-pretty text-base text-ink/65">{{ $findingExplanations[$finding['key'] ?? ''][1] ?? \Illuminate\Support\Str::limit($finding['message'], 160) }}</dd>
+                                    </div>
+                                @endforeach
+                            </dl>
+                            <p class="text-pretty text-base text-ink/65 sm:text-sm">These are examples from the initial check. In your free video, Ross will explain what he’d prioritise to help more customers find you.</p>
+                        </section>
+                    @elseif ($fixCount === 0 && $findings->isNotEmpty())
+                        <section data-audit-finding-preview aria-labelledby="audit-findings-title" class="grid gap-2 border-t border-ink/10 pt-6">
+                            <h2 id="audit-findings-title" class="text-2xl font-medium tracking-tight">Your initial website checks passed.</h2>
+                            <p class="max-w-[60ch] text-pretty text-base text-ink/65">That’s a useful starting point. It doesn’t tell us whether your pages reach the right customers — that’s what Ross will look at in your free video.</p>
+                        </section>
+                    @endif
                     <section data-audit-growth-plan aria-labelledby="audit-growth-plan-title" class="grid gap-5 border-t border-ink/10 pt-6">
                         <h2 id="audit-growth-plan-title" class="sr-only">What we’d do for you</h2>
                         <dl class="grid gap-6 sm:grid-cols-2">

@@ -401,10 +401,12 @@ it('keeps missing audit data distinct from healthy checks without inventing traf
         ->and($xpath->query('//*[@data-audit-fix-count]/dd')->item(0)->textContent)->toBe($healthy ? '0' : '—');
 
     if ($healthy) {
-        $response->assertSee('Your checks already pass. We’ll review the wider site before making changes.')
+        $response->assertSee('Your initial website checks passed.')
+            ->assertSee('Your checks already pass. We’ll review the wider site before making changes.')
             ->assertDontSee('We handle the fixes, aiming');
     } else {
-        $response->assertSee('Checks unavailable.')->assertDontSee('All these checks passed.');
+        $response->assertSee('Checks unavailable.')->assertDontSee('All these checks passed.')
+            ->assertDontSee('data-audit-finding-preview', false);
     }
 })->with(['healthy checks' => true, 'no checks available' => false]);
 
@@ -1029,3 +1031,49 @@ it('defers DNS validation to the guarded worker for local macOS audit submission
     $this->post(route('marketing.free-site-audit.store'), ['website_url' => 'http://127.0.0.1'])
         ->assertSessionHasErrors('website_url');
 })->skip(PHP_OS_FAMILY !== 'Darwin', 'The DNS workaround only applies to local macOS.');
+
+it('shows two useful saved findings without exposing the full audit or ranking details', function (): void {
+    $audit = WebsiteAudit::factory()->create([
+        'status' => WebsiteAudit::STATUS_COMPLETED,
+        'created_at' => now()->subMinute(),
+        'findings' => [
+            ['key' => 'frame_protection', 'title' => 'Frame protection', 'message' => 'No frame protection was found.', 'severity' => 'warning'],
+            ['key' => 'meta_description', 'title' => 'Meta description', 'message' => 'The homepage has no meta description.', 'severity' => 'warning'],
+            ['key' => 'page_title', 'title' => 'Page title', 'message' => 'The homepage has no title.', 'severity' => 'failed'],
+            ['key' => 'viewport', 'title' => 'Mobile viewport', 'message' => 'A mobile viewport is configured.', 'severity' => 'passed'],
+        ],
+        'insights' => ['seo' => ['estimated_monthly_visits' => 100, 'keywords' => [['term' => 'private ranking term', 'position' => 15, 'monthly_searches' => 500]]]],
+    ]);
+
+    $response = $this->get(route('marketing.website-audits.show', $audit))->assertSuccessful()
+        ->assertSee('What we found on your website.')
+        ->assertSee('Your homepage is missing its page title.')
+        ->assertSee('Your homepage is missing its search description.')
+        ->assertSee('A clear title helps people and search engines understand what you offer.')
+        ->assertDontSee('No frame protection was found.')
+        ->assertDontSee('Your homepage is missing its mobile display setting.')
+        ->assertDontSee('private ranking term')
+        ->assertDontSee('Google ranking terms')
+        ->assertSee('Get my free growth plan');
+
+    $document = new DOMDocument;
+    @$document->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
+    expect((new DOMXPath($document))->query('//*[@data-audit-finding]'))->toHaveCount(2);
+});
+
+it('shows a single finding without padding the preview with invented issues', function (): void {
+    $audit = WebsiteAudit::factory()->create([
+        'status' => WebsiteAudit::STATUS_COMPLETED,
+        'created_at' => now()->subMinute(),
+        'findings' => [['key' => 'response_time', 'title' => 'Page response time', 'message' => 'The page responded in 2500 ms.', 'severity' => 'warning']],
+    ]);
+
+    $response = $this->get(route('marketing.website-audits.show', $audit))->assertSuccessful()
+        ->assertSee('Your homepage was slow to respond in our check.')
+        ->assertSee('One check isn’t a full speed test.')
+        ->assertDontSee('Your homepage is missing its page title.');
+
+    $document = new DOMDocument;
+    @$document->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
+    expect((new DOMXPath($document))->query('//*[@data-audit-finding]'))->toHaveCount(1);
+});
