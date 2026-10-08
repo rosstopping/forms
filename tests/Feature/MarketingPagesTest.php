@@ -220,7 +220,15 @@ it('provides a keyboard skip link and a factual AI resource directory', function
     $directory = file_get_contents(public_path('llms.txt'));
     expect(count(array_filter(explode("\n", $directory))))->toBeGreaterThanOrEqual(5)
         ->and($directory)->toContain('https://sitewell.digizu.co.uk/about');
-    $this->get('/managed-seo-services')->assertSuccessful();
+    expect($directory)->toStartWith("# Sitewell\n\n>")
+        ->toContain('## Sitewell and the service', '## Website and search improvements', '## Optional')
+        ->not->toContain('/website-audits/', '/admin/', '/account/');
+    preg_match_all('/^- \[([^\]]+)\]\((https:\/\/[^)]+)\): (.+)$/m', $directory, $links, PREG_SET_ORDER);
+    expect($links)->toHaveCount(12);
+    foreach ($links as $link) {
+        expect(parse_url($link[2], PHP_URL_HOST))->toBe('sitewell.digizu.co.uk');
+        $this->get(parse_url($link[2], PHP_URL_PATH))->assertSuccessful();
+    }
 });
 
 it('adds HSTS to secure web responses only', function (): void {

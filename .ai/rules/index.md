@@ -121,6 +121,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Services,Jobs,Http/Controllers/Admin,Http/Requests}/**/*PersonalisedVideo*.php,resources/views/admin/prospects/**,app/Services/ProspectEngagementScorer.php | .ai/rules/prospects-services.md |
 | app/{Mail,Models,Services,Http/Controllers}/**/*ProspectOutreach*.php,resources/views/mail/prospects/outreach.blade.php,resources/views/admin/prospects/**,routes/web.php | .ai/rules/prospects.md |
 | app/Providers/AppServiceProvider.php | .ai/rules/providers.md |
+| {public/llms.txt,tests/Feature/MarketingPagesTest.php} | .ai/rules/public-feature.md |
 | public/favicon.*,public/apple-touch-icon.png,resources/views/layouts/{marketing,ppc,auth,app}.blade.php | .ai/rules/public-views-layouts.md |
 | public/pixel.js | .ai/rules/public.md |
 | app/{Models,Services,Jobs,Http/Controllers/Admin,Http/Requests}/**/*SeoImpact*.php,app/Services/{ContentWorkSelector,ContentGenerationPromptGenerator,ContentOpportunityQueuer}.php | .ai/rules/requests-services.md |

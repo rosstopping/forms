@@ -1,9 +1,29 @@
 # Sitewell
 
-> Sitewell manages website and SEO improvements for UK businesses.
+> Sitewell looks after websites for UK businesses: finding and fixing issues, improving SEO and content, and monitoring visibility in Google and sampled AI search answers.
 
-- [Home](https://sitewell.digizu.co.uk/): What Sitewell does and how to request a free search audit.
-- [About Sitewell](https://sitewell.digizu.co.uk/about): Ross, the Doncaster-based founder, and how Sitewell works.
-- [Managed SEO services](https://sitewell.digizu.co.uk/managed-seo-services): Ongoing SEO and website improvements.
-- [Free search audit](https://sitewell.digizu.co.uk/get-started): Submit a website for an initial public audit.
-- [FAQs](https://sitewell.digizu.co.uk/faqs): Answers about the managed service.
+Ross is the Doncaster-based web developer behind Sitewell. Customers receive managed website improvements and ongoing support, rather than having to implement recommendations themselves. The free website audit is the starting point for identifying what to work on. Search estimates and sampled AI observations are indicators, not guarantees of rankings, traffic or AI recommendations.
+
+## Sitewell and the service
+
+- [Home](https://sitewell.digizu.co.uk/): An introduction to Sitewell and the free website audit.
+- [About Sitewell](https://sitewell.digizu.co.uk/about): Meet Ross and understand how Sitewell looks after business websites.
+- [How it works](https://sitewell.digizu.co.uk/how-it-works): How website analysis leads to prioritised improvements and ongoing care.
+- [Pricing](https://sitewell.digizu.co.uk/pricing): Current levels of support and what each plan includes.
+- [FAQs](https://sitewell.digizu.co.uk/faqs): Answers about the service, website ownership and working with Sitewell.
+
+## Website and search improvements
+
+- [Website management services](https://sitewell.digizu.co.uk/website-management-services): Website maintenance, content, SEO and improvements handled together.
+- [Managed SEO services](https://sitewell.digizu.co.uk/managed-seo-services): Ongoing search analysis, website changes and reporting.
+- [Free website audit](https://sitewell.digizu.co.uk/get-started): Submit a website and unlock its report by email.
+- [Website and SEO guides](https://sitewell.digizu.co.uk/journal): Practical guidance on website care, rankings, traffic and content.
+
+## Contact
+
+- [Contact Sitewell](https://sitewell.digizu.co.uk/contact): Ask about getting help with a business website.
+
+## Optional
+
+- [Privacy policy](https://sitewell.digizu.co.uk/privacy-policy): How Sitewell handles personal information.
+- [Terms of service](https://sitewell.digizu.co.uk/terms-of-service): Terms for using Sitewell.
