@@ -3,7 +3,7 @@ import { bootAuditReview } from './audit-review.js';
 import { bootAuditEngagement } from './audit-engagement.js';
 
 /**
- * Publish the existing marketing hooks and hand accepted audits to GTM.
+ * Publish marketing hooks and hand successfully captured leads to GTM.
  * The GTM conversion tag must respect consent; do not also send this lead
  * through a server-side Ads conversion or a GA4 import.
  */
@@ -20,9 +20,10 @@ export function publishMarketingEvent(payload, target = window) {
     }
 
     target.sitewellEvents.push(payload);
-    if (payload.event === 'audit_submitted' && payload.is_conversion === true) {
+    if (payload.event === 'lead_captured' && payload.is_conversion === true) {
         target.dataLayer ??= [];
-        target.dataLayer.push({ event: 'sitewell_audit_submitted', event_id: payload.event_id });
+        // Keep the existing GTM trigger so the installed Ads tag now counts saved emails.
+        target.dataLayer.push({ event: 'sitewell_audit_submitted', event_id: payload.event_id, conversion_stage: 'email_captured' });
     }
     target.dispatchEvent(new CustomEvent('sitewell:marketing-event', { detail: payload }));
 }

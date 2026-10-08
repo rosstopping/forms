@@ -3,12 +3,15 @@
 use App\Events\MarketingConversionRecorded;
 use App\Jobs\GenerateWebsiteAudit;
 use App\Models\MarketingConversion;
+use App\Models\User;
 use App\Models\WebsiteAudit;
 use App\Services\MarketingAuditResearch;
 use App\Services\MarketingAuditScreenshot;
 use App\Services\ProspectWebsiteAnalyzer;
 use App\Support\MarketingJourney;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 
 it('preserves campaign attribution through audit submission without collecting personal details', function (): void {
@@ -24,7 +27,7 @@ it('preserves campaign attribution through audit submission without collecting p
         ->and($audit->email)->toBeNull();
     $conversion = MarketingConversion::query()->sole();
     expect($conversion->name)->toBe('audit_submitted')
-        ->and($conversion->payload()['is_conversion'])->toBeTrue();
+        ->and($conversion->payload()['is_conversion'])->toBeFalse();
     $this->get(route('marketing.website-audits.show', $audit))->assertSee($conversion->event_id);
     $this->get(route('marketing.website-audits.show', $audit))->assertSuccessful();
     expect(MarketingConversion::query()->count())->toBe(1);
@@ -37,6 +40,46 @@ it('keeps first touch and replaces the whole last campaign without mixing click 
     $this->get(route('marketing.free-site-audit'))->assertSessionHas('marketing_attribution', fn (array $value): bool => $value['first_touch']['gclid'] === 'first-click'
         && $value['last_touch'] === ['utm_source' => 'newsletter', 'utm_campaign' => 'autumn']
     );
+});
+
+it('records a lead only after saving an email and publishes it only to the capturing session once', function (): void {
+    Mail::fake();
+    $this->withoutMiddleware(ThrottleRequests::class);
+    $audit = WebsiteAudit::factory()->create([
+        'status' => WebsiteAudit::STATUS_COMPLETED,
+        'created_at' => now()->subMinute(),
+        'marketing_attribution' => ['journey_id' => 'service-search', 'first_touch' => ['gclid' => 'original-ad-click', 'utm_campaign' => 'sitewell_service_search']],
+    ]);
+    $url = route('marketing.website-audits.email-report', $audit);
+    $this->post($url, ['email' => 'invalid'])->assertSessionHasErrors('email');
+    $this->post($url, ['email' => 'owner@example.com', '_sitewell_check' => 'bot'])->assertSessionHasErrors();
+    expect(MarketingConversion::query()->count())->toBe(0);
+
+    $this->post($url, ['email' => 'owner@example.com', 'personal_review' => true])->assertRedirect();
+    $lead = MarketingConversion::query()->sole();
+    expect($lead->name)->toBe('lead_captured')
+        ->and($lead->payload()['is_conversion'])->toBeTrue()
+        ->and($lead->attribution['first_touch']['gclid'])->toBe('original-ad-click')
+        ->and(json_encode($lead->payload()))->not->toContain('owner@example.com');
+    $publicUrl = route('marketing.website-audits.show', $audit);
+    $this->get($publicUrl)->assertSuccessful()->assertViewHas('marketingEvents', fn (array $events): bool => count(array_filter($events, fn (array $event): bool => $event['event'] === 'lead_captured')) === 1);
+    $this->get($publicUrl)->assertSuccessful()->assertDontSee($lead->event_id);
+    $this->flushSession();
+    $this->get($publicUrl)->assertSuccessful()->assertDontSee($lead->event_id);
+    $this->post($url, ['email' => 'owner@example.com', 'personal_review' => true])->assertRedirect()->assertSessionMissing('marketing_lead_event');
+    $this->get($publicUrl)->assertSuccessful()->assertDontSee($lead->event_id);
+    expect(MarketingConversion::query()->count())->toBe(1);
+    Mail::assertQueuedCount(2);
+});
+
+it('does not count admin email requests as advertising leads', function (): void {
+    Mail::fake();
+    $audit = WebsiteAudit::factory()->create(['status' => WebsiteAudit::STATUS_COMPLETED, 'created_at' => now()->subMinute()]);
+    $this->actingAs(User::factory()->create(['role' => User::ROLE_ADMIN]))
+        ->post(route('marketing.website-audits.email-report', $audit), ['email' => 'owner@example.com', 'personal_review' => true])
+        ->assertRedirect()->assertSessionMissing('marketing_lead_event');
+    expect($audit->refresh()->email)->toBe('owner@example.com');
+    expect(MarketingConversion::query()->count())->toBe(0);
 });
 
 it('ignores malformed attribution and expires old sessions', function (): void {

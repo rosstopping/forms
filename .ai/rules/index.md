@@ -98,6 +98,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Support/MembershipPlan.php,Http/Middleware/EnsureMembershipFeature.php,Http/Controllers/Admin/WebsiteController.php},resources/views/admin/websites/**,routes/web.php | .ai/rules/middleware-controllers-admin-views-admin-websites.md |
 | app/{Models/User,Http/Controllers/Admin/{WebsiteController,UserController},Http/Middleware/ResolveCurrentWebsite}.php | .ai/rules/middleware.md |
 | app/{Actions/ActivateWebsiteAuditTrial.php,Models/{WebsiteAudit.php,WebsiteDomain.php},Http/Controllers/WebsiteAuditOnboardingController.php},database/migrations/**/*website*claim*.php,tests/Feature/**/*WebsiteAudit*.php | .ai/rules/migrations-feature.md |
+| {app/Models/GoogleAdsCampaignDraft.php,app/Services/GoogleAds{Client,CampaignCreator}.php,database/migrations/*google_ads_campaign_drafts*.php,database/migrations/*sitewell*service*campaign*.php} | .ai/rules/migrations-migrations.md |
 | app/{Enums,Models,Services,Jobs,Http/Controllers}/**/*Prospect*.php,config/outreach.php,database/migrations/**/*prospect*.php | .ai/rules/migrations.md |
 | app/{Models/ContentRequest.php,Jobs/StartContentGeneration.php,Http/Controllers/Admin/{ContentRequestController.php,ContentRequestPixelController.php}},resources/views/admin/websites/show.blade.php | .ai/rules/models-controllers-admin-views-admin-websites.md |
 | app/{Models/PixelPageSighting.php,Services/PixelHeartbeatRecorder.php,Http/Controllers/PixelHeartbeatController.php}, public/pixel.js | .ai/rules/models-controllers.md |
@@ -153,6 +154,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Ai/Agents/WebsiteDataAssistant.php,Services/WebsiteAiContext.php,Http/Controllers/Admin/WebsiteAiChatController.php,Models/WebsiteAiQuestion.php},resources/views/admin/websites/show.blade.php,routes/web.php | .ai/rules/views-admin-websites.md |
 | app/Http/Controllers/Admin/DashboardController.php,resources/views/admin/dashboard.blade.php | .ai/rules/views-admin.md |
 | app/{Ai,Jobs,Services,Http/Controllers/Admin}/**/*Pixel*.php,resources/views/admin/{websites/**,website-health-reports/**} | .ai/rules/views-adminwebsites.md |
+| {app/Models/MarketingConversion.php,app/Http/Controllers/FreeSiteAuditController.php,resources/js/marketing-events.js,resources/views/layouts/{marketing,ppc}.blade.php,resources/views/components/marketing/tag-manager.blade.php} | .ai/rules/views-components-marketing.md |
 | app/{Jobs,Mail,Services,Console/Commands}/**/*.php,resources/views/emails/**, app/{Jobs,Mail,Services,Console/Commands}/**/*.php,resources/views/emails/**,routes/console.php | .ai/rules/views-emails.md |
 | app/Http/Controllers/Admin/DashboardController.php,resources/views/admin/{dashboard,overview}.blade.php,resources/views/layouts/app.blade.php | .ai/rules/views-layouts.md |
 | app/Services/Prospect*.php,resources/views/mail/prospects/** | .ai/rules/views-mail-prospects.md |

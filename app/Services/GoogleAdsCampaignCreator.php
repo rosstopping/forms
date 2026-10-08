@@ -56,6 +56,13 @@ class GoogleAdsCampaignCreator
         $budget = "customers/{$customer}/campaignBudgets/-1";
         $campaign = "customers/{$customer}/campaigns/-2";
         $adGroup = "customers/{$customer}/adGroups/-3";
+        $location = $draft->target_country
+            ? ['location' => ['geoTargetConstant' => $this->client->countryGeoTarget($draft->connection, $draft->target_country)]]
+            : ['proximity' => [
+                'address' => ['cityName' => $draft->city_name, 'countryCode' => $draft->country_code],
+                'radius' => $draft->radius_miles,
+                'radiusUnits' => 'MILES',
+            ]];
         $operations = [
             ['campaignBudgetOperation' => ['create' => [
                 'resourceName' => $budget,
@@ -82,11 +89,7 @@ class GoogleAdsCampaignCreator
             ]]],
             ['campaignCriterionOperation' => ['create' => [
                 'campaign' => $campaign,
-                'proximity' => [
-                    'address' => ['cityName' => $draft->city_name, 'countryCode' => $draft->country_code],
-                    'radius' => $draft->radius_miles,
-                    'radiusUnits' => 'MILES',
-                ],
+                ...$location,
             ]]],
             ['adGroupOperation' => ['create' => [
                 'resourceName' => $adGroup,
@@ -102,6 +105,13 @@ class GoogleAdsCampaignCreator
                 'adGroup' => $adGroup,
                 'status' => 'ENABLED',
                 'keyword' => ['text' => $keyword, 'matchType' => 'EXACT'],
+            ]]];
+        }
+        foreach ($draft->negative_keywords ?? [] as $keyword) {
+            $operations[] = ['campaignCriterionOperation' => ['create' => [
+                'campaign' => $campaign,
+                'negative' => true,
+                'keyword' => ['text' => $keyword, 'matchType' => 'PHRASE'],
             ]]];
         }
         $operations[] = ['adGroupAdOperation' => ['create' => [

@@ -18,9 +18,9 @@ it('renders each tailored PPC page without prices and with the existing audit ac
         ->assertSee('FAQPage')
         ->assertSee('href="'.route('marketing.free-site-audit').'"', false)
         ->assertSee('href="'.route('marketing.ppc.book').'"', false)
-        ->assertDontSee('<iframe', false)
-        ->assertDontSee('googletagmanager.com')
-        ->assertDontSee('dataLayer');
+        ->assertSee('googletagmanager.com')
+        ->assertSee('GTM-N36VDJNH')
+        ->assertSee('dataLayer');
 
     expect(substr_count($response->getContent(), '<h1 '))->toBe(1);
     preg_match('/<script type="application\/ld\+json">(.*?)<\/script>/s', $response->getContent(), $match);

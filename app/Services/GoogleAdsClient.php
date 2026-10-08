@@ -17,6 +17,25 @@ class GoogleAdsClient
 
     public function __construct(protected GoogleAdsOAuthClient $oauth) {}
 
+    public function countryGeoTarget(GoogleAdsConnection $connection, string $countryCode): string
+    {
+        if (preg_match('/^[A-Z]{2}$/', $countryCode) !== 1) {
+            throw new RuntimeException('A valid country code is required for campaign targeting.');
+        }
+
+        $rows = $this->searchRows($connection, "SELECT geo_target_constant.resource_name, geo_target_constant.country_code, geo_target_constant.target_type, geo_target_constant.status FROM geo_target_constant WHERE geo_target_constant.country_code = '{$countryCode}' AND geo_target_constant.target_type = 'Country' AND geo_target_constant.status = 'ENABLED' LIMIT 2");
+        $target = data_get($rows, '0.geoTargetConstant');
+        if (count($rows) !== 1 || ! is_array($target)
+            || ($target['countryCode'] ?? null) !== $countryCode
+            || ($target['targetType'] ?? null) !== 'Country'
+            || ($target['status'] ?? null) !== 'ENABLED'
+            || preg_match('~^geoTargetConstants/[1-9]\d*$~', (string) ($target['resourceName'] ?? '')) !== 1) {
+            throw new RuntimeException('Google Ads did not confirm the requested target country.');
+        }
+
+        return $target['resourceName'];
+    }
+
     /** @return list<string> */
     public function accessibleCustomerIds(GoogleAdsConnection $connection): array
     {

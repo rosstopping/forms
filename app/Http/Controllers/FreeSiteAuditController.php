@@ -82,6 +82,11 @@ class FreeSiteAuditController extends Controller
             ))
             ->get()->map(fn (MarketingConversion $conversion): array => $conversion->payload())->all();
 
+        if (! $showDetails && ! $request->user()?->isAdmin()
+            && $request->session()->get('marketing_lead_event.audit_id') === $websiteAudit->public_id) {
+            $events[] = $request->session()->pull('marketing_lead_event')['payload'];
+        }
+
         $seo = data_get($websiteAudit->insights, 'seo');
 
         return view('marketing.website-audit', [
@@ -146,11 +151,12 @@ class FreeSiteAuditController extends Controller
         ]);
     }
 
-    public function emailReport(EmailWebsiteAuditReportRequest $request, WebsiteAudit $websiteAudit): RedirectResponse
+    public function emailReport(EmailWebsiteAuditReportRequest $request, WebsiteAudit $websiteAudit, MarketingJourney $journey): RedirectResponse
     {
         $email = $request->validated('email');
+        $leadConversion = null;
 
-        $savedAudit = DB::transaction(function () use ($websiteAudit, $email, $request): WebsiteAudit {
+        $savedAudit = DB::transaction(function () use ($websiteAudit, $email, $request, $journey, &$leadConversion): WebsiteAudit {
             $audit = WebsiteAudit::query()->lockForUpdate()->findOrFail($websiteAudit->id);
 
             if ($audit->report_requested_at !== null) {
@@ -172,6 +178,10 @@ class FreeSiteAuditController extends Controller
                 'expires_at' => now()->addDays(14),
             ]);
 
+            if (! $request->user()?->isAdmin()) {
+                $leadConversion = $journey->record('lead_captured', $audit->public_id, $audit->marketing_attribution ?? []);
+            }
+
             if ($request->filled('engagement_visit_id')) {
                 $audit->visits()->firstOrCreate(['visit_id' => $request->validated('engagement_visit_id')])
                     ->update(['email_submitted_at' => now()]);
@@ -187,8 +197,14 @@ class FreeSiteAuditController extends Controller
             $request->session()->put('marketing.website_audit_review_ids.'.$savedAudit->public_id, true);
         }
 
-        return redirect()->to(route('marketing.website-audits.show', $savedAudit).'#audit-follow-up')
+        $response = redirect()->to(route('marketing.website-audits.show', $savedAudit).'#audit-follow-up')
             ->with('report_email_status', $savedAudit->personal_review_requested_at ? 'Thanks. Ross will email your video within one working day.' : 'Your report is on its way.');
+
+        if ($leadConversion !== null) {
+            $response->with('marketing_lead_event', ['audit_id' => $savedAudit->public_id, 'payload' => $leadConversion->payload()]);
+        }
+
+        return $response;
     }
 
     public function updateGoal(UpdateWebsiteAuditGoalRequest $request, WebsiteAudit $websiteAudit): RedirectResponse

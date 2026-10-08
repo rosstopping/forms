@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en-GB" class="antialiased">
 <head>
+    <x-marketing.tag-manager />
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#f4f1e8">
@@ -21,6 +22,7 @@
     @yield('structured_data')
 </head>
 <body class="marketing-site prospect-workspace bg-white text-ink">
+    <x-marketing.tag-manager noscript />
     <div class="isolate min-h-dvh">
         <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-white focus:p-4">Skip to content</a>
         <header class="border-b border-ink/10">
