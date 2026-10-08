@@ -1,12 +1,17 @@
 <?php
 
 use App\Enums\OnboardingLifecycleStep;
+use App\Jobs\GenerateWebsiteAuditFullReport;
 use App\Models\OnboardingLifecycleMessage;
 use App\Models\SearchConsoleConnection;
 use App\Models\User;
 use App\Models\Website;
 use App\Models\WebsiteAudit;
 use App\Models\WebsiteDomain;
+use App\Services\MarketingAuditScreenshot;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
 
 it('gives admins a lead view of users who signed up through Get started', function (): void {
     $this->travelTo('2026-09-07 12:00:00 Europe/London');
@@ -91,6 +96,45 @@ it('shows emailed audit requests as onboarding leads without creating an account
         ->assertSee(route('marketing.website-audits.show', $audit));
 
     expect($audit->user_id)->toBeNull();
+});
+
+it('lets admins open the customer report and explicitly request the full report even after expiry', function (): void {
+    Queue::fake();
+    Http::preventStrayRequests();
+    Storage::fake('local');
+    $audit = WebsiteAudit::factory()->create([
+        'status' => WebsiteAudit::STATUS_COMPLETED,
+        'created_at' => now()->subDays(3),
+        'expires_at' => now()->subDay(),
+        'insights' => ['health_score' => 75, 'full_report' => ['status' => 'deferred']],
+    ]);
+    Storage::disk('local')->put(app(MarketingAuditScreenshot::class)->pathFor($audit), "\xFF\xD8\xFFpreview");
+    $customerUrl = route('marketing.website-audits.show', $audit);
+    $previewUrl = route('marketing.website-audits.preview', $audit);
+    $fullReportUrl = route('admin.onboarding.audits.generate', $audit);
+
+    $this->get($customerUrl)->assertNotFound();
+    $this->get($previewUrl)->assertNotFound();
+    $this->actingAs(User::factory()->create())->get($customerUrl)->assertNotFound();
+    $this->get($previewUrl)->assertNotFound();
+    $this->actingAs(User::factory()->create(['role' => User::ROLE_ADMIN]))
+        ->get(route('admin.onboarding.index'))
+        ->assertSuccessful()
+        ->assertSee('href="'.$customerUrl.'"', false)
+        ->assertSee('View customer report')
+        ->assertSee('method="POST" action="'.$fullReportUrl.'"', false)
+        ->assertSee('View full report');
+    $this->get($customerUrl)->assertSuccessful()
+        ->assertViewHas('showDetails', false)
+        ->assertSee('src="'.$previewUrl.'"', false)
+        ->assertDontSee('Load full research');
+    $this->get($previewUrl)->assertSuccessful()->assertHeader('Content-Type', 'image/jpeg');
+    Queue::assertNothingPushed();
+    $this->post($fullReportUrl)->assertRedirect(route('admin.onboarding.audits.show', $audit));
+    $this->get(route('admin.onboarding.audits.show', $audit))->assertSuccessful()->assertViewHas('showDetails', true);
+    Queue::assertPushed(GenerateWebsiteAuditFullReport::class, 1);
+    Http::assertNothingSent();
+    expect($audit->refresh()->expires_at->isPast())->toBeTrue();
 });
 
 it('filters onboarding leads by search verification and call progress', function (): void {

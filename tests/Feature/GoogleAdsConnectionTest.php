@@ -451,7 +451,7 @@ test('campaign status filters keep account-wide performance totals', function ()
         if (str_contains($request['query'], 'metrics.impressions')) {
             return Http::response([['results' => [
                 ['campaign' => ['id' => '101'], 'metrics' => ['impressions' => '100', 'clicks' => '10', 'costMicros' => '2500000', 'conversions' => 2]],
-                ['campaign' => ['id' => '102'], 'metrics' => ['impressions' => '50', 'clicks' => '5', 'costMicros' => '1000000', 'conversions' => 1]],
+                ['campaign' => ['id' => '102'], 'metrics' => ['impressions' => '200', 'clicks' => '5', 'costMicros' => '10000000', 'conversions' => 1]],
             ]]]);
         }
 
@@ -464,8 +464,12 @@ test('campaign status filters keep account-wide performance totals', function ()
     $this->actingAs($owner)->get(route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns', 'status' => 'enabled']))
         ->assertSuccessful()
         ->assertSee('Last 30 days')
-        ->assertSee('3.50')
-        ->assertSee('150')
+        ->assertSee('GBP 12.50')
+        ->assertSee('300')
+        ->assertSee('CTR')
+        ->assertSee('5.00%')
+        ->assertSee('Avg. CPC')
+        ->assertSee('GBP 0.83')
         ->assertSee('Active search')
         ->assertDontSee('Paused search');
 
@@ -473,7 +477,9 @@ test('campaign status filters keep account-wide performance totals', function ()
         ->assertSuccessful()
         ->assertSee('Paused search')
         ->assertDontSee('Active search')
-        ->assertSee('3.50');
+        ->assertSee('GBP 12.50')
+        ->assertSee('5.00%')
+        ->assertSee('GBP 0.83');
 
     $this->actingAs($owner)->get(route('admin.google-ads.index', ['website' => $website, 'tab' => 'campaigns', 'status' => 'unexpected']))
         ->assertSuccessful()
@@ -591,6 +597,12 @@ test('campaign details show targeting keywords and a responsive search ad previe
     GoogleAdsConnection::factory()->for($website)->create(['customer_id' => '1234567890', 'currency_code' => 'GBP']);
     Http::fake(function (ClientRequest $request) {
         $query = (string) ($request['query'] ?? '');
+        if (str_contains($query, 'metrics.impressions')) {
+            return Http::response([['results' => [[
+                'campaign' => ['id' => '987654321'],
+                'metrics' => ['impressions' => '400', 'clicks' => '100', 'costMicros' => '250000000', 'conversions' => 5],
+            ]]]]);
+        }
         if (str_contains($query, 'FROM ad_group_ad')) {
             return Http::response([['results' => [[
                 'campaign' => ['id' => '987654321'],
@@ -628,10 +640,52 @@ test('campaign details show targeting keywords and a responsive search ad previe
         ->assertSee('Local SEO | Better rankings | Get found')
         ->assertSee('Save budget')
         ->assertSee('Save ad copy')
+        ->assertSee('CTR')
+        ->assertSee('25.00%')
+        ->assertSee('Avg. CPC')
+        ->assertSee('GBP 2.50')
         ->assertSee('Enable campaign')
         ->assertSee('Remove campaign');
     Http::assertSentCount(5);
 });
+
+test('campaign rates handle missing performance and zero impressions or clicks', function (?array $metrics, string $ctr, string $cpc): void {
+    $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);
+    $website = Website::factory()->for($owner, 'owner')->create();
+    GoogleAdsConnection::factory()->for($website)->create(['customer_id' => '1234567890', 'currency_code' => 'USD']);
+    Http::fake(function (ClientRequest $request) use ($metrics) {
+        $query = (string) ($request['query'] ?? '');
+        if (str_contains($query, 'metrics.impressions')) {
+            if ($metrics === null) {
+                return Http::response(['error' => ['message' => 'Unavailable']], 503);
+            }
+
+            return Http::response([['results' => [['campaign' => ['id' => '101'], 'metrics' => $metrics]]]]);
+        }
+        if (str_contains($query, 'FROM campaign WHERE')) {
+            return Http::response([['results' => [[
+                'campaign' => ['id' => '101', 'name' => 'Local search', 'status' => 'PAUSED', 'advertisingChannelType' => 'SEARCH'],
+                'campaignBudget' => ['amountMicros' => '20000000'],
+            ]]]]);
+        }
+
+        return Http::response([['results' => []]]);
+    });
+
+    foreach ([route('admin.google-ads.index', $website), route('admin.google-ads.live-campaigns.show', [$website, '101'])] as $url) {
+        $response = $this->actingAs($owner)->get($url)->assertSuccessful();
+        $document = new DOMDocument;
+        @$document->loadHTML($response->getContent());
+        $xpath = new DOMXPath($document);
+        expect(trim($xpath->evaluate('string(//dt[normalize-space()="CTR"]/following-sibling::dd[1])')))->toBe($ctr)
+            ->and(trim($xpath->evaluate('string(//dt[normalize-space()="Avg. CPC"]/following-sibling::dd[1])')))->toBe($cpc);
+    }
+})->with([
+    'no impressions' => [['impressions' => '0', 'clicks' => '0', 'costMicros' => '0'], '—', '—'],
+    'no clicks' => [['impressions' => '100', 'clicks' => '0', 'costMicros' => '0'], '0.00%', '—'],
+    'zero cost' => [['impressions' => '100', 'clicks' => '10', 'costMicros' => '0'], '10.00%', 'USD 0.00'],
+    'unavailable performance' => [null, '—', '—'],
+]);
 
 test('campaign name budget and ad copy updates use account-scoped mutations', function (): void {
     $owner = User::factory()->create(['membership_tier' => MembershipPlan::COMPLETE, 'membership_status' => 'active']);

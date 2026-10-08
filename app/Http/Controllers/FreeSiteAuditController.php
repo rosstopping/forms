@@ -71,7 +71,7 @@ class FreeSiteAuditController extends Controller
         if ($request->routeIs('admin.onboarding.audits.show')) {
             abort_unless($request->user()?->isAdmin(), 403);
         }
-        abort_if(! $showDetails && $websiteAudit->hasExpired(), 404);
+        abort_if(! $showDetails && $websiteAudit->hasExpired() && ! $request->user()?->isAdmin(), 404);
 
         $request->session()->put('marketing.website_audit_id', $websiteAudit->public_id);
 
@@ -94,15 +94,15 @@ class FreeSiteAuditController extends Controller
             'marketingEvents' => $showDetails ? [] : $events,
             'projection' => is_array($seo) ? $research->projection($seo) : null,
             'rankings' => is_array($seo) ? $research->rankingHighlights($seo) : ['page_one' => [], 'striking_distance' => [], 'other' => []],
-            'screenshotUrl' => ! $websiteAudit->hasExpired() && $websiteAudit->isReadyToDisplay() && Storage::disk('local')->exists($screenshot->pathFor($websiteAudit))
+            'screenshotUrl' => (! $websiteAudit->hasExpired() || $request->user()?->isAdmin()) && $websiteAudit->isReadyToDisplay() && Storage::disk('local')->exists($screenshot->pathFor($websiteAudit))
                 ? route('marketing.website-audits.preview', $websiteAudit)
                 : null,
         ]);
     }
 
-    public function preview(WebsiteAudit $websiteAudit, MarketingAuditScreenshot $screenshot): StreamedResponse
+    public function preview(Request $request, WebsiteAudit $websiteAudit, MarketingAuditScreenshot $screenshot): StreamedResponse
     {
-        abort_if($websiteAudit->hasExpired(), 404);
+        abort_if($websiteAudit->hasExpired() && ! $request->user()?->isAdmin(), 404);
         abort_unless($websiteAudit->isReadyToDisplay(), 404);
 
         $path = $screenshot->pathFor($websiteAudit);

@@ -88,10 +88,13 @@
                                 <p class="text-slate-500 text-base sm:text-sm">No email submitted</p>
                             @endif
                             @if ($unclaimedAudit->status === \App\Models\WebsiteAudit::STATUS_COMPLETED)
-                                <form method="POST" action="{{ route('admin.onboarding.audits.generate', $unclaimedAudit) }}" class="mt-2">
-                                    @csrf
-                                    <button type="submit" class="inline-flex min-h-12 items-center text-sm font-medium text-teal-700 hover:text-teal-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700">View full report</button>
-                                </form>
+                                <div class="mt-2 flex flex-wrap gap-x-4 sm:justify-end">
+                                    <a href="{{ route('marketing.website-audits.show', $unclaimedAudit) }}" class="inline-flex min-h-12 items-center text-sm font-medium text-teal-700 hover:text-teal-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700">View customer report</a>
+                                    <form method="POST" action="{{ route('admin.onboarding.audits.generate', $unclaimedAudit) }}">
+                                        @csrf
+                                        <button type="submit" class="inline-flex min-h-12 items-center text-sm font-medium text-teal-700 hover:text-teal-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700">View full report</button>
+                                    </form>
+                                </div>
                             @endif
                         </div>
                         <div class="grid gap-3 border-t border-slate-100 pt-3 sm:col-span-3">

@@ -29,10 +29,12 @@
                     </form>
                 @endif
             </div>
-            <dl class="mt-5 grid grid-cols-2 gap-5 border-y border-slate-900/10 py-5 sm:grid-cols-4">
+            <dl class="mt-5 grid grid-cols-2 gap-5 border-y border-slate-900/10 py-5 sm:grid-cols-3 lg:grid-cols-6">
                 <div><dt class="text-sm text-slate-600">Impressions</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-slate-950">{{ $performance === null ? '—' : number_format($performance['impressions']) }}</dd></div>
                 <div><dt class="text-sm text-slate-600">Clicks</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-slate-950">{{ $performance === null ? '—' : number_format($performance['clicks']) }}</dd></div>
+                <div><dt class="text-sm text-slate-600" title="Click-through rate">CTR</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-slate-950">{{ $performance === null || $performance['impressions'] === 0 ? '—' : number_format($performance['clicks'] / $performance['impressions'] * 100, 2).'%' }}</dd></div>
                 <div><dt class="text-sm text-slate-600">Spend</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-slate-950">{{ $performance === null ? '—' : $connection->currency_code.' '.number_format($performance['cost_micros'] / 1000000, 2) }}</dd></div>
+                <div><dt class="text-sm text-slate-600" title="Average cost per click">Avg. CPC</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-slate-950">{{ $performance === null || $performance['clicks'] === 0 ? '—' : $connection->currency_code.' '.number_format($performance['cost_micros'] / 1000000 / $performance['clicks'], 2) }}</dd></div>
                 <div><dt class="text-sm text-slate-600">Conversions</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-slate-950">{{ $performance === null ? '—' : number_format($performance['conversions'], 1) }}</dd></div>
             </dl>
             @if ($campaign['status'] === 'PAUSED')

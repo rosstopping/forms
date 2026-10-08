@@ -180,10 +180,12 @@
                         <div class="mt-6 border-y border-slate-900/10 py-5">
                             <div class="flex flex-wrap items-baseline justify-between gap-2"><h3 class="text-sm font-semibold text-slate-950">Last 30 days</h3><p class="text-sm text-slate-500">Across {{ number_format($campaignCounts['all']) }} {{ \Illuminate\Support\Str::plural('campaign', $campaignCounts['all']) }}</p></div>
                             <div class="@container mt-4">
-                                <dl class="grid grid-cols-2 gap-x-6 gap-y-4 @lg:grid-cols-4">
+                                <dl class="grid grid-cols-2 gap-x-6 gap-y-4 @lg:grid-cols-3 @4xl:grid-cols-6">
                                     <div><dt class="truncate text-base font-medium text-slate-600 sm:text-sm">Impressions</dt><dd class="mt-1 text-2xl font-semibold tabular-nums text-slate-950">{{ $campaignTotals === null ? '—' : number_format($campaignTotals['impressions']) }}</dd></div>
                                     <div><dt class="truncate text-base font-medium text-slate-600 sm:text-sm">Clicks</dt><dd class="mt-1 text-2xl font-semibold tabular-nums text-slate-950">{{ $campaignTotals === null ? '—' : number_format($campaignTotals['clicks']) }}</dd></div>
+                                    <div><dt class="truncate text-base font-medium text-slate-600 sm:text-sm" title="Click-through rate">CTR</dt><dd class="mt-1 text-2xl font-semibold tabular-nums text-slate-950">{{ $campaignTotals === null || $campaignTotals['impressions'] === 0 ? '—' : number_format($campaignTotals['clicks'] / $campaignTotals['impressions'] * 100, 2).'%' }}</dd></div>
                                     <div><dt class="truncate text-base font-medium text-slate-600 sm:text-sm">Spend</dt><dd class="mt-1 text-2xl font-semibold tabular-nums text-slate-950">{{ $campaignTotals === null ? '—' : $connection->currency_code.' '.number_format($campaignTotals['cost_micros'] / 1000000, 2) }}</dd></div>
+                                    <div><dt class="truncate text-base font-medium text-slate-600 sm:text-sm" title="Average cost per click">Avg. CPC</dt><dd class="mt-1 text-2xl font-semibold tabular-nums text-slate-950">{{ $campaignTotals === null || $campaignTotals['clicks'] === 0 ? '—' : $connection->currency_code.' '.number_format($campaignTotals['cost_micros'] / 1000000 / $campaignTotals['clicks'], 2) }}</dd></div>
                                     <div><dt class="truncate text-base font-medium text-slate-600 sm:text-sm">Conversions</dt><dd class="mt-1 text-2xl font-semibold tabular-nums text-slate-950">{{ $campaignTotals === null ? '—' : number_format($campaignTotals['conversions'], 1) }}</dd></div>
                                 </dl>
                             </div>

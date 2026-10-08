@@ -14,6 +14,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Http/{Controllers/Admin/FormController.php,Requests/UpdateWebsiteAutoresponderRequest.php},database/migrations/**/*autoresponder*.php | .ai/rules/admin-migrations.md |
 | app/{Jobs,Services/SeoIntelligence,Http/Controllers/Admin}/**/*Seo*.php,app/Models/Website.php | .ai/rules/admin-models.md |
 | app/{Http/Controllers/{CalWebhookController.php,Admin/OnboardingLeadController.php},Models/{User.php,WebsiteAudit.php}},resources/views/admin/onboarding-leads/**,routes/web.php,tests/Feature/{CalWebhookTest.php,OnboardingLeadTest.php} | .ai/rules/admin-onboarding-leads-feature.md |
+| {app/Http/Controllers/FreeSiteAuditController.php,resources/views/admin/onboarding-leads/index.blade.php} | .ai/rules/admin-onboarding-leads.md |
 | app/{Mail,Models,Services,Http/Controllers}/**/*ProspectOutreach*.php,resources/views/admin/prospects/** | .ai/rules/admin-prospects.md |
 | app/{Services/GoogleAds*,Http/Controllers/Admin/GoogleAdsController.php,Http/Requests/StoreGoogleAdsCampaignDraftRequest.php},resources/views/admin/websites/google-ads.blade.php | .ai/rules/admin-requests-views-admin-websites.md |
 | app/{Services/Content*,Jobs/StartContentGeneration.php,Console/Commands/*Content*,Http/Controllers/Admin/ContentPlanController.php,Http/Requests/UpdateContentPlanRequest.php} | .ai/rules/admin-requests.md |
