@@ -20,6 +20,7 @@ class MarketingAuditResearch
         private MarketingAuditPageCounter $pageCounter,
         private MarketingAuditCompetitors $competitors,
         private MarketingAuditAiVisibility $aiVisibility,
+        private MarketingAuditOpportunity $opportunity,
     ) {}
 
     /**
@@ -31,12 +32,20 @@ class MarketingAuditResearch
         $findings = collect($analysis['findings'] ?? []);
         $totalChecks = $findings->count();
         $passedChecks = $findings->where('severity', 'passed')->count();
+        $pages = Cache::remember('marketing-audit-pages:'.hash('sha256', $websiteUrl), now()->addDays(7), fn (): array => $this->pageCounter->count($websiteUrl));
         $seo = $this->seoForDomain($domain);
+        $opportunity = $this->opportunity->forSite($domain, (string) ($analysis['page_context'] ?? ''), $seo);
 
         return [
+            'pages_listed' => $pages['count'],
+            'pages_partial' => $pages['partial'],
+            'pages_matching_domain' => $pages['matching_domain'] ?? $pages['count'],
+            'pages_mismatched_domain' => $pages['mismatched_domain'] ?? 0,
+            'pages_mismatched_host' => $pages['mismatched_host'] ?? null,
             'health_score' => $totalChecks > 0 ? (int) round($passedChecks / $totalChecks * 100) : null,
             'seo' => $seo,
-            'projection' => $seo !== null ? $this->projection($seo) : null,
+            'projection' => $opportunity['projection'],
+            'opportunity' => $opportunity,
             'full_report' => ['status' => 'deferred'],
         ];
     }

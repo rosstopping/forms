@@ -168,7 +168,7 @@ it('acknowledges the review personally and invites a useful reply before selling
         ->assertSeeInHtml('Book a call with me')
         ->assertDontSeeInHtml('Want more customers to find you?')
         ->assertDontSeeInHtml('what it costs before deciding')
-        ->assertDontSeeInHtml('/full');
+        ->assertSeeInHtml('/full?expires=');
 });
 
 it('requires a signed link and explicit confirmation to withdraw consent even after report expiry', function (): void {
@@ -244,31 +244,20 @@ it('tracks replies calls and paying clients without counting a calendar click as
     $this->get(route('admin.onboarding.index'))->assertSuccessful()->assertSee('Paying clients')->assertSee('Reply received')->assertSee('Call booked');
 });
 
-it('shows an unselected marketing choice and the review offer immediately after the summary', function (): void {
+it('shows the inline email gate with separate unselected marketing consent', function (): void {
     $audit = WebsiteAudit::factory()->create(['status' => WebsiteAudit::STATUS_COMPLETED, 'created_at' => now()->subMinute()]);
     $response = $this->get(route('marketing.website-audits.show', $audit))->assertSuccessful()
-        ->assertSeeInOrder(['Health score today', 'Things to fix', 'Your six-month opportunity', 'First: fix the website.', 'Next: grow the visitors.', 'See how we’d get you there.', 'Get my free growth plan'])
-        ->assertSee('name="personal_review" value="1"', false)
-        ->assertSee(WebsiteAudit::MARKETING_CONSENT_TEXT)
-        ->assertSee('bg-black p-6 text-white', false)
-        ->assertSee('src="'.asset('ross-topping.jpg').'"', false)
-        ->assertSee('Where should I send your video?')
-        ->assertSee('Send me my free growth plan')
-        ->assertDontSee('name="customer_goal"', false);
+        ->assertSeeInOrder(['Website health', 'Website fixes', 'Where should we send it?', 'Email address', 'View my report'])
+        ->assertSee(WebsiteAudit::MARKETING_CONSENT_TEXT)->assertDontSee('name="personal_review"', false)
+        ->assertDontSee('data-audit-review-prompt', false)->assertDontSee('name="customer_goal"', false);
     $dom = new DOMDocument;
     @$dom->loadHTML($response->getContent());
     $xpath = new DOMXPath($dom);
-    expect($xpath->query('//*[@data-audit-review-copy]//h2')->length)->toBe(1)
-        ->and($xpath->query('//*[@data-audit-review-copy]//p')->length)->toBe(1)
-        ->and($xpath->query('//*[@data-audit-review-copy]//button[@data-audit-email-open]')->length)->toBe(1);
-    expect(substr_count($response->getContent(), 'data-audit-review-portrait'))->toBe(2);
-    expect(substr_count($response->getContent(), 'width="56" height="56"'))->toBe(1);
-    expect($xpath->query('//dialog//img[@width="72" and @height="72" and contains(@class, "size-18")]')->length)->toBe(1);
-    expect($xpath->query('//dialog//*[@data-audit-review-portrait and contains(@class, "-translate-y-1/2")]')->length)->toBe(1);
-    expect($xpath->query('//dialog[contains(@class, "pt-10")]')->length)->toBe(1);
-    $response->assertSeeInOrder(['id="audit-email-dialog"', 'data-audit-review-portrait', 'id="audit-email-title"', 'id="audit-email-description"'], false);
     expect($xpath->query('//input[@name="marketing_consent" and @checked]')->length)->toBe(0)
-        ->and($xpath->query('//label[@for="audit-marketing-consent"]')->length)->toBe(1);
+        ->and($xpath->query('//label[@for="audit-marketing-consent"]')->length)->toBe(1)
+        ->and($xpath->query('//input[@name="email"]')->length)->toBe(1)
+        ->and($xpath->query('//dialog')->length)->toBe(0)
+        ->and($xpath->query('//*[@inert and @aria-hidden="true"]')->length)->toBe(1);
 });
 
 it('clearly confirms a pending personal review after the email request', function (): void {
@@ -280,7 +269,7 @@ it('clearly confirms a pending personal review after the email request', functio
         'personal_review_requested_at' => now(),
     ]);
 
-    $this->get(route('marketing.website-audits.show', $audit))
+    $this->withSession(['marketing.website_audit_review_ids.'.$audit->public_id => true])->get(route('marketing.website-audits.show', $audit))
         ->assertSuccessful()
         ->assertSee('Your video is next.')
         ->assertSee('Ross will review '.$audit->domain.' and email your video within one working day.')

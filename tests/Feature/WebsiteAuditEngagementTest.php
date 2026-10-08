@@ -58,10 +58,10 @@ it('captures the chosen business goal and marks email submission only after acce
     expect($audit->fresh()->customer_goal)->toBe('enquiries')
         ->and($audit->fresh()->marketing_consent_at)->toBeNull()
         ->and($visit->fresh()->email_submitted_at)->not->toBeNull();
-    $this->get(route('marketing.website-audits.show', $audit))->assertDontSee('audit-search-title', false);
+    $this->get(route('marketing.website-audits.show', $audit))->assertViewHas('showDetails', true);
 });
 
-it('keeps detailed rankings behind an admin view or an expiring share link even after email capture', function (): void {
+it('requires a capturing session or signed link rather than a stored email to reveal rankings', function (): void {
     $audit = WebsiteAudit::factory()->create([
         'status' => WebsiteAudit::STATUS_COMPLETED, 'created_at' => now()->subMinute(), 'report_requested_at' => now(),
         'insights' => ['seo' => ['location_code' => 2826, 'organic_keywords' => 1, 'top_3_keywords' => 1, 'top_10_keywords' => 1, 'referring_domains' => 0, 'estimated_monthly_visits' => 10, 'sample_size' => 1, 'keywords' => [['term' => 'private ranking term', 'position' => 2, 'monthly_searches' => 100]]]],
@@ -70,13 +70,13 @@ it('keeps detailed rankings behind an admin view or an expiring share link even 
     $this->get(route('marketing.website-audits.full', $audit))->assertForbidden();
     $url = URL::temporarySignedRoute('marketing.website-audits.full', now()->addHour(), $audit);
     $this->get($url)->assertSuccessful()->assertSee('private ranking term')->assertSee('name="robots" content="noindex"', false)
-        ->assertSee('marketing-events-')->assertDontSee('data-audit-engagement-url', false);
+        ->assertSee('marketing-events')->assertSee('data-audit-engagement-url', false);
     $this->get($url.'&extra=1')->assertForbidden();
     $this->travel(61)->minutes();
     $this->get($url)->assertForbidden();
     $this->actingAs(User::factory()->create())->get(route('admin.onboarding.audits.show', $audit))->assertForbidden();
     $this->actingAs(User::factory()->create(['role' => User::ROLE_ADMIN]))->get(route('admin.onboarding.audits.show', $audit))->assertSuccessful()
-        ->assertSee('private ranking term')->assertSee('marketing-events-')->assertDontSee('data-audit-engagement-url', false);
+        ->assertSee('private ranking term')->assertSee('marketing-events')->assertDontSee('data-audit-engagement-url', false);
 });
 
 it('shows interest signals and share controls in Admin Onboarding without counting clicks as bookings', function (): void {

@@ -3,6 +3,8 @@ paths:
   - resources/views/marketing/free-site-audit.blade.php
   - resources/views/marketing/website-audit.blade.php
   - 'resources/views/marketing/**'
+  - resources/views/marketing/audit-email-gate.blade.php
+  - 'resources/views/marketing/{website-audit,audit-email-gate}.blade.php'
 ---
 
 # Resources Views Marketing
@@ -60,3 +62,42 @@ In the personal-review email dialog, place Ross's small circular portrait at the
 
 ## Lead the public audit with health, fixes and the six-month visitor opportunity
 Supersedes the qualitative-only snapshot and hiding health scores in Onboarding Leads. Public visitors see measured technical health, warning/failed fix count and the existing data-derived six-month Google-visitor range, before and after email capture. Hide current visit counts, ranking-term counts, positions, competitor/AI detail and itemised fixes; full detail stays admin-only or an expiring signed share link. Keep a compact fix-then-grow plan and free personal video review within one working day, with one prominent growth-plan CTA, secondary Cal popup and once-per-session scroll prompt. A 100% health score is an aim for the checks run, not a promise about every page; work starts after access/scope agreement. Only show a visitor range when the sample supports the existing conditional scenario, label it illustrative/not guaranteed and never invent a fallback number. Zero findings with no checks is unavailable, not a healthy 0-fix result. Preserve engagement telemetry and optional marketing consent.
+
+## Give audit preview stats clear hierarchy
+Keep the gated audit preview compact: a shared divided white panel, large left-aligned health/fix values, concise text status and a health meter using the measured score. Use restrained status colours and coral for flagged fixes; unavailable results remain em dashes without a meter or implied success. Labels stay on one line; use container queries and verify the email CTA remains easy to reach on mobile. Do not expose additional report details to strengthen these stats.
+
+## Keep the gated audit focused on the unlock offer
+Supersedes the expanded preview stats guidance: keep health and fix counts in a compact secondary strip, with accessible status text and a measured health meter. Lead the gate with specific benefits (rankings, missed searches, prioritised work), place the form beside the offer on desktop, and abbreviate supporting content on mobile so the email field and unlock button appear sooner. Preserve server-side privacy, separate optional marketing consent, and honest data availability; do not invent results, scarcity, or guarantees. Check desktop/mobile CTA placement and overflow.
+
+## Lead the gated audit with Google and AI growth
+Supersedes health/fixes-only preview guidance: lead with customer discovery through Google and AI, keep technical health/fixes in a compact supporting row, and describe rankings, competitors and sampled AI checks as the unlock offer. Before capture allow at most one recent (within 30 days) Google ranking in positions 11–30 with measured demand, restricted to terms supported by the stored comparable-page opportunity research; never choose unrelated raw keywords just because they have high volume. Rendering reuses saved initial research without provider calls; other rankings, competitor domains, findings and AI answers stay server-gated. Omit unsupported/undated/stale teasers and label measurement date/desktop estimate. AI checks remain deferred until unlock, with availability stated honestly. Preserve one-field capture and separate optional consent.
+
+## Use a confident search-report unlock with a compact identity preview
+Latest user preference supersedes the could-grow headline and broad preview-health panel. Locked ready audits lead with See where you show up, a small domain/screenshot identity thumbnail, and a high-contrast report-offer panel beside the email form. Keep health/fix numbers as small supporting evidence, no prominent bar; shorten supporting copy on mobile so capture remains easy. Keep competitor/AI research after email capture per explicit user correction. Use We’ve got your Google rankings only when saved rankings exist, and a positive sampled-AI appearance teaser only when a successful saved result confirms mention/citation; never imply a check ran or found a positive result without evidence. Preserve gated detailed data, one-field email unlock, separate optional consent, current tracking and signed report links.
+
+## Return the email gate to a simple light report reveal
+October 8 pasted redesign brief supersedes the dark split offer, punchy three-part headlines and repeated benefit list. Use Your website audit is ready, one short factual sentence, small health/fix stats and a centred Where should we send it email card over a clearly visible light blurred report layout. Use View my report as the single primary CTA and a short Ross note; keep existing optional consent wording, privacy link and subtle functional expiry. Reuse the existing report-preview structure, keep private result text server-redacted (CSS blur alone must not bypass capture), and avoid fabricated data. Preserve report generation, signed/session unlocks, analytics and after-email competitor/AI research; unfinished checks must not be described as completed.
+
+## Show a larger right-hand audit screenshot and measured ranking count
+Latest tweak moves the locked audit screenshot to the right of the introduction at desktop (20rem wide); on mobile keep a larger 7rem thumbnail to the right of the domain. Alongside small health and fix stats, show the saved SEO organic_keywords count as Google rankings with Estimated attribution when numeric, including a genuine zero. Missing ranking data omits the stat rather than inventing zero. Do not add pre-capture competitor/AI stats or provider calls; preserve the light blurred report gate and current copy.
+
+## Caption the right-hand website screenshot with the domain
+On locked audit results, place the small coral domain below the right-hand screenshot as a figcaption, for both desktop and mobile. Keep the screenshot frame separate from the caption; when no screenshot is available retain the domain in the introduction.
+
+## Keep the gated audit introduction compact and top aligned
+Place the ready heading and introduction at the top of the left column, with supporting stats beneath and their bottom aligned with the right screenshot frame on desktop. Keep the coral domain caption under the screenshot. Category grade rings should be small and grouped at the left, wrapping compactly on mobile. Do not display the sentence 'Grades reflect the homepage checks run, not a full-site assessment.'; retain accessible check counts and genuine saved score calculations.
+
+## Constrain audit grade labels to their circles
+Audit category grade items use the circle width (56px mobile, 64px desktop) for their labels too. Labels use 12px text and wrap full names within that width; grades inside rings use 16px. Keep the group left aligned and compact.
+
+## Center the compact audit grade labels
+Keep audit category grade labels centered beneath their circles, constrained to the circle width. Preserve the smaller 12px labels and 16px grades; the overall group remains left aligned.
+
+## Start the white audit report with visible grades
+Place the compact category grade circles in the unblurred top of the same white rounded report surface as the email gate. The blurred redacted report preview begins beneath this grade row, contained in its own positioned section so blur and overlay do not affect the grades. Preserve the smaller centered labels and genuine score calculations.
+
+## Keep grade labels on one line and the unlock card close
+Supersedes circle-width wrapping: keep each grade label centered and on one line at 12px, allowing its item to expand slightly beyond the 56/64px circle. Rings remain centered over their labels and the whole group left aligned. Use a compact 24px mobile/32px desktop gap before the email card beneath the grade header.
+
+## Use a full-width mobile audit screenshot and one stats row
+On locked ready mobile audits, show the screenshot at the available content width with the coral domain beneath. Keep health, fixes, pages and rankings in a single four-column row with compact labels and values; mobile label Pages expands to Pages found on larger screens. Preserve desktop screenshot placement and supporting stats alignment.

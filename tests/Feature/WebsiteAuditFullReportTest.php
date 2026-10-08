@@ -60,7 +60,7 @@ it('queues the full research once when an admin chooses to view the full report'
     Queue::assertPushed(GenerateWebsiteAuditFullReport::class, 1);
 });
 
-it('keeps public email and shared full-report reads from starting private research', function (): void {
+it('queues enrichment once after email capture while keeping every report read free of research', function (): void {
     Queue::fake();
     Mail::fake();
     Http::preventStrayRequests();
@@ -70,15 +70,19 @@ it('keeps public email and shared full-report reads from starting private resear
         'insights' => ['health_score' => 75, 'full_report' => ['status' => 'deferred']],
     ]);
     $publicUrl = route('marketing.website-audits.show', $audit);
-    $this->get($publicUrl)->assertSuccessful()->assertDontSee('The extra research hasn’t been run yet.');
-    $this->post(route('marketing.website-audits.email-report', $audit), ['email' => 'owner@example.com', 'personal_review' => 1])->assertRedirect();
-    $this->get($publicUrl)->assertSuccessful();
+    $this->get($publicUrl)->assertSuccessful()->assertSee('View my report');
     $shareUrl = URL::temporarySignedRoute('marketing.website-audits.full', now()->addDay(), $audit);
     $this->get($shareUrl)->assertSuccessful()->assertSee('The extra research hasn’t been run yet.')->assertDontSee('Load full research');
-    $this->actingAs(User::factory()->create(['role' => User::ROLE_ADMIN]));
-    $this->get(route('admin.onboarding.audits.show', $audit))->assertSuccessful()->assertSee('Load full research');
     Queue::assertNothingPushed();
+    $this->post(route('marketing.website-audits.email-report', $audit), ['email' => 'owner@example.com'])->assertRedirect();
+    $this->post(route('marketing.website-audits.email-report', $audit), ['email' => 'owner@example.com'])->assertRedirect();
+    $this->get($publicUrl)->assertSuccessful()->assertSee('Preparing the rest of this report.')->assertDontSee('data-audit-email-gate', false);
+    $this->get($shareUrl)->assertSuccessful()->assertSee('Preparing the rest of this report.');
+    $this->actingAs(User::factory()->create(['role' => User::ROLE_ADMIN]));
+    $this->post(route('admin.onboarding.audits.generate', $audit))->assertRedirect();
+    Queue::assertPushed(GenerateWebsiteAuditFullReport::class, 1);
     Http::assertNothingSent();
+
 });
 
 it('does not let visitors or ordinary users trigger private research or read its status', function (bool $signedIn): void {

@@ -67,11 +67,14 @@ class FreeSiteAuditController extends Controller
 
     public function show(Request $request, WebsiteAudit $websiteAudit, MarketingAuditResearch $research, MarketingAuditScreenshot $screenshot): View
     {
-        $showDetails = $request->routeIs('marketing.website-audits.full', 'admin.onboarding.audits.show');
+        $publicReport = $request->routeIs('marketing.website-audits.show');
+        $unlocked = $request->session()->get('marketing.website_audit_review_ids.'.$websiteAudit->public_id) === true;
+        $showDetails = $request->routeIs('marketing.website-audits.full', 'admin.onboarding.audits.show') || $unlocked;
+        $customerReport = $publicReport || ($request->routeIs('marketing.website-audits.full') && $websiteAudit->report_requested_at !== null);
         if ($request->routeIs('admin.onboarding.audits.show')) {
             abort_unless($request->user()?->isAdmin(), 403);
         }
-        abort_if(! $showDetails && $websiteAudit->hasExpired() && ! $request->user()?->isAdmin(), 404);
+        abort_if($publicReport && $websiteAudit->hasExpired() && ! $request->user()?->isAdmin(), 404);
 
         $request->session()->put('marketing.website_audit_id', $websiteAudit->public_id);
 
@@ -82,7 +85,7 @@ class FreeSiteAuditController extends Controller
             ))
             ->get()->map(fn (MarketingConversion $conversion): array => $conversion->payload())->all();
 
-        if (! $showDetails && ! $request->user()?->isAdmin()
+        if ($publicReport && ! $request->user()?->isAdmin()
             && $request->session()->get('marketing_lead_event.audit_id') === $websiteAudit->public_id) {
             $events[] = $request->session()->pull('marketing_lead_event')['payload'];
         }
@@ -92,12 +95,15 @@ class FreeSiteAuditController extends Controller
         return view('marketing.website-audit', [
             'audit' => $websiteAudit,
             'showDetails' => $showDetails,
-            'goalUrl' => ! $showDetails && $websiteAudit->report_requested_at !== null && $request->session()->get('marketing.website_audit_review_ids.'.$websiteAudit->public_id) === true
+            'goalUrl' => $publicReport && $websiteAudit->report_requested_at !== null && $request->session()->get('marketing.website_audit_review_ids.'.$websiteAudit->public_id) === true
                 ? URL::temporarySignedRoute('marketing.website-audits.goal', $websiteAudit->expires_at, $websiteAudit)
                 : null,
-            'engagementUrl' => ! $showDetails && ! $request->user()?->isAdmin() && $websiteAudit->isReadyToDisplay() ? URL::temporarySignedRoute('marketing.website-audits.engagement', $websiteAudit->expires_at, $websiteAudit) : null,
-            'marketingEvents' => $showDetails ? [] : $events,
-            'projection' => is_array($seo) ? $research->projection($seo) : null,
+            'engagementUrl' => $customerReport && ! $websiteAudit->hasExpired() && ! $request->user()?->isAdmin() && $websiteAudit->isReadyToDisplay() ? URL::temporarySignedRoute('marketing.website-audits.engagement', $websiteAudit->expires_at, $websiteAudit) : null,
+            'marketingEvents' => $publicReport ? $events : [],
+            'researchStatusUrl' => $showDetails ? URL::temporarySignedRoute('marketing.website-audits.status', now()->addMinutes(30), $websiteAudit) : null,
+            'projection' => array_key_exists('opportunity', $websiteAudit->insights ?? [])
+                ? data_get($websiteAudit->insights, 'opportunity.projection')
+                : (is_array($seo) ? $research->projection($seo) : null),
             'rankings' => is_array($seo) ? $research->rankingHighlights($seo) : ['page_one' => [], 'striking_distance' => [], 'other' => []],
             'screenshotUrl' => (! $websiteAudit->hasExpired() || $request->user()?->isAdmin()) && $websiteAudit->isReadyToDisplay() && Storage::disk('local')->exists($screenshot->pathFor($websiteAudit))
                 ? route('marketing.website-audits.preview', $websiteAudit)
@@ -123,22 +129,27 @@ class FreeSiteAuditController extends Controller
 
         DB::transaction(function () use ($websiteAudit): void {
             $audit = WebsiteAudit::query()->lockForUpdate()->findOrFail($websiteAudit->id);
-            $status = data_get($audit->insights, 'full_report.status');
-            $hasLegacyResearch = $status === null && array_key_exists('pages_listed', $audit->insights ?? [])
-                && array_key_exists('competitors', $audit->insights ?? [])
-                && array_key_exists('ai_visibility', $audit->insights ?? [])
-                && data_get($audit->insights, 'ai_visibility.status') !== 'pending';
-            if ($hasLegacyResearch || in_array($status, ['queued', 'running', 'completed'], true)) {
-                return;
-            }
-            $audit->update(['insights' => [...($audit->insights ?? []), 'full_report' => [
-                'status' => 'queued',
-                'requested_at' => now()->toIso8601String(),
-            ]]]);
-            GenerateWebsiteAuditFullReport::dispatch($audit)->afterCommit();
+            $this->queueFullResearch($audit);
         });
 
         return redirect()->route('admin.onboarding.audits.show', $websiteAudit);
+    }
+
+    private function queueFullResearch(WebsiteAudit $audit): void
+    {
+        $status = data_get($audit->insights, 'full_report.status');
+        $hasLegacyResearch = $status === null && array_key_exists('pages_listed', $audit->insights ?? [])
+            && array_key_exists('competitors', $audit->insights ?? [])
+            && array_key_exists('ai_visibility', $audit->insights ?? [])
+            && data_get($audit->insights, 'ai_visibility.status') !== 'pending';
+        if ($hasLegacyResearch || in_array($status, ['queued', 'running', 'completed'], true)) {
+            return;
+        }
+        $audit->update(['insights' => [...($audit->insights ?? []), 'full_report' => [
+            'status' => 'queued',
+            'requested_at' => now()->toIso8601String(),
+        ]]]);
+        GenerateWebsiteAuditFullReport::dispatch($audit)->afterCommit();
     }
 
     public function fullReportStatus(Request $request, WebsiteAudit $websiteAudit): JsonResponse
@@ -155,8 +166,9 @@ class FreeSiteAuditController extends Controller
     {
         $email = $request->validated('email');
         $leadConversion = null;
+        $firstCapture = false;
 
-        $savedAudit = DB::transaction(function () use ($websiteAudit, $email, $request, $journey, &$leadConversion): WebsiteAudit {
+        $savedAudit = DB::transaction(function () use ($websiteAudit, $email, $request, $journey, &$leadConversion, &$firstCapture): WebsiteAudit {
             $audit = WebsiteAudit::query()->lockForUpdate()->findOrFail($websiteAudit->id);
 
             if ($audit->report_requested_at !== null) {
@@ -178,6 +190,9 @@ class FreeSiteAuditController extends Controller
                 'expires_at' => now()->addDays(14),
             ]);
 
+            $firstCapture = true;
+            $this->queueFullResearch($audit);
+
             if (! $request->user()?->isAdmin()) {
                 $leadConversion = $journey->record('lead_captured', $audit->public_id, $audit->marketing_attribution ?? []);
             }
@@ -193,12 +208,14 @@ class FreeSiteAuditController extends Controller
             return $audit;
         });
 
-        if ($savedAudit->wasChanged('report_requested_at')) {
+        if ($firstCapture) {
             $request->session()->put('marketing.website_audit_review_ids.'.$savedAudit->public_id, true);
         }
 
-        $response = redirect()->to(route('marketing.website-audits.show', $savedAudit).'#audit-follow-up')
-            ->with('report_email_status', $savedAudit->personal_review_requested_at ? 'Thanks. Ross will email your video within one working day.' : 'Your report is on its way.');
+        $response = redirect()->to(route('marketing.website-audits.show', $savedAudit).($savedAudit->personal_review_requested_at ? '#audit-follow-up' : '#audit-numbers-title'))
+            ->with('report_email_status', ! $firstCapture && ! $request->session()->get('marketing.website_audit_review_ids.'.$savedAudit->public_id)
+                ? 'This report was already requested. Open the full-report link in your email to view it.'
+                : ($savedAudit->personal_review_requested_at ? 'Thanks. Ross will email your video within one working day.' : 'Your full report is unlocked. We’ve emailed you a link to return to it.'));
 
         if ($leadConversion !== null) {
             $response->with('marketing_lead_event', ['audit_id' => $savedAudit->public_id, 'payload' => $leadConversion->payload()]);
@@ -231,15 +248,18 @@ class FreeSiteAuditController extends Controller
         return back()->with('status', 'You have unsubscribed from ongoing website advice.');
     }
 
-    public function status(WebsiteAudit $websiteAudit): JsonResponse
+    public function status(Request $request, WebsiteAudit $websiteAudit): JsonResponse
     {
-        abort_if($websiteAudit->hasExpired(), 404);
+        $unlocked = $request->hasValidSignature() || $request->user()?->isAdmin()
+            || $request->session()->get('marketing.website_audit_review_ids.'.$websiteAudit->public_id) === true;
+        abort_if($websiteAudit->hasExpired() && ! $request->hasValidSignature() && ! $request->user()?->isAdmin(), 404);
 
         return response()->json([
             'status' => $websiteAudit->status,
             'completed' => $websiteAudit->isReadyToDisplay(),
             'failed' => $websiteAudit->status === WebsiteAudit::STATUS_FAILED,
-            'ai_visibility_status' => data_get($websiteAudit->insights, 'ai_visibility.status'),
+            'ai_visibility_status' => $unlocked ? data_get($websiteAudit->insights, 'ai_visibility.status') : null,
+            'full_report_status' => $unlocked ? data_get($websiteAudit->insights, 'full_report.status', 'completed') : null,
         ]);
     }
 }

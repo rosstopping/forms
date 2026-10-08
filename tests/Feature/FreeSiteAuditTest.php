@@ -75,7 +75,7 @@ it('shows audit progress and exposes only its processing state', function (): vo
 
     $this->getJson(route('marketing.website-audits.status', $audit))
         ->assertSuccessful()
-        ->assertExactJson(['status' => 'pending', 'completed' => false, 'failed' => false, 'ai_visibility_status' => null]);
+        ->assertExactJson(['status' => 'pending', 'completed' => false, 'failed' => false, 'ai_visibility_status' => null, 'full_report_status' => null]);
 });
 
 it('contains long website addresses in the audit heading while retaining the full address', function (): void {
@@ -125,19 +125,16 @@ it('stores an anonymous audit result for the live report', function (): void {
 
     $response = $this->get(route('marketing.website-audits.show', $audit))
         ->assertSuccessful()
-        ->assertSee('Fix your website.')
-        ->assertSee('Bring in more visitors.')
+        ->assertSee('Your website audit is ready.')
         ->assertDontSee('data-audit-next-step', false)
-        ->assertSee('Health score today')
-        ->assertSee('Things to fix')
+        ->assertSee('Website health')
+        ->assertSee('Website fixes')
         ->assertSee('0%')
         ->assertDontSee('URLs in sitemap')
-        ->assertSee('We need a closer look before putting a visitor number on it.')
+        ->assertSee('View my report')
         ->assertDontSee('The improvements we could take care of.')
-        ->assertSee('href="'.route('marketing.ppc.book').'"', false)
-        ->assertSee('Book a call with Ross')
-        ->assertSee('Get my free growth plan')
-        ->assertSee('data-audit-actions', false)
+        ->assertDontSee('data-audit-book-call', false)
+        ->assertSee('data-audit-email-gate', false)
         ->assertDontSee('HTTPS should be reviewed.')
         ->assertDontSee('Start preparing my fixes')
         ->assertSee('name="email"', false)
@@ -145,7 +142,7 @@ it('stores an anonymous audit result for the live report', function (): void {
 
     $document = new DOMDocument;
     @$document->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
-    expect((new DOMXPath($document))->query('//*[@data-audit-fix-count]/dd')->item(0)->textContent)->toBe('1');
+    expect((new DOMXPath($document))->query('//*[@data-audit-fix-count]')->item(0)->textContent)->toBe('1');
 });
 
 it('shows a private website preview beside the report title and expires it with the audit', function (): void {
@@ -191,16 +188,10 @@ it('offers an email copy after the results and extends the requested report to f
 
     $this->get(route('marketing.website-audits.show', $audit))
         ->assertSuccessful()
-        ->assertSee('See how we’d get you there.')
-        ->assertSee('data-audit-actions', false)
-        ->assertSee('data-audit-book-call', false)
-        ->assertSee('data-audit-email-open', false)
-        ->assertSee('aria-label="Get my free growth plan"', false)
-        ->assertSee('My free plan')
-        ->assertSee('aria-controls="audit-email-dialog"', false)
-        ->assertSee('fixed inset-0 m-auto max-h-[calc(100dvh-2rem)]', false)
-        ->assertSee('data-audit-review-prompt', false)
-        ->assertDontSee('30000')
+        ->assertSee('View my report')
+        ->assertSee('data-audit-email-gate', false)
+        ->assertDontSee('data-audit-review-prompt', false)
+        ->assertDontSee('data-audit-book-call', false)
         ->assertSee('name="email"', false);
 
     $this->post(route('marketing.website-audits.email-report', $audit), [
@@ -218,10 +209,11 @@ it('offers an email copy after the results and extends the requested report to f
     Mail::assertQueued(WebsiteAuditLeadReceived::class, fn (WebsiteAuditLeadReceived $mail): bool => $mail->hasTo(config('marketing.audit_notification_email')));
 
     (new WebsiteAuditReport($audit))
-        ->assertSeeInHtml('View your search snapshot')
+        ->assertSeeInHtml('View your full report')
         ->assertSeeInHtml('Prefer to talk it through?')
         ->assertSeeInHtml('Book a call with me')
-        ->assertSeeInHtml(route('marketing.website-audits.show', $audit))
+        ->assertSeeInHtml(route('marketing.website-audits.full', $audit))
+        ->assertSeeInHtml('signature=')
         ->assertSeeInHtml(route('marketing.ppc.book'));
     (new WebsiteAuditLeadReceived($audit))
         ->assertSeeInHtml('alex@example.com')
@@ -229,7 +221,7 @@ it('offers an email copy after the results and extends the requested report to f
 
     $this->get(route('marketing.website-audits.show', $audit))
         ->assertSuccessful()
-        ->assertSee('Your report is on its way.')
+        ->assertSee('Your full report is unlocked. We’ve emailed you a link to return to it.')
         ->assertSee('data-audit-book-call', false)
         ->assertDontSee('data-audit-email-open', false)
         ->assertDontSee('See how we’d get you there.');
@@ -315,16 +307,11 @@ it('shows measured search estimates and a conditional six-month scenario', funct
 
     $snapshot = $this->get(route('marketing.website-audits.show', $audit))
         ->assertSuccessful()
-        ->assertSee('Health score today')
+        ->assertSee('Website health')
         ->assertSee('50%')
-        ->assertSee('Things to fix')
-        ->assertSee('Your six-month opportunity')
-        ->assertSee('Monthly visitors from Google')
-        ->assertSee('128–160')
-        ->assertSee('An illustrative range, not a guarantee.')
-        ->assertSee('Target: 100%.')
-        ->assertSee('Health score is based on the checks we ran.')
-        ->assertSee('We start with the fixes, once access and scope are agreed.')
+        ->assertSee('Website fixes')
+        ->assertSee('View my report')
+        ->assertDontSee('128–160')
         ->assertDontSee('garden office fitters')
         ->assertDontSee('Google ranking terms')
         ->assertDontSee('Google terms in the top 10')
@@ -336,9 +323,8 @@ it('shows measured search estimates and a conditional six-month scenario', funct
     $document = new DOMDocument;
     @$document->loadHTML('<?xml encoding="UTF-8">'.$snapshot->getContent());
     $xpath = new DOMXPath($document);
-    expect($xpath->query('//*[@data-audit-health-score]/dd')->item(0)->textContent)->toBe('50%')
-        ->and($xpath->query('//*[@data-audit-fix-count]/dd')->item(0)->textContent)->toBe('1')
-        ->and($xpath->query('//*[@data-audit-growth-opportunity]/dd')->item(0)->textContent)->toBe('128–160');
+    expect($xpath->query('//*[@data-audit-health-score]')->item(0)->textContent)->toBe('50%')
+        ->and($xpath->query('//*[@data-audit-fix-count]')->item(0)->textContent)->toBe('1');
 
     $this->post(route('marketing.website-audits.email-report', $audit), [
         'email' => 'review@example.com',
@@ -347,8 +333,8 @@ it('shows measured search estimates and a conditional six-month scenario', funct
     expect($audit->refresh()->personal_review_requested_at)->not->toBeNull();
 
     $this->get(route('marketing.website-audits.show', $audit))->assertSuccessful()
-        ->assertSee('128–160')->assertSee('50%')->assertDontSee('garden office fitters')
-        ->assertDontSee('Google ranking terms')->assertDontSee('Est. monthly organic visits')
+        ->assertSee('128–160')->assertSee('50%')->assertSee('garden office fitters')
+        ->assertSee('Google ranking terms')->assertSee('Est. monthly organic visits')
         ->assertDontSee('data-audit-email-open', false)->assertSee('Prefer to talk it through with Ross?');
 
     $response = $this->get(URL::temporarySignedRoute('marketing.website-audits.full', now()->addHour(), $audit))
@@ -381,33 +367,16 @@ it('shows measured search estimates and a conditional six-month scenario', funct
 
 it('keeps missing audit data distinct from healthy checks without inventing traffic', function (bool $healthy): void {
     $audit = WebsiteAudit::factory()->create([
-        'status' => WebsiteAudit::STATUS_COMPLETED,
-        'created_at' => now()->subMinute(),
-        'findings' => $healthy ? [['severity' => 'passed']] : [],
-        'insights' => ['seo' => null],
+        'status' => WebsiteAudit::STATUS_COMPLETED, 'created_at' => now()->subMinute(),
+        'findings' => $healthy ? [['severity' => 'passed']] : [], 'insights' => ['seo' => null],
     ]);
-
     $response = $this->get(route('marketing.website-audits.show', $audit))->assertSuccessful()
-        ->assertSee('Let’s find your growth opportunity.')
-        ->assertSee('We need a closer look before putting a visitor number on it.')
-        ->assertSee('Get my free growth plan')
-        ->assertSee('within one working day')
-        ->assertDontSee('Monthly visitors from Google');
-
+        ->assertSee('View my report')->assertDontSee('Monthly visitors from Google');
     $document = new DOMDocument;
     @$document->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
     $xpath = new DOMXPath($document);
-    expect($xpath->query('//*[@data-audit-health-score]/dd')->item(0)->textContent)->toBe($healthy ? '100%' : '—')
-        ->and($xpath->query('//*[@data-audit-fix-count]/dd')->item(0)->textContent)->toBe($healthy ? '0' : '—');
-
-    if ($healthy) {
-        $response->assertSee('Your initial website checks passed.')
-            ->assertSee('Your checks already pass. We’ll review the wider site before making changes.')
-            ->assertDontSee('We handle the fixes, aiming');
-    } else {
-        $response->assertSee('Checks unavailable.')->assertDontSee('All these checks passed.')
-            ->assertDontSee('data-audit-finding-preview', false);
-    }
+    expect($xpath->query('//*[@data-audit-health-score]')->item(0)->textContent)->toBe($healthy ? '100%' : '—')
+        ->and($xpath->query('//*[@data-audit-fix-count]')->item(0)->textContent)->toBe($healthy ? '0' : '—');
 })->with(['healthy checks' => true, 'no checks available' => false]);
 
 it('does not substitute a traffic promise when the ranking sample cannot support an opportunity range', function (): void {
@@ -422,8 +391,8 @@ it('does not substitute a traffic promise when the ranking sample cannot support
     ]);
 
     $this->get(route('marketing.website-audits.show', $audit))->assertSuccessful()
-        ->assertSee('Let’s find your growth opportunity.')
-        ->assertSee('50%')->assertSee('Things to fix')
+        ->assertSee('View my report')
+        ->assertSee('50%')->assertSee('Website fixes')
         ->assertDontSee('7,654')->assertDontSee('private page one term')
         ->assertDontSee('Monthly visitors from Google');
 });
@@ -548,12 +517,12 @@ it('keeps the progress experience visible for at least ten seconds', function ()
         ->assertSee('Checking your website and preparing your report.');
 
     $this->getJson(route('marketing.website-audits.status', $audit))
-        ->assertExactJson(['status' => 'completed', 'completed' => false, 'failed' => false, 'ai_visibility_status' => null]);
+        ->assertExactJson(['status' => 'completed', 'completed' => false, 'failed' => false, 'ai_visibility_status' => null, 'full_report_status' => null]);
 
     $this->travel(11)->seconds();
 
     $this->getJson(route('marketing.website-audits.status', $audit))
-        ->assertExactJson(['status' => 'completed', 'completed' => true, 'failed' => false, 'ai_visibility_status' => null]);
+        ->assertExactJson(['status' => 'completed', 'completed' => true, 'failed' => false, 'ai_visibility_status' => null, 'full_report_status' => null]);
 });
 
 it('emails a secure continuation link after the website review', function (): void {
@@ -973,43 +942,16 @@ it('keeps the personal video review email connected to work done for the custome
         ->assertSeeInHtml(route('marketing.website-audits.show', $audit));
 });
 
-it('prioritises email capture and keeps booking secondary afterwards', function (bool $requested, bool $hasFixes): void {
+it('requires email access even when this report was requested in another browser', function (bool $requested, bool $hasFixes): void {
     $audit = WebsiteAudit::factory()->create([
-        'status' => WebsiteAudit::STATUS_COMPLETED,
-        'created_at' => now()->subSeconds(11),
+        'status' => WebsiteAudit::STATUS_COMPLETED, 'created_at' => now()->subMinute(),
         'report_requested_at' => $requested ? now() : null,
         'findings' => $hasFixes ? [['severity' => 'warning', 'title' => 'Check required']] : [],
     ]);
-
-    $response = $this->get(route('marketing.website-audits.show', $audit))
-        ->assertSuccessful()
-        ->assertSee('Your website’s opportunity')
-        ->assertDontSee('48 hours');
-
-    $response->assertDontSee('data-audit-service-offer', false)
-        ->assertDontSee('The improvements we could take care of.');
-    if ($requested) {
-        $response->assertSee('Prefer to talk it through with Ross?')
-            ->assertDontSee('Ready to put the plan into action?');
-    } else {
-        $response->assertSee('Get my free growth plan');
-    }
-
-    $document = new DOMDocument;
-    @$document->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
-    $xpath = new DOMXPath($document);
-    foreach ($xpath->query('//main//a[@href="'.route('marketing.ppc.book').'"]') as $link) {
-        expect($link->hasAttribute('data-audit-book-call'))->toBeTrue();
-    }
-    $action = $xpath->query('//*[@data-audit-actions]/*')->item(0);
-    expect($action->hasAttribute($requested ? 'data-audit-book-call' : 'data-audit-email-open'))->toBeTrue()
-        ->and($action->getAttribute('class'))->toContain('bg-white')
-        ->and($xpath->query('//*[@data-audit-actions]//*[@data-audit-email-open]')->length)->toBe($requested ? 0 : 1);
-    $primaryAction = $xpath->query('//main//*[not(ancestor::dialog) and contains(concat(" ", normalize-space(@class), " "), " bg-garden ")]');
-    expect($primaryAction)->toHaveCount($requested ? 0 : 1);
-    if (! $requested) {
-        expect($primaryAction->item(0)->hasAttribute('data-audit-email-open'))->toBeTrue();
-    }
+    $this->get(route('marketing.website-audits.show', $audit))->assertSuccessful()
+        ->assertSee('View my report')->assertSee('data-audit-email-gate', false)
+        ->assertDontSee('data-audit-book-call', false)->assertDontSee('Check required')
+        ->assertDontSee('48 hours')->assertDontSee('The improvements we could take care of.');
 })->with([[false, false], [false, true], [true, false], [true, true]]);
 
 it('defers DNS validation to the guarded worker for local macOS audit submissions', function (): void {
@@ -1032,7 +974,7 @@ it('defers DNS validation to the guarded worker for local macOS audit submission
         ->assertSessionHasErrors('website_url');
 })->skip(PHP_OS_FAMILY !== 'Darwin', 'The DNS workaround only applies to local macOS.');
 
-it('shows two useful saved findings without exposing the full audit or ranking details', function (): void {
+it('keeps saved findings and ranking details out of the locked page source', function (): void {
     $audit = WebsiteAudit::factory()->create([
         'status' => WebsiteAudit::STATUS_COMPLETED,
         'created_at' => now()->subMinute(),
@@ -1045,23 +987,16 @@ it('shows two useful saved findings without exposing the full audit or ranking d
         'insights' => ['seo' => ['estimated_monthly_visits' => 100, 'keywords' => [['term' => 'private ranking term', 'position' => 15, 'monthly_searches' => 500]]]],
     ]);
 
-    $response = $this->get(route('marketing.website-audits.show', $audit))->assertSuccessful()
-        ->assertSee('What we found on your website.')
-        ->assertSee('Your homepage is missing its page title.')
-        ->assertSee('Your homepage is missing its search description.')
-        ->assertSee('A clear title helps people and search engines understand what you offer.')
+    $this->get(route('marketing.website-audits.show', $audit))->assertSuccessful()
+        ->assertSee('View my report')->assertSee('25%')
+        ->assertDontSee('The homepage has no title.')
+        ->assertDontSee('The homepage has no meta description.')
         ->assertDontSee('No frame protection was found.')
-        ->assertDontSee('Your homepage is missing its mobile display setting.')
-        ->assertDontSee('private ranking term')
-        ->assertDontSee('Google ranking terms')
-        ->assertSee('Get my free growth plan');
+        ->assertDontSee('private ranking term')->assertDontSee('Google ranking terms');
 
-    $document = new DOMDocument;
-    @$document->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
-    expect((new DOMXPath($document))->query('//*[@data-audit-finding]'))->toHaveCount(2);
 });
 
-it('shows a single finding without padding the preview with invented issues', function (): void {
+it('shows the measured fix count without exposing the finding', function (): void {
     $audit = WebsiteAudit::factory()->create([
         'status' => WebsiteAudit::STATUS_COMPLETED,
         'created_at' => now()->subMinute(),
@@ -1069,11 +1004,9 @@ it('shows a single finding without padding the preview with invented issues', fu
     ]);
 
     $response = $this->get(route('marketing.website-audits.show', $audit))->assertSuccessful()
-        ->assertSee('Your homepage was slow to respond in our check.')
-        ->assertSee('One check isn’t a full speed test.')
-        ->assertDontSee('Your homepage is missing its page title.');
-
+        ->assertSee('View my report')->assertDontSee('The page responded in 2500 ms.');
     $document = new DOMDocument;
     @$document->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
-    expect((new DOMXPath($document))->query('//*[@data-audit-finding]'))->toHaveCount(1);
+    expect((new DOMXPath($document))->query('//*[@data-audit-fix-count]')->item(0)->textContent)->toBe('1');
+
 });

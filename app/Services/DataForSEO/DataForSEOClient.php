@@ -40,12 +40,16 @@ class DataForSEOClient
     }
 
     /** @param array<string, mixed> $task */
-    public function post(string $endpoint, array $task): DataForSEOResponse
+    public function post(string $endpoint, array $task, ?int $timeoutSeconds = null): DataForSEOResponse
     {
         $this->ensureConfigured();
 
         try {
-            $response = $this->request()->post($endpoint, [$task]);
+            $request = $this->request();
+            if ($timeoutSeconds !== null) {
+                $request->connectTimeout(min(5, $timeoutSeconds))->timeout($timeoutSeconds)->retry(1);
+            }
+            $response = $request->post($endpoint, [$task]);
         } catch (Throwable $exception) {
             $this->logFailure($endpoint, null, null, null, $exception);
 

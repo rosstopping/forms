@@ -30,7 +30,7 @@ class WebsiteAuditReport extends Mailable implements ShouldQueue
         return new Envelope(
             from: new Address(config('mail.from.address'), 'Ross at Sitewell'),
             replyTo: [config('marketing.audit_notification_email')],
-            subject: ($this->audit->personal_review_requested_at ? 'Your growth plan request for ' : 'Your Sitewell search audit for ').$this->audit->domain,
+            subject: ($this->audit->personal_review_requested_at ? 'Your growth plan request for ' : 'Your full Sitewell report for ').$this->audit->domain,
         );
     }
 
@@ -42,7 +42,7 @@ class WebsiteAuditReport extends Mailable implements ShouldQueue
         return new Content(
             markdown: 'mail.website-audit-report',
             with: [
-                'reportUrl' => route('marketing.website-audits.show', $this->audit),
+                'reportUrl' => URL::temporarySignedRoute('marketing.website-audits.full', $this->audit->expires_at, $this->audit),
                 'preferencesUrl' => URL::signedRoute('marketing.website-audits.email-preferences', $this->audit),
                 'bookingUrl' => route('marketing.ppc.book'),
             ],

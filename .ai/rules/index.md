@@ -35,6 +35,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Jobs/Send*RankingReport.php,Services/GoogleAdsEmailSummary.php,Services/GoogleAdsClient.php,Mail/*RankingReport.php},resources/views/emails/*ranking-report.blade.php | .ai/rules/app-jobs-views-emails.md |
 | app/{Jobs/StartContentGeneration.php,Services/ContentGenerationPromptGenerator.php,Services/SeoTargetKeywordSelector.php,Models/ContentGeneration.php} | .ai/rules/app-jobs.md |
 | {app/Services/MarketingAuditScreenshot.php,package.json,.npmrc} | .ai/rules/app-services-2.md |
+| {app/Services/MarketingAuditResearch.php,resources/views/marketing/audit-email-gate.blade.php} | .ai/rules/app-services-views-marketing-2.md |
 | app/{Services/MarketingAudit*.php,Services/WebsiteHealthAuditor.php,Services/AiVisibility*.php},resources/views/marketing/** | .ai/rules/app-services-views-marketing.md |
 | app/{Services/Github*,Models/GithubUserAuthorization.php,Jobs/{StartCopilotRemediation,SyncCopilotRemediation}.php}, app/{Services/SearchConsoleHistoryStore.php,Services/WebsiteAiContext.php,Jobs/SyncSearchConsoleHistory.php}, app/{Services/Content*,Jobs/StartContentGeneration.php}, app/{Services/ProspectPersonalisedVideo.php,Models/ProspectOutreachState.php,Mail/ProspectOutreach.php} | .ai/rules/app-services.md |
 | app/** | .ai/rules/app.md |
@@ -91,6 +92,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Mail,Services}/**/*ProspectOutreach*.php | .ai/rules/mail-services.md |
 | resources/views/{vendor/mail/**,emails/**,mail/**,components/email-layout.blade.php,components/prospect-audit-block.blade.php} | .ai/rules/mail.md |
 | {app/Actions/StoreSitewellContactLead.php,app/Http/Controllers/OnboardingEnquiryController.php,resources/views/marketing/contact.blade.php,config/marketing.php,tests/Feature/MarketingPagesTest.php} | .ai/rules/marketing-feature.md |
+| {app/Ai/Agents/Audit{BusinessProfiler,OpportunitySelector}.php,app/Services/{MarketingAudit{Opportunity,Research},ProspectWebsiteAnalyzer}.php,resources/views/marketing/website-audit.blade.php,app/Http/Controllers/FreeSiteAuditController.php} | .ai/rules/marketing-http-controllers.md |
 | resources/views/marketing/website-audit.blade.php,app/{Jobs/GenerateWebsiteAudit.php,Services/MarketingAudit*.php,Models/WebsiteAudit.php} | .ai/rules/marketing-jobs.md |
 | {config/ppc.php,resources/views/marketing/ppc.blade.php,resources/js/marketing-events.js} | .ai/rules/marketing-js.md |
 | {config/ppc.php,app/Support/MarketingJourney.php,app/Models/MarketingConversion.php,app/Events/MarketingConversionRecorded.php,app/Http/Controllers/{PpcLandingController,CalWebhookController,FreeSiteAuditController}.php,resources/{js/marketing-events.js,views/marketing/ppc.blade.php,views/layouts/ppc.blade.php}} | .ai/rules/marketing-layouts.md |
@@ -125,7 +127,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Models/Website.php,Policies/WebsitePolicy.php,Http/Controllers/Admin/WebsiteMemberController.php,Http/Requests/*WebsiteMemberRequest.php},resources/views/admin/websites/**,routes/web.php | .ai/rules/requests-views-admin-websites.md |
 | app/{Models/Website.php,Http/Controllers/Admin/**,Http/Requests/**} | .ai/rules/requests.md |
 | resources/views/layouts/marketing.blade.php | .ai/rules/resources-views-layouts.md |
-| resources/views/marketing/free-site-audit.blade.php, resources/views/marketing/website-audit.blade.php, resources/views/marketing/** | .ai/rules/resources-views-marketing.md |
+| resources/views/marketing/free-site-audit.blade.php, resources/views/marketing/website-audit.blade.php, resources/views/marketing/**, resources/views/marketing/audit-email-gate.blade.php, resources/views/marketing/{website-audit,audit-email-gate}.blade.php | .ai/rules/resources-views-marketing.md |
 | app/Services/SeoIntelligence/**,app/Models/SeoOpportunity.php | .ai/rules/seo-intelligence-models.md |
 | app/Services/SeoIntelligence/** | .ai/rules/seo-intelligence.md |
 | app/{Services,Console/Commands}/**/*Prospect*.php,routes/console.php | .ai/rules/services-console-commands.md |
@@ -159,6 +161,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Jobs,Mail,Services,Console/Commands}/**/*.php,resources/views/emails/**, app/{Jobs,Mail,Services,Console/Commands}/**/*.php,resources/views/emails/**,routes/console.php | .ai/rules/views-emails.md |
 | app/Http/Controllers/Admin/DashboardController.php,resources/views/admin/{dashboard,overview}.blade.php,resources/views/layouts/app.blade.php | .ai/rules/views-layouts.md |
 | app/Services/Prospect*.php,resources/views/mail/prospects/** | .ai/rules/views-mail-prospects.md |
+| {app/Http/Controllers/FreeSiteAuditController.php,app/Mail/WebsiteAuditReport.php,resources/views/marketing/{website-audit,audit-email-gate}.blade.php,resources/views/mail/website-audit-report.blade.php} | .ai/rules/views-mail.md |
 | {app/Http/Controllers/MarketingController.php,config/marketing.php,resources/views/marketing/{landing,features}.blade.php,routes/web.php,tests/Feature/MarketingPagesTest.php} | .ai/rules/views-marketing-feature.md |
 | resources/views/marketing/website-audit.blade.php,resources/js/{audit-review,marketing-events}.js | .ai/rules/views-marketing-js.md |
 | app/{Http/Controllers/FreeSiteAuditController.php,Http/Requests/StoreFreeSiteAuditRequest.php,Jobs/GenerateWebsiteAudit.php,Models/WebsiteAudit.php,Services/MarketingTurnstileVerifier.php},resources/views/marketing/{free-site-audit,website-audit}.blade.php,routes/web.php | .ai/rules/views-marketing.md |

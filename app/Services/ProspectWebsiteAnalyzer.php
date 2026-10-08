@@ -14,7 +14,7 @@ class ProspectWebsiteAnalyzer
 {
     public function __construct(protected WebsiteHealthAuditor $auditor, protected ProspectContactFinder $contactFinder) {}
 
-    /** @return array{final_url: string, score: int, findings: array<int, array<string, mixed>>, contacts: array<string, mixed>} */
+    /** @return array{final_url: string, score: int, findings: array<int, array<string, mixed>>, contacts: array<string, mixed>, page_context: string} */
     public function analyze(string $url): array
     {
         $startedAt = microtime(true);
@@ -37,7 +37,10 @@ class ProspectWebsiteAnalyzer
         $findings = collect($checks)->values()->all();
         $score = min(100, collect($findings)->sum(fn (array $finding): int => $finding['severity'] === 'failed' ? 25 : ($finding['severity'] === 'warning' ? 10 : 0)));
 
-        return ['final_url' => $url, 'score' => $score, 'findings' => $findings, 'contacts' => $this->contactFinder->find($url, $response->body())];
+        $html = preg_replace('/<(script|style|noscript|form)\b[^>]*>.*?<\/\1>/is', ' ', substr($response->body(), 0, 2_000_000)) ?? '';
+        $context = Str::squish(html_entity_decode(strip_tags(str_replace(['</p>', '</h1>', '</h2>', '</li>', '<br>'], ' ', $html)), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+
+        return ['final_url' => $url, 'score' => $score, 'findings' => $findings, 'contacts' => $this->contactFinder->find($url, $response->body()), 'page_context' => mb_substr($context, 0, 12000)];
     }
 
     /** @return array{Response, string} */

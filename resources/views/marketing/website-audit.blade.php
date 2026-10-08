@@ -7,55 +7,73 @@
 @php
     $findings = collect($audit->findings ?? []);
     $fixCount = $findings->whereIn('severity', ['warning', 'failed'])->count();
-    $findingExplanations = [
-        'indexable' => ['Google is being told not to list your homepage.', 'We’d check whether that instruction is intentional before changing it.'],
-        'page_title' => ['Your homepage is missing its page title.', 'A clear title helps people and search engines understand what you offer.'],
-        'viewport' => ['Your homepage is missing its mobile display setting.', 'We’d check how it looks and works for visitors on their phones.'],
-        'meta_description' => ['Your homepage is missing its search description.', 'A useful description can give people a clearer reason to click your result.'],
-        'response_time' => ['Your homepage was slow to respond in our check.', 'We’d investigate what’s keeping visitors waiting. One check isn’t a full speed test.'],
-        'h1' => ['Your homepage heading structure needs a look.', 'A clear main heading helps visitors understand the page quickly.'],
-        'image_alt_text' => ['Some homepage images are missing descriptions.', 'Useful image descriptions help people using screen readers understand your content.'],
-        'https' => ['Your homepage wasn’t checked over a secure connection.', 'We’d check that visitors are sent to the secure version of your website.'],
-    ];
-    $findingPriority = array_flip(array_keys($findingExplanations));
-    $publicFindings = $findings->whereIn('severity', ['warning', 'failed'])
-        ->filter(fn (array $finding): bool => ! empty($finding['title']) && ! empty($finding['message']))
-        ->sortBy(fn (array $finding): int => $findingPriority[$finding['key'] ?? ''] ?? 99)
-        ->unique('key')->take(2);
     $healthScore = data_get($audit->insights, 'health_score');
     $healthScore ??= $findings->isNotEmpty() ? (int) round($findings->where('severity', 'passed')->count() / $findings->count() * 100) : null;
+    $googleRankingCount = data_get($audit->insights, 'seo.organic_keywords');
+    $pageCount = data_get($audit->insights, 'pages_matching_domain', data_get($audit->insights, 'pages_listed'));
+    $pageCountPartial = (bool) data_get($audit->insights, 'pages_partial', false);
+    $hasChecks = $findings->isNotEmpty();
+    $healthStatus = $healthScore === null ? 'Not available' : ($healthScore >= 80 ? 'Looking healthy' : ($healthScore >= 50 ? 'Needs work' : 'Needs attention'));
     $pagesListed = data_get($audit->insights, 'pages_listed');
     $pagesPartial = (bool) data_get($audit->insights, 'pages_partial', false);
     $pagesMismatchedDomain = (int) data_get($audit->insights, 'pages_mismatched_domain', 0);
     $pagesMismatchedHost = data_get($audit->insights, 'pages_mismatched_host');
     $seo = data_get($audit->insights, 'seo');
+    $hasGoogleRankings = collect(data_get($seo, 'keywords', []))->contains(fn (mixed $keyword): bool => is_array($keyword) && filled($keyword['term'] ?? null) && is_numeric($keyword['position'] ?? null) && $keyword['position'] > 0);
+    $hasAiAppearance = collect(data_get($audit->insights, 'ai_visibility.results', []))->contains(fn (mixed $result): bool => is_array($result) && ($result['status'] ?? null) === 'completed' && (($result['website_mentioned'] ?? false) === true || ($result['website_cited'] ?? false) === true));
     $competitors = data_get($audit->insights, 'competitors');
     $aiVisibility = data_get($audit->insights, 'ai_visibility');
     $fullReportStatus = data_get($audit->insights, 'full_report.status', 'completed');
     $visitorRange = $projection !== null ? number_format($projection['six_month_low']).'–'.number_format($projection['six_month_high']) : null;
 @endphp
 <section @if ($engagementUrl) data-audit-engagement-url="{{ $engagementUrl }}" data-audit-id="{{ $audit->public_id }}" data-csrf-token="{{ csrf_token() }}" @endif data-marketing-events="{{ json_encode($marketingEvents) }}" class="px-3 pt-1 pb-16 sm:px-6 sm:pt-2 sm:pb-24" aria-labelledby="audit-title">
-    <div class="mx-auto grid max-w-7xl gap-8 rounded-3xl bg-lichen px-5 py-10 sm:px-10 sm:py-14">
+    <div @class(['mx-auto grid max-w-7xl gap-6 rounded-3xl bg-lichen px-5 sm:px-10', 'py-6 sm:py-8' => ! $showDetails && $audit->isReadyToDisplay(), 'py-10 sm:py-14' => $showDetails || ! $audit->isReadyToDisplay()])>
+        @if ($audit->isReadyToDisplay() && ! $showDetails)
+            <header @class(['grid min-w-0 gap-5 lg:items-stretch lg:gap-10', 'lg:grid-cols-[minmax(0,1fr)_26rem]' => $screenshotUrl])>
+                <div data-audit-intro class="flex min-w-0 flex-col justify-between gap-6 lg:pb-7">
+                    <div class="grid min-w-0 gap-3">
+                    @if ($screenshotUrl)
+                        <figure class="order-last grid w-full gap-2 pt-4 lg:hidden">
+                            <div class="rounded-xl bg-white p-1 ring-1 ring-ink/10">
+                                <img src="{{ $screenshotUrl }}" alt="" width="1024" height="640" class="aspect-[8/5] w-full rounded-[min(1vw,8px)] object-cover object-top outline-1 -outline-offset-1 outline-black/5" loading="eager" decoding="async">
+                            </div>
+                            <figcaption class="truncate text-center text-base font-medium text-garden" title="{{ $audit->domain }}">{{ $audit->domain }}</figcaption>
+                        </figure>
+                    @else
+                        <p class="min-w-0 truncate text-base font-medium text-garden sm:text-sm" title="{{ $audit->domain }}">{{ $audit->domain }}</p>
+                    @endif
+                @if ($hasAiAppearance)
+                    <p data-audit-ai-appearance class="text-base font-medium text-emerald-800 sm:text-sm">Your site appears in sampled AI answers.</p>
+                @endif
+                <h1 id="audit-title" class="max-w-[24ch] text-4xl font-medium tracking-tight text-balance sm:text-5xl">Your website audit is ready.</h1>
+                <p class="mt-4 max-w-[56ch] text-pretty text-base text-ink/65">{{ $hasGoogleRankings ? "We’ve found your Google rankings, your competitors' websites and where you show for AI answers. View the full report below to see how to get more customers via search." : "We’ve found your Google rankings, competitors and where you show for AI answers. View the full report below to see how to get more customers via search." }}</p>
+                    </div>
+    <dl class="grid grid-cols-4 items-start gap-2 text-xs sm:flex sm:flex-wrap sm:gap-x-8 sm:gap-y-3 sm:text-sm">
+        <div class="grid min-w-0 gap-1"><dt class="truncate font-medium text-ink/65"><span class="max-sm:hidden">Website health</span><span class="sm:hidden">Health</span></dt><dd data-audit-health-score class="truncate text-2xl font-medium tracking-tight tabular-nums text-ink sm:text-3xl">{{ $healthScore !== null ? $healthScore.'%' : '—' }}</dd><dd data-audit-health-status class="sr-only">{{ $healthStatus }}</dd></div>
+        <div class="grid min-w-0 gap-1"><dt class="truncate font-medium text-ink/65"><span class="max-sm:hidden">Website fixes</span><span class="sm:hidden">Fixes</span></dt><dd data-audit-fix-count class="truncate text-2xl font-medium tracking-tight tabular-nums text-ink sm:text-3xl">{{ $hasChecks ? number_format($fixCount) : '—' }}</dd><dd data-audit-fix-status class="sr-only">{{ $hasChecks ? ($fixCount > 0 ? 'Issues found' : 'None flagged') : 'Not available' }}</dd></div>
+        <div class="grid min-w-0 gap-1"><dt class="truncate font-medium text-ink/65" title="Pages listed for this website in its sitemap"><span class="max-sm:hidden">Pages found</span><span class="sm:hidden">Pages</span></dt><dd data-audit-page-count class="truncate text-2xl font-medium tracking-tight tabular-nums text-ink sm:text-3xl">{{ is_numeric($pageCount) ? number_format((int) $pageCount).($pageCountPartial ? '+' : '') : '—' }}</dd></div>
+        @if (is_numeric($googleRankingCount) && $googleRankingCount >= 0)
+            <div class="grid min-w-0 gap-1"><dt class="truncate font-medium text-ink/65" title="Estimated number of Google search terms this website ranks for"><span class="max-sm:hidden">Google rankings</span><span class="sm:hidden">Rankings</span></dt><dd data-audit-ranking-count class="truncate text-2xl font-medium tracking-tight tabular-nums text-ink sm:text-3xl">{{ '~'.number_format((int) $googleRankingCount) }}</dd></div>
+        @endif
+        @if ($healthScore !== null)
+            <div data-audit-health-meter role="meter" aria-label="Homepage checks passed" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ $healthScore }}" class="sr-only"></div>
+        @endif
+    </dl>
+                </div>
+                @if ($screenshotUrl)
+                    <figure data-audit-desktop-preview class="grid w-full gap-2 max-lg:hidden">
+                        <div class="rounded-[calc(var(--preview-radius)+--spacing(1.5))] bg-white p-1.5 ring-1 ring-ink/10 [--preview-radius:min(1vw,12px)]">
+                            <img src="{{ $screenshotUrl }}" alt="" width="1024" height="640" class="aspect-[8/5] w-full rounded-(--preview-radius) object-cover object-top outline-1 -outline-offset-1 outline-black/5" loading="eager" decoding="async">
+                        </div>
+                        <figcaption class="truncate text-center text-base font-medium text-garden sm:text-sm" title="{{ $audit->domain }}">{{ $audit->domain }}</figcaption>
+                    </figure>
+                @endif
+            </header>
+        @else
         <header @class(['grid min-w-0 gap-6 lg:items-center lg:gap-10', 'lg:grid-cols-[minmax(0,1fr)_18rem]' => $screenshotUrl])>
             <div class="grid min-w-0 content-start gap-3">
-                @if ($audit->isReadyToDisplay() && ! $showDetails)
-                    <div class="flex min-w-0 items-center gap-4">
-                        <div class="grid min-w-0 flex-1 gap-1">
-                            <p class="text-base font-medium text-garden sm:text-sm">Your website review</p>
-                            <p class="truncate text-base font-medium text-ink" title="{{ $audit->domain }}">{{ $audit->domain }}</p>
-                        </div>
-                        @if ($screenshotUrl)
-                            <figure class="w-24 shrink-0 rounded-[calc(var(--preview-radius)+--spacing(1))] bg-white p-1 ring-1 ring-ink/10 [--preview-radius:min(1vw,12px)] lg:hidden">
-                                <img src="{{ $screenshotUrl }}" alt="" width="1024" height="640" class="aspect-[8/5] w-full rounded-(--preview-radius) object-cover object-top outline-1 -outline-offset-1 outline-black/5" loading="eager" decoding="async">
-                            </figure>
-                        @endif
-                    </div>
-                    <h1 id="audit-title" class="max-w-[24ch] text-4xl font-medium tracking-tight text-balance sm:text-5xl lg:text-6xl">Fix your website.<br>Bring in more visitors.</h1>
-                    <p class="max-w-[56ch] text-pretty text-base text-ink/65">We do the work for you. Here’s where we’d start.</p>
-                @else
-                    <p class="text-base font-medium text-garden sm:text-sm">{{ $showDetails ? 'Full website review' : 'Your website review' }}</p>
-                    <h1 id="audit-title" class="w-full min-w-0 max-w-[24ch] truncate text-4xl font-medium tracking-tight text-balance sm:text-5xl" title="{{ $audit->domain }}">{{ $audit->domain }}</h1>
-                @endif
+                <p class="text-base font-medium text-garden sm:text-sm">{{ $showDetails ? 'Full website review' : 'Your website review' }}</p>
+                <h1 id="audit-title" class="w-full min-w-0 max-w-[24ch] truncate text-4xl font-medium tracking-tight text-balance sm:text-5xl" title="{{ $audit->domain }}">{{ $audit->domain }}</h1>
             </div>
             @if ($screenshotUrl)
                 <figure @class(['max-w-sm rounded-[calc(var(--preview-radius)+--spacing(1.5))] bg-white p-1.5 ring-1 ring-ink/10 [--preview-radius:min(1vw,12px)] lg:justify-self-end', 'max-lg:hidden' => $audit->isReadyToDisplay() && ! $showDetails])>
@@ -63,6 +81,7 @@
                 </figure>
             @endif
         </header>
+        @endif
 
         @if (session('report_email_status') && (! $audit->personal_review_requested_at || $audit->personal_review_queued_at))
             <p role="status" class="rounded-2xl bg-emerald-50 px-5 py-4 text-base text-emerald-900 ring-1 ring-emerald-200/70">{{ session('report_email_status') }}</p>
@@ -70,7 +89,7 @@
         @if ($showDetails && $audit->isReadyToDisplay() && $fullReportStatus !== 'completed')
             <section role="status" class="grid gap-3 rounded-2xl bg-white p-5 ring-1 ring-ink/10 sm:p-6" aria-labelledby="audit-full-research-title">
                 <h2 id="audit-full-research-title" class="text-xl font-medium tracking-tight">{{ in_array($fullReportStatus, ['queued', 'running'], true) ? 'Preparing the rest of this report.' : ($fullReportStatus === 'failed' ? 'The extra research couldn’t finish.' : 'The extra research hasn’t been run yet.') }}</h2>
-                <p class="max-w-[60ch] text-pretty text-base text-ink/65">{{ in_array($fullReportStatus, ['queued', 'running'], true) ? 'Page-one rankings, sitemap counts, backlinks and competitor comparisons are loading. AI checks follow.' : 'The public summary is ready. Load the extra research when you need the detailed report.' }}</p>
+                <p class="max-w-[60ch] text-pretty text-base text-ink/65">{{ in_array($fullReportStatus, ['queued', 'running'], true) ? 'Page-one rankings, sitemap counts, backlinks and competitor comparisons are loading. AI checks follow.' : ($fullReportStatus === 'failed' ? 'Your saved results are below. Talk to Ross if you’d like help with the missing research.' : 'Your saved results are below. The remaining research hasn’t been requested yet.') }}</p>
                 @if (auth()->user()?->isAdmin() && in_array($fullReportStatus, ['deferred', 'failed'], true))
                     <form method="POST" action="{{ route('admin.onboarding.audits.generate', $audit) }}">
                         @csrf
@@ -79,10 +98,10 @@
                 @endif
             </section>
         @endif
-        @if ($showDetails && auth()->user()?->isAdmin() && (in_array($fullReportStatus, ['queued', 'running'], true) || data_get($aiVisibility, 'status') === 'pending'))
+        @if ($showDetails && (in_array($fullReportStatus, ['queued', 'running'], true) || data_get($aiVisibility, 'status') === 'pending'))
             <script>
                 (() => {
-                    const statusUrl = @js(route('admin.onboarding.audits.status', $audit));
+                    const statusUrl = @js($researchStatusUrl);
                     const initialStatus = @js($fullReportStatus);
                     const initialAiStatus = @js(data_get($aiVisibility, 'status'));
                     const timer = window.setInterval(async () => {
@@ -141,18 +160,17 @@
                 <p><a href="{{ route('marketing.free-site-audit') }}" class="font-medium text-garden underline decoration-garden/30 underline-offset-4 hover:decoration-garden">Try another website address</a></p>
                 <p><a data-audit-book-call href="{{ route('marketing.ppc.book') }}" class="font-medium text-garden underline decoration-garden/30 underline-offset-4 hover:decoration-garden">Book a call with Ross for help reviewing your website</a></p>
             </div>
+        @elseif (! $showDetails)
+            @include('marketing.audit-email-gate')
         @else
             <div class="grid gap-10 border-t border-ink/10 pt-8">
                 <section class="grid gap-6" aria-labelledby="audit-numbers-title">
-                    @if ($showDetails)
+
                     <div class="grid gap-2">
                         <h2 id="audit-numbers-title" class="max-w-[35ch] text-3xl font-medium tracking-tight text-balance">What we found.</h2>
                         <p class="max-w-[56ch] text-pretty text-base text-ink/65">A quick look at your website checks and search visibility.</p>
                     </div>
-                    @else
-                        <h2 id="audit-numbers-title" class="sr-only">Your website’s opportunity</h2>
-                    @endif
-                    @if ($showDetails)
+
                     <dl class="grid gap-3 md:grid-cols-3">
                         <div @class([
                             'grid content-start gap-3 rounded-2xl p-5 ring-1 sm:p-6',
@@ -210,70 +228,9 @@
                     @if ($pagesListed === null || $seo === null)
                         <p class="text-pretty text-base text-ink/55 sm:text-sm">{{ $seo === null ? 'Search estimates are unavailable for this review.' : '' }} {{ $pagesListed === null ? 'A page count needs an accessible XML sitemap.' : '' }}</p>
                     @endif
-                    @else
-                        <div class="@container">
-                            <dl class="grid grid-cols-2 gap-6 @3xl:grid-cols-[1fr_1fr_2fr] @3xl:items-start">
-                                <div data-audit-health-score class="grid min-w-0 content-start gap-3">
-                                    <dt class="truncate text-base font-medium text-ink/65 sm:text-sm"><span class="@xs:hidden">Health score</span><span class="@max-xs:hidden">Health score today</span></dt>
-                                    <dd @class(['text-5xl font-medium tracking-tight tabular-nums sm:text-6xl', 'text-ink' => $healthScore === null, 'text-emerald-800' => $healthScore !== null && $healthScore >= 80, 'text-amber-900' => $healthScore !== null && $healthScore >= 50 && $healthScore < 80, 'text-rose-800' => $healthScore !== null && $healthScore < 50])>{{ $healthScore !== null ? $healthScore.'%' : '—' }}</dd>
-                                    <dd class="text-pretty text-base text-ink/65 sm:text-sm">{{ $healthScore === null ? 'Checks unavailable.' : ($healthScore >= 100 ? 'All these checks passed.' : 'Target: 100%.') }}</dd>
-                                </div>
-                                <div data-audit-fix-count class="grid min-w-0 content-start gap-3 border-l border-ink/10 pl-6">
-                                    <dt class="truncate text-base font-medium text-ink/65 sm:text-sm"><span class="@xs:hidden">To fix</span><span class="@max-xs:hidden">Things to fix</span></dt>
-                                    <dd class="text-5xl font-medium tracking-tight tabular-nums text-ink sm:text-6xl">{{ $findings->isNotEmpty() ? number_format($fixCount) : '—' }}</dd>
-                                    <dd class="text-pretty text-base text-ink/65 sm:text-sm">{{ $findings->isEmpty() ? 'Needs a closer look.' : ($fixCount > 0 ? 'We handle the fixes.' : 'No fixes flagged.') }}</dd>
-                                </div>
-                                <div data-audit-growth-opportunity class="@container/growth col-span-2 grid min-w-0 gap-3 rounded-2xl bg-garden/8 p-5 @3xl:col-span-1 sm:p-6">
-                                    <dt class="truncate text-base font-medium text-garden sm:text-sm">Your six-month opportunity</dt>
-                                    @if ($projection !== null)
-                                        <dd class="break-words text-[clamp(1.5rem,calc(120cqw/var(--range-length)),4.5rem)] font-medium tracking-tight tabular-nums text-ink" style="--range-length: {{ mb_strlen($visitorRange) }}">{{ $visitorRange }}</dd>
-                                        <dd class="text-base font-medium text-ink sm:text-sm">Monthly visitors from Google</dd>
-                                        <dd class="max-w-[56ch] text-pretty text-base text-ink/65 sm:text-sm">Based on your search data. An illustrative range, not a guarantee.</dd>
-                                    @else
-                                        <dd class="max-w-[40ch] text-2xl font-medium tracking-tight text-balance text-ink">Let’s find your growth opportunity.</dd>
-                                        <dd class="max-w-[56ch] text-pretty text-base text-ink/65 sm:text-sm">We need a closer look before putting a visitor number on it. Ross’s review is the next step.</dd>
-                                    @endif
-                                </div>
-                            </dl>
-                        </div>
-                    @endif
+
                 </section>
-                @if (! $showDetails)
-                    @if ($publicFindings->isNotEmpty())
-                        <section data-audit-finding-preview aria-labelledby="audit-findings-title" class="grid gap-5 border-t border-ink/10 pt-6">
-                            <h2 id="audit-findings-title" class="text-2xl font-medium tracking-tight">What we found on your website.</h2>
-                            <dl class="grid gap-5 sm:grid-cols-2">
-                                @foreach ($publicFindings as $finding)
-                                    <div data-audit-finding class="grid content-start gap-2 rounded-2xl bg-white/70 p-5 ring-1 ring-ink/10">
-                                        <dt class="text-lg font-medium text-ink">{{ $findingExplanations[$finding['key'] ?? ''][0] ?? $finding['title'] }}</dt>
-                                        <dd class="text-pretty text-base text-ink/65">{{ $findingExplanations[$finding['key'] ?? ''][1] ?? \Illuminate\Support\Str::limit($finding['message'], 160) }}</dd>
-                                    </div>
-                                @endforeach
-                            </dl>
-                            <p class="text-pretty text-base text-ink/65 sm:text-sm">These are examples from the initial check. In your free video, Ross will explain what he’d prioritise to help more customers find you.</p>
-                        </section>
-                    @elseif ($fixCount === 0 && $findings->isNotEmpty())
-                        <section data-audit-finding-preview aria-labelledby="audit-findings-title" class="grid gap-2 border-t border-ink/10 pt-6">
-                            <h2 id="audit-findings-title" class="text-2xl font-medium tracking-tight">Your initial website checks passed.</h2>
-                            <p class="max-w-[60ch] text-pretty text-base text-ink/65">That’s a useful starting point. It doesn’t tell us whether your pages reach the right customers — that’s what Ross will look at in your free video.</p>
-                        </section>
-                    @endif
-                    <section data-audit-growth-plan aria-labelledby="audit-growth-plan-title" class="grid gap-5 border-t border-ink/10 pt-6">
-                        <h2 id="audit-growth-plan-title" class="sr-only">What we’d do for you</h2>
-                        <dl class="grid gap-6 sm:grid-cols-2">
-                            <div class="grid content-start gap-2">
-                                <dt class="max-w-[40ch] text-xl font-medium text-balance">First: fix the website.</dt>
-                                <dd class="max-w-[56ch] text-pretty text-base text-ink/65">@if ($fixCount === 0 && $healthScore !== null && $healthScore >= 100) Your checks already pass. We’ll review the wider site before making changes. @else We start with the fixes, once access and scope are agreed. @endif</dd>
-                            </div>
-                            <div class="grid content-start gap-2">
-                                <dt class="max-w-[40ch] text-xl font-medium text-balance">Next: grow the visitors.</dt>
-                                <dd class="max-w-[56ch] text-pretty text-base text-ink/65">Improve your pages and content to bring in visitors from Google and AI search.</dd>
-                            </div>
-                        </dl>
-                        <p class="text-pretty text-base text-ink/55 sm:text-sm">Health score is based on the checks we ran.</p>
-                    </section>
-                @endif
-                @if ($showDetails)
+
                 <section data-audit-service-offer aria-labelledby="audit-service-title" class="rounded-3xl bg-black p-6 text-white sm:p-8">
                     <div class="flex items-start gap-4 sm:gap-5">
                         <img src="{{ asset('ross-topping.jpg') }}" alt="Ross" width="56" height="56" class="size-14 shrink-0 rounded-full object-cover">
@@ -285,21 +242,8 @@
                         </div>
                     </div>
                 </section>
-                @endif
-                @if (! $showDetails && $audit->report_requested_at === null)
-                    <section data-audit-snapshot-end aria-labelledby="audit-review-title" class="rounded-3xl bg-black p-6 text-white sm:p-8">
-                        <div class="flex items-start gap-4 sm:gap-5">
-                            <img data-audit-review-portrait src="{{ asset('ross-topping.jpg') }}" alt="Ross" width="56" height="56" class="size-14 shrink-0 rounded-full object-cover outline-1 -outline-offset-1 outline-white/10">
-                            <div data-audit-review-copy class="grid min-w-0 flex-1 gap-4">
-                                <h2 id="audit-review-title" class="max-w-[40ch] text-3xl font-medium tracking-tight text-balance">See how we’d get you there.</h2>
-                                <p class="max-w-[56ch] text-pretty text-base text-white/75">Your fixes and growth priorities, in a free personal video from Ross within one working day.</p>
-                                <div><button type="button" data-audit-email-open aria-label="Get my free growth plan" aria-haspopup="dialog" aria-controls="audit-email-dialog" class="inline-flex min-h-12 items-center justify-center rounded-full bg-garden px-4 py-3 text-base font-medium text-white hover:bg-moss focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"><span class="sm:hidden">Get my free plan</span><span class="max-sm:hidden">Get my free growth plan</span></button></div>
-                            </div>
-                        </div>
-                    </section>
-                @endif
 
-                @if (! $showDetails && $audit->report_requested_at !== null)
+                @if ($goalUrl || $audit->personal_review_requested_at)
                     <div id="audit-follow-up" class="grid gap-6 scroll-mt-24">
                         @if ($audit->personal_review_requested_at && ! $audit->personal_review_queued_at)
                             <section role="status" aria-labelledby="audit-request-received-title" class="flex items-start gap-4 rounded-3xl bg-black p-6 text-white ring-1 ring-black sm:p-8">
@@ -332,7 +276,21 @@
                         </div>
                     </div>
                 @endif
-                @if ($showDetails)
+
+                <section class="grid gap-5 border-t border-ink/10 pt-8" aria-labelledby="audit-findings-title">
+                    <div class="grid gap-2"><h2 id="audit-findings-title" class="text-2xl font-medium tracking-tight text-balance">Your website checks.</h2><p class="max-w-[56ch] text-base text-ink/65">These checks cover the homepage and basic search setup. They aren’t a complete review of every page.</p></div>
+                    <dl class="grid gap-3 sm:grid-cols-2">
+                        @forelse ($findings as $finding)
+                            <div class="grid content-start gap-2 rounded-2xl bg-white p-5 ring-1 ring-ink/10">
+                                <dt class="font-medium">{{ $finding['title'] ?? 'Website check' }}</dt>
+                                <dd @class(['text-base font-medium sm:text-sm', 'text-emerald-800' => ($finding['severity'] ?? '') === 'passed', 'text-amber-900' => ($finding['severity'] ?? '') !== 'passed'])>{{ ($finding['severity'] ?? '') === 'passed' ? 'Passed' : 'Needs attention' }}</dd>
+                                <dd class="text-base text-ink/65">{{ $finding['message'] ?? 'No detail available for this check.' }}</dd>
+                            </div>
+                        @empty
+                            <p class="text-base text-ink/65">Detailed website checks aren’t available for this report.</p>
+                        @endforelse
+                    </dl>
+                </section>
                 @if ($seo !== null)
                     <section class="grid gap-5 border-t border-ink/10 pt-8" aria-labelledby="audit-search-title">
                         <div class="grid gap-2">
@@ -438,25 +396,6 @@
                             <p class="text-base text-ink/65">There isn't enough unbranded search data to choose a useful question yet.</p>
                         @endif
                 </section>
-                @if (is_array($aiVisibility))
-                    @if ($aiVisibility['status'] === 'pending' && ! auth()->user()?->isAdmin())
-                        <script>
-                            (() => {
-                                const statusUrl = @js(route('marketing.website-audits.status', $audit));
-                                const timer = window.setInterval(async () => {
-                                    try {
-                                        const response = await fetch(statusUrl, { headers: { Accept: 'application/json' } });
-                                        if (! response.ok) return;
-                                        if ((await response.json()).ai_visibility_status !== 'pending') {
-                                            window.clearInterval(timer);
-                                            window.location.reload();
-                                        }
-                                    } catch (_) {}
-                                }, 5000);
-                            })();
-                        </script>
-                    @endif
-                @endif
                 @endif
 
                 <section class="grid gap-6 rounded-3xl bg-white p-5 ring-1 ring-ink/10 sm:p-8" aria-labelledby="audit-projection-title">
@@ -484,11 +423,26 @@
                                 <p class="text-4xl font-medium tracking-tight tabular-nums text-ink sm:text-5xl">{{ number_format($projection['six_month_low']) }}–{{ number_format($projection['six_month_high']) }}</p>
                             </div>
                         </div>
-                        <p class="max-w-[56ch] text-pretty text-base text-ink/65">This range assumes we improve pages already ranking just outside page one. It is an illustration, not a guarantee.</p>
+                        <p class="max-w-[56ch] text-pretty text-base text-ink/65">{{ ($projection['model'] ?? null) === 'comparable_pages_v1' ? 'This scenario includes relevant existing and potential new page topics, checked against comparable businesses. It assumes the agreed work is completed; it is not a guarantee.' : 'This range assumes we improve pages already ranking just outside page one. It is an illustration, not a guarantee.' }}</p>
                         <details class="group border-t border-ink/10 pt-5">
                             <summary class="cursor-pointer font-medium text-garden marker:text-garden">How we estimated this</summary>
                             <p class="max-w-[65ch] pt-3 text-pretty text-base text-ink/65 sm:text-sm">{{ $projection['method'] }} Search volumes and the current visit count come from third-party estimates.</p>
                         </details>
+                        @if (($projection['model'] ?? null) === 'comparable_pages_v1')
+                            <section class="grid gap-4 border-t border-ink/10 pt-6" aria-labelledby="audit-opportunity-evidence-title">
+                                <h3 id="audit-opportunity-evidence-title" class="text-xl font-medium">What supports this estimate</h3>
+                                <p class="text-base text-ink/65">Comparable businesses: {{ collect(data_get($audit->insights, 'opportunity.comparables', []))->pluck('domain')->implode(', ') }}.</p>
+                                <dl class="grid gap-4 sm:grid-cols-2">
+                                    @foreach ($projection['pages'] as $page)
+                                        <div class="grid gap-2 rounded-2xl bg-white/70 p-5">
+                                            <dt class="font-medium">{{ $page['label'] }}</dt>
+                                            <dd class="text-base text-ink/65">{{ $page['reason'] }}</dd>
+                                            <dd class="text-sm text-ink/65">{{ $page['work'] }} · {{ number_format($page['modelled_search_volume']) }} modelled monthly searches.</dd>
+                                        </div>
+                                    @endforeach
+                                </dl>
+                            </section>
+                        @endif
                     @else
                         <p class="max-w-[56ch] text-pretty text-base text-ink/65">There isn’t enough ranking data for a useful estimate yet. We’d set a baseline, improve the site and review progress over the first six months.</p>
                     @endif
@@ -523,58 +477,15 @@
                     </div>
                     <a data-audit-book-call href="{{ route('marketing.ppc.book') }}" class="inline-flex min-h-12 items-center justify-center gap-3 rounded-full bg-garden px-5 py-3 text-base font-medium text-white hover:bg-moss focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white md:justify-self-end">Book a call with Ross <span aria-hidden="true">↗</span></a>
                 </section>
-                @endif
+
             </div>
         @endif
         <p class="text-pretty text-base text-ink/50 sm:text-sm">This private link expires {{ $audit->expires_at->diffForHumans() }}.</p>
     </div>
 </section>
-@if ($audit->isReadyToDisplay() && ! $showDetails)
-    <div data-audit-actions class="fixed right-4 bottom-4 left-4 z-40 flex justify-end gap-2 sm:right-6 sm:bottom-6 sm:left-auto">
-
-        @if (! $showDetails && $audit->report_requested_at === null)
-            <button type="button" data-audit-email-open aria-label="Get my free growth plan" aria-haspopup="dialog" aria-controls="audit-email-dialog" class="inline-flex min-h-12 shrink-0 items-center justify-center rounded-full bg-white px-4 py-3 text-base font-medium whitespace-nowrap text-garden shadow-md ring-1 ring-ink/10 hover:bg-lichen focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden sm:text-sm"><span class="sm:hidden">My free plan</span><span class="max-sm:hidden">Get my free growth plan</span></button>
-        @endif
-        <a data-audit-book-call href="{{ route('marketing.ppc.book') }}" aria-label="Book a call with Ross" class="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-full bg-white py-2 pr-4 pl-2 text-base font-medium whitespace-nowrap text-ink shadow-md ring-1 ring-ink/10 hover:bg-lichen focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden sm:text-sm"><img src="{{ asset('ross-topping.jpg') }}" alt="" width="32" height="32" class="size-8 shrink-0 rounded-full object-cover"><span>Talk to Ross</span></a>
+@if ($audit->isReadyToDisplay() && $showDetails)
+    <div data-audit-actions class="fixed right-4 bottom-4 z-40 sm:right-6 sm:bottom-6">
+        <a data-audit-book-call href="{{ route('marketing.ppc.book') }}" class="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-white py-2 pr-4 pl-2 text-base font-medium text-ink shadow-md ring-1 ring-ink/10 hover:bg-lichen focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden"><img src="{{ asset('ross-topping.jpg') }}" alt="" width="32" height="32" class="size-8 rounded-full object-cover"><span>Talk to Ross</span></a>
     </div>
-@endif
-@if ($audit->isReadyToDisplay() && ! $showDetails && $audit->report_requested_at === null)
-    <dialog data-audit-review-prompt data-audit-id="{{ $audit->public_id }}" data-has-errors="{{ $errors->any() ? 'true' : 'false' }}" id="audit-email-dialog" aria-labelledby="audit-email-title" aria-describedby="audit-email-description" class="fixed inset-0 m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md overflow-y-auto border-0 bg-transparent p-0 pt-10 text-ink backdrop:bg-ink/60">
-        <div class="relative rounded-3xl bg-white p-6 pt-14 sm:p-8 sm:pt-14">
-            <img data-audit-review-portrait src="{{ asset('ross-topping.jpg') }}" alt="Ross" width="72" height="72" class="absolute top-0 left-1/2 size-18 -translate-x-1/2 -translate-y-1/2 rounded-full object-cover ring-4 ring-white">
-            <button type="button" data-audit-email-close aria-label="Close email prompt" class="absolute top-3 right-3 grid size-12 place-items-center rounded-full text-xl text-ink/60 hover:bg-lichen focus-visible:outline-2 focus-visible:outline-garden">×</button>
-            <div class="grid gap-4">
-                <h2 id="audit-email-title" class="max-w-[40ch] text-3xl font-medium tracking-tight text-balance">Where should I send your video?</h2>
-                <p id="audit-email-description" class="max-w-[56ch] text-pretty text-base text-ink/65">Ross will send your free video review within one working day, with the fixes and searches he’d work on first.</p>
-            </div>
-            <form method="POST" action="{{ route('marketing.website-audits.email-report', $audit) }}" class="grid w-full gap-4 pt-6">
-                @csrf
-                <input type="hidden" name="personal_review" value="1">
-                <div class="absolute -left-[9999px]" aria-hidden="true"><label for="audit-email-check">Leave this blank</label><input id="audit-email-check" type="text" name="_sitewell_check" tabindex="-1" autocomplete="off"></div>
-                <div class="grid gap-2">
-                    <label for="audit-report-email" class="text-base font-medium text-ink sm:text-sm">Email address</label>
-                    <input id="audit-report-email" type="email" name="email" value="{{ old('email') }}" autocomplete="email" required maxlength="255" autofocus class="min-h-12 w-full rounded-xl bg-white px-4 text-base text-ink ring-1 ring-ink/15 outline-none placeholder:text-ink/40 focus-visible:ring-2 focus-visible:ring-garden" placeholder="you@example.com">
-                    @error('email') <p class="text-base text-rose-700 sm:text-sm">{{ $message }}</p> @enderror
-                </div>
-                <input type="hidden" name="engagement_visit_id" value="">
-                <div class="flex items-start gap-3 text-base text-ink/65 sm:text-sm">
-                    <div class="flex h-lh shrink-0 items-center">
-                        <span class="group inline-grid size-5 grid-cols-1 sm:size-4">
-                            <input id="audit-marketing-consent" type="checkbox" name="marketing_consent" value="1" @checked(old('marketing_consent')) class="col-start-1 row-start-1 appearance-none rounded-sm border border-ink/20 bg-white checked:border-garden checked:bg-garden indeterminate:border-garden indeterminate:bg-garden focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden disabled:border-ink/20 disabled:bg-lichen disabled:checked:bg-lichen forced-colors:appearance-auto">
-                            <svg viewBox="0 0 14 14" fill="none" aria-hidden="true" class="pointer-events-none col-start-1 row-start-1 size-7/8 self-center justify-self-center stroke-white group-has-disabled:stroke-ink/25">
-                                <path d="M3 8L6 11L11 3.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-not-has-checked:opacity-0" />
-                                <path d="M3 7H11" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-not-has-indeterminate:opacity-0" />
-                            </svg>
-                        </span>
-                    </div>
-                    <label for="audit-marketing-consent" class="min-w-0">{{ \App\Models\WebsiteAudit::MARKETING_CONSENT_TEXT }}</label>
-                </div>
-                @error('marketing_consent') <p class="text-base text-rose-700">{{ $message }}</p> @enderror
-                <p class="text-base text-ink/60 sm:text-sm">No obligation to book a call. <a href="{{ route('marketing.privacy') }}" class="underline underline-offset-4">Privacy policy</a></p>
-                <button type="submit" class="inline-flex min-h-12 items-center justify-center rounded-full bg-garden px-4 text-base font-medium text-white hover:bg-moss focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden">Send me my free growth plan</button>
-            </form>
-        </div>
-    </dialog>
-
 @endif
 @endsection

@@ -6,14 +6,14 @@ I’ve received your request for {{ $audit->domain }}. I’ll take a closer look
 
 Is there a particular service or product you’d like more customers for? Reply to this email and let me know.
 
-You can [revisit your website snapshot]({{ $reportUrl }}) until {{ $audit->expires_at->format('j F Y') }}.
+You can [view your full website report]({{ $reportUrl }}) until {{ $audit->expires_at->format('j F Y') }}.
 @else
-# Your search opportunity review
+# Your full website report
 
-We’ve checked {{ $audit->domain }}. The next step is to identify which searches could bring you more relevant visitors and customers.
+Your report for {{ $audit->domain }} is unlocked. See your website checks, Google search estimates and growth opportunities. Any remaining research will appear as it finishes.
 
 <x-mail::button :url="$reportUrl">
-View your search snapshot
+View your full report
 </x-mail::button>
 
 This private link is available until {{ $audit->expires_at->format('j F Y') }}.
