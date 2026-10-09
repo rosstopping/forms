@@ -127,3 +127,16 @@ test('fresh search evidence after a completed measurement can create a new actio
     $service->queue($this->website, $this->owner, $new['key']);
     expect(ContentRequest::count())->toBe(2);
 });
+
+test('opportunities can become planned content without triggering draft preparation', function (): void {
+    config(['forms.pixel_ui_enabled' => true]);
+    $this->website->update(['pixel_enabled' => true]);
+    $service = app(WebsiteActionCenter::class);
+    $key = $service->forWebsite($this->website)[0]['key'];
+    $this->actingAs($this->owner)->post(route('admin.website-actions.queue', $this->website), ['action_key' => $key, 'planning_status' => 'planned', 'planned_for' => '2026-11-10'])->assertSessionHasNoErrors();
+    $request = ContentRequest::sole();
+    expect($request->planning_status)->toBe('planned')->and($request->planned_for->format('Y-m-d'))->toBe('2026-11-10')
+        ->and($service->forWebsite($this->website)[0]['stage'])->toBe('planned');
+    Queue::assertNothingPushed();
+    Http::assertNothingSent();
+});

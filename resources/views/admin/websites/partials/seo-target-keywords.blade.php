@@ -25,7 +25,15 @@
                         <div class="min-w-0 sm:col-span-2"><label for="target-term" class="ui-label block">Search term</label><input id="target-term" name="term" value="{{ old('term') }}" required maxlength="255" placeholder="e.g. emergency plumber barnsley" class="ui-input w-full min-w-0"></div>
                         <div class="min-w-0"><label for="target-priority" class="ui-label block">Priority</label><select id="target-priority" name="priority" class="ui-input w-full"><option value="normal">Normal</option><option value="high" @selected(old('priority') === 'high')>High</option></select></div>
                         <div class="min-w-0"><label for="target-note" class="ui-label block">Business context <span class="text-slate-500">(optional)</span></label><input id="target-note" name="note" value="{{ old('note') }}" maxlength="1000" placeholder="Service, audience, location…" class="ui-input w-full min-w-0"></div>
-                        @error('term')<p class="text-red-700 sm:col-span-2 text-base sm:text-sm">{{ $message }}</p>@enderror
+                        <div class="min-w-0 sm:col-span-2">
+<label for="target-assignment-new-url" class="ui-label block">Intended page URL (optional)</label>
+<input id="target-assignment-new-url" name="intended_url" type="url" maxlength="700" value="{{ old('intended_url') }}" class="ui-input w-full" placeholder="https://your-site.com/landing-page">
+<p class="mt-1 text-sm text-slate-500">The page you want to rank, including a planned page.</p>
+</div>
+<div><label for="target-assignment-new-role" class="ui-label block">Page assignment</label><select id="target-assignment-new-role" name="assignment_role" class="ui-input w-full">@foreach (['supporting' => 'Supporting keyword', 'primary' => 'Primary keyword'] as $value => $label)<option value="{{ $value }}" @selected(old('assignment_role', 'supporting') === $value)>{{ $label }}</option>@endforeach</select></div>
+<div><label for="target-assignment-new-intent" class="ui-label block">Search intent</label><select id="target-assignment-new-intent" name="search_intent" class="ui-input w-full"><option value="">Not specified</option>@foreach (['informational', 'commercial', 'transactional', 'navigational'] as $value)<option value="{{ $value }}" @selected(old('search_intent') === $value)>{{ ucfirst($value) }}</option>@endforeach</select></div>
+@error('intended_url')<p class="text-sm text-rose-700 sm:col-span-2">{{ $message }}</p>@enderror
+@error('term')<p class="text-red-700 sm:col-span-2 text-base sm:text-sm">{{ $message }}</p>@enderror
                         <div class="sm:col-span-2"><button type="submit" class="ui-button ui-button-primary w-full sm:w-auto">Add target</button></div>
                     </form>
 
@@ -79,7 +87,22 @@
                             <div><dt class="text-slate-500">Checked</dt><dd class="text-slate-700">{{ $latest?->observed_at?->format('j M Y, H:i') ?? '—' }}</dd></div>
                         </dl>
                         @if ($latest?->status === 'failed')<p class="mt-2 text-red-700 text-base sm:text-sm">Latest check failed. The previous successful result remains shown.</p>@endif
-                        @if ($successful?->ranking_url)<a href="{{ $successful->ranking_url }}" target="_blank" rel="noopener noreferrer" class="mt-2 block truncate text-sm text-teal-700 underline" title="{{ $successful->ranking_url }}">{{ $successful->ranking_url }}</a>@endif
+                        @if ($target->intended_url)
+                            <p class="mt-2 text-sm text-slate-700">{{ ucfirst($target->assignment_role) }} destination: <a href="{{ $target->intended_url }}" class="text-teal-700 underline" target="_blank" rel="noopener noreferrer">{{ $target->intended_url }}</a></p>
+                            @php
+                                $destinationReview = $keywordDestinationReviews[$target->id] ?? null;
+                            @endphp
+                            @if ($destinationReview)
+                                <p class="mt-2 text-sm {{ $destinationReview['state'] === 'review' ? 'text-amber-800' : 'text-slate-600' }}">{{ $destinationReview['message'] }}</p>
+                                @if ($destinationReview['pages'])
+                                    <details class="mt-2"><summary class="cursor-pointer text-sm font-medium">Saved Search Console sample · {{ \Illuminate\Support\Carbon::parse($destinationReview['sample_at'])->format('j M Y') }}</summary>
+                                        <p class="mt-2 text-sm text-slate-500">Sampled query/page rows for the 28-day reporting window. Positions are impression-weighted averages, not live ranks. Omitted and anonymised searches are unavailable.</p>
+                                        <ul class="mt-2 space-y-2">@foreach ($destinationReview['pages'] as $page)<li class="break-words text-sm text-slate-600">{{ $page['intended'] ? 'Intended' : 'Other observed' }}: {{ $page['url'] }} · {{ number_format($page['clicks']) }} clicks · {{ number_format($page['impressions']) }} impressions · average position {{ $page['position'] !== null ? number_format($page['position'], 1) : 'unavailable' }}</li>@endforeach</ul>
+                                    </details>
+                                @endif
+                            @endif
+                        @endif
+                        @if ($successful?->ranking_url)<span class="mt-2 block text-xs text-slate-500">Observed ranking page</span><a href="{{ $successful->ranking_url }}" target="_blank" rel="noopener noreferrer" class="mt-2 block truncate text-sm text-teal-700 underline" title="{{ $successful->ranking_url }}">{{ $successful->ranking_url }}</a>@endif
                     </div>
                     @if ($canManageWebsite)
                         <div class="flex flex-wrap gap-2 lg:justify-end">
@@ -89,7 +112,15 @@
                                     @csrf @method('PUT')
                                     <div class="min-w-0"><label for="target-term-{{ $target->id }}" class="ui-label block">Search term</label><input id="target-term-{{ $target->id }}" name="term" value="{{ $target->term }}" required maxlength="255" class="ui-input w-full min-w-0"></div>
                                     <div class="max-w-40"><label for="target-priority-{{ $target->id }}" class="ui-label block">Priority</label><select id="target-priority-{{ $target->id }}" name="priority" class="ui-input w-full"><option value="normal" @selected($target->priority === 'normal')>Normal</option><option value="high" @selected($target->priority === 'high')>High</option></select></div>
-                                    <div class="min-w-0"><label for="target-note-{{ $target->id }}" class="ui-label block">Business context</label><textarea id="target-note-{{ $target->id }}" name="note" rows="3" maxlength="1000" class="ui-input min-h-24 w-full min-w-0">{{ $target->note }}</textarea></div>
+                                    <div class="min-w-0 sm:col-span-2">
+<label for="target-assignment-{{ $target->id }}-url" class="ui-label block">Intended page URL (optional)</label>
+<input id="target-assignment-{{ $target->id }}-url" name="intended_url" type="url" maxlength="700" value="{{ $target->intended_url }}" class="ui-input w-full" placeholder="https://your-site.com/landing-page">
+<p class="mt-1 text-sm text-slate-500">The page you want to rank, including a planned page.</p>
+</div>
+<div><label for="target-assignment-{{ $target->id }}-role" class="ui-label block">Page assignment</label><select id="target-assignment-{{ $target->id }}-role" name="assignment_role" class="ui-input w-full">@foreach (['supporting' => 'Supporting keyword', 'primary' => 'Primary keyword'] as $value => $label)<option value="{{ $value }}" @selected($target->assignment_role === $value)>{{ $label }}</option>@endforeach</select></div>
+<div><label for="target-assignment-{{ $target->id }}-intent" class="ui-label block">Search intent</label><select id="target-assignment-{{ $target->id }}-intent" name="search_intent" class="ui-input w-full"><option value="">Not specified</option>@foreach (['informational', 'commercial', 'transactional', 'navigational'] as $value)<option value="{{ $value }}" @selected($target->search_intent === $value)>{{ ucfirst($value) }}</option>@endforeach</select></div>
+@error('intended_url')<p class="text-sm text-rose-700 sm:col-span-2">{{ $message }}</p>@enderror
+<div class="min-w-0"><label for="target-note-{{ $target->id }}" class="ui-label block">Business context</label><textarea id="target-note-{{ $target->id }}" name="note" rows="3" maxlength="1000" class="ui-input min-h-24 w-full min-w-0">{{ $target->note }}</textarea></div>
                                     <button type="submit" class="ui-button ui-button-primary w-full sm:w-auto sm:justify-self-start">Save changes</button>
                                 </form>
                             </details>

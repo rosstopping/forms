@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\ContentPlan;
 use App\Models\CopilotSdkTestRun;
 use App\Models\SeoImpact;
 use App\Models\User;
@@ -10,11 +11,14 @@ use App\Models\Website;
 use App\Models\WebsiteAiQuestion;
 use App\Models\WebsiteDomain;
 use App\Services\BusinessProfilePostSuggestions;
+use App\Services\ContentBudget;
 use App\Services\ContentSchedule;
+use App\Services\ContentWorkSelector;
 use App\Services\ManualContentRequest;
 use App\Services\PixelInstallationSnippet;
 use App\Services\SearchConsoleClient;
 use App\Services\SearchConsoleHistoryStore;
+use App\Services\SeoTargetKeywordConflicts;
 use App\Services\WebsiteActionCenter;
 use App\Services\WebsitePageWorkspace;
 use App\Services\WebsiteProspectService;
@@ -191,7 +195,10 @@ class WebsiteController extends Controller
             abort_if($contentPromptRequest->picked_up_at && ! $contentPromptRequest->manual_started_at, 422, 'This request has already been picked up by automation.');
             $contentPrompt = app(ManualContentRequest::class)->prompt($contentPromptRequest);
         }
+        $contentBudgetUsage = $website->contentPlan ? app(ContentBudget::class)->usage($website->contentPlan) : ['articles' => 0, 'optimisations' => 0, 'copilot' => 0];
+        $contentQueueStates = [];
         $pendingContentRequests = null;
+        $plannedContentRequests = null;
         $actionedContentRequests = collect();
         if ($canUseGrowthFeatures) {
             $manualContentRequests = $website->contentRequests()->with('manualAssignee')
@@ -199,12 +206,16 @@ class WebsiteController extends Controller
                 ->whereNotNull('manual_started_at')->whereNull('manual_completed_at')
                 ->latest('manual_started_at')->latest('id')
                 ->paginate(20, pageName: 'manual_content_page')->withQueryString()->fragment('manual-content-title');
+            $plannedContentRequests = $website->contentRequests()->where('planning_status', 'planned')->whereNull('picked_up_at')->with('creator')->orderByRaw('planned_for IS NULL')->orderBy('planned_for')->oldest('id')->paginate(20, pageName: 'content_plan_page')->withQueryString()->appends(['content_section' => 'plan']);
             $pendingContentRequests = $website->contentRequests()
                 ->with(['creator', 'seoImpact'])
                 ->pendingInQueueOrder()
                 ->paginate(20, pageName: 'content_queue_page')
                 ->withQueryString()
                 ->appends(['content_section' => 'queue'])->fragment('content-requests-title');
+            $queuePlan = $website->contentPlan ?? new ContentPlan(['website_id' => $website->id]);
+            $queuePlan->setRelation('website', $website);
+            $contentQueueStates = app(ContentWorkSelector::class)->queueStates($queuePlan);
             $actionedContentRequests = $website->contentRequests()
                 ->with(['creator', 'generation'])
                 ->select(['id', 'website_id', 'created_by', 'content_generation_id', 'instructions', 'picked_up_at', 'manual_started_at', 'manual_completed_at'])
@@ -262,6 +273,7 @@ class WebsiteController extends Controller
             ->orderByRaw('CASE WHEN archived_at IS NULL THEN 0 ELSE 1 END')
             ->orderByRaw("CASE WHEN priority = 'high' THEN 0 ELSE 1 END")
             ->orderBy('term')->get();
+        $keywordDestinationReviews = app(SeoTargetKeywordConflicts::class)->forTargets($website, $targetKeywords);
         $seoCompetitors = collect();
         $seoOpportunities = collect();
         $strikingDistanceCount = 0;
@@ -394,12 +406,12 @@ class WebsiteController extends Controller
         return view('admin.websites.show', compact(
             'website', 'canManageMembers', 'canManageWebsite', 'canRunHealthReports', 'canUseSearchConsole',
             'searchConsoleReport', 'searchConsoleHistory', 'searchConsoleReportUnavailable', 'seoGeneration', 'seoSnapshot', 'seoHistory',
-            'trackedCompetitors', 'targetKeywords', 'seoKeywords', 'seoReferringDomains', 'seoCompetitors', 'seoOpportunities', 'seoFilter', 'seoSort', 'seoDirection', 'strikingDistanceCount',
+            'keywordDestinationReviews', 'trackedCompetitors', 'targetKeywords', 'seoKeywords', 'seoReferringDomains', 'seoCompetitors', 'seoOpportunities', 'seoFilter', 'seoSort', 'seoDirection', 'strikingDistanceCount',
             'backlinkSearch', 'backlinkSort', 'backlinkDirection', 'backlinkMinRank', 'latestBacklinkAudit',
             'dataForSeoConfigured', 'outreachProspect', 'pixelInstallationSnippet', 'canUseGrowthFeatures', 'canUseCompleteFeatures', 'canUseAutoresponders',
             'websiteAiQuestions', 'websiteAiQuestionsUsed', 'websiteAiWeeklyLimit', 'pixelOptimisations', 'websiteUsers', 'soleManagerId',
             'hasContentDeliveryConnection', 'contentSupportCallUrl', 'contentWeeklyLimit', 'contentScheduleReason', 'nextContentRun',
-            'manualContentRequests', 'contentPromptRequest', 'contentPrompt', 'canUseSdk', 'sdkRuns', 'pendingContentRequests', 'actionedContentRequests', 'impacts', 'seoImpact', 'unifiedActions', 'pageWorkspace',
+            'manualContentRequests', 'contentPromptRequest', 'contentPrompt', 'canUseSdk', 'sdkRuns', 'plannedContentRequests', 'pendingContentRequests', 'contentQueueStates', 'contentBudgetUsage', 'actionedContentRequests', 'impacts', 'seoImpact', 'unifiedActions', 'pageWorkspace',
             'businessPostSuggestions', 'businessQueuedTopics', 'businessPosts', 'businessReviews', 'businessPostCounts', 'businessReviewCounts', 'businessPostFilter', 'businessReviewFilter',
         ));
     }

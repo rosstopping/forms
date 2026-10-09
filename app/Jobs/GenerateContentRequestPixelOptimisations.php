@@ -39,7 +39,7 @@ class GenerateContentRequestPixelOptimisations implements ShouldBeUnique, Should
         Cache::lock('content-request-work-'.$this->contentRequest->id, 180)->block(5, function () use ($generator): void {
             $contentRequest = $this->contentRequest->fresh();
 
-            if (! $contentRequest || $contentRequest->pixel_processed_at || $contentRequest->manual_started_at) {
+            if (! $contentRequest || ($contentRequest->planning_status ?? 'queued') !== 'queued' || $contentRequest->pixel_processed_at || $contentRequest->manual_started_at || $contentRequest->held_at) {
                 return;
             }
 

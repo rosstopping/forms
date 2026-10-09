@@ -13,12 +13,15 @@ class WebsiteActionController extends Controller
     public function store(Request $request, Website $website, WebsiteActionCenter $actions): RedirectResponse
     {
         abort_unless($website->isManageableBy($request->user()), 403);
-        $data = $request->validate(['action_key' => ['required', 'string', 'regex:/^[a-f0-9]{64}$/']]);
+        $data = $request->validate(['action_key' => ['required', 'string', 'regex:/^[a-f0-9]{64}$/'], 'planning_status' => ['sometimes', 'in:planned,queued'], 'planned_for' => ['nullable', 'date_format:Y-m-d']]);
         if ($request->input('return_to') === 'overview') {
             abort_unless($request->user()->isAdmin(), 403);
             $request->validate(['overview_site_id' => ['nullable', 'integer', 'min:1']]);
         }
-        $actions->queue($website, $request->user(), $data['action_key']);
+        $contentRequest = $actions->queue($website, $request->user(), $data['action_key'], planned: ($data['planning_status'] ?? 'queued') === 'planned', plannedFor: $data['planned_for'] ?? null);
+        if ($contentRequest->planning_status === 'planned') {
+            return redirect()->route('admin.websites.section', [$website, 'content', 'content_section' => 'plan'])->with('status', 'Added to the rolling content plan. Preparation waits for approval into the queue.');
+        }
         if ($request->input('return_to') === 'overview') {
             return redirect()->route('admin.overview', array_filter(['hub' => 'priorities', 'site_id' => $request->integer('overview_site_id')]))
                 ->with('status', 'Added to '.$website->name.'’s content queue. Its evidence and impact tracking are recorded.');

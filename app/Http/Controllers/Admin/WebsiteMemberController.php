@@ -9,7 +9,6 @@ use App\Models\User;
 use App\Models\Website;
 use App\Notifications\WebsiteInvitation;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
@@ -36,35 +35,22 @@ class WebsiteMemberController extends Controller
                 $created = true;
             }
 
-            $this->ensureManagerRemains($website, $member, $data['role']);
-            $website->members()->syncWithoutDetaching([$member->id => ['role' => $data['role']]]);
-            $this->applyMembershipChoice($website, $member, $data);
+            if (! $website->members()->whereKey($member->id)->exists() && ! $website->owner?->is($member)) {
+                $website->members()->attach($member->id, ['role' => Website::MEMBER_ROLE_VIEWER]);
+            }
 
             return $member;
         });
 
         $member->notify(new WebsiteInvitation($website, $created));
 
-        return back()->with('status', 'Invitation sent to '.$member->email.'.');
+        return redirect()->route('admin.websites.section', [$website, 'settings'])
+            ->with('status', 'Website access added for '.$member->email.'.');
     }
 
     public function update(UpdateWebsiteMemberRequest $request, Website $website, User $member): RedirectResponse
     {
-        DB::transaction(function () use ($member, $request, $website): void {
-            $website = Website::query()->lockForUpdate()->findOrFail($website->id);
-
-            abort_unless($website->members()->whereKey($member->id)->exists() || $website->owner?->is($member), 404);
-
-            if ($request->filled('role')) {
-                $role = $request->validated('role');
-                $this->ensureManagerRemains($website, $member, $role);
-                $website->members()->syncWithoutDetaching([$member->id => ['role' => $role]]);
-            }
-
-            $this->applyMembershipChoice($website, $member, $request->validated());
-        });
-
-        return back()->with('status', 'Website member updated.');
+        abort(410, 'Website access no longer has editable roles or account packages.');
     }
 
     public function destroy(Website $website, User $member): RedirectResponse
@@ -89,35 +75,6 @@ class WebsiteMemberController extends Controller
         });
 
         return back()->with('status', 'Website member removed.');
-    }
-
-    /** @param array<string, mixed> $data */
-    private function applyMembershipChoice(Website $website, User $member, array $data): void
-    {
-        if (blank($data['complimentary_membership_tier'] ?? null)) {
-            return;
-        }
-
-        if ($data['complimentary_membership_tier'] === 'existing') {
-            if (! $member->hasActiveMembership()) {
-                throw ValidationException::withMessages([
-                    'complimentary_membership_tier' => 'This account has no active membership. Choose a complimentary package instead.',
-                ]);
-            }
-        } else {
-            $member->update([
-                'admin_membership_tier' => $data['complimentary_membership_tier'],
-                'admin_membership_expires_at' => filled($data['complimentary_membership_ends_on'] ?? null)
-                    ? Carbon::parse($data['complimentary_membership_ends_on'])->endOfDay()
-                    : null,
-            ]);
-        }
-
-        if ($website->user_id && ! $website->members()->whereKey($website->user_id)->exists()) {
-            $website->members()->attach($website->user_id, ['role' => Website::MEMBER_ROLE_MANAGER]);
-        }
-
-        $website->update(['user_id' => $member->id]);
     }
 
     private function ensureManagerRemains(Website $website, User $member, ?string $newRole): void

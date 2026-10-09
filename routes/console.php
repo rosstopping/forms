@@ -80,3 +80,5 @@ Schedule::command('leads:dispatch-follow-up-reminders')
     ->everyMinute()
     ->onOneServer()
     ->withoutOverlapping();
+
+Schedule::command('content:discover')->dailyAt('08:00')->onOneServer()->withoutOverlapping();

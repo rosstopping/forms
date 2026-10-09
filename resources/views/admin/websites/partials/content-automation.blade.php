@@ -33,7 +33,42 @@
         </div>
 
         <div class="ui-well p-4 sm:p-5">
-            <h3 class="font-medium text-slate-900">When to prepare content</h3>
+            <label for="content-mode" class="ui-label block">Content strategy</label>
+            <select id="content-mode" name="content_mode" class="ui-input mt-2 w-full">
+                @foreach (['balanced' => 'Balanced — existing and new content', 'new_only' => 'New content only', 'existing_only' => 'Existing-page optimisation only'] as $value => $label)
+                    <option value="{{ $value }}" @selected(old('content_mode', $contentPlan?->content_mode ?? 'balanced') === $value)>{{ $label }}</option>
+                @endforeach
+            </select>
+            <p class="mt-2 text-sm text-slate-500">Incompatible requests stay in the queue. Classify requests before preparation when using a restricted mode. Every draft requires publication approval.</p>
+            @error('content_mode')<p class="mt-2 text-sm text-rose-700">{{ $message }}</p>@enderror
+            <fieldset class="mt-5"><legend class="font-medium">Monthly content maximums</legend><p class="mt-2 text-sm text-slate-500">Content queue limits cover work prepared through Copilot, Pixel or manual tasks. Ceilings, never publishing targets. Blank means no additional limit; zero pauses that work. Copilot is measured in task starts, not currency. Reservations count preparation starts, not published pages. Failed attempts retain their reservation; retries of the same manual or Pixel request do not count twice.</p><div class="mt-3 grid gap-4 sm:grid-cols-3">
+            @foreach (['monthly_article_limit' => 'New articles', 'monthly_optimisation_limit' => 'Existing-page optimisations', 'monthly_copilot_limit' => 'Copilot tasks'] as $field => $label)
+                <div><label for="{{ $field }}" class="ui-label block">{{ $label }}</label><input id="{{ $field }}" name="{{ $field }}" type="number" min="0" max="1000" value="{{ old($field, $contentPlan?->$field) }}" class="ui-input w-full">@error($field)<p class="mt-2 text-sm text-rose-700">{{ $message }}</p>@enderror</div>
+            @endforeach
+            </div></fieldset>
+            <p class="mt-3 text-sm text-slate-600">This month: {{ $contentBudgetUsage['articles'] }} article starts · {{ $contentBudgetUsage['optimisations'] }} optimisation starts · {{ $contentBudgetUsage['copilot'] }} Copilot task reservations. Uses the plan timezone.</p>
+            <label for="article-path" class="ui-label mt-5 block">Preferred article section</label>
+            <input id="article-path" name="article_path" value="{{ old('article_path', $contentPlan?->article_path) }}" placeholder="/guides/" maxlength="200" class="ui-input mt-2 w-full">
+            <p class="mt-2 text-sm text-slate-500">Optional path for new articles, such as /guides/ or /blog/. Drafts still follow the existing site templates, links and sitemap. Publication always requires approval.</p>
+            @error('article_path')<p class="mt-2 text-sm text-rose-700">{{ $message }}</p>@enderror
+            <input type="hidden" name="keyword_research_enabled" value="0">
+            <label for="content-keyword-research" class="ui-label mt-5 flex items-center gap-3"><input id="content-keyword-research" type="checkbox" name="keyword_research_enabled" value="1" @checked(old('keyword_research_enabled', $contentPlan?->keyword_research_enabled))><span>Discover related keyword opportunities weekly</span></label>
+            <p class="mt-2 text-sm text-slate-500">Opt-in paid search research, independent of competitors: one request every seven days, rotating your target keywords, with up to 20 related terms and 10 new candidates. No Copilot calls. Requires active research eligibility. Candidates stay in Discovered until selected for planning and approved after a coverage and business relevance review.</p>
+            @if ($contentPlan?->keyword_research)
+                <p class="mt-2 text-sm text-slate-500">Last keyword discovery: {{ $contentPlan->keyword_research['status'] ?? 'unavailable' }}@if (isset($contentPlan->keyword_research['provider_cost_usd'])) · recorded provider cost ${{ number_format($contentPlan->keyword_research['provider_cost_usd'], 4) }} USD @endif</p>
+                @if (! empty($contentPlan->keyword_research['error']))<p class="mt-2 text-sm text-amber-800">{{ $contentPlan->keyword_research['error'] }}</p>@endif
+            @endif
+            <input type="hidden" name="discovery_enabled" value="0">
+            <label for="content-discovery" class="ui-label mt-5 flex items-center gap-3"><input id="content-discovery" type="checkbox" name="discovery_enabled" value="1" @checked(old('discovery_enabled', $contentPlan?->discovery_enabled))><span>Discover content opportunities daily from saved competitor research</span></label>
+            <p class="mt-2 text-sm text-slate-500">Uses recent research in the selected market and your target keywords. No Copilot calls or extra research purchases. Candidates require relevance and coverage review before content preparation; no articles are created to fill a quota.</p>
+            <input type="hidden" name="trend_research_enabled" value="0">
+            <label for="content-trend-research" class="ui-label mt-5 flex items-center gap-3"><input id="content-trend-research" type="checkbox" name="trend_research_enabled" value="1" @checked(old('trend_research_enabled', $contentPlan?->trend_research_enabled))><span>Enrich opportunities with weekly trend research</span></label>
+            <p class="mt-2 text-sm text-slate-500">Opt-in paid provider research: one request for up to five saved opportunity or target terms every seven days. No Copilot calls. Relative popularity supports prioritisation; it does not establish demand, business fit or a ranking guarantee. Requires active research eligibility.</p>
+            @if ($contentPlan?->trend_research)
+                <p class="mt-2 text-sm text-slate-500">Last trend research: {{ $contentPlan->trend_research['status'] ?? 'unavailable' }}@if (isset($contentPlan->trend_research['provider_cost_usd'])) · recorded provider cost ${{ number_format($contentPlan->trend_research['provider_cost_usd'], 4) }} USD @endif</p>
+                @if (! empty($contentPlan->trend_research['error']))<p class="mt-2 text-sm text-amber-800">{{ $contentPlan->trend_research['error'] }}</p>@endif
+            @endif
+            <h3 class="mt-6 font-medium text-slate-900">When to prepare content</h3>
             <p class="mt-1 text-base text-slate-500 sm:text-sm">{{ $contentWeeklyLimit === 3 ? 'Your plan includes up to three scheduled runs each week.' : 'Your plan includes one scheduled run each week.' }} All selected days use the same time and timezone.</p>
             <div class="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 <div>

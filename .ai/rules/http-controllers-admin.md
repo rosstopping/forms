@@ -4,6 +4,7 @@ paths:
   - app/Http/Controllers/Admin/OnboardingCallController.php
   - app/Http/Controllers/Admin/ContentPlanController.php
   - app/Http/Controllers/Admin/WebsiteController.php
+  - app/Http/Controllers/Admin/WebsiteMemberController.php
 ---
 
 # Http Controllers Admin
@@ -19,3 +20,6 @@ Admin retries retain the original generation, requester and daily reservation un
 
 ## Load recent content runs with a narrow single-plan query
 The website workspace has one content plan. Do not eager load contentPlan.generations with limit(8): Laravel builds a ROW_NUMBER window query that sorts full content_generations rows, including long prompts, and can exhaust MySQL sort memory. After loading the plan, query its eight newest generations directly with only the columns used by the activity view and set the relation.
+
+## Website access invitations do not grant memberships
+Website users is admin-managed add/remove access by email, without user role/package/sponsorship controls. New attachments use the safe read-only customer pivot during portal migration; re-adding existing users must preserve access and billing. Reject old role/complimentary membership fields and retire member update mutations. Legacy billing sponsorship and last-manager removal safeguards persist until the portal/access migration decouples them.

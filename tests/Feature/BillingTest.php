@@ -173,7 +173,7 @@ it('shows locked feature previews for website areas outside the owner package', 
         ->assertSee('See where your website can grow')
         ->assertSee('Plan and request new content')
         ->assertSee('Put your local presence to work')
-        ->assertSee('A Growth or Complete membership is required to invite additional website users.')
+        ->assertDontSee('id="website-users-title"', false)
         ->assertSee('data-tab="forms"', false);
 });
 

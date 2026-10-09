@@ -9,6 +9,7 @@ use App\Http\Requests\UpdateSeoTargetKeywordRequest;
 use App\Jobs\CheckSeoTargetKeywordRanking;
 use App\Models\SeoTargetKeyword;
 use App\Models\Website;
+use App\Services\SeoImpactTracker;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -27,6 +28,7 @@ class SeoTargetKeywordController extends Controller
             if ($website->seoTargetKeywords()->where('normalized_term', SeoTargetKeyword::normalize($data['term']))->exists()) {
                 throw ValidationException::withMessages(['term' => 'This target term already exists. Restore or edit its existing record.']);
             }
+            $this->assertPrimaryAssignment($website, $data);
             $website->seoTargetKeywords()->create($data);
         });
 
@@ -76,7 +78,12 @@ class SeoTargetKeywordController extends Controller
         if ($website->seoTargetKeywords()->where('normalized_term', $normalized)->whereKeyNot($seoTargetKeyword->id)->exists()) {
             throw ValidationException::withMessages(['term' => 'This target term already exists.']);
         }
-        $seoTargetKeyword->update($request->validated());
+        DB::transaction(function () use ($request, $website, $seoTargetKeyword): void {
+            Website::whereKey($website->id)->lockForUpdate()->firstOrFail();
+            $data = $request->validated();
+            $this->assertPrimaryAssignment($website, array_merge($seoTargetKeyword->getAttributes(), $data), $seoTargetKeyword->id);
+            $seoTargetKeyword->update($data);
+        });
 
         return $this->redirect($website, 'Target keyword updated.');
     }
@@ -99,6 +106,7 @@ class SeoTargetKeywordController extends Controller
             if ($website->seoTargetKeywords()->whereNull('archived_at')->count() >= 20) {
                 throw ValidationException::withMessages(['term' => 'Archive a target before restoring this one. A website can track up to 20 active terms.']);
             }
+            $this->assertPrimaryAssignment($website, $seoTargetKeyword->getAttributes(), $seoTargetKeyword->id);
             $seoTargetKeyword->update(['archived_at' => null]);
         });
 
@@ -127,6 +135,21 @@ class SeoTargetKeywordController extends Controller
             : 'Ranking checks queued for '.$targets->count().' target '.str('keyword')->plural($targets->count()).'.';
 
         return $this->redirect($website, $message);
+    }
+
+    /** @param array<string, mixed> $data */
+    private function assertPrimaryAssignment(Website $website, array $data, ?int $except = null): void
+    {
+        if (empty($data['intended_url']) || ($data['assignment_role'] ?? 'supporting') !== 'primary') {
+            return;
+        }
+        $tracker = app(SeoImpactTracker::class);
+        $conflict = $website->seoTargetKeywords()->whereNull('archived_at')->where('assignment_role', 'primary')
+            ->when($except, fn ($query) => $query->whereKeyNot($except))->get(['intended_url'])
+            ->contains(fn (SeoTargetKeyword $target): bool => $target->intended_url && $tracker->urlKey($target->intended_url) === $tracker->urlKey($data['intended_url']));
+        if ($conflict) {
+            throw ValidationException::withMessages(['intended_url' => 'This page already has a primary keyword. Use a supporting assignment or update the existing primary first.']);
+        }
     }
 
     private function assertNested(Website $website, SeoTargetKeyword $keyword): void

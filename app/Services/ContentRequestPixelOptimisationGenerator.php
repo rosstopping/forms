@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Ai\Agents\ContentRequestPixelWriter;
 use App\Enums\OptimisationStatus;
 use App\Enums\OptimisationType;
+use App\Models\ContentPlan;
 use App\Models\ContentRequest;
 use App\Models\User;
 use App\Models\WebsiteHealthReport;
@@ -31,8 +32,14 @@ class ContentRequestPixelOptimisationGenerator
             return 0;
         }
 
-        if (app(SeoImpactTracker::class)->requestIsProtected($contentRequest)) {
-            $contentRequest->update(['pixel_error' => 'These pages changed within the last 14 days. Wait until their page cooldown expires.']);
+        if (($contentRequest->planning_status ?? 'queued') !== 'queued' || $contentRequest->held_at || in_array($contentRequest->work_type, ['new_article', 'new_page'], true)) {
+            return 0;
+        }
+        $plan = $website->contentPlan ?? new ContentPlan(['website_id' => $website->id]);
+        $plan->setRelation('website', $website);
+        $state = app(ContentWorkSelector::class)->queueStates($plan, includeRepository: false, copilot: false)[$contentRequest->id] ?? ['state' => 'ready'];
+        if ($state['state'] !== 'ready' || app(SeoImpactTracker::class)->requestIsProtected($contentRequest)) {
+            $contentRequest->update(['pixel_error' => $state['reason'] ?? 'These pages changed within the last 14 days. Wait until their page cooldown expires.']);
 
             return 0;
         }
@@ -44,6 +51,12 @@ class ContentRequestPixelOptimisationGenerator
                 'pixel_processed_at' => now(),
                 'pixel_error' => 'No Pixel-detected pages with crawl evidence are available yet.',
             ]);
+
+            return 0;
+        }
+
+        if ($reason = app(ContentBudget::class)->reserveRequest($contentRequest)) {
+            $contentRequest->update(['pixel_error' => $reason]);
 
             return 0;
         }

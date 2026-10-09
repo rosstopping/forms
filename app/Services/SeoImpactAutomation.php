@@ -59,6 +59,7 @@ class SeoImpactAutomation
             }
             $urls = $this->tracker->websiteUrls($locked->website, $urls);
             $locked->update([
+                'measurement_checkpoints' => $locked->measurement_checkpoints ?: SeoImpactCheckpoints::CONTENT_DAYS, 'review_after_days' => ($locked->measurement_checkpoints ?: SeoImpactCheckpoints::CONTENT_DAYS)[0],
                 'automated' => true, 'live_at' => $liveAt, 'status' => 'measuring', 'target_urls' => $urls,
                 'actual_changes' => Str::limit($changes, 3000, ''), 'deployment_evidence' => $delivery,
                 'property_url' => $locked->website->searchConsoleConnection?->property_url,
@@ -67,7 +68,7 @@ class SeoImpactAutomation
                 'next_measurement_at' => $urls === [] ? null : now()->addDays(3),
                 'review_available_at' => $urls === [] ? now() : null,
                 'measurement_error' => $urls === [] ? 'No owned page URL was found in the brief or pull request. Tracking will resume when a page is identified.' : null,
-                'automatic_summary' => 'The change is being tracked automatically. Page checks run after deployment; search results are compared after four and eight weeks.',
+                'automatic_summary' => 'The change is being tracked automatically. Page checks run after deployment; search results are compared at 14, 30, 60 and 90 days.',
             ]);
             if ($urls !== []) {
                 VerifySeoImpact::dispatch($locked)->delay(now()->addMinutes(15))->afterCommit();
@@ -83,22 +84,23 @@ class SeoImpactAutomation
         $position = is_numeric($before) && is_numeric($after)
             ? ' Search Console average position moved from '.round($before, 1).' to '.round($after, 1).' (lower is better).'
             : '';
+        $nextDay = app(SeoImpactCheckpoints::class)->next($impact);
         $decision = match ($outcome) {
             'improved' => 'keep',
             'declined' => 'investigate',
-            default => $impact->review_after_days < 56 ? 'wait' : 'inconclusive',
+            default => $nextDay !== null ? 'wait' : 'inconclusive',
         };
         $next = match ($decision) {
-            'keep' => 'Keep the change. '.($impact->review_after_days < 56 ? 'Sitewell will check again at eight weeks.' : 'The scheduled measurement period is complete.'),
+            'keep' => 'Keep the change. '.($nextDay !== null ? 'Sitewell will check again at day '.$nextDay.'.' : 'The scheduled measurement period is complete.'),
             'investigate' => 'Review the affected page and competing changes before proposing a revision. No rollback has been applied.',
-            'wait' => 'Allow more time; Sitewell will check again at eight weeks.',
+            'wait' => 'Allow more time; Sitewell will check again at day '.$nextDay.'.',
             default => 'No reliable improvement or decline can be established. The measurement window is complete; avoid treating missing evidence as a failure.',
         };
 
         return [
-            'automatic_summary' => 'Week '.intdiv($impact->review_after_days, 7).': '.str_replace('_', ' ', $outcome).'. '.$assessment['reason'].$position.' '.$next,
+            'automatic_summary' => ($impact->measurement_checkpoints ? 'Day '.$impact->review_after_days : 'Week '.intdiv($impact->review_after_days, 7)).': '.str_replace('_', ' ', $outcome).'. '.$assessment['reason'].$position.' '.$next,
             'suggested_decision' => $decision, 'review_available_at' => now(), 'acknowledged_at' => null,
-            ...($impact->review_after_days >= 56 ? ['status' => 'completed', 'next_measurement_at' => null, 'decision' => $decision, 'decision_notes' => $next, 'reviewed_at' => now()] : []),
+            ...($nextDay === null ? ['status' => 'completed', 'next_measurement_at' => null, 'decision' => $decision, 'decision_notes' => $next, 'reviewed_at' => now()] : []),
         ];
     }
 }

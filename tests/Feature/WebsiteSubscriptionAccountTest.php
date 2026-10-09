@@ -14,7 +14,7 @@ it('lets an administrator use a viewer subscription without granting management 
     $website->members()->attach($client, ['role' => Website::MEMBER_ROLE_VIEWER]);
 
     $this->actingAs($admin)->get(route('admin.websites.show', $website))
-        ->assertOk()->assertSee('Subscription account');
+        ->assertOk()->assertDontSee('name="subscription_user_id"', false);
     $this->put(route('admin.websites.update', $website), ['subscription_user_id' => $client->id])
         ->assertSessionHasNoErrors();
 

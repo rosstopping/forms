@@ -107,3 +107,6 @@ The full audit uses the same compact header, right screenshot/full-width mobile 
 
 ## Blur the full report under one finalising loader
 For unlocked ready audits, while full_report.status is queued/running or completed with AI status pending, blur the report surface behind one centered Finalising your full report loader. Clip the background to a compact loading area, mark it inert and aria-hidden, hide the floating booking button and suppress the old per-section processing banner. Poll the existing signed/session status URL and reveal the complete report automatically after completion. Failed/deferred research must not produce an indefinite loader; retain actionable recovery states. Rendering/polling must never queue research.
+
+## Let the final-report loader size its container
+The finalising loader must remain in normal flow with min-h-104 and padding so its complete spinner and message always fit. Position only the blurred inert report background absolute inset-0 during loading. Do not cap a full-height report container with max-height and place an absolute loader over it; that can clip the spinner. Verify containment at 320px and 390px mobile widths and desktop.

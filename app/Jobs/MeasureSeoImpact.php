@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\SeoImpact;
 use App\Services\SearchConsoleClient;
 use App\Services\SeoImpactAutomation;
+use App\Services\SeoImpactCheckpoints;
 use App\Services\SeoImpactEvaluator;
 use App\Services\SeoImpactTracker;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -59,18 +60,23 @@ class MeasureSeoImpact implements ShouldBeUnique, ShouldQueue
             if (! $baseline || ! $liveDay || ($baseline['end'] ?? null) !== $baselineEnd->toDateString()) {
                 $baseline = $this->measure($search, $impact, $baselineEnd->copy()->subDays(27), $baselineEnd);
             }
+            if ($liveDay && $impact->measurement_checkpoints && ! isset($baseline['short_window'])) {
+                $baseline['short_window'] = $this->measure($search, $impact, $baselineEnd->copy()->subDays(13), $baselineEnd);
+            }
+            $windowDays = app(SeoImpactCheckpoints::class)->windowDays($impact);
+            $comparisonBaseline = $windowDays === 14 && isset($baseline['short_window']) ? $baseline['short_window'] : $baseline;
             $observations = null;
             $review = null;
             if ($liveDay && $latest->greaterThan($liveDay)) {
                 $checkpointEnd = $liveDay->copy()->addDays($impact->review_after_days);
                 $end = $latest->min($checkpointEnd);
-                $start = $end->copy()->subDays(27)->max($liveDay->copy()->addDay());
+                $start = $end->copy()->subDays($windowDays - 1)->max($liveDay->copy()->addDay());
                 $observations = $this->measure($search, $impact, $start, $end);
                 if ($end->equalTo($checkpointEnd)) {
-                    $review = $evaluator->assess($baseline, $observations, $impact->primary_metric, $this->overlaps($impact, $baseline['start'], $end));
+                    $review = $evaluator->assess($comparisonBaseline, $observations, $impact->primary_metric, $this->overlaps($impact, $comparisonBaseline['start'], $end));
                 }
             }
-            DB::transaction(function () use ($impact, $version, $connection, $baseline, $observations, $review): void {
+            DB::transaction(function () use ($impact, $version, $connection, $baseline, $comparisonBaseline, $observations, $review): void {
                 $locked = SeoImpact::lockForUpdate()->findOrFail($impact->id);
                 if ($locked->getAttributes() !== $version) {
                     return;
@@ -79,14 +85,14 @@ class MeasureSeoImpact implements ShouldBeUnique, ShouldQueue
                     'last_measured_at' => now(), 'next_measurement_at' => $impact->live_at ? ($impact->automated ? $impact->live_at->copy()->setTimezone('America/Los_Angeles')->startOfDay()->addDays($impact->review_after_days + 3)->utc() : now()->addDay()) : null, 'measurement_error' => null];
                 if ($review) {
                     $locked->reviews()->firstOrCreate(['checkpoint' => $impact->review_after_days], [
-                        'period_start' => $observations['start'], 'period_end' => $observations['end'], 'baseline' => $baseline,
+                        'period_start' => $observations['start'], 'period_end' => $observations['end'], 'baseline' => $comparisonBaseline,
                         'measurement' => $observations, 'assessment' => $review, 'outcome' => $review['outcome'],
                     ]);
                     $updates['outcome'] = $review['outcome'];
-                    if ($impact->review_after_days === 28) {
-                        $updates['review_after_days'] = 56;
+                    if (($nextDay = app(SeoImpactCheckpoints::class)->next($impact)) !== null) {
+                        $updates['review_after_days'] = $nextDay;
                         if ($impact->automated) {
-                            $updates['next_measurement_at'] = $impact->live_at->copy()->setTimezone('America/Los_Angeles')->startOfDay()->addDays(59)->utc();
+                            $updates['next_measurement_at'] = $impact->live_at->copy()->setTimezone('America/Los_Angeles')->startOfDay()->addDays($nextDay + 3)->utc();
                         }
                     } else {
                         $updates['status'] = 'review_required';
@@ -94,14 +100,14 @@ class MeasureSeoImpact implements ShouldBeUnique, ShouldQueue
                     }
                 }
                 if ($review && $impact->automated) {
-                    $updates = [...$updates, ...app(SeoImpactAutomation::class)->checkpointUpdates($impact, $review, $baseline, $observations)];
+                    $updates = [...$updates, ...app(SeoImpactAutomation::class)->checkpointUpdates($impact, $review, $comparisonBaseline, $observations)];
                 }
                 $locked->update($updates);
             });
         });
     }
 
-    /** @return array{start: string, end: string, source: string, complete: bool, target: array, control: ?array} */
+    /** @return array{window_days: int, start: string, end: string, source: string, complete: bool, target: array, control: ?array} */
     private function measure(SearchConsoleClient $search, SeoImpact $impact, Carbon $start, Carbon $end): array
     {
         $connection = $impact->website->searchConsoleConnection;
@@ -111,7 +117,7 @@ class MeasureSeoImpact implements ShouldBeUnique, ShouldQueue
             throw new \RuntimeException('Search Console is still finalising the requested period.');
         }
 
-        return ['start' => $start->toDateString(), 'end' => $end->toDateString(), 'source' => 'search_console', 'complete' => $target['complete'], 'target' => $target, 'control' => $control];
+        return ['window_days' => (int) $start->diffInDays($end) + 1, 'start' => $start->toDateString(), 'end' => $end->toDateString(), 'source' => 'search_console', 'complete' => $target['complete'], 'target' => $target, 'control' => $control];
     }
 
     private function overlaps(SeoImpact $impact, string $start, Carbon $end): bool

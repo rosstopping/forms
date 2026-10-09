@@ -6,8 +6,10 @@ use App\Models\ContentGeneration;
 use App\Models\ContentPlan;
 use App\Services\BacklinkContentContext;
 use App\Services\CompetitorContentContext;
+use App\Services\ContentBudget;
 use App\Services\ContentGenerationPromptGenerator;
 use App\Services\ContentSchedule;
+use App\Services\ContentStrategy;
 use App\Services\ContentWorkSelector;
 use App\Services\CopilotAgentClient;
 use App\Services\SearchConsoleClient;
@@ -94,7 +96,7 @@ class StartContentGeneration implements ShouldBeEncrypted, ShouldBeUnique, Shoul
 
                 return;
             }
-            $work = app(ContentWorkSelector::class)->select($this->generation);
+            $work = app(ContentWorkSelector::class)->select($this->generation, repositoryPreflight: true);
             $contentRequests = $work['requests'];
             if ($contentRequests->isEmpty() && ! $work['target']) {
                 $this->skipGeneration('No eligible work: add a content request or target keyword, or wait for recent changes and open reviews.');
@@ -103,25 +105,25 @@ class StartContentGeneration implements ShouldBeEncrypted, ShouldBeUnique, Shoul
             }
             $this->generation->update(['seo_target_keyword_id' => $work['target']?->id, 'target_keyword_context' => $work['snapshot']]);
         } elseif ($this->generation->trigger === 'manual') {
-            $work = app(ContentWorkSelector::class)->select($this->generation);
+            $work = app(ContentWorkSelector::class)->select($this->generation, repositoryPreflight: true);
             $contentRequests = $work['requests'];
             if ($contentRequests->isEmpty() && ! $work['target']
-                && ($work['snapshot'] !== [] || $this->generation->plan->website->contentRequests()->whereNull('picked_up_at')->exists())) {
+                && (($this->generation->plan->content_mode ?? 'balanced') !== 'balanced' || $work['snapshot'] !== [] || $this->generation->plan->website->contentRequests()->whereNull('picked_up_at')->exists())) {
                 $this->skipGeneration('The available work was recently changed or is already awaiting pull request review.');
 
                 return;
             }
             $this->generation->update(['seo_target_keyword_id' => $work['target']?->id, 'target_keyword_context' => $work['snapshot']]);
         } else {
-            $contentRequests = $this->generation->plan->website->contentRequests()->pendingInQueueOrder()->limit(2)->get();
-            if ($this->generation->target_keyword_context === null) {
-                $activeTargets = $targets->active($this->generation->plan->website);
-                $selectedTarget = $contentRequests->isEmpty() ? $targets->select($activeTargets) : null;
-                $this->generation->update([
-                    'seo_target_keyword_id' => $selectedTarget?->id,
-                    'target_keyword_context' => $targets->snapshot($activeTargets),
-                ]);
+            $work = app(ContentWorkSelector::class)->select($this->generation, repositoryPreflight: true);
+            $contentRequests = $work['requests'];
+            if ($contentRequests->isEmpty() && ! $work['target']
+                && (($this->generation->plan->content_mode ?? 'balanced') !== 'balanced' || $work['snapshot'] !== [] || $this->generation->plan->website->contentRequests()->whereNull('picked_up_at')->exists())) {
+                $this->skipGeneration('No eligible work: requests are on hold, cooling down or awaiting review.');
+
+                return;
             }
+            $this->generation->update(['seo_target_keyword_id' => $work['target']?->id, 'target_keyword_context' => $work['snapshot']]);
         }
         $impactTracker = app(SeoImpactTracker::class);
         $hadRequests = $contentRequests->isNotEmpty();
@@ -129,14 +131,39 @@ class StartContentGeneration implements ShouldBeEncrypted, ShouldBeUnique, Shoul
         $selected = collect($this->generation->target_keyword_context ?? [])->firstWhere('id', $this->generation->seo_target_keyword_id);
         $protected = $impactTracker->protectedKeys($this->generation->plan->website);
         if (($hadRequests && $contentRequests->isEmpty()) || ($selected && ($protected->contains('term:'.mb_strtolower(trim($selected['term'])))
-            || (! empty($selected['ranking_url']) && $protected->contains($impactTracker->urlKey($selected['ranking_url'])))))) {
+            || (! empty($selected['intended_url'] ?? $selected['ranking_url'] ?? null) && $protected->contains($impactTracker->urlKey($selected['intended_url'] ?? $selected['ranking_url'])))))) {
             $this->skipGeneration('The selected pages changed within the last 14 days. Wait until their page cooldown expires.');
+
+            return;
+        }
+        $budget = app(ContentBudget::class);
+        $budgetReason = DB::transaction(function () use ($budget, $contentRequests): ?string {
+            $plan = ContentPlan::whereKey($this->generation->content_plan_id)->lockForUpdate()->firstOrFail();
+            $this->generation->setRelation('plan', $plan);
+            foreach ($contentRequests as $request) {
+                if ($reason = app(ContentStrategy::class)->requestPauseReason($plan, $request)) {
+                    return $reason;
+                }
+            }
+            if ($contentRequests->isEmpty() && ($plan->content_mode ?? 'balanced') !== 'balanced'
+                && (! $this->generation->seo_target_keyword_id || $plan->content_mode === 'new_only')) {
+                return 'The website content strategy requires classified queued work.';
+            }
+            $reason = $budget->pauseReason($plan, $contentRequests, $this->generation->seo_target_keyword_id !== null, $this->generation->id);
+            if ($reason === null) {
+                $this->generation->update(['budget_reserved_at' => $this->generation->budget_reserved_at ?? now(), 'work_units' => $budget->units($contentRequests, $this->generation->seo_target_keyword_id !== null)]);
+            }
+
+            return $reason;
+        });
+        if ($budgetReason) {
+            $this->skipGeneration($budgetReason);
 
             return;
         }
         $this->generation->setRelation('contentRequests', $contentRequests);
         $performance = $connection?->property_url ? $searchConsole->performance($connection) : [];
-        $this->generation->update(['search_performance' => $performance]);
+        $this->generation->update(['search_performance' => $performance, 'search_performance_property' => $connection?->property_url]);
         if ($this->generation->competitor_context === null) {
             $this->generation->update(['competitor_context' => app(CompetitorContentContext::class)->forGeneration($this->generation, $contentRequests)]);
         }

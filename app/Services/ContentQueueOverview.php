@@ -79,6 +79,11 @@ class ContentQueueOverview
             return array_replace($row, ['state' => 'Paused', 'reason' => 'Waiting requests overlap with an open pull request.', 'action' => 'Review pull requests']);
         }
 
+        $states = collect($this->work->queueStates($plan));
+        if ($states->isNotEmpty() && $states->every(fn (array $state): bool => $state['state'] !== 'ready')) {
+            return array_replace($row, ['state' => 'Paused', 'reason' => 'All waiting requests are on hold, cooling down or awaiting dependency checks/review.', 'action' => 'View queue']);
+        }
+
         $nextRun = $this->schedule->nextRunAt($plan);
 
         return array_replace($row, [

@@ -28,6 +28,14 @@ class UpdateContentPlanRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'monthly_article_limit' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:1000'],
+            'monthly_optimisation_limit' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:1000'],
+            'monthly_copilot_limit' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:1000'],
+            'keyword_research_enabled' => ['sometimes', 'boolean'],
+            'article_path' => ['sometimes', 'nullable', 'string', 'max:200', 'regex:~^/(?:[a-zA-Z0-9_-]+/)*$~'],
+            'trend_research_enabled' => ['sometimes', 'boolean'],
+            'discovery_enabled' => ['sometimes', 'boolean'],
+            'content_mode' => ['sometimes', 'required', Rule::in(['balanced', 'new_only', 'existing_only'])],
             'enabled' => ['required', 'boolean'],
             'competitor_research_mode' => ['sometimes', 'required', Rule::in(['manual', 'research', 'drafts'])],
             'weekday' => ['required', 'integer', 'between:0,6'],

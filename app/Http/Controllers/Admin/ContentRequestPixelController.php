@@ -18,6 +18,7 @@ class ContentRequestPixelController extends Controller
 
         $contentRequests = $website->contentRequests()
             ->pendingInQueueOrder()
+            ->whereNull('held_at')
             ->whereNull('pixel_processed_at')
             ->limit(20)
             ->get();

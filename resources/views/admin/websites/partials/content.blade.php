@@ -1,6 +1,6 @@
 @php
     $contentPlan = $website->contentPlan;
-    $contentSections = ['queue' => 'Queue', 'activity' => 'Activity'];
+    $contentSections = ['plan' => 'Plan', 'queue' => 'Queue', 'activity' => 'Activity'];
     if ($canManageWebsite) {
         $contentSections['automation'] = 'Automation';
     }
@@ -12,7 +12,7 @@
     $currentContentSection = is_string($requestedContentSection) && array_key_exists($requestedContentSection, $contentSections) ? $requestedContentSection : 'queue';
     if ($errors->has('instructions')) {
         $currentContentSection = 'queue';
-    } elseif ($canManageWebsite && collect(['enabled', 'weekday', 'hour', 'timezone', 'audience', 'guidance', 'additional_weekdays', 'additional_weekdays.*'])->contains(fn ($field) => $errors->has($field))) {
+    } elseif ($canManageWebsite && collect(['trend_research_enabled', 'content_mode', 'monthly_article_limit', 'monthly_optimisation_limit', 'monthly_copilot_limit', 'discovery_enabled', 'enabled', 'weekday', 'hour', 'timezone', 'audience', 'guidance', 'additional_weekdays', 'additional_weekdays.*'])->contains(fn ($field) => $errors->has($field))) {
         $currentContentSection = 'automation';
     }
     $canSubmitContentRequest = $website->repository || (config('forms.pixel_ui_enabled') && $website->pixel_enabled);
@@ -44,6 +44,37 @@
                 @endforeach
             </div>
         </nav>
+        <div id="content-section-plan" role="region" aria-labelledby="content-section-tab-plan" @if ($currentContentSection !== 'plan') hidden @endif>
+            <section class="ui-panel ui-section">
+                <h2 class="text-lg font-semibold">Rolling content plan</h2>
+                <p class="mt-2 text-sm text-slate-600">Choose opportunities from the prioritised action list, then plan their timing. Planned work uses no Copilot credits and stays out of execution until approved into the queue. Dates guide planning; they do not force publication.</p>
+                @error('coverage_reviewed')<p class="mt-3 text-sm text-rose-700" role="alert">Confirm coverage and business relevance before approving discovered content.</p>@enderror
+                <a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'actions']) }}" class="ui-button ui-button-secondary mt-4">Explore opportunities</a>
+                <div class="mt-5 divide-y divide-slate-200">
+                    @forelse ($plannedContentRequests as $plannedRequest)
+                        <article class="py-4">
+                            <p class="text-sm font-medium">{{ $plannedRequest->planned_for?->format('j M Y') ?? 'Timing not set' }}</p>
+                            <p class="mt-2 whitespace-pre-line text-sm text-slate-600">{{ $plannedRequest->instructions }}</p>
+                            @if ($canManageWebsite)
+                                <form method="POST" action="{{ route('admin.content-requests.queue.update', [$website, $plannedRequest]) }}" class="mt-3 flex flex-wrap gap-3">
+                                    @csrf @method('PATCH')
+                                    <label for="planned-date-{{ $plannedRequest->id }}" class="sr-only">Planned date</label>
+                                    <input id="planned-date-{{ $plannedRequest->id }}" type="date" name="planned_for" value="{{ $plannedRequest->planned_for?->format('Y-m-d') }}" class="ui-input">
+                                    <button type="submit" name="action" value="plan" class="ui-button ui-button-secondary">Save timing</button>
+                                    @if ($plannedRequest->discovery_context)
+                                        <div class="basis-full text-sm text-slate-600"><p>{{ $plannedRequest->discovery_context['purpose'] }}</p><p class="mt-1">Intent: {{ $plannedRequest->discovery_context['search_intent'] }} · Estimated monthly searches: {{ number_format($plannedRequest->discovery_context['search_volume']) }}</p><p class="mt-1">{{ $plannedRequest->discovery_context['relevance_reason'] }}</p><label class="mt-3 flex items-start gap-2"><input type="checkbox" name="coverage_reviewed" value="1"><span>I have checked search intent, business relevance and existing coverage, and approve this brief for preparation.</span></label></div>
+                                    @endif
+                                    <button type="submit" name="action" value="enqueue" class="ui-button ui-button-primary">Approve into queue</button>
+                                </form>
+                            @endif
+                        </article>
+                    @empty
+                        <p class="py-4 text-sm text-slate-500">No content planned yet.</p>
+                    @endforelse
+                </div>
+                {{ $plannedContentRequests->links() }}
+            </section>
+        </div>
         <div id="content-section-queue" role="region" aria-labelledby="content-section-tab-queue" @if ($currentContentSection !== 'queue') hidden @endif>
             @include('admin.websites.partials.content-queue')
         </div>

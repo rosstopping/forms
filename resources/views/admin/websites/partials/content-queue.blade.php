@@ -79,12 +79,14 @@
                 @forelse ($pendingContentRequests as $contentRequest)
                     @php
                         $queuePosition = $pendingContentRequests->firstItem() + $loop->index;
+                        $queueHasErrors = (int) old('queue_request_id') === $contentRequest->id && $errors->any();
+                        $queueState = $contentQueueStates[$contentRequest->id] ?? ['state' => 'ready', 'reason' => '', 'eligible_at' => null];
                     @endphp
                     <article class="rounded-lg border border-slate-950/10 p-3">
                         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                             <div class="min-w-0">
                                 <div class="flex flex-wrap items-center gap-2">
-                                    @if ($queuePosition === 1)
+                                    @if ($queuePosition === 1 && $queueState['state'] === 'ready')
                                         <span class="rounded-full bg-teal-100 px-2.5 py-1 text-sm font-medium text-teal-800">Up next</span>
                                     @else
                                         <span class="rounded-full bg-amber-100 px-2.5 py-1 text-sm font-medium tabular-nums text-amber-800">Queue #{{ $queuePosition }}</span>
@@ -95,6 +97,13 @@
                                     <span class="text-sm text-slate-500">Added {{ $contentRequest->created_at->diffForHumans() }}{{ $contentRequest->creator ? ' by '.$contentRequest->creator->name : '' }}</span>
                                 </div>
                                 <p class="mt-2 whitespace-pre-line break-words text-base text-slate-700 sm:text-sm">{{ $contentRequest->instructions }}</p>
+                                <p class="mt-2 text-sm font-medium text-slate-700">
+                                    {{ match ($queueState['state']) { 'strategy' => 'Waiting for strategy review', 'held' => 'On hold', 'cooldown' => 'Waiting for cooldown', 'review' => 'Waiting for review', 'preflight' => 'Waiting for dependency check', default => 'Ready for preflight' } }}
+                                    @if ($queueState['eligible_at'])
+                                        — eligible from {{ \Illuminate\Support\Carbon::parse($queueState['eligible_at'])->timezone($website->contentPlan?->timezone ?? config('app.timezone'))->format('j M Y, H:i T') }}
+                                    @endif
+                                </p>
+                                <p class="mt-1 text-sm text-slate-500">{{ $queueState['reason'] }}</p>
                                 @if ($contentRequest->seoImpact)
                                     <a href="{{ route('admin.websites.section', [$website, 'seo', 'seo_section' => 'impact', 'seo_impact' => $contentRequest->seoImpact->id]) }}" class="mt-2 inline-block text-sm font-medium text-slate-700 underline">View measurable brief</a>
                                 @endif
@@ -110,14 +119,83 @@
                                             <button type="submit" class="ui-button ui-button-secondary w-full sm:w-auto">Bump to top</button>
                                         </form>
                                     @endif
+                                    @if ($contentRequest->held_at)
+                                        <form method="POST" action="{{ route('admin.content-requests.queue.update', [$website, $contentRequest]) }}">
+                                            @csrf
+                                            @method('PATCH')
+                                            <input type="hidden" name="action" value="release">
+                                            <button type="submit" class="ui-button ui-button-secondary">Release hold</button>
+                                        </form>
+                                    @endif
+                                    @if (! $contentRequest->budget_reserved_at)
                                     <form method="POST" action="{{ route('admin.content-requests.destroy', [$website, $contentRequest]) }}">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="ui-button ui-button-secondary w-full sm:w-auto">Remove</button>
                                     </form>
+                                    @endif
                                 </div>
                             @endif
                         </div>
+                        @if ($canManageWebsite)
+                            <details class="mt-3" @if ($queueHasErrors) open @endif>
+                                <summary class="cursor-pointer text-sm font-medium">Queue controls</summary>
+                                <form method="POST" action="{{ route('admin.content-requests.queue.update', [$website, $contentRequest]) }}" class="mt-3 flex flex-wrap items-end gap-3">
+                                    @csrf @method('PATCH')
+                                    <input type="hidden" name="action" value="plan">
+                                    <input type="hidden" name="queue_request_id" value="{{ $contentRequest->id }}">
+                                    <div><label for="queue-planned-date-{{ $contentRequest->id }}" class="ui-label block">Proposed date (optional)</label><input id="queue-planned-date-{{ $contentRequest->id }}" type="date" name="planned_for" class="ui-input"></div>
+                                    <button type="submit" class="ui-button ui-button-secondary">Move to content plan</button>
+                                </form>
+                                @if (! $contentRequest->budget_reserved_at)
+                                <form method="POST" action="{{ route('admin.content-requests.queue.update', [$website, $contentRequest]) }}" class="mt-3 flex flex-wrap items-end gap-3">
+                                    @csrf @method('PATCH')
+                                    <input type="hidden" name="action" value="classify">
+                                    <input type="hidden" name="queue_request_id" value="{{ $contentRequest->id }}">
+                                    <div><label for="work-type-{{ $contentRequest->id }}" class="ui-label block">Work type</label>
+                                    <select id="work-type-{{ $contentRequest->id }}" name="work_type" class="ui-input">
+                                        @foreach (['unspecified' => 'Needs classification', 'new_article' => 'New article', 'new_page' => 'New landing page', 'optimisation' => 'Existing-page optimisation'] as $value => $label)
+                                            <option value="{{ $value }}" @selected(($contentRequest->work_type ?? 'unspecified') === $value)>{{ $label }}</option>
+                                        @endforeach
+                                    </select></div>
+                                    <button class="ui-button ui-button-secondary" type="submit">Save work type</button>
+                                </form>
+                                @else
+                                    <p class="mt-3 text-sm text-slate-500">Preparation usage is reserved. Work type is fixed; hold the request to retain its history.</p>
+                                @endif
+                                @if ($queueHasErrors)
+                                    @foreach ($errors->all() as $queueError)
+                                        <p class="mt-2 text-sm text-red-700">{{ $queueError }}</p>
+                                    @endforeach
+                                @endif
+                                @if (! $contentRequest->held_at)
+                                    <form method="POST" action="{{ route('admin.content-requests.queue.update', [$website, $contentRequest]) }}" class="mt-3">
+                                        @csrf
+                                        @method('PATCH')
+                                        <input type="hidden" name="action" value="hold">
+                                        <input type="hidden" name="queue_request_id" value="{{ $contentRequest->id }}">
+                                        <label class="ui-label block" for="hold-reason-{{ $contentRequest->id }}">Reason for holding this request</label>
+                                        <input id="hold-reason-{{ $contentRequest->id }}" name="hold_reason" required maxlength="500" class="ui-input mt-1 w-full" value="{{ $queueHasErrors ? old('hold_reason') : '' }}">
+                                        <button type="submit" class="ui-button ui-button-secondary mt-2">Put on hold</button>
+                                    </form>
+                                @endif
+                                <form method="POST" action="{{ route('admin.content-requests.queue.update', [$website, $contentRequest]) }}" class="mt-3">
+                                    @csrf
+                                    @method('PATCH')
+                                    <input type="hidden" name="action" value="dependencies">
+                                    <input type="hidden" name="queue_request_id" value="{{ $contentRequest->id }}">
+                                    <label class="ui-label block" for="required-urls-{{ $contentRequest->id }}">Required pages</label>
+                                    <p class="mt-1 text-sm text-slate-500">Pages that must change to complete this request, such as its guides listing. One website URL per line, up to five.</p>
+                                    <textarea id="required-urls-{{ $contentRequest->id }}" name="urls" rows="2" class="ui-input mt-1 w-full">{{ implode("\n", $contentRequest->dependencies['urls'] ?? []) }}</textarea>
+                                    @if (Auth::user()?->isAdmin())
+                                        <label class="ui-label mt-3 block" for="required-files-{{ $contentRequest->id }}">Required repository files</label>
+                                        <p class="mt-1 text-sm text-slate-500">Exact paths from the repository root, including any required sitemap or listing files. One per line, up to five. GitHub checks these before Copilot starts.</p>
+                                        <textarea id="required-files-{{ $contentRequest->id }}" name="files" rows="2" class="ui-input mt-1 w-full">{{ implode("\n", $contentRequest->dependencies['files'] ?? []) }}</textarea>
+                                    @endif
+                                    <button type="submit" class="ui-button ui-button-secondary mt-2">Save dependencies</button>
+                                </form>
+                            </details>
+                        @endif
                     </article>
                 @empty
                     <p class="rounded-lg bg-slate-50 p-3 text-slate-500 text-base sm:text-sm">Your queue is clear. Add a request or choose an SEO opportunity to plan your next improvement.</p>

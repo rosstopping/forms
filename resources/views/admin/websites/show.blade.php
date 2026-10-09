@@ -372,110 +372,93 @@
             @endif
         </section>
 
-        <section class="ui-panel ui-section">
-            <div class="flex items-start justify-between gap-4">
-                <div>
-                    <h2 class="font-semibold">Website users</h2>
-                    <p class="mt-1 text-slate-600 text-base sm:text-sm">Managers can make changes. Viewers have read-only access.</p>
-                </div>
-                <span class="rounded-full bg-slate-100 px-2.5 py-1 text-sm font-medium text-slate-700">{{ $websiteUsers->count() }} {{ Str::plural('user', $websiteUsers->count()) }}</span>
-            </div>
-
-            @if (Auth::user()?->isAdmin())
-                <form method="POST" action="{{ route('admin.websites.update', $website) }}" class="ui-well mt-4 p-4">
+        @if (Auth::user()?->isAdmin())
+            <section class="ui-panel ui-section" aria-labelledby="website-service-title">
+                <h2 id="website-service-title" class="font-semibold">Managed service</h2>
+                <p class="mt-1 text-slate-600 text-base sm:text-sm">Set the agreed service for this website. Saving these settings does not change Stripe billing or enable scheduled work.</p>
+                @if (! $website->service_package)
+                    <p class="mt-3 text-amber-700 text-base sm:text-sm">This website needs a package assigned.</p>
+                @endif
+                <form method="POST" action="{{ route('admin.websites.service.update', $website) }}" class="mt-4 space-y-4">
                     @csrf
                     @method('PUT')
-                    <label for="subscription_user_id" class="ui-label block">Subscription account</label>
-                    <p class="mt-1 text-slate-600 text-base sm:text-sm">This member’s package unlocks the website’s features. Their Viewer or Manager access stays unchanged. Your administrator access lets you manage the website for them.</p>
-                    <select id="subscription_user_id" name="subscription_user_id" class="ui-input mt-3 w-full">
-                        <option value="">No subscription account</option>
-                        @foreach ($websiteUsers as $websiteUser)
-                            <option value="{{ $websiteUser['user']->id }}" @selected((string) old('subscription_user_id', $website->user_id) === (string) $websiteUser['user']->id)>{{ $websiteUser['user']->name }} — {{ $websiteUser['user']->email }}</option>
-                        @endforeach
-                    </select>
-                    @error('subscription_user_id')<p class="mt-1 text-red-700 text-base sm:text-sm">{{ $message }}</p>@enderror
-                    <button type="submit" class="ui-button ui-button-secondary mt-3">Save subscription account</button>
-                </form>
-            @endif
-
-            @error('role')
-                <p class="mt-4 rounded-lg bg-red-50 p-3 text-base text-red-700 sm:text-sm" role="alert">{{ $message }}</p>
-            @enderror
-
-            <div class="mt-4 divide-y divide-slate-100 rounded-lg border border-slate-950/10">
-                @foreach ($websiteUsers as $websiteUser)
-                    @php
-                        $member = $websiteUser['user'];
-                        $memberRole = $websiteUser['role'];
-                        $isOnlyManager = $member->id === $soleManagerId;
-                    @endphp
-                    <div class="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div class="min-w-0 flex-1">
-                            <p class="truncate text-base font-medium text-slate-900 sm:text-sm">{{ $member->name }}</p>
-                            <p class="truncate text-base text-slate-500 sm:text-sm">{{ $member->email }}</p>
-                            @if (Auth::user()?->isAdmin())
-                                <details class="mt-2 rounded-lg border border-slate-950/10 p-3">
-                                    <summary class="cursor-pointer text-sm font-medium text-slate-700">Manage membership</summary>
-                                    <form method="POST" action="{{ route('admin.websites.members.update', [$website, $member]) }}" class="mt-3">
-                                        @csrf
-                                        @method('PUT')
-                                        @include('admin.websites.partials.member-membership-fields', [
-                                            'membershipFormKey' => 'member_'.$member->id,
-                                            'membershipTier' => $member->admin_membership_tier,
-                                            'membershipEndsOn' => $member->admin_membership_expires_at?->format('Y-m-d'),
-                                            'membershipRequired' => true,
-                                        ])
-                                        <button type="submit" class="ui-button ui-button-secondary mt-3">Save membership</button>
-                                    </form>
-                                </details>
-                            @endif
+                    <div class="grid gap-4 sm:grid-cols-3">
+                        <div>
+                            <label for="service_package" class="ui-label block">Service package</label>
+                            <select id="service_package" name="service_package" class="ui-input mt-2 w-full" required>
+                                <option value="">Choose a package</option>
+                                @foreach (\App\Support\MembershipPlan::all() as $package => $plan)
+                                    <option value="{{ $package }}" @selected(old('service_package', $website->service_package) === $package)>{{ $plan['name'] }}</option>
+                                @endforeach
+                            </select>
+                            @error('service_package')<p class="mt-1 text-red-700 text-base sm:text-sm">{{ $message }}</p>@enderror
                         </div>
-                        @if ($canManageMembers && ! $isOnlyManager)
-                            <div class="flex flex-wrap items-center gap-2">
-                                <form method="POST" action="{{ route('admin.websites.members.update', [$website, $member]) }}" class="flex items-center gap-2">
-                                    @csrf
-                                    @method('PUT')
-                                    <label for="member_role_{{ $member->id }}" class="ui-label sr-only">Access for {{ $member->name }}</label>
-                                    <select id="member_role_{{ $member->id }}" name="role" class="ui-input">
-                                        <option value="manager" @selected($memberRole === 'manager')>Manager</option>
-                                        <option value="viewer" @selected($memberRole === 'viewer')>Viewer</option>
-                                    </select>
-                                    <button type="submit" class="ui-button ui-button-secondary ui-button-small">Update</button>
-                                </form>
-                                <form method="POST" action="{{ route('admin.websites.members.destroy', [$website, $member]) }}">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="ui-button ui-button-danger ui-button-small">Remove</button>
-                                </form>
-                            </div>
-                        @else
-                            <span class="rounded-full bg-slate-100 px-2.5 py-1 text-sm font-medium capitalize text-slate-700">{{ $memberRole }}</span>
-                        @endif
+                        <div>
+                            <label for="service_status" class="ui-label block">Service status</label>
+                            <select id="service_status" name="service_status" class="ui-input mt-2 w-full" required>
+                                <option value="">Choose a status</option>
+                                @foreach (\App\Models\Website::SERVICE_STATUSES as $serviceStatus)
+                                    <option value="{{ $serviceStatus }}" @selected(old('service_status', $website->service_status) === $serviceStatus)>{{ ucfirst($serviceStatus) }}</option>
+                                @endforeach
+                            </select>
+                            @error('service_status')<p class="mt-1 text-red-700 text-base sm:text-sm">{{ $message }}</p>@enderror
+                        </div>
+                        <div>
+                            <label for="service_ends_on" class="ui-label block">Service ends on (optional)</label>
+                            <input id="service_ends_on" name="service_ends_on" type="date" value="{{ old('service_ends_on', $website->service_ends_at?->format('Y-m-d')) }}" class="ui-input mt-2 w-full">
+                            @error('service_ends_on')<p class="mt-1 text-red-700 text-base sm:text-sm">{{ $message }}</p>@enderror
+                        </div>
                     </div>
-                @endforeach
-            </div>
-
-            @if ($canManageMembers && $canUseGrowthFeatures)
-                <form method="POST" action="{{ route('admin.websites.members.store', $website) }}" class="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_10rem_auto] sm:items-end">
-                    @csrf
-                    <div><label for="member_email" class="ui-label">Invite by email</label><input id="member_email" name="email" type="email" required autocomplete="email" value="{{ old('email') }}" placeholder="colleague@example.com" class="ui-input mt-1 w-full"><p class="mt-1 text-slate-500 text-base sm:text-sm">We’ll email them a secure link to set up their account.</p>@error('email')<p class="mt-1 text-red-700 text-base sm:text-sm">{{ $message }}</p>@enderror</div>
-                    <div><label for="member_role" class="ui-label">Access</label><select id="member_role" name="role" class="ui-input mt-1 w-full"><option value="manager" @selected(old('role', 'viewer') === 'manager')>Manager</option><option value="viewer" @selected(old('role', 'viewer') === 'viewer')>Viewer</option></select></div>
-                    @if (Auth::user()?->isAdmin())
-                        <div class="ui-well p-4 sm:col-span-3">
-                            @include('admin.websites.partials.member-membership-fields', [
-                                'membershipFormKey' => 'invite',
-                                'membershipTier' => null,
-                                'membershipEndsOn' => now()->addMonthsNoOverflow(6)->format('Y-m-d'),
-                                'membershipRequired' => false,
-                            ])
-                        </div>
-                    @endif
-                    <button type="submit" class="ui-button ui-button-secondary">Send invitation</button>
+                    <button type="submit" class="ui-button ui-button-primary">Save service settings</button>
                 </form>
-            @elseif ($canManageMembers)
-                <p class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-800 text-base sm:text-sm">A Growth or Complete membership is required to invite additional website users.</p>
-            @endif
-        </section>
+            </section>
+        @endif
+
+        @if ($canManageMembers)
+            <section class="ui-panel ui-section" aria-labelledby="website-users-title">
+                <div class="flex items-center justify-between gap-4">
+                    <div>
+                        <h2 id="website-users-title" class="font-semibold">Website users</h2>
+                        <p class="mt-1 text-slate-600 text-base sm:text-sm">Add people who should have access to this website.</p>
+                    </div>
+                    <span class="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-sm font-medium text-slate-700">{{ $websiteUsers->count() }} {{ Str::plural('user', $websiteUsers->count()) }}</span>
+                </div>
+
+                @if ($websiteUsers->isNotEmpty())
+                    <div class="mt-4 divide-y divide-slate-100">
+                        @foreach ($websiteUsers as $websiteUser)
+                            @php($member = $websiteUser['user'])
+                            <div class="flex items-center justify-between gap-4 py-3">
+                                <div class="min-w-0">
+                                    <p class="truncate font-medium text-slate-900 text-base sm:text-sm">{{ $member->name }}</p>
+                                    <p class="truncate text-slate-500 text-base sm:text-sm">{{ $member->email }}</p>
+                                </div>
+                                @if ($member->id !== $soleManagerId)
+                                    <form method="POST" action="{{ route('admin.websites.members.destroy', [$website, $member]) }}">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="ui-button ui-button-danger ui-button-small">Remove</button>
+                                    </form>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <p class="mt-4 text-slate-500 text-base sm:text-sm">No users attached yet.</p>
+                @endif
+
+                <form method="POST" action="{{ route('admin.websites.members.store', $website) }}" class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
+                    @csrf
+                    <div class="min-w-0 flex-1">
+                        <label for="member_email" class="ui-label block">Email address</label>
+                        <input id="member_email" name="email" type="email" required autocomplete="email" value="{{ old('email') }}" placeholder="person@example.com" class="ui-input mt-2 w-full">
+                        @error('email')<p class="mt-1 text-red-700 text-base sm:text-sm">{{ $message }}</p>@enderror
+                    </div>
+                    <button type="submit" class="ui-button ui-button-secondary">Add user</button>
+                </form>
+                <p class="mt-2 text-slate-500 text-base sm:text-sm">Existing users can sign in. New users receive a secure account setup link.</p>
+            </section>
+        @endif
     </div>
 
     @include('admin.websites.partials.forms')

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\WebsiteRepository;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -215,6 +216,77 @@ class GithubAppClient
         }
 
         return $pullRequest;
+    }
+
+    /**
+     * @param  list<string>  $files
+     * @return array{changes: list<array{file: string, changed_at: string}>, reviews: list<string>}
+     */
+    public function contentDependencyHistory(WebsiteRepository $repository, array $files, ?float $deadline = null): array
+    {
+        $deadline ??= microtime(true) + 30;
+        $request = $this->request($this->installationToken($repository->installation->installation_id))
+            ->timeout(5)->retry(1);
+        $prefix = "repos/{$repository->full_name}";
+        $changes = [];
+        foreach ($files as $file) {
+            if (microtime(true) >= $deadline) {
+                throw new RuntimeException('Repository dependency checks exceeded their time budget.');
+            }
+            $rows = $request->get($prefix.'/commits', [
+                'sha' => $repository->default_branch, 'path' => $file,
+                'since' => now()->subDays(14)->toIso8601String(), 'per_page' => 1,
+            ])->throw()->json();
+            if (! is_array($rows) || ! array_is_list($rows)) {
+                throw new RuntimeException('GitHub returned invalid dependency history.');
+            }
+            $date = data_get($rows, '0.commit.committer.date');
+            if ($rows !== [] && (! is_string($date) || $date === '')) {
+                throw new RuntimeException('GitHub did not return the dependency change date.');
+            }
+            if ($date) {
+                $changes[] = ['file' => $file, 'changed_at' => $date];
+            }
+        }
+        $pulls = $request->get($prefix.'/pulls', ['state' => 'open', 'per_page' => 11])->throw()->json();
+        if (! is_array($pulls) || ! array_is_list($pulls) || count($pulls) > 10) {
+            throw new RuntimeException('Open reviews exceed the bounded dependency check.');
+        }
+        if (microtime(true) >= $deadline) {
+            throw new RuntimeException('Repository dependency checks exceeded their time budget.');
+        }
+        $closed = $request->get($prefix.'/pulls', ['state' => 'closed', 'sort' => 'updated', 'direction' => 'desc', 'per_page' => 11])->throw()->json();
+        if (! is_array($closed) || ! array_is_list($closed)) {
+            throw new RuntimeException('Merged reviews could not be checked.');
+        }
+        $recent = collect($closed)->filter(fn (array $pull): bool => ! empty($pull['merged_at'])
+            && Carbon::parse($pull['merged_at'])->greaterThan(now()->subDays(14)));
+        if (count($closed) === 11 && Carbon::parse($closed[10]['updated_at'] ?? now())->greaterThan(now()->subDays(14))) {
+            throw new RuntimeException('Recent closed reviews exceed the bounded dependency check.');
+        }
+        $reviews = [];
+        foreach ([...$pulls, ...$recent->all()] as $pull) {
+            if (microtime(true) >= $deadline || ! isset($pull['number'])) {
+                throw new RuntimeException('Open reviews could not be completely checked.');
+            }
+            $response = $request->get($prefix.'/pulls/'.$pull['number'].'/files', ['per_page' => 100])->throw();
+            $changedFiles = $response->json();
+            if (! is_array($changedFiles) || ! array_is_list($changedFiles) || str_contains($response->header('Link'), 'rel="next"')) {
+                throw new RuntimeException('A pull request exceeds the bounded dependency check.');
+            }
+            $paths = collect($changedFiles)->flatMap(fn (array $file): array => [$file['filename'] ?? '', $file['previous_filename'] ?? '']);
+            if ($paths->intersect($files)->isNotEmpty()) {
+                if (! empty($pull['merged_at'])) {
+                    foreach ($paths->intersect($files)->unique() as $file) {
+                        $changes[] = ['file' => $file, 'changed_at' => $pull['merged_at']];
+                    }
+                } else {
+                    $reviews[] = '#'.$pull['number'];
+                }
+            }
+        }
+
+        return ['changes' => $changes, 'reviews' => $reviews];
     }
 
     public function installationToken(int $installationId): string

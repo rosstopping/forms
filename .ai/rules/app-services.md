@@ -4,6 +4,7 @@ paths:
   - 'app/{Services/SearchConsoleHistoryStore.php,Services/WebsiteAiContext.php,Jobs/SyncSearchConsoleHistory.php}'
   - 'app/{Services/Content*,Jobs/StartContentGeneration.php}'
   - 'app/{Services/ProspectPersonalisedVideo.php,Models/ProspectOutreachState.php,Mail/ProspectOutreach.php}'
+  - 'app/{Services/Content*,Services/SeoTargetKeyword*,Services/SeoImpact*,Models/Content*,Models/SeoTargetKeyword*,Jobs/*Content*}.php'
 ---
 
 # App Services
@@ -25,3 +26,6 @@ Queued requests and manual staff runs retain the 14-day target/known-page cooldo
 
 ## Keep personalised video drafts separate from live delivery
 Store the editable video subject, body, URL and thumbnail in ProspectOutreachState.personalised_video_draft. Save/test actions must not reserve deliveries, create tracking links, update the initial outreach, change lifecycle state or modify an existing schedule. Test the saved video variant only to the acting admin, with direct links and no engagement tracking; explicit send/schedule continues through the existing delivery ledger.
+
+## Content strategy roadmap and execution safeguards
+Content strategy separates discovered opportunities, rolling planned content and executable requests. Future article/optimisation/Copilot budgets are ceilings, never publishing targets; recurring provider research deduplicates and prioritises without Copilot. Require purpose, intent, business relevance and evidence; retain approval before delivery. Intended keyword destinations differ from observed URLs: assess conflicts using intent and performance, not multiple URLs alone. Reuse SEO impacts linking task, pages, queries and live/change dates for future 14/30/60/90-day feedback; never claim causation. Phase one adds manual holds and required integration dependencies without extending the 14-day cooldown to measurement/control pages; read screens never call GitHub, and repository preflight failure defers work.

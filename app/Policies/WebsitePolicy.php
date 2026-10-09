@@ -65,6 +65,6 @@ class WebsitePolicy
 
     public function manageMembers(User $user, Website $website): bool
     {
-        return $website->isManageableBy($user);
+        return $user->isAdmin() && $website->isManageableBy($user);
     }
 }

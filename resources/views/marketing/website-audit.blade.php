@@ -165,9 +165,9 @@
             @include('marketing.audit-email-gate')
         @else
             <div class="border-t border-ink/10 pt-6">
-                <div @class(['relative isolate overflow-hidden rounded-2xl', 'max-h-104' => $isFinalisingReport])>
+                <div class="relative isolate overflow-hidden rounded-2xl">
                     @if ($isFinalisingReport)
-                        <div data-audit-full-report-loader role="status" class="absolute inset-0 z-10 grid place-items-center bg-white/65 p-6">
+                        <div data-audit-full-report-loader role="status" class="relative z-10 grid min-h-104 place-items-center bg-white/65 p-6 sm:p-8">
                             <div class="grid justify-items-center gap-6 text-center">
                                 <div class="relative grid size-20 place-items-center" aria-hidden="true">
                                     <div class="absolute inset-0 rounded-full border-2 border-garden/15"></div>
@@ -184,7 +184,7 @@
                             </div>
                         </div>
                     @endif
-                <div data-audit-report-surface @if ($isFinalisingReport) data-audit-full-report-background aria-hidden="true" inert @endif @class(['grid overflow-hidden rounded-2xl bg-white', 'pointer-events-none select-none blur-[3px]' => $isFinalisingReport])>
+                <div data-audit-report-surface @if ($isFinalisingReport) data-audit-full-report-background aria-hidden="true" inert @endif @class(['grid overflow-hidden rounded-2xl bg-white', 'pointer-events-none absolute inset-0 select-none blur-[3px]' => $isFinalisingReport])>
                     @include('marketing.audit-category-scores')
                     <div class="grid gap-8 px-4 pb-6 sm:px-6 sm:pb-8">
                         <section class="grid gap-6" aria-labelledby="audit-numbers-title">

@@ -56,9 +56,24 @@ class ManualContentRequest
                 $plan = ContentPlan::where('website_id', $request->website_id)->lockForUpdate()->first();
                 abort_if($plan?->generations()->where('status', ContentGeneration::STATUS_RUNNING)->exists(), 422, 'Wait for the running content task to finish before taking manual work.');
                 $request->refresh();
+                abort_if(($request->planning_status ?? 'queued') !== 'queued', 422, 'Approve planned content into the queue before taking manual work.');
+                if ($plan) {
+                    $strategyReason = app(ContentStrategy::class)->requestPauseReason($plan, $request);
+                    abort_if($strategyReason !== null, 422, $strategyReason ?? 'Work is paused by content strategy.');
+                }
+                abort_if($request->held_at, 422, 'Release this request from hold before taking manual work.');
                 abort_if($request->picked_up_at, 422, 'This request has already been picked up.');
                 abort_if($request->optimisations()->exists(), 422, 'Review or remove the existing Pixel changes before taking this request for manual work.');
 
+                if ($plan) {
+                    $state = app(ContentWorkSelector::class)->queueStates($plan, includeRepository: false, copilot: false)[$request->id] ?? null;
+                    abort_if($state && $state['state'] !== 'ready', 422, $state['reason'] ?? 'This request is not eligible for preparation.');
+                }
+                $budgetReason = app(ContentBudget::class)->reserveRequest($request);
+                abort_if($budgetReason !== null, 422, $budgetReason ?? 'Monthly content limit reached.');
+
+                app(SeoImpactTracker::class)->forRequest($request);
+                $request->unsetRelation('seoImpact');
                 $request->update([
                     'manual_taken_by' => $admin->id,
                     'manual_started_at' => now(),

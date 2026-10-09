@@ -16,13 +16,14 @@ class SeoImpactTracker
     {
         $request->loadMissing(['searchOpportunity', 'seoOpportunity.keyword']);
         $source = $request->searchOpportunity ?? $request->seoOpportunity;
-        $url = $request->searchOpportunity?->page ?? data_get($request->seoOpportunity?->metrics, 'ranking_url') ?? data_get($request->competitor_context, 'existing_page_url');
-        $query = $request->searchOpportunity?->query ?? $request->seoOpportunity?->keyword?->keyword ?? data_get($request->competitor_context, 'primary_keyword');
+        $url = $request->searchOpportunity?->page ?? data_get($request->seoOpportunity?->metrics, 'ranking_url') ?? data_get($request->competitor_context, 'existing_page_url') ?? data_get($request->discovery_context, 'existing_page_url');
+        $query = $request->searchOpportunity?->query ?? $request->seoOpportunity?->keyword?->keyword ?? data_get($request->competitor_context, 'primary_keyword') ?? data_get($request->discovery_context, 'primary_keyword');
         preg_match_all('~https?://[^\s<>"\)]+~i', $request->instructions, $matches);
         $urls = $url ? [$url] : array_values(array_unique(array_map(fn (string $value): string => rtrim($value, '.,;'), $matches[0])));
         $urls = $this->websiteUrls($request->website, $urls);
 
-        return SeoImpact::firstOrCreate(['website_id' => $request->website_id, 'source_key' => 'request:'.$request->id], [
+        return SeoImpact::firstOrCreate(['website_id' => $request->website_id, 'content_request_id' => $request->id], [
+            'source_key' => 'request:'.$request->id,
             'automated' => true,
             'content_request_id' => $request->id,
             'content_generation_id' => $request->content_generation_id,
@@ -48,7 +49,7 @@ class SeoImpactTracker
             return;
         }
         $target = collect($generation->target_keyword_context ?? [])->firstWhere('id', $generation->seo_target_keyword_id);
-        $urls = $this->websiteUrls($generation->plan->website, empty($target['ranking_url']) ? [] : [$target['ranking_url']]);
+        $urls = $this->websiteUrls($generation->plan->website, empty($target['intended_url'] ?? $target['ranking_url'] ?? null) ? [] : [$target['intended_url'] ?? $target['ranking_url']]);
         SeoImpact::firstOrCreate(['website_id' => $generation->plan->website_id, 'source_key' => 'generation:'.$generation->id], [
             'automated' => true,
             'content_generation_id' => $generation->id,

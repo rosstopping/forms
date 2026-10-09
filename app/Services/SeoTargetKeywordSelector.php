@@ -38,6 +38,7 @@ class SeoTargetKeywordSelector
 
                 return [
                     'id' => $keyword->id, 'term' => $keyword->term, 'priority' => $keyword->priority, 'note' => $keyword->note,
+                    'intended_url' => $keyword->intended_url, 'assignment_role' => $keyword->assignment_role, 'search_intent' => $keyword->search_intent,
                     'position' => $ranking?->position, 'ranking_url' => $ranking?->ranking_url,
                     'status' => $ranking?->status ?? 'awaiting_first_check', 'observed_at' => $ranking?->observed_at?->toIso8601String(),
                     'source' => 'dataforseo_exact_serp', 'location_code' => (int) config('services.dataforseo.location_code'),

@@ -21,7 +21,7 @@ class SeoTargetKeyword extends Model
 
     public const PRIORITIES = [self::PRIORITY_HIGH, self::PRIORITY_NORMAL];
 
-    protected $fillable = ['website_id', 'term', 'normalized_term', 'priority', 'note', 'archived_at', 'last_selected_at'];
+    protected $fillable = ['intended_url', 'assignment_role', 'search_intent', 'website_id', 'term', 'normalized_term', 'priority', 'note', 'archived_at', 'last_selected_at'];
 
     protected function casts(): array
     {

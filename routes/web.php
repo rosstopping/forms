@@ -83,6 +83,7 @@ use App\Http\Controllers\Admin\WebsiteHealthReportPageController;
 use App\Http\Controllers\Admin\WebsiteMemberController;
 use App\Http\Controllers\Admin\WebsiteProspectController;
 use App\Http\Controllers\Admin\WebsiteRepositoryController;
+use App\Http\Controllers\Admin\WebsiteServiceController;
 use App\Http\Controllers\Admin\WebsiteSetupController;
 use App\Http\Controllers\Admin\WeeklyRankingReportSettingsController;
 use App\Http\Controllers\Admin\WordPressConnectionController;
@@ -277,6 +278,8 @@ Route::middleware(['web', 'auth', ResolveCurrentWebsite::class])->prefix('admin'
     Route::put('websites/{website}/setup/{step}', [WebsiteSetupController::class, 'update'])->name('website-setup.update');
     Route::post('websites/{website}/setup-wordpress', [WebsiteSetupController::class, 'pairing'])->middleware('throttle:6,1')->name('website-setup.pairing');
     Route::resource('websites', WebsiteController::class);
+    Route::put('websites/{website}/service', WebsiteServiceController::class)
+        ->middleware(EnsureAdmin::class)->name('websites.service.update');
     Route::get('websites/{website}/section/ai-visibility', [AiVisibilityController::class, 'index'])->name('ai-visibility.index');
     Route::prefix('websites/{website}/ai-visibility')->name('ai-visibility.')->group(function () {
         Route::put('settings', [AiVisibilityController::class, 'settings'])->name('settings');
@@ -304,7 +307,7 @@ Route::middleware(['web', 'auth', ResolveCurrentWebsite::class])->prefix('admin'
     Route::post('websites/{website}/mail/test', PostmarkConnectionTestController::class)->middleware('throttle:5,1')->name('websites.mail.test');
     Route::put('websites/{website}/pixel', [PixelSettingsController::class, 'update'])->middleware('membership:growth')->name('websites.pixel.update');
     Route::post('websites/{website}/pixel/rotate-key', PixelKeyController::class)->middleware('membership:growth')->name('websites.pixel.rotate-key');
-    Route::post('websites/{website}/members', [WebsiteMemberController::class, 'store'])->middleware('membership:growth')->name('websites.members.store');
+    Route::post('websites/{website}/members', [WebsiteMemberController::class, 'store'])->middleware(EnsureAdmin::class)->name('websites.members.store');
     Route::post('websites/{website}/assistant/questions', WebsiteAiChatController::class)->middleware(['membership:complete', 'throttle:10,1'])->name('websites.assistant.questions.store');
     Route::get('websites/{website}/assistant/questions/{websiteAiQuestion}', WebsiteAiQuestionStatusController::class)->middleware(['membership:complete', 'throttle:120,1'])->name('websites.assistant.questions.show');
     Route::post('websites/{website}/assistant/questions/{websiteAiQuestion}/report', [WebsiteAiQuestionReportController::class, 'store'])->middleware('throttle:10,1')->name('websites.assistant.questions.report');
@@ -426,6 +429,7 @@ Route::middleware(['web', 'auth', ResolveCurrentWebsite::class])->prefix('admin'
     Route::post('websites/{website}/content-requests/{contentRequest}/manual', [ManualContentRequestController::class, 'take'])->middleware('membership:growth')->name('content-requests.manual.take');
     Route::post('websites/{website}/content-requests/{contentRequest}/manual/release', [ManualContentRequestController::class, 'release'])->middleware('membership:growth')->name('content-requests.manual.release');
     Route::post('websites/{website}/content-requests/{contentRequest}/manual/complete', [ManualContentRequestController::class, 'complete'])->middleware('membership:growth')->name('content-requests.manual.complete');
+    Route::patch('websites/{website}/content-requests/{contentRequest}/queue', [ContentRequestController::class, 'updateQueue'])->middleware('membership:growth')->name('content-requests.queue.update');
     Route::post('websites/{website}/content-requests/{contentRequest}/bump', [ContentRequestController::class, 'bump'])->middleware('membership:growth')->name('content-requests.bump');
     Route::delete('websites/{website}/content-requests/{contentRequest}', [ContentRequestController::class, 'destroy'])->middleware('membership:growth')->name('content-requests.destroy');
     Route::post('forms/{form}/setup-check', FormSetupCheckController::class)->middleware('throttle:10,1')->name('forms.setup-check');

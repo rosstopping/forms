@@ -14,6 +14,14 @@ use Illuminate\Support\Str;
 
 class Website extends Model
 {
+    public const SERVICE_STATUS_ACTIVE = 'active';
+
+    public const SERVICE_STATUS_PAUSED = 'paused';
+
+    public const SERVICE_STATUS_ENDED = 'ended';
+
+    public const SERVICE_STATUSES = [self::SERVICE_STATUS_ACTIVE, self::SERVICE_STATUS_PAUSED, self::SERVICE_STATUS_ENDED];
+
     public const MEMBER_ROLE_MANAGER = 'manager';
 
     public const MEMBER_ROLE_VIEWER = 'viewer';
@@ -35,6 +43,9 @@ class Website extends Model
 
     protected $fillable = [
         'user_id',
+        'service_package',
+        'service_status',
+        'service_ends_at',
         'name',
         'review_url',
         'is_active',
@@ -71,6 +82,7 @@ class Website extends Model
     ];
 
     protected $casts = [
+        'service_ends_at' => 'datetime',
         'email_enabled' => 'boolean',
         'autoresponder_enabled' => 'boolean',
         'autoresponder_delay_minutes' => 'integer',
@@ -100,6 +112,19 @@ class Website extends Model
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function hasActiveService(): bool
+    {
+        return $this->is_active
+            && $this->service_status === self::SERVICE_STATUS_ACTIVE
+            && MembershipPlan::find((string) $this->service_package) !== null
+            && ($this->service_ends_at === null || $this->service_ends_at->isFuture());
+    }
+
+    public function hasServiceFeature(string $feature): bool
+    {
+        return $this->hasActiveService() && MembershipPlan::includes($this->service_package, $feature);
     }
 
     public function members(): BelongsToMany

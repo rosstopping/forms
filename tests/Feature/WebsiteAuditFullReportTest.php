@@ -242,7 +242,9 @@ it('blurs and disables the report beneath one loader until all queued research f
     $xpath = new DOMXPath($document);
     expect($xpath->query('//*[@data-audit-full-report-loader]')->length)->toBe(1)
         ->and($xpath->query('//*[@data-audit-full-report-background][@inert][@aria-hidden="true"]')->length)->toBe(1)
-        ->and($xpath->query('//*[@data-audit-full-report-background]//*[@id="audit-findings-title"]')->length)->toBe(1);
+        ->and($xpath->query('//*[@data-audit-full-report-background]//*[@id="audit-findings-title"]')->length)->toBe(1)
+        ->and($xpath->query('//*[@data-audit-full-report-loader]')->item(0)->getAttribute('class'))->not->toContain('absolute')
+        ->and($xpath->query('//*[@data-audit-full-report-background]')->item(0)->getAttribute('class'))->toContain('absolute inset-0');
     $audit->update(['insights' => ['full_report' => ['status' => 'completed'], 'ai_visibility' => ['status' => 'completed', 'questions' => []]]]);
     $this->get($url)->assertSuccessful()
         ->assertDontSee('data-audit-full-report-loader', false)

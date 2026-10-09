@@ -35,7 +35,7 @@ class DashboardController extends Controller
         $websites = Website::query()
             ->accessibleTo($request->user())
             ->with(['owner', 'latestHealthReport', 'contentPlan.website.owner', 'contentPlan.website.repository', 'contentPlan.creator.githubAuthorization'])
-            ->withCount(['contentRequests as pending_content_requests_count' => fn ($query) => $query->whereNull('picked_up_at')])
+            ->withCount(['contentRequests as pending_content_requests_count' => fn ($query) => $query->where('planning_status', 'queued')->whereNull('picked_up_at')])
             ->orderBy('name')
             ->get();
 
@@ -126,7 +126,7 @@ class DashboardController extends Controller
         ])->loadCount([
             'forms',
             'submissions',
-            'contentRequests as pending_content_requests_count' => fn ($query) => $query->whereNull('picked_up_at'),
+            'contentRequests as pending_content_requests_count' => fn ($query) => $query->where('planning_status', 'queued')->whereNull('picked_up_at'),
             'optimisations as live_pixel_changes_count' => fn ($query) => $query->where('status', 'deployed')->where('deployment_method', 'pixel'),
         ]);
 

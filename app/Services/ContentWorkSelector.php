@@ -6,16 +6,19 @@ use App\Models\CompetitorOpportunity;
 use App\Models\ContentGeneration;
 use App\Models\ContentPlan;
 use App\Models\ContentRequest;
+use App\Models\SeoImpact;
 use App\Models\SeoTargetKeyword;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 
 class ContentWorkSelector
 {
     public function __construct(private SeoTargetKeywordSelector $targets) {}
 
     /** @return array{requests: Collection, target: ?SeoTargetKeyword, snapshot: array} */
-    public function select(ContentGeneration $generation): array
+    public function select(ContentGeneration $generation, bool $repositoryPreflight = false): array
     {
         $website = $generation->plan->website;
         $active = $this->targets->active($website);
@@ -38,12 +41,29 @@ class ContentWorkSelector
             ->pluck('competitor_context.audit_id')->filter();
         $eligibleAuditIds = $automaticAuditIds->isEmpty() ? collect() : app(CompetitorContentContext::class)->eligibleAudits($website)
             ->whereKey($automaticAuditIds)->pluck('id');
+        $states = $this->queueStates($generation->plan, $generation, includeRepository: false);
+        $openKeys = $openKeys->merge($pendingRequests->filter(fn ($request): bool => ($states[$request->id]['state'] ?? null) === 'preparing')->flatMap(fn ($request): array => $this->requestKeys($request)))->unique();
         $requests = $pendingRequests
             ->reject(fn (ContentRequest $request): bool => (data_get($request->competitor_context, 'automatic') && ($generation->plan->competitor_research_mode !== 'drafts'
                 || ! $eligibleAuditIds->contains(data_get($request->competitor_context, 'audit_id'))))
                 || $openKeys->intersect($this->requestKeys($request))->isNotEmpty()
                 || $recentKeys->intersect($this->requestKeys($request))->isNotEmpty()
-                || $protectedKeys->intersect($this->requestKeys($request))->isNotEmpty())->take(2);
+                || $protectedKeys->intersect($this->requestKeys($request))->isNotEmpty()
+                || ($states[$request->id]['state'] ?? 'ready') !== 'ready');
+        $preflightDeadline = microtime(true) + 35;
+        $eligibleRequests = new EloquentCollection;
+        foreach ($requests as $request) {
+            if (app(ContentBudget::class)->pauseReason($generation->plan, $eligibleRequests->concat([$request]), except: $generation->id) !== null) {
+                continue;
+            }
+            if (! $repositoryPreflight || app(ContentRepositoryPreflight::class)->check($request, $generation->repository, $preflightDeadline)['state'] === 'ready') {
+                $eligibleRequests->push($request);
+            }
+            if ($eligibleRequests->count() === 2) {
+                break;
+            }
+        }
+        $requests = $eligibleRequests;
         if ($requests->isEmpty() && $generation->trigger === 'scheduled'
             && $generation->plan->competitor_research_mode === 'drafts'
             && ! app(ContentSchedule::class)->pauseReason($generation->plan)) {
@@ -64,7 +84,7 @@ class ContentWorkSelector
 
                 return $blockedKeys->intersect($keys)->isEmpty();
             });
-            if ($opportunity) {
+            if ($opportunity && app(ContentStrategy::class)->requestPauseReason($generation->plan, new ContentRequest(['work_type' => empty($opportunity->brief['existing_page_url']) ? 'new_article' : 'optimisation'])) === null) {
                 $requests = new EloquentCollection([
                     app(ContentOpportunityQueuer::class)->queueCompetitor($opportunity, $generation->plan->creator, automatic: true),
                 ]);
@@ -72,7 +92,7 @@ class ContentWorkSelector
         }
         $eligible = $active->filter(function (SeoTargetKeyword $keyword) use ($snapshot, $openKeys, $recentKeys, $protectedKeys): bool {
             $row = collect($snapshot)->firstWhere('id', $keyword->id);
-            $keys = $this->targetKeys($keyword->id, $keyword->term, $row['ranking_url'] ?? null);
+            $keys = $this->targetKeys($keyword->id, $keyword->term, $row['intended_url'] ?? $row['ranking_url'] ?? null);
 
             return $openKeys->intersect($keys)->isEmpty()
                 && $protectedKeys->intersect($keys)->isEmpty()
@@ -80,7 +100,90 @@ class ContentWorkSelector
                 && $recentKeys->intersect($keys)->isEmpty();
         });
 
-        return ['requests' => $requests, 'target' => $requests->isEmpty() ? $this->targets->select($eligible) : null, 'snapshot' => $snapshot];
+        return ['requests' => $requests, 'target' => $requests->isEmpty() && ($generation->plan->content_mode ?? 'balanced') !== 'new_only' ? $this->targets->select($eligible) : null, 'snapshot' => $snapshot];
+    }
+
+    /** @return array<int, array{state: string, reason: string, eligible_at: ?string}> */
+    public function queueStates(ContentPlan $plan, ?ContentGeneration $generation = null, bool $includeRepository = true, bool $copilot = true): array
+    {
+        $generation ??= new ContentGeneration;
+        $generation->setRelation('plan', $plan);
+        $history = $this->history($generation);
+        $requests = $plan->website->contentRequests()->pendingInQueueOrder()->with('seoImpact')->get();
+        $manual = $plan->website->contentRequests()->whereNotNull('manual_started_at')
+            ->where(fn ($query) => $query->whereNull('manual_completed_at')->orWhere('manual_completed_at', '>', now()->subDays(14)))
+            ->with('seoImpact')->get();
+        $impacts = SeoImpact::where('website_id', $plan->website_id)->where('live_at', '>', now()->subDays(14))->get();
+        $states = [];
+        foreach ($requests as $request) {
+            $state = ['state' => 'ready', 'reason' => 'Eligible for preparation.', 'eligible_at' => null];
+            $strategyReason = app(ContentStrategy::class)->requestPauseReason($plan, $request) ?? app(ContentBudget::class)->pauseReason($plan, collect([$request]), except: $generation->id, copilot: $copilot);
+            if ($strategyReason) {
+                $state = ['state' => 'strategy', 'reason' => $strategyReason, 'eligible_at' => null];
+            }
+            if ($copilot) {
+                $lock = Cache::lock('content-request-work-'.$request->id, 180);
+                if (! $lock->get()) {
+                    $state = ['state' => 'preparing', 'reason' => 'This request is being prepared or updated. Wait for that work to finish.', 'eligible_at' => null];
+                } else {
+                    $lock->release();
+                }
+            }
+            $keys = collect($this->requestKeys($request));
+            $until = null;
+            $review = false;
+            $blocked = collect();
+            foreach ($history as $previous) {
+                if ($keys->intersect($this->generationKeys($previous))->isEmpty()) {
+                    continue;
+                }
+                $blocked = $blocked->merge($keys->intersect($this->generationKeys($previous)));
+                $review = $review || ($previous->status === ContentGeneration::STATUS_PULL_REQUEST_OPEN && $previous->pull_request_state !== 'closed');
+                $changed = $previous->merged_at ?? ($previous->copilot_task_id ? $previous->started_at : null);
+                if ($changed && $changed->greaterThan(now()->subDays(14))) {
+                    $date = $changed->copy()->addDays(14);
+                    $until = ! $until || $date->greaterThan($until) ? $date : $until;
+                }
+            }
+            foreach ($manual as $previous) {
+                if ($keys->intersect($this->requestKeys($previous))->isEmpty()) {
+                    continue;
+                }
+                $blocked = $blocked->merge($keys->intersect($this->requestKeys($previous)));
+                $review = $review || $previous->manual_completed_at === null;
+                if ($previous->manual_completed_at) {
+                    $date = $previous->manual_completed_at->copy()->addDays(14);
+                    $until = ! $until || $date->greaterThan($until) ? $date : $until;
+                }
+            }
+            foreach ($impacts as $impact) {
+                if ($keys->intersect(array_map($this->urlKey(...), $impact->target_urls))->isNotEmpty()) {
+                    $blocked = $blocked->merge($keys->intersect(array_map($this->urlKey(...), $impact->target_urls)));
+                    $date = $impact->live_at->copy()->addDays(14);
+                    $until = ! $until || $date->greaterThan($until) ? $date : $until;
+                }
+            }
+            $scope = $blocked->unique()->filter(fn (string $key): bool => str_starts_with($key, 'url:') || str_starts_with($key, 'file:'))->map(fn (string $key): string => substr($key, strpos($key, ':') + 1))->implode(', ');
+            $detail = $scope !== '' ? ' Required scope: '.$scope : '';
+            if ($until) {
+                $state = ['state' => 'cooldown', 'reason' => 'A required page, file or related task changed within the last 14 days.'.$detail, 'eligible_at' => $until->toIso8601String()];
+            }
+            if ($review) {
+                $state = ['state' => 'review', 'reason' => 'Required work overlaps an open pull request or active manual task.'.$detail, 'eligible_at' => null];
+            }
+            if ($includeRepository && $state['state'] === 'ready' && ($request->preflight['state'] ?? 'ready') !== 'ready') {
+                $saved = $request->preflight;
+                if ($saved['state'] !== 'cooldown' || now()->lessThan(Carbon::parse($saved['eligible_at']))) {
+                    $state = array_intersect_key($saved, $state);
+                }
+            }
+            if ($request->held_at) {
+                $state = ['state' => 'held', 'reason' => $request->hold_reason ?: 'Manually placed on hold.', 'eligible_at' => null];
+            }
+            $states[$request->id] = $state;
+        }
+
+        return $states;
     }
 
     /** @return Collection<int, ContentGeneration> */
@@ -151,7 +254,14 @@ class ContentWorkSelector
             $keys[] = 'term:'.mb_strtolower(trim($term));
         }
 
-        return $keys;
+        foreach ($request->dependencies['urls'] ?? [] as $url) {
+            $keys[] = $this->urlKey($url);
+        }
+        foreach ($request->dependencies['files'] ?? [] as $file) {
+            $keys[] = 'file:'.$file;
+        }
+
+        return array_values(array_filter($keys));
     }
 
     private function urlKey(string $url): string
