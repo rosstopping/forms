@@ -46,6 +46,6 @@ class SeoWinController extends Controller
             $win->save();
         });
 
-        return redirect()->route('admin.overview', ['hub' => 'wins', 'site_id' => $seoWin->website_id])->with('status', 'Win updated. No message was sent.');
+        return redirect()->route('admin.overview', ['hub' => 'wins', 'site_id' => $seoWin->website_id, 'signal_category' => $seoWin->category])->with('status', 'Win updated. No message was sent.');
     }
 }

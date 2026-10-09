@@ -107,7 +107,7 @@ test('sparse final results remain inconclusive and follow ups carry evidence wit
     $assessment = app(SeoImpactEvaluator::class)->assess(['complete' => false], ['complete' => false], 'clicks');
     $impact->update(app(SeoImpactAutomation::class)->checkpointUpdates($impact, $assessment, [], []));
     expect($impact->decision)->toBe('inconclusive')->and($impact->automatic_summary)->toContain('insufficient data');
-    $this->actingAs($this->owner);
+    $this->actingAs(User::factory()->create(['role' => User::ROLE_ADMIN]));
     foreach ([1, 2] as $attempt) {
         $this->post(route('admin.seo-impacts.followup', [$this->website, $impact]))->assertRedirect();
     }

@@ -16,7 +16,7 @@ class CurrentWebsiteController extends Controller
     {
         $data = $request->validate([
             'website_id' => ['required', 'integer'],
-            'section' => ['nullable', 'string', Rule::in(WebsiteNavigation::SECTIONS)],
+            'section' => ['nullable', 'string', Rule::in($request->user()->isAdmin() ? WebsiteNavigation::SECTIONS : [...WebsiteNavigation::SECTIONS, 'overview', 'billing'])],
         ]);
 
         $website = Website::query()
@@ -26,6 +26,14 @@ class CurrentWebsiteController extends Controller
         $request->user()->forceFill(['current_website_id' => $website->id])->save();
 
         $section = $data['section'] ?? WebsiteNavigation::DEFAULT_SECTION;
+        if (! $request->user()->isAdmin()) {
+            return redirect()->route(match ($section) {
+                'leads' => 'admin.form-submissions.index',
+                'billing' => 'admin.billing.index',
+                default => 'admin.dashboard',
+            });
+        }
+
         if ($section === 'google-ads' && (! $website->isManageableBy($request->user())
             || (! $request->user()->isAdmin() && ! $website->owner?->hasMembershipFeature(MembershipPlan::FEATURE_COMPLETE)))) {
             $section = WebsiteNavigation::DEFAULT_SECTION;

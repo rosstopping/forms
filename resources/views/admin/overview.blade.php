@@ -57,7 +57,7 @@
         </nav>
 
         <section id="hub-wins" aria-labelledby="hub-tab-wins" @if ($hubSection !== 'wins') hidden @endif>
-            <x-seo-wins-inbox :wins="$wins" :status="$winStatus" :site-filter="$siteFilter" />
+            <x-seo-wins-inbox :wins="$wins" :status="$winStatus" :site-filter="$siteFilter" :category="$signalCategory" />
         </section>
         <section id="hub-priorities" aria-labelledby="hub-tab-priorities" @if ($hubSection !== 'priorities') hidden @endif>
             <x-admin-priority-actions :actions="$priorityActions" :counts="$actionCounts" :state="$actionState" :site-filter="$siteFilter" />

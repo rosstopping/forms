@@ -12,7 +12,7 @@ class SeoWin extends Model
     /** @use HasFactory<SeoWinFactory> */
     use HasFactory;
 
-    protected $fillable = ['website_id', 'seo_target_keyword_id', 'fingerprint', 'rule', 'rule_version', 'importance', 'confidence', 'title', 'evidence', 'observed_at', 'confirmed_at', 'client_draft', 'approved_at', 'approved_by', 'shared_at', 'shared_by', 'shared_text', 'dismissed_at'];
+    protected $fillable = ['category', 'seo_impact_id', 'website_id', 'seo_target_keyword_id', 'fingerprint', 'rule', 'rule_version', 'importance', 'confidence', 'title', 'evidence', 'observed_at', 'confirmed_at', 'client_draft', 'approved_at', 'approved_by', 'shared_at', 'shared_by', 'shared_text', 'dismissed_at'];
 
     protected function casts(): array
     {

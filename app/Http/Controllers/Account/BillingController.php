@@ -15,7 +15,7 @@ class BillingController extends Controller
 {
     public function index(Request $request): View
     {
-        return view('account.billing', [
+        return view($request->user()->isAdmin() ? 'account.billing' : 'account.customer-billing', [
             'plans' => MembershipPlan::all(),
             'user' => $request->user(),
         ]);
@@ -23,6 +23,7 @@ class BillingController extends Controller
 
     public function checkout(Request $request, StripeBillingClient $stripe): RedirectResponse
     {
+        abort_unless($request->user()?->isAdmin(), 403);
         $data = $request->validate([
             'tier' => ['required', 'string', Rule::in(array_keys(MembershipPlan::all()))],
         ]);

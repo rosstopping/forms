@@ -115,6 +115,7 @@ use App\Http\Controllers\WebsiteHealthReportController as PublicWebsiteHealthRep
 use App\Http\Middleware\AllowFormSubmissionCors;
 use App\Http\Middleware\EnsureAdmin;
 use App\Http\Middleware\ResolveCurrentWebsite;
+use App\Http\Middleware\RestrictCustomerWorkspace;
 use App\Support\WebsiteNavigation;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Http\Request;
@@ -255,7 +256,7 @@ Route::middleware(['web', 'signed', 'throttle:20,1'])->group(function () {
     Route::get('/website-health-reports/{websiteHealthReport}', PublicWebsiteHealthReportController::class)
         ->name('website-health-reports.show');
     Route::get('/admin/websites/{website}/content-suggestions/queue', ContentSuggestionController::class)
-        ->name('admin.content-suggestions.store');
+        ->middleware(['auth', EnsureAdmin::class])->name('admin.content-suggestions.store');
     Route::get('/form-submissions/{formSubmission}/spam', [FormSubmissionSpamController::class, 'show'])
         ->name('form-submissions.spam.confirm');
     Route::post('/form-submissions/{formSubmission}/spam', [FormSubmissionSpamController::class, 'store'])
@@ -264,7 +265,7 @@ Route::middleware(['web', 'signed', 'throttle:20,1'])->group(function () {
         ->name('prospect-reports.show');
 });
 
-Route::middleware(['web', 'auth', ResolveCurrentWebsite::class])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['web', 'auth', RestrictCustomerWorkspace::class, ResolveCurrentWebsite::class])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/websites/{website}/weekly-overview', [DashboardController::class, 'weeklyOverview'])->name('weekly-overviews.show');
     Route::post('current-website', CurrentWebsiteController::class)->name('current-website.update');

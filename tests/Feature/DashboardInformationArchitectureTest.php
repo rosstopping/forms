@@ -17,7 +17,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 it('loads recent content runs on the Search page without sorting large prompts', function (): void {
-    $user = User::factory()->create(['membership_tier' => MembershipPlan::GROWTH, 'membership_status' => 'active']);
+    $user = User::factory()->create(['role' => User::ROLE_ADMIN, 'membership_tier' => MembershipPlan::GROWTH, 'membership_status' => 'active']);
     $website = Website::factory()->for($user, 'owner')->create();
     $plan = ContentPlan::factory()->for($website)->for($user, 'creator')->create();
     $repository = WebsiteRepository::factory()->for($website)->create();
@@ -47,7 +47,7 @@ it('loads recent content runs on the Search page without sorting large prompts',
 });
 
 it('prioritises the selected websites latest health and content work on the dashboard', function (): void {
-    $user = User::factory()->create();
+    $user = User::factory()->create(['role' => User::ROLE_ADMIN]);
     $healthyWebsite = Website::factory()->for($user, 'owner')->create(['name' => 'Healthy website']);
     $warningWebsite = Website::factory()->for($user, 'owner')->create(['name' => 'Website needing work']);
     $user->update(['current_website_id' => $warningWebsite->id]);
@@ -94,7 +94,7 @@ it('prioritises the selected websites latest health and content work on the dash
 });
 
 it('shows the next site audit and content queue jobs', function (): void {
-    $user = User::factory()->create();
+    $user = User::factory()->create(['role' => User::ROLE_ADMIN]);
     $website = Website::factory()->for($user, 'owner')->create([
         'name' => 'Scheduled website',
         'health_reports_enabled' => true,
@@ -114,7 +114,7 @@ it('shows the next site audit and content queue jobs', function (): void {
 });
 
 it('shows connected search performance and optional form activity for the selected website', function (): void {
-    $user = User::factory()->create();
+    $user = User::factory()->create(['role' => User::ROLE_ADMIN]);
     $website = Website::factory()->for($user, 'owner')->create(['name' => 'Connected website']);
     $connection = SearchConsoleConnection::factory()->for($website)->for($user, 'connector')->create(['property_url' => 'sc-domain:example.com']);
     SearchConsoleDailyMetric::factory()->for($website)->create([
@@ -141,7 +141,7 @@ it('shows connected search performance and optional form activity for the select
 
 it('compares rolling periods even when either daily import is missing', function (string $date, bool $hasCurrent, bool $hasPrevious): void {
     $this->travelTo(Carbon::parse($date));
-    $user = User::factory()->create();
+    $user = User::factory()->create(['role' => User::ROLE_ADMIN]);
     $website = Website::factory()->for($user, 'owner')->create();
     $connection = SearchConsoleConnection::factory()->for($website)->for($user, 'connector')->create(['property_url' => 'sc-domain:example.com']);
     $period = ReportingPeriod::fromInput([]);
@@ -158,6 +158,7 @@ it('compares rolling periods even when either daily import is missing', function
         'date' => $period->end->toDateString(), 'clicks' => 999999,
     ]);
     SearchConsoleDailyMetric::factory()->create(['clicks' => 999999]);
+    $user->update(['current_website_id' => $website->id]);
     $response = $this->actingAs($user)->get(route('admin.dashboard'))
         ->assertOk()->assertSee('Last 28 days')->assertSeeInOrder(['Selected period', 'Comparison period'])
         ->assertSee('Partial coverage')->assertDontSee('999,999');
@@ -173,7 +174,7 @@ it('compares rolling periods even when either daily import is missing', function
     'both periods missing' => ['2026-09-01', false, false],
 ]);
 
-it('shows active onboarding trial context on the website overview', function (): void {
+it('does not expose historical trial setup to customers', function (): void {
     $user = User::factory()->create([
         'onboarding_status' => 'trial_active',
         'onboarding_trial_ends_at' => now()->addDays(10),
@@ -183,12 +184,12 @@ it('shows active onboarding trial context on the website overview', function ():
     $this->actingAs($user)
         ->get(route('admin.dashboard'))
         ->assertOk()
-        ->assertSee('Your Growth trial is active')
-        ->assertSee('Weekly health reports and SEO performance features are included during your trial.');
+        ->assertDontSee('Your Growth trial is active')
+        ->assertDontSee('Weekly health reports and SEO performance features are included during your trial.');
 });
 
 it('keeps forms and submissions inside the website workspace', function (): void {
-    $user = User::factory()->create();
+    $user = User::factory()->create(['role' => User::ROLE_ADMIN]);
     $website = Website::factory()->for($user, 'owner')->create(['name' => 'Client website']);
     Form::factory()->for($website)->create(['name' => 'Contact form']);
 
@@ -198,9 +199,6 @@ it('keeps forms and submissions inside the website workspace', function (): void
         ->assertSee('Health reports')
         ->assertSee('data-tab="content"', false)
         ->assertSee('data-tab-panel="content"', false)
-        ->assertDontSee('Connect GitHub')
-        ->assertDontSee('href="'.route('admin.github.connect', $website).'"', false)
-        ->assertSee('Content connections')
         ->assertSee('href="'.route('admin.websites.section', [$website, 'forms']).'"', false)
         ->assertSee('aria-label="Website sections"', false)
         ->assertSee('data-tab-panel="health"', false)
@@ -249,14 +247,14 @@ it('hides GitHub content tools from non-administrators with connected repositori
 
     $this->actingAs($user)
         ->get(route('admin.websites.show', $website))
-        ->assertOk()
+        ->assertForbidden()
         ->assertDontSee('GitHub repository')
         ->assertDontSee('Choose how Sitewell prepares website changes')
         ->assertDontSee('Change repository')
         ->assertDontSee('href="'.route('admin.website-repositories.create', $website).'"', false);
 });
 
-it('guides Growth users to connect a content delivery option with specialist support', function (): void {
+it('blocks customer content setup even with a historical Growth trial', function (): void {
     $user = User::factory()->create([
         'membership_tier' => MembershipPlan::GROWTH,
         'onboarding_status' => 'trial_active',
@@ -270,17 +268,11 @@ it('guides Growth users to connect a content delivery option with specialist sup
 
     $this->actingAs($user)
         ->get(route('admin.websites.show', ['website' => $website, 'tab' => 'content']))
-        ->assertOk()
-        ->assertSee('Choose how Sitewell prepares website changes')
-        ->assertSee('Sitewell Pixel')
-        ->assertSee('WordPress')
-        ->assertSee('GitHub')
-        ->assertSee('Book a call with support')
-        ->assertSee('href="'.route('admin.onboarding-call').'"', false);
+        ->assertForbidden();
 });
 
 it('shows the latest audit status on the websites index', function (): void {
-    $user = User::factory()->create();
+    $user = User::factory()->create(['role' => User::ROLE_ADMIN]);
     $website = Website::factory()->for($user, 'owner')->create();
     WebsiteHealthReport::factory()->for($website)->create([
         'overall_status' => 'critical',

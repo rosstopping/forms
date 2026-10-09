@@ -63,7 +63,7 @@ it('limits access management to admins including on unassigned packages', functi
     $customer = User::factory()->create();
     $this->website->members()->attach($customer, ['role' => Website::MEMBER_ROLE_MANAGER]);
     $this->actingAs($customer)->post(route('admin.websites.members.store', $this->website), ['email' => 'other@example.com'])->assertForbidden();
-    $this->get(route('admin.websites.section', [$this->website, 'settings']))->assertSuccessful()->assertDontSee('id="website-users-title"', false);
+    $this->get(route('admin.websites.section', [$this->website, 'settings']))->assertForbidden();
 });
 
 it('allows admins to remove a customer without changing the website service', function (): void {

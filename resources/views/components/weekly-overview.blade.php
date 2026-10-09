@@ -86,14 +86,14 @@
                                 @endforeach
                             </ul>
                         @endif
-                        <a href="{{ $section['url'] }}" class="mt-2 inline-block text-sm text-teal-700 underline underline-offset-4">View current details</a>
+                        @if(auth()->user()?->isAdmin())<a href="{{ $section['url'] }}" class="mt-2 inline-block text-sm text-teal-700 underline underline-offset-4">View current details</a>@endif
                     </div>
                 @endforeach
                 <div>
                     <h3 class="font-semibold text-slate-950">Work completed by Sitewell</h3>
                     <ul class="mt-2 space-y-2 text-sm leading-6 text-slate-600">
                         @forelse ($report->snapshot['completed_work'] ?? [] as $work)
-                            <li><a href="{{ $work['url'] }}" class="underline decoration-slate-300 underline-offset-4">{{ $work['title'] }}</a></li>
+                            <li>@if(auth()->user()?->isAdmin())<a href="{{ $work['url'] }}" class="underline decoration-slate-300 underline-offset-4">{{ $work['title'] }}</a>@else{{ $work['title'] }}@endif</li>
                         @empty
                             <li>No completed work was recorded during this period.</li>
                         @endforelse

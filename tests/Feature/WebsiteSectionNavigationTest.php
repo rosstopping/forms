@@ -52,7 +52,7 @@ it('uses URL-based SEO links and renders the selected SEO section', function (st
 
 it('returns to Business Profile after selecting a Google location', function (): void {
     Queue::fake();
-    $owner = User::factory()->create();
+    $owner = User::factory()->create(['role' => User::ROLE_ADMIN]);
     $website = Website::factory()->for($owner, 'owner')->create();
     BusinessProfileConnection::factory()->for($website)->create();
     $this->mock(BusinessProfileClient::class)->shouldReceive('locations')->once()

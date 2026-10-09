@@ -58,15 +58,15 @@ it('rejects foreign tag assignments even for an administrator', function () {
     $this->get(route('admin.form-submissions.show', $this->lead))->assertDontSee($foreign->name);
 });
 
-it('allows shared managers to tag leads but leaves viewers read-only', function () {
+it('allows all assigned customers to manage lead tags regardless of legacy pivot role', function () {
     $manager = User::factory()->create();
     $viewer = User::factory()->create();
     $this->website->members()->attach($manager, ['role' => Website::MEMBER_ROLE_MANAGER]);
     $this->website->members()->attach($viewer, ['role' => Website::MEMBER_ROLE_VIEWER]);
     $this->actingAs($manager)->put(route('admin.form-submissions.update', $this->lead), ['status' => 'new', 'new_tag' => 'Existing customer'])->assertSessionDoesntHaveErrors();
-    $this->actingAs($viewer)->put(route('admin.form-submissions.update', $this->lead), ['status' => 'new', 'tags_present' => true])->assertForbidden();
-    $this->get(route('admin.form-submissions.show', $this->lead))->assertSuccessful()->assertSee('Existing customer')->assertDontSee('New tag')->assertDontSee('Save lead');
-    expect($this->lead->tags()->count())->toBe(1);
+    $this->actingAs($viewer)->put(route('admin.form-submissions.update', $this->lead), ['status' => 'new', 'tags_present' => true])->assertSessionDoesntHaveErrors();
+    $this->get(route('admin.form-submissions.show', $this->lead))->assertSuccessful()->assertSee('Existing customer')->assertSee('New tag')->assertSee('Save lead');
+    expect($this->lead->tags()->count())->toBe(0);
 });
 
 it('rejects malformed and overlong tag input', function (array $input, string $error) {
@@ -105,6 +105,7 @@ it('applies tag filters to all-matching bulk actions', function () {
     $tag = LeadTag::factory()->for($this->website)->create();
     $this->lead->tags()->attach($tag);
     $untagged = FormSubmission::factory()->for($this->website)->for($this->form)->create(['status' => 'new']);
+    $this->actingAs(User::factory()->create(['role' => User::ROLE_ADMIN, 'current_website_id' => $this->website->id]));
     $this->patch(route('admin.form-submissions.bulk'), ['selection_scope' => 'all', 'action' => 'update_status', 'status' => 'qualified', 'tag_id' => $tag->id])->assertSessionDoesntHaveErrors();
     expect($this->lead->fresh()->status)->toBe('qualified')->and($untagged->fresh()->status)->toBe('new');
     $foreign = LeadTag::factory()->create();

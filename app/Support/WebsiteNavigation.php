@@ -26,6 +26,14 @@ class WebsiteNavigation
 
     public static function sectionForRequest(Request $request): string
     {
+        if (! $request->user()?->isAdmin()) {
+            return match (true) {
+                $request->routeIs('admin.form-submissions.*') => 'leads',
+                $request->routeIs('admin.billing.*') => 'billing',
+                default => 'overview',
+            };
+        }
+
         if ($request->routeIs('admin.google-ads.*')) {
             return 'google-ads';
         }

@@ -54,6 +54,14 @@ class FormSubmissionController extends Controller
 
         $query->filtered($request->only($filterKeys));
 
+        if (! $request->user()->isAdmin()) {
+            return view('admin.form-submissions.customer-index', [
+                'submissions' => $query->with('tags')->latest('created_at')->paginate(20)->withQueryString(),
+                'summary' => $summary,
+                'leadTags' => LeadTag::whereBelongsTo($currentWebsite)->orderBy('name')->get(),
+            ]);
+        }
+
         $bulkSelectableCount = (clone $query)
             ->whereHas('website', fn ($query) => $query->manageableBy($request->user()))
             ->count();
@@ -111,6 +119,15 @@ class FormSubmissionController extends Controller
     {
         abort_unless($formSubmission->website?->isAccessibleBy($request->user()), 403);
 
+        if (! $request->user()->isAdmin()) {
+            $formSubmission->load('tags');
+
+            return view('admin.form-submissions.customer-show', [
+                'formSubmission' => $formSubmission,
+                'leadTags' => LeadTag::where('website_id', $formSubmission->website_id)->orderBy('name')->get(),
+            ]);
+        }
+
         $formSubmission->load(['website', 'form', 'assignee', 'activities.user', 'tags', 'reviewInvitation.requester']);
 
         $users = $request->user()?->isAdmin() ? User::query()->orderBy('name')->get(['id', 'name']) : collect([$request->user()]);
@@ -128,7 +145,9 @@ class FormSubmissionController extends Controller
 
     public function update(UpdateFormSubmissionRequest $request, FormSubmission $formSubmission): RedirectResponse
     {
-        $data = $request->safe()->except(['return_to', 'tag_ids', 'new_tag', 'tags_present', 'name', 'email', 'phone', 'message']);
+        $data = $request->user()->isAdmin()
+            ? $request->safe()->except(['return_to', 'tag_ids', 'new_tag', 'tags_present', 'name', 'email', 'phone', 'message'])
+            : $request->safe()->only(['status', 'notes']);
 
         if (! $request->user()?->isAdmin() && filled($data['assigned_to'] ?? null) && (int) $data['assigned_to'] !== $request->user()->id) {
             abort(403);
@@ -136,7 +155,7 @@ class FormSubmissionController extends Controller
 
         DB::transaction(function () use ($formSubmission, $data, $request): void {
             $formSubmission = FormSubmission::query()->lockForUpdate()->findOrFail($formSubmission->id);
-            if ($formSubmission->is_manual && $request->hasAny(['name', 'email', 'phone', 'message'])) {
+            if ($request->user()->isAdmin() && $formSubmission->is_manual && $request->hasAny(['name', 'email', 'phone', 'message'])) {
                 $data['data'] = [...($formSubmission->data ?? []), ...$request->safe()->only(['name', 'email', 'phone', 'message'])];
             }
             $formSubmission->fill($data)->save();
@@ -191,6 +210,10 @@ class FormSubmissionController extends Controller
                 $formSubmission->recordActivity('notes_updated', 'Lead notes updated.', $request->user());
             }
         });
+
+        if (! $request->user()->isAdmin()) {
+            return redirect()->route('admin.form-submissions.show', $formSubmission)->with('status', 'Lead updated.');
+        }
 
         $redirectTo = $request->input('return_to');
 

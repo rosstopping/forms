@@ -18,6 +18,7 @@ use App\Services\ContentQueueOverview;
 use App\Services\DashboardSchedule;
 use App\Services\DashboardWorkActivity;
 use App\Services\SearchConsoleProgress;
+use App\Services\SeoProgressTimeline;
 use App\Services\WebsiteActionCenter;
 use App\Support\WebsiteNavigation;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -45,6 +46,7 @@ class DashboardController extends Controller
             'site_id' => ['nullable', 'integer', Rule::in($websites->modelKeys())],
             'action_state' => ['nullable', Rule::in(['open', 'queued', 'measuring', 'review', 'completed'])],
             'actions_page' => ['nullable', 'integer', 'min:1'],
+            'signal_category' => ['nullable', Rule::in(['win', 'alert', 'opportunity'])],
             'win_status' => ['nullable', Rule::in(['unshared', 'shared', 'dismissed'])],
             'wins_page' => ['nullable', 'integer', 'min:1'],
             'sites_page' => ['nullable', 'integer', 'min:1'],
@@ -83,7 +85,8 @@ class DashboardController extends Controller
             ->oldest()->paginate(10, ['*'], 'fixes_page');
 
         $winStatus = $filters['win_status'] ?? 'unshared';
-        $wins = SeoWin::whereIn('website_id', $websites->modelKeys())->with('website:id,name')
+        $signalCategory = $filters['signal_category'] ?? 'win';
+        $wins = SeoWin::whereIn('website_id', $websites->modelKeys())->where('category', $signalCategory)->with('website:id,name')
             ->when($winStatus === 'dismissed', fn ($query) => $query->whereNotNull('dismissed_at'), fn ($query) => $query->whereNull('dismissed_at'))
             ->when($winStatus === 'shared', fn ($query) => $query->whereNotNull('shared_at'))
             ->when($winStatus === 'unshared', fn ($query) => $query->whereNull('shared_at'))
@@ -93,6 +96,7 @@ class DashboardController extends Controller
         return view('admin.overview', [
             'wins' => $wins,
             'winStatus' => $winStatus,
+            'signalCategory' => $signalCategory,
             'websites' => $websites,
             'allWebsites' => $allWebsites,
             'hubSection' => $hubSection,
@@ -125,8 +129,24 @@ class DashboardController extends Controller
         $website = $request->attributes->get('currentWebsite');
 
         if (! $website instanceof Website) {
-            return view('admin.dashboard', [
+            return view($user->isAdmin() ? 'admin.dashboard' : 'admin.customer-overview', [
                 'website' => null,
+            ]);
+        }
+
+        if (! $user->isAdmin()) {
+            $website->load('searchConsoleConnection');
+            $reports = WeeklyReport::where('website_id', $website->id)->whereNotNull('generated_at');
+            $weeklyOverview = $request->filled('weekly_report')
+                ? (clone $reports)->whereKey($request->integer('weekly_report'))->firstOrFail()
+                : (clone $reports)->latest('period_end')->first();
+
+            return view('admin.customer-overview', [
+                'website' => $website,
+                'progressTimeline' => app(SeoProgressTimeline::class)->forWebsite($website),
+                'weeklyOverview' => $weeklyOverview,
+                'weeklyHistory' => (clone $reports)->latest('period_end')->paginate(12, ['id', 'period_start', 'period_end'], 'reports_page')->withQueryString(),
+                'searchProgress' => app(SearchConsoleProgress::class)->forWebsite($website, $request->only(['period', 'comparison', 'start', 'end'])),
             ]);
         }
 
@@ -156,6 +176,7 @@ class DashboardController extends Controller
             'website' => $website,
             'priorityActions' => ($user->isAdmin() || $website->owner?->hasMembershipFeature('growth')) ? app(WebsiteActionCenter::class)->forWebsite($website)->where('stage', 'open')->take(5) : collect(),
             'impactReviews' => ($user->isAdmin() || $website->owner?->hasMembershipFeature('growth')) ? SeoImpact::where('website_id', $website->id)->whereNotNull('review_available_at')->whereNull('acknowledged_at')->latest('review_available_at')->limit(5)->get() : collect(),
+            'progressTimeline' => app(SeoProgressTimeline::class)->forWebsite($website),
             'weeklyOverview' => $weeklyOverview,
             'aiVisibility' => app(AiVisibilityReport::class)->forPeriod($website, today()->subDays(6), now()->endOfDay()),
             'weeklyHistory' => $weeklyHistory,

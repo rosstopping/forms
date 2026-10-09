@@ -21,7 +21,7 @@ it('lets an administrator impersonate a customer and return to their account', f
 
     $this->from(route('admin.billing.index'))
         ->post(route('admin.billing.checkout'), ['tier' => 'growth'])
-        ->assertRedirect(route('admin.billing.index'));
+        ->assertForbidden();
 
     $this->delete(route('admin.impersonation.destroy'))
         ->assertRedirect(route('admin.users.index'));

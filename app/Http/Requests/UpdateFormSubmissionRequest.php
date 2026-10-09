@@ -18,7 +18,9 @@ class UpdateFormSubmissionRequest extends FormRequest
     {
         $submission = $this->route('form_submission');
 
-        return $submission?->website?->isManageableBy($this->user()) === true;
+        return $this->user()?->isAdmin()
+            ? $submission?->website?->isManageableBy($this->user()) === true
+            : $submission?->website?->isAccessibleBy($this->user()) === true;
     }
 
     protected function prepareForValidation(): void
@@ -35,6 +37,20 @@ class UpdateFormSubmissionRequest extends FormRequest
      */
     public function rules(): array
     {
+        if (! $this->user()?->isAdmin()) {
+            return [
+                'status' => ['required', 'string', Rule::in(FormSubmission::STATUSES)],
+                'notes' => ['nullable', 'string', 'max:10000'],
+                'tags_present' => ['sometimes', 'boolean'],
+                'tag_ids' => ['sometimes', 'array', 'max:20'],
+                'tag_ids.*' => ['required', 'integer', 'distinct', Rule::exists(LeadTag::class, 'id')->where('website_id', $this->route('form_submission')?->website_id)],
+                'new_tag' => ['nullable', 'string', 'max:40'],
+                'assigned_to' => ['prohibited'], 'follow_up_at' => ['prohibited'],
+                'name' => ['prohibited'], 'email' => ['prohibited'], 'phone' => ['prohibited'], 'message' => ['prohibited'],
+                'is_spam' => ['prohibited'], 'website_id' => ['prohibited'], 'form_id' => ['prohibited'],
+            ];
+        }
+
         return [
             'name' => ['sometimes', 'required', 'string', 'max:200', Rule::prohibitedIf(! $this->route('form_submission')?->is_manual)],
             'email' => ['sometimes', 'nullable', 'email:rfc', 'max:254', Rule::prohibitedIf(! $this->route('form_submission')?->is_manual)],

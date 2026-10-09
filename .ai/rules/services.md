@@ -12,6 +12,8 @@ paths:
   - app/Services/ContentGenerationPromptGenerator.php
   - app/Services/ProspectWebsiteAnalyzer.php
   - 'app/Services/{ReportingPeriod,SearchConsoleDailyHistory,SearchConsoleProgress}.php'
+  - 'app/Services/Seo*.php'
+  - app/Services/SeoProgressTimeline.php
 ---
 
 # Services
@@ -54,3 +56,9 @@ Prospect/public audit fetching follows at most five HTTP(S) redirects, including
 
 ## Rolling reporting uses finalized stored daily evidence
 Website Overview defaults to an equal rolling 28-day comparison. Use Pacific Search Console dates with at least three days of lag; provider incomplete metadata can move recent rolling endpoints. Daily imports are property-scoped, initially backfill site/date history, then revise a bounded tail; absent daily rows remain unknown, not zero. Suppress percentage comparisons unless both windows have complete coverage and the baseline is nonzero. Preserve monthly history and existing email periods; read screens never fetch provider data.
+
+## Detect reporting signals from stored comparable evidence
+Traffic signals require complete property-scoped finalized rolling 28-day windows and confirmation in a window ending three days earlier; those windows overlap and are not independent statistical samples. Growth/decline thresholds include absolute click changes; year comparisons use equal periods. Deduplicate milestones and suppress repeated trend signals for 90 days, including dismissed records. Content Wins reuse verified delivery and saved checkpoint reviews, retain page/keyword/task/date evidence, and never establish causation. Reporting alerts/opportunities share the evidence ledger but never enqueue work or buy data.
+
+## Keep client progress reviewed and separate delivery from performance
+Client timelines show only approved and explicitly marked-shared Wins, verified publication/change records and stored completed work for the selected accessible site. Never expose drafts, alerts/opportunities or operational links. A merged PR is completed work, not proof of publication; page availability checks and SEO improvements do not establish causation.

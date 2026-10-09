@@ -58,7 +58,7 @@ test('single fluctuations and insufficient observations do not become wins', fun
         winRanking($this->target, $position, (count($positions) - $index - 1) * 7);
     }
     app(SeoWinDetector::class)->detect($this->website);
-    expect(SeoWin::count())->toBe(0);
+    expect(SeoWin::where('category', 'win')->count())->toBe(0);
 })->with([[[12, 11, 12]], [[12, 9, 11]], [[12, 9]], [[null, 70, 65]], [[8, 7, 6]]]);
 
 test('cached duplicate observations cannot confirm a milestone', function (): void {

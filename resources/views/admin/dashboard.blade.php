@@ -39,7 +39,8 @@
         @endif
 
 
-        <x-weekly-overview :report="$weeklyOverview" :history="$weeklyHistory" />
+        <x-seo-progress-timeline :items="$progressTimeline" />
+                <x-weekly-overview :report="$weeklyOverview" :history="$weeklyHistory" />
 
         <section class="ui-panel ui-section flex flex-col justify-between gap-4 sm:flex-row sm:items-center" aria-labelledby="ai-visibility-summary">
             <div><h2 id="ai-visibility-summary" class="text-sm font-semibold text-slate-950">AI Visibility</h2><p class="mt-2 text-3xl font-semibold tabular-nums text-slate-950">{{ $aiVisibility['score'] === null ? '—' : $aiVisibility['score'].'%' }}</p><p class="mt-2 text-slate-600 text-base sm:text-sm">@if ($aiVisibility['completed_checks']){{ $aiVisibility['brand_appearances'] }} of {{ $aiVisibility['completed_checks'] }} tracked AI checks mentioned your business in the last 7 days.@else Start tracking how AI platforms recommend your business.@endif</p>@if ($aiVisibility['comparable'])<p class="mt-1 text-slate-500 text-base sm:text-sm">Previously {{ $aiVisibility['previous_score'] }}% in the preceding 7 days.</p>@endif</div>

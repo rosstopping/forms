@@ -16,7 +16,7 @@
             $currentWebsite = $currentWebsite ?? null;
             $currentWebsiteSection = $currentWebsiteSection ?? \App\Support\WebsiteNavigation::DEFAULT_SECTION;
             $navigationWebsites = $navigationWebsites ?? collect();
-            $showOnboardingCallCta = Auth::user()?->onboarding_status === 'trial_active'
+            $showOnboardingCallCta = Auth::user()?->isAdmin() && Auth::user()?->onboarding_status === 'trial_active'
                 && Auth::user()?->onboarding_trial_ends_at?->isFuture()
                 && ! Auth::user()?->onboarding_call_completed_at;
         @endphp
@@ -47,7 +47,7 @@
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="size-5 shrink-0" aria-hidden="true"><path d="M4 13h6V4H4v9Zm0 7h6v-4H4v4Zm10 0h6v-9h-6v9Zm0-16v4h6V4h-6Z" stroke-linejoin="round"/></svg>
                             Overview
                         </a>
-                        @if ($currentWebsite)
+                        @if ($currentWebsite && Auth::user()?->isAdmin())
                             @php($isWebsiteWorkspace = request()->route('website') instanceof \App\Models\Website || request()->routeIs('admin.forms.*'))
                             <div class="ml-5 space-y-1 border-l border-white/10 pl-3" data-website-navigation>
                                 @foreach ([
@@ -177,7 +177,7 @@
                         <nav class="mt-8 space-y-2" aria-label="Mobile navigation">
                             <p class="truncate px-3 text-xs font-medium uppercase tracking-widest text-slate-500" data-website-navigation-heading title="{{ $currentWebsite?->name }}">{{ $currentWebsite?->name ?? 'Your website' }}</p>
                             <a href="{{ route('admin.dashboard') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Overview</a>
-                            @if ($currentWebsite)
+                            @if ($currentWebsite && Auth::user()?->isAdmin())
                                 <div class="ml-5 space-y-1 border-l border-white/10 pl-3" data-website-navigation>
                                 @foreach ([
                                     'health' => 'Website health',
@@ -226,7 +226,7 @@
                 @endif
 
                 <main class="admin-content mx-auto max-w-[96rem] p-4 sm:p-6 lg:p-8 xl:p-10">
-                    @if ($searchConsoleAccessWarning && (($isWebsiteWorkspace ?? false) || request()->routeIs('admin.dashboard')))
+                    @if (Auth::user()?->isAdmin() && $searchConsoleAccessWarning && (($isWebsiteWorkspace ?? false) || request()->routeIs('admin.dashboard')))
                         <section class="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-5" role="alert" aria-labelledby="search-console-access-title">
                             <h2 id="search-console-access-title" class="font-semibold text-amber-950">Search Console access needs attention</h2>
                             <p class="mt-1 text-sm text-amber-900">Sitewell cannot read Search Console data for {{ $currentWebsite->name }} ({{ $searchConsoleAccessWarning->property_url }}). The property may have lost verification, or the connected Google account may no longer have permission. Search data cannot update while access is unavailable.</p>

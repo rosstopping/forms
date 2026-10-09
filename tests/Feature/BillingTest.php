@@ -17,8 +17,9 @@ beforeEach(function (): void {
     ]);
 });
 
-it('shows the marketing packages on the account billing page', function (): void {
+it('keeps legacy package billing available to staff only', function (): void {
     $user = User::factory()->create([
+        'role' => User::ROLE_ADMIN,
         'membership_tier' => MembershipPlan::GROWTH,
         'membership_status' => 'active',
     ]);
@@ -46,6 +47,7 @@ it('starts a Stripe hosted subscription checkout for a selected package', functi
         ], 200),
     ]);
     $user = User::factory()->create([
+        'role' => User::ROLE_ADMIN,
         'membership_tier' => null,
         'membership_status' => null,
         'stripe_customer_id' => null,
@@ -67,7 +69,7 @@ it('returns Growth checkout to its standard Stripe price after the offer ends', 
     expect(MembershipPlan::checkoutPriceId(MembershipPlan::GROWTH))->toBe('price_growth');
 });
 
-it('opens the Stripe hosted portal for package changes and cancellation', function (): void {
+it('opens the customers own Stripe hosted billing portal', function (): void {
     Http::preventStrayRequests();
     Http::fake([
         'api.stripe.test/v1/billing_portal/sessions' => Http::response([
@@ -147,34 +149,22 @@ it('blocks Search Console when the Essential membership is inactive', function (
     $website = Website::factory()->for($owner, 'owner')->create();
 
     $this->actingAs($owner)->get(route('admin.search-console.connect', $website))
-        ->assertRedirect(route('admin.billing.index'))
-        ->assertSessionHas('error');
+        ->assertForbidden();
 
     $this->actingAs($owner)->post(route('admin.website-health-reports.store', $website))
-        ->assertRedirect(route('admin.billing.index'))
-        ->assertSessionHas('error');
+        ->assertForbidden();
 
     expect($website->healthReports()->exists())->toBeFalse();
 });
 
-it('shows locked feature previews for website areas outside the owner package', function (): void {
+it('does not expose operational previews or upsells to customers', function (): void {
     $owner = User::factory()->create(['membership_tier' => MembershipPlan::ESSENTIAL]);
     $website = Website::factory()->for($owner, 'owner')->create();
 
     $this->actingAs($owner)->get(route('admin.websites.show', $website))
-        ->assertSuccessful()
-        ->assertSee('data-tab="search"', false)
-        ->assertSee('data-tab="seo"', false)
-        ->assertSee('data-tab="business-profile"', false)
-        ->assertSee('data-tab="content"', false)
-        ->assertDontSee('Manual content requests')
-        ->assertSee('Connect Google')
-        ->assertDontSee('Unlock search performance')
-        ->assertSee('See where your website can grow')
-        ->assertSee('Plan and request new content')
-        ->assertSee('Put your local presence to work')
-        ->assertDontSee('id="website-users-title"', false)
-        ->assertSee('data-tab="forms"', false);
+        ->assertForbidden();
+
+    $this->get(route('admin.dashboard'))->assertSuccessful()->assertDontSee('Plan and request new content')->assertDontSee('Connect Google');
 });
 
 it('keeps locked content request actions protected on the server', function (): void {
@@ -186,7 +176,7 @@ it('keeps locked content request actions protected on the server', function (): 
 
     $this->actingAs($owner)
         ->post(route('admin.content-requests.store', $website), ['instructions' => 'Create a new service page.'])
-        ->assertRedirect(route('admin.billing.index'));
+        ->assertForbidden();
 
     expect($website->contentRequests()->exists())->toBeFalse();
 });

@@ -29,6 +29,7 @@ beforeEach(function (): void {
     config(['forms.pixel_ui_enabled' => false]);
     Http::preventStrayRequests();
     $this->owner = User::factory()->create();
+    $this->admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     $this->website = Website::factory()->for($this->owner, 'owner')->create();
     $this->website->domains()->create(['domain' => 'example.com', 'is_primary' => true]);
     $this->impact = SeoImpact::factory()->for($this->website)->create();
@@ -63,8 +64,8 @@ test('queuing a recommendation creates one linked measurable brief with source e
         ->and(SeoImpact::where('content_request_id', $request->id)->count())->toBe(1);
 });
 
-test('managers can save a bounded brief and see impact pages', function (): void {
-    $this->actingAs($this->owner)->put(route('admin.seo-impacts.update', [$this->website, $this->impact]), $this->brief)->assertSessionDoesntHaveErrors()->assertRedirect();
+test('admins can save a bounded brief and see impact pages', function (): void {
+    $this->actingAs($this->admin)->put(route('admin.seo-impacts.update', [$this->website, $this->impact]), $this->brief)->assertSessionDoesntHaveErrors()->assertRedirect();
     expect($this->impact->fresh()->target_queries)->toBe(['garden offices', 'garden rooms'])
         ->and($this->impact->fresh()->country)->toBe('gbr')
         ->and($this->impact->fresh()->priorityScore())->toBe(10.0);
@@ -72,26 +73,26 @@ test('managers can save a bounded brief and see impact pages', function (): void
     $this->get(route('admin.websites.section', [$this->website, 'seo', 'seo_section' => 'impact', 'seo_impact' => $this->impact->id]))->assertSuccessful()->assertSee('Ready to track automatically')->assertDontSee('Confirm live and start measuring');
 });
 
-test('viewers can read impact evidence but cannot change briefs or confirm delivery', function (): void {
+test('customers cannot open staff impact evidence or change briefs or confirm delivery', function (): void {
     $viewer = User::factory()->create();
     $this->website->members()->attach($viewer, ['role' => Website::MEMBER_ROLE_VIEWER]);
-    $this->actingAs($viewer)->get(route('admin.websites.section', [$this->website, 'seo', 'seo_section' => 'impact', 'seo_impact' => $this->impact->id]))->assertSuccessful()->assertDontSee('Confirm live and start measuring');
+    $this->actingAs($viewer)->get(route('admin.websites.section', [$this->website, 'seo', 'seo_section' => 'impact', 'seo_impact' => $this->impact->id]))->assertForbidden();
     foreach (['update' => 'put', 'live' => 'post', 'review' => 'post'] as $action => $method) {
         $this->$method(route('admin.seo-impacts.'.$action, [$this->website, $this->impact]), $this->brief)->assertForbidden();
     }
 });
 
-test('impact access is website scoped and paid mutations remain gated', function (): void {
+test('impact access is website scoped and customer mutations remain blocked', function (): void {
     $other = Website::factory()->for($this->owner, 'owner')->create();
-    $this->actingAs($this->owner)->get(route('admin.seo-impacts.show', [$other, $this->impact]))->assertNotFound();
+    $this->actingAs($this->admin)->get(route('admin.seo-impacts.show', [$other, $this->impact]))->assertNotFound();
     $this->put(route('admin.seo-impacts.update', [$other, $this->impact]), $this->brief)->assertNotFound();
     $this->actingAs(User::factory()->create())->get(route('admin.websites.section', [$this->website, 'seo', 'seo_section' => 'impact']))->assertForbidden();
     $this->owner->update(['membership_tier' => 'essential']);
-    $this->actingAs($this->owner)->post(route('admin.seo-impacts.live', [$this->website, $this->impact]), [])->assertRedirect(route('admin.billing.index'));
+    $this->actingAs($this->owner)->post(route('admin.seo-impacts.live', [$this->website, $this->impact]), [])->assertForbidden();
 });
 
 test('briefs reject foreign urls overlapping controls and invalid scopes', function (array $invalid): void {
-    $this->actingAs($this->owner)->put(route('admin.seo-impacts.update', [$this->website, $this->impact]), [...$this->brief, ...$invalid])->assertSessionHasErrors();
+    $this->actingAs($this->admin)->put(route('admin.seo-impacts.update', [$this->website, $this->impact]), [...$this->brief, ...$invalid])->assertSessionHasErrors();
 })->with([
     [['target_urls' => ['https://other.test/services']]],
     [['target_urls' => ['https://example.com.evil.test/services']]],
@@ -106,13 +107,13 @@ test('briefs reject foreign urls overlapping controls and invalid scopes', funct
 test('the optional legacy delivery endpoint validates evidence and freezes scope', function (): void {
     $generation = ContentGeneration::factory()->create(['merged_at' => now()]);
     $this->impact->update(['content_generation_id' => $generation->id]);
-    $this->actingAs($this->owner)->get(route('admin.websites.section', [$this->website, 'seo', 'seo_section' => 'impact']))->assertSee('Pull request merged · Automatic tracking is being prepared');
+    $this->actingAs($this->admin)->get(route('admin.websites.section', [$this->website, 'seo', 'seo_section' => 'impact']))->assertSee('Pull request merged · Automatic tracking is being prepared');
     $this->post(route('admin.seo-impacts.live', [$this->website, $this->impact]), ['live_date' => '2026-09-18'])->assertSessionHasErrors();
     $this->post(route('admin.seo-impacts.live', [$this->website, $this->impact]), [
         'live_date' => '2026-09-17', 'actual_changes' => 'Updated the service title and linked from the homepage.',
         'deployment_evidence' => 'Checked release 123 and inspected the public service page.', 'confirmed_live' => 1,
     ])->assertSessionDoesntHaveErrors()->assertRedirect();
-    expect($this->impact->fresh()->status)->toBe('measuring')->and($this->impact->fresh()->confirmed_by)->toBe($this->owner->id);
+    expect($this->impact->fresh()->status)->toBe('measuring')->and($this->impact->fresh()->confirmed_by)->toBe($this->admin->id);
     $this->put(route('admin.seo-impacts.update', [$this->website, $this->impact]), $this->brief)->assertUnprocessable();
 });
 
@@ -161,7 +162,7 @@ test('measurement does not extend the page cooldown and retains review learning'
     $eligible = ContentRequest::factory()->for($this->website)->create(['instructions' => 'Improve https://example.com/contact']);
     $work = app(ContentWorkSelector::class)->select($generation);
     expect($work['requests']->values()->modelKeys())->toBe([$blocked->id, $eligible->id]);
-    $this->actingAs($this->owner)->post(route('admin.seo-impacts.review', [$this->website, $this->impact]), ['decision' => 'iterate', 'decision_notes' => 'Clicks declined; check the search intent before changing the page again.'])->assertRedirect();
+    $this->actingAs($this->admin)->post(route('admin.seo-impacts.review', [$this->website, $this->impact]), ['decision' => 'iterate', 'decision_notes' => 'Clicks declined; check the search intent before changing the page again.'])->assertRedirect();
     expect($this->impact->fresh()->status)->toBe('completed')->and($this->website->contentRequests()->count())->toBe(3);
     $followup = $this->website->contentRequests()->latest('id')->first();
     expect($followup->seoImpact->target_urls)->toBe($this->impact->target_urls);
@@ -172,7 +173,7 @@ test('measurement does not extend the page cooldown and retains review learning'
 test('low traffic reviews can be extended without losing prior evidence', function (): void {
     $this->impact->update(['status' => 'review_required', 'live_at' => now()->subDays(60), 'review_after_days' => 56, 'outcome' => 'insufficient_data']);
     SeoImpactReview::factory()->for($this->impact, 'impact')->create(['checkpoint' => 56]);
-    $this->actingAs($this->owner)->post(route('admin.seo-impacts.review', [$this->website, $this->impact]), ['decision' => 'extend', 'decision_notes' => 'Low traffic needs more time to observe a useful signal.'])->assertRedirect();
+    $this->actingAs($this->admin)->post(route('admin.seo-impacts.review', [$this->website, $this->impact]), ['decision' => 'extend', 'decision_notes' => 'Low traffic needs more time to observe a useful signal.'])->assertRedirect();
     expect($this->impact->fresh()->status)->toBe('measuring')->and($this->impact->fresh()->review_after_days)->toBe(84)->and($this->impact->reviews()->count())->toBe(1);
 });
 
@@ -248,10 +249,10 @@ test('review pages render measured evidence and preserve viewer restrictions', f
         'baseline' => [...impactMeasurementSample(), 'start' => '2026-07-01', 'end' => '2026-07-28'],
         'observations' => [...impactMeasurementSample(150), 'start' => '2026-08-26', 'end' => '2026-09-22']]);
     SeoImpactReview::factory()->for($this->impact, 'impact')->create(['checkpoint' => 56]);
-    $this->actingAs($this->owner)->get(route('admin.websites.section', [$this->website, 'seo', 'seo_section' => 'impact', 'seo_impact' => $this->impact->id]))->assertSuccessful()->assertSee('Day 56')->assertSee('Search results')->assertDontSee('Save decision')->assertSee('Linked Pixel changes');
+    $this->actingAs($this->admin)->get(route('admin.websites.section', [$this->website, 'seo', 'seo_section' => 'impact', 'seo_impact' => $this->impact->id]))->assertSuccessful()->assertSee('Day 56')->assertSee('Search results')->assertDontSee('Save decision')->assertSee('Linked Pixel changes');
     $viewer = User::factory()->create();
     $this->website->members()->attach($viewer, ['role' => Website::MEMBER_ROLE_VIEWER]);
-    $this->actingAs($viewer)->get(route('admin.websites.section', [$this->website, 'seo', 'seo_section' => 'impact', 'seo_impact' => $this->impact->id]))->assertSuccessful()->assertDontSee('Save decision')->assertDontSee('https://github.com/example/repo/pull/1');
+    $this->actingAs($viewer)->get(route('admin.websites.section', [$this->website, 'seo', 'seo_section' => 'impact', 'seo_impact' => $this->impact->id]))->assertForbidden();
 });
 
 test('expired entitlements and inactive websites never collect impact data', function (): void {
@@ -272,7 +273,7 @@ test('expired entitlements and inactive websites never collect impact data', fun
 test('removing unstarted work cancels its tracking but cannot remove a live measurement', function (): void {
     $request = ContentRequest::factory()->for($this->website)->create();
     $this->impact->update(['content_request_id' => $request->id]);
-    $this->actingAs($this->owner)->delete(route('admin.content-requests.destroy', [$this->website, $request]))->assertRedirect();
+    $this->actingAs($this->admin)->delete(route('admin.content-requests.destroy', [$this->website, $request]))->assertRedirect();
     expect($this->impact->fresh()->status)->toBe('cancelled');
     $liveRequest = ContentRequest::factory()->for($this->website)->create();
     SeoImpact::factory()->for($this->website)->create(['content_request_id' => $liveRequest->id, 'status' => 'measuring']);
@@ -305,7 +306,7 @@ test('outside reference links never become automatic target pages', function ():
     $impact = app(SeoImpactTracker::class)->forRequest($request);
     expect($impact->target_urls)->toBe(['https://example.com/services']);
     $this->impact->update(['target_urls' => ['https://competitor.test/service']]);
-    $this->actingAs($this->owner)->post(route('admin.seo-impacts.live', [$this->website, $this->impact]), [
+    $this->actingAs($this->admin)->post(route('admin.seo-impacts.live', [$this->website, $this->impact]), [
         'live_date' => '2026-09-17', 'actual_changes' => 'Updated the service title and description.',
         'deployment_evidence' => 'Checked the published release on the live site.', 'confirmed_live' => 1,
     ])->assertUnprocessable();
@@ -320,7 +321,7 @@ test('unchanged comparison pages are eligible during measurement', function (): 
 test('SEO impact stays inside SEO Intelligence after recommended actions', function (): void {
     SeoSnapshot::factory()->for($this->website)->create(['status' => 'completed']);
     $url = route('admin.websites.section', [$this->website, 'seo', 'seo_section' => 'impact']);
-    $response = $this->actingAs($this->owner)->get($url)->assertSuccessful()
+    $response = $this->actingAs($this->admin)->get($url)->assertSuccessful()
         ->assertViewIs('admin.websites.show')
         ->assertSeeInOrder(['id="seo-section-tab-overview"', 'id="seo-section-tab-targets"', 'id="seo-section-tab-actions"', 'id="seo-section-tab-impact"'], false)
         ->assertSee($this->impact->title)->assertDontSee('Back to Content');
@@ -337,7 +338,7 @@ test('SEO impact stays inside SEO Intelligence after recommended actions', funct
 test('impact details and saved briefs retain their SEO tab and back destination', function (): void {
     $list = route('admin.websites.section', [$this->website, 'seo', 'seo_section' => 'impact']);
     $detail = route('admin.websites.section', [$this->website, 'seo', 'seo_section' => 'impact', 'seo_impact' => $this->impact->id]);
-    $this->actingAs($this->owner)->get(route('admin.seo-impacts.show', [$this->website, $this->impact]))->assertRedirect($detail);
+    $this->actingAs($this->admin)->get(route('admin.seo-impacts.show', [$this->website, $this->impact]))->assertRedirect($detail);
     $response = $this->get($detail)->assertSuccessful()->assertViewIs('admin.websites.show')->assertSee('All SEO impact')->assertDontSee('Back to Content');
     $document = new DOMDocument;
     @$document->loadHTML($response->getContent());
@@ -350,19 +351,19 @@ test('impact details and saved briefs retain their SEO tab and back destination'
 
 test('impact pagination keeps the SEO context without needing a paid snapshot', function (): void {
     SeoImpact::factory()->count(20)->for($this->website)->create();
-    $response = $this->actingAs($this->owner)->get(route('admin.websites.section', [$this->website, 'seo', 'seo_section' => 'impact']))->assertSuccessful();
+    $response = $this->actingAs($this->admin)->get(route('admin.websites.section', [$this->website, 'seo', 'seo_section' => 'impact']))->assertSuccessful();
     $next = $response->viewData('impacts')->nextPageUrl();
     expect($next)->toContain('/section/seo')->toContain('seo_section=impact')->toContain('impact_page=2');
     $this->get($next)->assertSuccessful()->assertViewHas('impacts', fn ($impacts): bool => $impacts->currentPage() === 2);
 });
 
-test('embedded impacts remain website scoped and hidden from lower tiers', function (): void {
+test('embedded impacts remain website scoped and hidden from customers', function (): void {
     $other = SeoImpact::factory()->create(['title' => 'Private impact evidence']);
-    $this->actingAs($this->owner)->get(route('admin.websites.section', [$this->website, 'seo', 'seo_section' => 'impact', 'seo_impact' => $other->id]))->assertNotFound();
+    $this->actingAs($this->admin)->get(route('admin.websites.section', [$this->website, 'seo', 'seo_section' => 'impact', 'seo_impact' => $other->id]))->assertNotFound();
     $this->get(route('admin.websites.section', [$this->website, 'seo', 'seo_section' => 'impact', 'seo_impact' => ['invalid']]))->assertNotFound();
     $this->owner->update(['membership_tier' => 'essential']);
-    $this->get(route('admin.websites.section', [$this->website, 'seo', 'seo_section' => 'impact', 'seo_impact' => $this->impact->id]))
-        ->assertSuccessful()->assertDontSee($this->impact->title)->assertDontSee('Save brief');
+    $this->actingAs($this->owner)->get(route('admin.websites.section', [$this->website, 'seo', 'seo_section' => 'impact', 'seo_impact' => $this->impact->id]))
+        ->assertForbidden();
 });
 
 test('only changed pages retain a full fourteen day cooldown regardless of measurement status', function (string $status): void {

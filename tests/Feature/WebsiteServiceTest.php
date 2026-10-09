@@ -53,7 +53,7 @@ it('keeps service configuration out of customer settings and rejects customer ch
     $website = Website::factory()->for($customer, 'owner')->create();
 
     $this->actingAs($customer)->get(route('admin.websites.section', [$website, 'settings']))
-        ->assertSuccessful()->assertDontSee('id="website-service-title"', false);
+        ->assertForbidden();
     $this->put(route('admin.websites.service.update', $website), [
         'service_package' => MembershipPlan::COMPLETE,
         'service_status' => Website::SERVICE_STATUS_ACTIVE,

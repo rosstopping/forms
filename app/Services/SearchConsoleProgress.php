@@ -33,7 +33,7 @@ class SearchConsoleProgress
     /** @param Collection<int, SearchConsoleDailyMetric> $rows
      * @return array<string, mixed>
      */
-    private function totals(Collection $rows, CarbonImmutable $start, CarbonImmutable $end): array
+    public function totals(Collection $rows, CarbonImmutable $start, CarbonImmutable $end): array
     {
         $observed = $rows->filter(fn ($row): bool => $row->data_status === 'observed' && $row->date->toDateString() >= $start->toDateString() && $row->date->toDateString() <= $end->toDateString());
         $days = (int) $start->diffInDays($end) + 1;
