@@ -60,7 +60,6 @@
                 <h2 id="ross-introduction" class="text-3xl font-medium tracking-tight sm:text-4xl">Hi, I’m Ross.</h2>
                 <p class="mt-5 text-base/7 text-ink/70">I’m a web developer from Doncaster. I’ve been building and managing websites for over 10 years, and now help other developers and agencies offer SEO without taking on all the extra work.</p>
                 <p class="mt-4 text-base/7 text-ink/70">You deal directly with me. I handle the SEO, keep you updated and help you explain the progress to your clients.</p>
-                <p class="mt-4 text-base/7 text-ink/70">You keep the relationship. I take care of the work.</p>
             </div>
         </div>
     </section>
@@ -74,38 +73,23 @@
             </ol>
         </div>
     </section>
-    <section id="available-now" class="scroll-mt-8 py-14 sm:py-20">
-        <div class="mx-auto grid max-w-6xl gap-8 px-5 sm:px-8 lg:grid-cols-[2fr_3fr] lg:px-10">
-            <div><p class="text-sm font-medium text-garden">Fully managed, with me behind it</p><h2 class="mt-4 text-3xl font-medium tracking-tight sm:text-4xl">The work behind your SEO service.</h2></div>
-            <ul class="divide-y divide-ink/10">
-                @foreach ([['Technical SEO and website care', 'Website audits, practical fixes and ongoing technical SEO improvements.'], ['Regular content improvements', 'Up to three scheduled content improvements per week, prepared for review. Existing-page optimisation, new articles and landing pages.'], ['Keyword and competitor research', 'Find the searches that matter to your clients, monitor Google rankings and use weekly competitor research to guide improvements.'], ['Google Business Profile management', 'Profile health checks and recommended changes, with Google posts and customer review replies prepared for approval.'], ['Reporting and support', 'Clear weekly reports, advanced lead handling and a dedicated website and SEO specialist.']] as [$heading, $copy])
-                    <li class="py-5 first:pt-0"><h3 class="text-lg font-medium">{{ $heading }}</h3><p class="mt-2 text-base/7 text-ink/70">{{ $copy }}</p></li>
-                @endforeach
-            </ul>
-        </div>
-    </section>
-    <section class="bg-lichen py-14 sm:py-20">
-        <div class="mx-auto grid max-w-6xl items-center gap-10 px-5 sm:px-8 lg:grid-cols-2 lg:px-10">
-            <div><h2 class="max-w-[24ch] text-balance text-3xl font-medium tracking-tight sm:text-4xl">A monthly service for clients who already trust you.</h2><p class="mt-5 max-w-lg text-base/7 text-ink/70">You’ve already built the relationship. Ongoing SEO gives you another useful service to offer after the website goes live.</p><p class="mt-4 max-w-lg text-base/7 text-ink/70">You set your client’s price. We agree Sitewell’s fee and the work included. The difference contributes to your margin, before your own costs.</p></div>
-            <div class="border-l-2 border-garden pl-6"><p class="text-2xl font-medium tracking-tight">Your clients. Your pricing.</p><p class="mt-4 max-w-md text-base/7 text-ink/70">Start with one suitable website and build from there. You don’t need to hire an SEO specialist or manage the delivery yourself.</p></div>
-        </div>
-    </section>
-    <section class="py-14 sm:py-20">
-        <div class="mx-auto grid max-w-6xl gap-8 px-5 sm:px-8 lg:grid-cols-[2fr_3fr] lg:px-10">
-            <h2 class="text-3xl font-medium tracking-tight sm:text-4xl">A few useful answers.</h2>
-            <div class="divide-y divide-ink/15 border-y border-ink/15">
-                @foreach ([['Do I need SEO experience?', 'No. You bring your knowledge of the client. I handle the technical work, priorities and ongoing delivery.'], ['Can you look after my existing clients?', 'Yes. Send me their website and I’ll handle onboarding, including checking the setup and arranging the access needed.'], ['Who communicates with my customers?', 'You do. You keep the client relationship, pricing and customer communication. I support you behind the scenes.'], ['Do you make the website changes?', 'Yes. I handle the agreed technical SEO fixes, page improvements and new content. Content is prepared for review before publication.'], ['Is everything white-labelled?', 'Sitewell dashboards and reporting currently use Sitewell branding. Fully agency-branded dashboards and custom domains aren’t included. You still keep your client relationship and set your own pricing.'], ['What does it cost, and can I start with one website?', 'Yes, you can start with one website. Book a quick chat and we’ll agree the agency price, work included and any commitment before you start.']] as [$question, $answer])
-                    <details class="py-5"><summary class="cursor-pointer font-medium focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-garden">{{ $question }}</summary><p class="mt-4 text-base/7 text-ink/70">{{ $answer }}</p></details>
-                @endforeach
-            </div>
+    <section id="available-now" class="scroll-mt-8 py-10 sm:py-12">
+        <div class="mx-auto max-w-6xl px-5 sm:px-8 lg:px-10">
+            <h2 class="text-2xl font-medium tracking-tight sm:text-3xl">What’s included?</h2>
+            <p class="mt-4 max-w-3xl text-base/7 text-ink/70">Website audits and fixes, keyword and competitor research, Google Business Profile management and clear weekly reports.</p>
+            <p class="mt-3 max-w-3xl text-base/7 text-ink/70">Up to three scheduled content improvements per week, prepared for review: existing pages, new articles or landing pages.</p>
         </div>
     </section>
     <section id="join-beta" class="scroll-mt-8 border-t border-ink/10 py-14 sm:py-20">
         <div class="mx-auto max-w-6xl px-5 sm:px-8 lg:px-10">
             <h2 class="text-balance text-3xl font-medium tracking-tight sm:text-4xl">Fancy offering SEO to your clients?</h2>
-            <p class="mt-5 max-w-xl text-lg/8 text-ink/70">Let’s have a quick chat about your agency, your clients and how Sitewell could work for you.</p>
+            <p class="mt-5 max-w-xl text-lg/8 text-ink/70">Start with one client. We’ll agree the price and work before getting started.</p>
             <a data-audit-book-call href="{{ route('marketing.ppc.book') }}" class="mt-7 inline-flex min-h-12 items-center rounded-full bg-garden px-6 py-3 font-medium text-white hover:bg-moss focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-garden">Book a quick chat <span aria-hidden="true" class="ml-3">↗</span></a>
-            <details class="mt-10 border-t border-ink/10 pt-5">
+            <details class="mt-6 max-w-2xl">
+                <summary class="cursor-pointer text-sm text-ink/60 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-garden">Can I offer it under my own brand?</summary>
+                <p class="mt-3 text-sm/6 text-ink/70">Yes. You sell the service and manage your clients. Dashboards and reports will include your logo and branding.</p>
+            </details>
+            <details class="mt-6 border-t border-ink/10 pt-5">
                 <summary class="cursor-pointer text-sm text-ink/60 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-garden">More about SEO for agencies</summary>
                 <nav aria-label="Agency resources" class="mt-5"><ul class="grid gap-3 sm:grid-cols-2">@foreach ($pages as $slug => $resource)<li><a href="{{ route('marketing.agencies.show', $slug) }}" class="text-sm text-ink/70 underline decoration-ink/20 underline-offset-4 hover:text-garden">{{ $resource['label'] }}</a></li>@endforeach</ul></nav>
             </details>

@@ -73,7 +73,7 @@ it('presents the managed agency service with existing booking and honest availab
     $home = $this->get(route('marketing.home'))->assertSuccessful()->getContent();
     expect(substr_count($home, 'href="'.route('marketing.agencies').'"'))->toBe(0);
     $this->get(route('marketing.agencies'))->assertSuccessful()
-        ->assertSee('Fully managed, with me behind it')->assertSee('Video coming soon')
+        ->assertSee('What’s included?')->assertSee('Video coming soon')
         ->assertDontSee('fictional businesses and data')->assertDontSee('Join the agency beta')
         ->assertSee('Up to three scheduled content improvements per week')
         ->assertSee('data-audit-book-call', false)
@@ -214,4 +214,17 @@ it('shows the homepage search and AI logos beneath the agency hero', function ()
     foreach (['google', 'bing', 'openai', 'gemini', 'perplexity', 'claude'] as $mark) {
         $response->assertSee('src="'.asset('search-'.$mark.'.svg').'"', false);
     }
+});
+
+it('keeps the agency page concise after the three steps while preserving service scope and branding clarity', function (): void {
+    $this->get(route('marketing.agencies'))->assertSuccessful()
+        ->assertSee('Send me the website. I’ll take it from there.')
+        ->assertSee('Up to three scheduled content improvements per week, prepared for review')
+        ->assertSee('clear weekly reports')
+        ->assertSee('Dashboards and reports will include your logo and branding.')
+        ->assertDontSee('custom branding and domains aren’t included')
+        ->assertDontSee('The work behind your SEO service.')
+        ->assertDontSee('A monthly service for clients who already trust you.')
+        ->assertDontSee('A few useful answers.')
+        ->assertDontSee('Your clients. Your pricing.');
 });
