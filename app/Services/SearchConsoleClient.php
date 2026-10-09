@@ -105,6 +105,18 @@ class SearchConsoleClient
         ];
     }
 
+    /** @return array{rows: array<int, array<string, mixed>>, incomplete_from: ?string} */
+    public function dailyPerformance(SearchConsoleConnection $connection, Carbon $start, Carbon $end): array
+    {
+        $payload = ['startDate' => $start->toDateString(), 'endDate' => $end->toDateString(), 'dimensions' => ['date'], 'type' => 'web', 'rowLimit' => 25000];
+        $url = 'sites/'.rawurlencode($connection->property_url).'/searchAnalytics/query';
+        $coverage = $this->request($connection)->post($url, [...$payload, 'dataState' => 'all'])->throw()->json();
+        $rows = $this->request($connection)->post($url, [...$payload, 'dataState' => 'final'])->throw()->json('rows', []);
+
+        return ['rows' => collect($rows)->map(fn (array $row): array => ['date' => (string) data_get($row, 'keys.0'), ...$this->formatRow($row)])->all(),
+            'incomplete_from' => data_get($coverage, 'metadata.first_incomplete_date')];
+    }
+
     /** @return array{totals: ?array, queries: array, pages: array, sampled: bool} */
     public function weeklyPerformance(SearchConsoleConnection $connection, Carbon $start, Carbon $end): array
     {

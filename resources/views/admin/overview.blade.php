@@ -51,11 +51,14 @@
         </div>
 
         <nav class="ui-tabs" aria-label="Admin overview sections">
-            @foreach (['priorities' => 'Priorities', 'approvals' => 'Approvals', 'results' => 'SEO results', 'automation' => 'Automation', 'websites' => 'Websites'] as $section => $label)
+            @foreach (['priorities' => 'Priorities', 'approvals' => 'Approvals', 'results' => 'SEO results', 'wins' => 'Sitewell Wins', 'automation' => 'Automation', 'websites' => 'Websites'] as $section => $label)
                 <a id="hub-tab-{{ $section }}" href="{{ $hubUrl($section) }}" class="ui-tab" @if ($hubSection === $section) aria-current="page" @endif>{{ $label }}</a>
             @endforeach
         </nav>
 
+        <section id="hub-wins" aria-labelledby="hub-tab-wins" @if ($hubSection !== 'wins') hidden @endif>
+            <x-seo-wins-inbox :wins="$wins" :status="$winStatus" :site-filter="$siteFilter" />
+        </section>
         <section id="hub-priorities" aria-labelledby="hub-tab-priorities" @if ($hubSection !== 'priorities') hidden @endif>
             <x-admin-priority-actions :actions="$priorityActions" :counts="$actionCounts" :state="$actionState" :site-filter="$siteFilter" />
         </section>

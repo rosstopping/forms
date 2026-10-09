@@ -5,11 +5,12 @@ use App\Models\ContentPlan;
 use App\Models\ContentRequest;
 use App\Models\Form;
 use App\Models\SearchConsoleConnection;
-use App\Models\SearchConsoleMetric;
+use App\Models\SearchConsoleDailyMetric;
 use App\Models\User;
 use App\Models\Website;
 use App\Models\WebsiteHealthReport;
 use App\Models\WebsiteRepository;
+use App\Services\ReportingPeriod;
 use App\Support\MembershipPlan;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Support\Carbon;
@@ -116,11 +117,12 @@ it('shows connected search performance and optional form activity for the select
     $user = User::factory()->create();
     $website = Website::factory()->for($user, 'owner')->create(['name' => 'Connected website']);
     $connection = SearchConsoleConnection::factory()->for($website)->for($user, 'connector')->create(['property_url' => 'sc-domain:example.com']);
-    SearchConsoleMetric::factory()->for($website)->for($connection, 'connection')->create([
-        'month' => today()->startOfMonth(),
+    SearchConsoleDailyMetric::factory()->for($website)->create([
+        'search_console_connection_id' => $connection->id,
+        'property_url' => $connection->property_url,
+        'date' => ReportingPeriod::cutoff()->toDateString(),
         'clicks' => 1234,
         'impressions' => 9876,
-        'ctr' => 0.125,
         'position' => 8.4,
     ]);
     Form::factory()->for($website)->create();
@@ -137,72 +139,38 @@ it('shows connected search performance and optional form activity for the select
         ->assertSee('href="'.route('admin.form-submissions.index').'"', false);
 });
 
-it('compares the current and previous calendar months even when either import is missing', function (string $date, bool $hasCurrent, bool $hasPrevious): void {
+it('compares rolling periods even when either daily import is missing', function (string $date, bool $hasCurrent, bool $hasPrevious): void {
     $this->travelTo(Carbon::parse($date));
     $user = User::factory()->create();
     $website = Website::factory()->for($user, 'owner')->create();
     $connection = SearchConsoleConnection::factory()->for($website)->for($user, 'connector')->create(['property_url' => 'sc-domain:example.com']);
-    $currentMonth = today()->startOfMonth();
-    $previousMonth = $currentMonth->copy()->subMonth();
-
-    foreach ([[$currentMonth, $hasCurrent, 1234], [$previousMonth, $hasPrevious, 5678]] as [$month, $hasMetrics, $clicks]) {
+    $period = ReportingPeriod::fromInput([]);
+    foreach ([[$period->end, $hasCurrent, 1234], [$period->previousEnd, $hasPrevious, 5678]] as [$day, $hasMetrics, $clicks]) {
         if ($hasMetrics) {
-            SearchConsoleMetric::factory()->for($website)->for($connection, 'connection')->create([
-                'month' => $month,
-                'clicks' => $clicks,
-                'impressions' => 20000,
-                'ctr' => 0.125,
-                'position' => 8.4,
+            SearchConsoleDailyMetric::factory()->for($website)->create([
+                'search_console_connection_id' => $connection->id, 'property_url' => $connection->property_url,
+                'date' => $day->toDateString(), 'clicks' => $clicks, 'impressions' => 20000, 'position' => 8.4,
             ]);
         }
     }
-
-    SearchConsoleMetric::factory()->for($website)->for($connection, 'connection')->create([
-        'month' => $currentMonth->copy()->subMonths(2),
-        'clicks' => 999999,
+    SearchConsoleDailyMetric::factory()->for($website)->create([
+        'search_console_connection_id' => $connection->id, 'property_url' => 'sc-domain:old.example.com',
+        'date' => $period->end->toDateString(), 'clicks' => 999999,
     ]);
-    SearchConsoleMetric::factory()->for($website)->for($connection, 'connection')->create([
-        'month' => $currentMonth,
-        'query' => 'unrelated query',
-        'dimension_key' => hash('sha256', 'unrelated query'),
-        'clicks' => 999999,
-    ]);
-    SearchConsoleMetric::factory()->for($website)->for($connection, 'connection')->create([
-        'month' => $previousMonth,
-        'property_url' => 'sc-domain:old.example.com',
-        'property_hash' => hash('sha256', 'sc-domain:old.example.com'),
-        'clicks' => 999999,
-    ]);
-    SearchConsoleMetric::factory()->create(['month' => $previousMonth, 'clicks' => 999999]);
-
+    SearchConsoleDailyMetric::factory()->create(['clicks' => 999999]);
     $response = $this->actingAs($user)->get(route('admin.dashboard'))
-        ->assertOk()
-        ->assertSeeInOrder([$currentMonth->format('F Y').' · Month to date', $previousMonth->format('F Y').' · Previous month'])
-        ->assertSee('This month is incomplete.')
-        ->assertDontSee('999,999');
-
-    if ($hasCurrent) {
-        $response->assertSee('1,234');
-    } else {
-        $response->assertDontSee('1,234');
-    }
-
-    if ($hasPrevious) {
-        $response->assertSee('5,678');
-    } else {
-        $response->assertDontSee('5,678');
-    }
-
+        ->assertOk()->assertSee('Last 28 days')->assertSeeInOrder(['Selected period', 'Comparison period'])
+        ->assertSee('Partial coverage')->assertDontSee('999,999');
+    $hasCurrent ? $response->assertSee('1,234') : $response->assertDontSee('1,234');
+    $hasPrevious ? $response->assertSee('5,678') : $response->assertDontSee('5,678');
     if (! $hasCurrent || ! $hasPrevious) {
-        $response->assertSee('No search performance imported for this month yet.');
-    } else {
-        $response->assertDontSee('No search performance imported for this month yet.');
+        $response->assertSee('No daily search performance imported for this period yet.');
     }
 })->with([
-    'both months at year rollover' => ['2026-01-01', true, true],
-    'current month missing' => ['2026-09-01', false, true],
-    'previous month missing at month end' => ['2026-03-31', true, false],
-    'both months missing' => ['2026-09-01', false, false],
+    'both periods at year rollover' => ['2026-01-01', true, true],
+    'current period missing' => ['2026-09-01', false, true],
+    'previous period missing at month end' => ['2026-03-31', true, false],
+    'both periods missing' => ['2026-09-01', false, false],
 ]);
 
 it('shows active onboarding trial context on the website overview', function (): void {

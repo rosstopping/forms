@@ -11,6 +11,7 @@ paths:
   - 'app/Services/{SeoImpactTracker,ContentWorkSelector,ContentGenerationPromptGenerator}.php'
   - app/Services/ContentGenerationPromptGenerator.php
   - app/Services/ProspectWebsiteAnalyzer.php
+  - 'app/Services/{ReportingPeriod,SearchConsoleDailyHistory,SearchConsoleProgress}.php'
 ---
 
 # Services
@@ -50,3 +51,6 @@ Use a conservative 28,000-byte UTF-8 budget for hosted content prompts, leaving 
 
 ## Follow public audit redirects with destination validation
 Prospect/public audit fetching follows at most five HTTP(S) redirects, including public cross-domain destinations, validating all A/AAAA answers at every hop and pinning the connection to a checked address. Reject credentials, private/reserved destinations, unsupported ports and loops. This does not change WebsiteHealthAuditor redirect reporting or SitemapFetcher’s same-host policy. Use final_url for page checks and public audit research; retain the submitted website_url.
+
+## Rolling reporting uses finalized stored daily evidence
+Website Overview defaults to an equal rolling 28-day comparison. Use Pacific Search Console dates with at least three days of lag; provider incomplete metadata can move recent rolling endpoints. Daily imports are property-scoped, initially backfill site/date history, then revise a bounded tail; absent daily rows remain unknown, not zero. Suppress percentage comparisons unless both windows have complete coverage and the baseline is nonzero. Preserve monthly history and existing email periods; read screens never fetch provider data.

@@ -82,3 +82,6 @@ Schedule::command('leads:dispatch-follow-up-reminders')
     ->withoutOverlapping();
 
 Schedule::command('content:discover')->dailyAt('08:00')->onOneServer()->withoutOverlapping();
+
+Schedule::command('search-console:sync-daily')->dailyAt('03:00')->onOneServer()->withoutOverlapping();
+Schedule::command('seo:detect-wins')->dailyAt('07:30')->onOneServer()->withoutOverlapping();

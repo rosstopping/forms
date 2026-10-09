@@ -29,8 +29,10 @@ class CheckSeoTargetKeywordRanking implements ShouldBeUnique, ShouldQueue
      */
     public function handle(SeoTargetKeywordRankChecker $checker): void
     {
-        if ($this->keyword->fresh()?->archived_at === null) {
-            $checker->check($this->keyword);
+        $keyword = $this->keyword->fresh();
+        if ($keyword && $keyword->archived_at === null) {
+            $checker->check($keyword);
+            DetectSeoWins::dispatch($keyword->website);
         }
     }
 }

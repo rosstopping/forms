@@ -8,8 +8,8 @@ use App\Http\Controllers\Controller;
 use App\Models\ContentGeneration;
 use App\Models\Optimisation;
 use App\Models\RemediationRun;
-use App\Models\SearchConsoleMetric;
 use App\Models\SeoImpact;
+use App\Models\SeoWin;
 use App\Models\Website;
 use App\Models\WebsiteDomain;
 use App\Models\WeeklyReport;
@@ -17,6 +17,7 @@ use App\Services\AiVisibilityReport;
 use App\Services\ContentQueueOverview;
 use App\Services\DashboardSchedule;
 use App\Services\DashboardWorkActivity;
+use App\Services\SearchConsoleProgress;
 use App\Services\WebsiteActionCenter;
 use App\Support\WebsiteNavigation;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -40,10 +41,12 @@ class DashboardController extends Controller
             ->get();
 
         $filters = $request->validate([
-            'hub' => ['nullable', Rule::in(['priorities', 'approvals', 'results', 'automation', 'websites'])],
+            'hub' => ['nullable', Rule::in(['priorities', 'approvals', 'results', 'wins', 'automation', 'websites'])],
             'site_id' => ['nullable', 'integer', Rule::in($websites->modelKeys())],
             'action_state' => ['nullable', Rule::in(['open', 'queued', 'measuring', 'review', 'completed'])],
             'actions_page' => ['nullable', 'integer', 'min:1'],
+            'win_status' => ['nullable', Rule::in(['unshared', 'shared', 'dismissed'])],
+            'wins_page' => ['nullable', 'integer', 'min:1'],
             'sites_page' => ['nullable', 'integer', 'min:1'],
         ]);
         $allWebsites = $websites;
@@ -79,7 +82,17 @@ class DashboardController extends Controller
             ->with('report.website:id,name')
             ->oldest()->paginate(10, ['*'], 'fixes_page');
 
+        $winStatus = $filters['win_status'] ?? 'unshared';
+        $wins = SeoWin::whereIn('website_id', $websites->modelKeys())->with('website:id,name')
+            ->when($winStatus === 'dismissed', fn ($query) => $query->whereNotNull('dismissed_at'), fn ($query) => $query->whereNull('dismissed_at'))
+            ->when($winStatus === 'shared', fn ($query) => $query->whereNotNull('shared_at'))
+            ->when($winStatus === 'unshared', fn ($query) => $query->whereNull('shared_at'))
+            ->orderByRaw("CASE WHEN importance = 'high' THEN 0 ELSE 1 END")->latest('confirmed_at')
+            ->paginate(15, ['*'], 'wins_page')->withQueryString();
+
         return view('admin.overview', [
+            'wins' => $wins,
+            'winStatus' => $winStatus,
             'websites' => $websites,
             'allWebsites' => $allWebsites,
             'hubSection' => $hubSection,
@@ -130,19 +143,6 @@ class DashboardController extends Controller
             'optimisations as live_pixel_changes_count' => fn ($query) => $query->where('status', 'deployed')->where('deployment_method', 'pixel'),
         ]);
 
-        $currentSearchMonth = today()->startOfMonth();
-        $searchMonths = [$currentSearchMonth, $currentSearchMonth->copy()->subMonth()];
-        $searchMetrics = $website->searchConsoleConnection
-            ? SearchConsoleMetric::query()
-                ->whereBelongsTo($website)
-                ->where('search_console_connection_id', $website->searchConsoleConnection->id)
-                ->where('dimension_key', SearchConsoleMetric::SITE_DIMENSION_KEY)
-                ->where('property_hash', hash('sha256', $website->searchConsoleConnection->property_url ?? ''))
-                ->whereIn('month', $searchMonths)
-                ->get()
-                ->keyBy(fn (SearchConsoleMetric $metric): string => $metric->month->toDateString())
-            : collect();
-
         $weeklyReports = WeeklyReport::query()->where('website_id', $website->id)->whereNotNull('generated_at');
         $weeklyOverview = $request->filled('weekly_report')
             ? (clone $weeklyReports)->whereKey($request->integer('weekly_report'))->firstOrFail()
@@ -161,8 +161,7 @@ class DashboardController extends Controller
             'weeklyHistory' => $weeklyHistory,
             'report' => $website->latestHealthReport,
             'topFindings' => $this->topFindings($website),
-            'searchMonths' => $searchMonths,
-            'searchMetrics' => $searchMetrics,
+            'searchProgress' => app(SearchConsoleProgress::class)->forWebsite($website, $request->only(['period', 'comparison', 'start', 'end'])),
             'nextHealthRun' => $automationSchedule->firstWhere('type', 'Health report'),
             'nextContentRun' => $automationSchedule->firstWhere('type', 'Content queue'),
             'canManageWebsite' => $website->isManageableBy($user),

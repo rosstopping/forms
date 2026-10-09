@@ -181,25 +181,7 @@
             <section class="ui-panel ui-section @container" aria-labelledby="search-heading">
                 <div class="flex items-start justify-between gap-4"><div><h2 id="search-heading" class="font-semibold text-slate-950">Google Search Console</h2><p class="mt-1 text-slate-600 text-base sm:text-sm">Organic search performance from your connected property.</p></div><a href="{{ route('admin.websites.section', [$website, 'search']) }}" class="shrink-0 text-sm font-semibold text-teal-700 hover:text-teal-900">{{ $website->searchConsoleConnection ? 'View search' : 'Connect' }}</a></div>
                 @if ($website->searchConsoleConnection)
-                    <div class="mt-5 flex flex-col gap-5">
-                        @foreach ($searchMonths as $searchMonth)
-                            @php($searchMetric = $searchMetrics->get($searchMonth->toDateString()))
-                            <div>
-                                <h3 class="text-xs font-medium text-slate-500">{{ $searchMonth->format('F Y') }} · {{ $loop->first ? 'Month to date' : 'Previous month' }}</h3>
-                                @if ($searchMetric)
-                                    <dl class="mt-2 grid grid-cols-2 gap-x-5 gap-y-4 @md:grid-cols-4">
-                                        <div><dt class="text-sm text-slate-500">Clicks</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-slate-950">{{ number_format($searchMetric->clicks) }}</dd></div>
-                                        <div><dt class="text-sm text-slate-500">Impressions</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-slate-950">{{ number_format($searchMetric->impressions) }}</dd></div>
-                                        <div><dt class="text-sm text-slate-500">Click rate</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-slate-950">{{ number_format($searchMetric->ctr * 100, 1) }}%</dd></div>
-                                        <div><dt class="text-sm text-slate-500">Position</dt><dd class="mt-1 text-xl font-semibold tabular-nums text-slate-950">{{ number_format($searchMetric->position, 1) }}</dd></div>
-                                    </dl>
-                                @else
-                                    <p class="mt-2 text-slate-600 text-base sm:text-sm">No search performance imported for this month yet.</p>
-                                @endif
-                            </div>
-                        @endforeach
-                    </div>
-                    <p class="mt-4 text-slate-500 text-base sm:text-sm">This month is incomplete. Figures reflect the latest imported data.</p>
+                    <x-search-progress :report="$searchProgress" />
                 @else
                     <p class="mt-5 text-slate-600 text-base sm:text-sm">Connect Search Console to see clicks, visibility, and average position alongside website health.</p>
                 @endif

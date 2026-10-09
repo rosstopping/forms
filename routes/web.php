@@ -66,6 +66,7 @@ use App\Http\Controllers\Admin\SeoOpportunityController;
 use App\Http\Controllers\Admin\SeoProspectSearchController;
 use App\Http\Controllers\Admin\SeoSnapshotSettingsController;
 use App\Http\Controllers\Admin\SeoTargetKeywordController;
+use App\Http\Controllers\Admin\SeoWinController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\UserImpersonationController;
 use App\Http\Controllers\Admin\UserOnboardingCallController;
@@ -442,6 +443,7 @@ Route::middleware(['web', 'auth', ResolveCurrentWebsite::class])->prefix('admin'
     Route::resource('form-submissions', AdminFormSubmissionController::class);
     Route::get('onboarding/call', OnboardingCallController::class)->middleware('throttle:30,1')->name('onboarding-call');
     Route::middleware(EnsureAdmin::class)->group(function (): void {
+        Route::patch('seo-wins/{seoWin}', [SeoWinController::class, 'update'])->name('seo-wins.update');
         Route::get('overview', [DashboardController::class, 'overview'])->name('overview');
         Route::get('onboarding/audits/{websiteAudit}/full', [FreeSiteAuditController::class, 'show'])->name('onboarding.audits.show');
         Route::post('onboarding/audits/{websiteAudit}/full', [FreeSiteAuditController::class, 'requestFullReport'])->middleware('throttle:10,1')->name('onboarding.audits.generate');
