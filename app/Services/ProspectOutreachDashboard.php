@@ -18,10 +18,10 @@ class ProspectOutreachDashboard
     /** @return array<string, mixed> */
     public function for(User $user): array
     {
-        $accessibleProspects = Prospect::query()->accessibleTo($user)->select('id');
+        $accessibleProspects = Prospect::query()->accessibleTo($user)->when(array_key_exists((string) request('prospect_type'), Prospect::TYPES), fn (Builder $query) => $query->where('prospect_type', request('prospect_type')))->select('id');
         $today = now()->startOfDay();
         $recentRepliesQuery = Prospect::query()
-            ->accessibleTo($user)
+            ->accessibleTo($user)->when(array_key_exists((string) request('prospect_type'), Prospect::TYPES), fn (Builder $query) => $query->where('prospect_type', request('prospect_type')))
             ->whereHas('outreachState', fn (Builder $query) => $query->where('lifecycle_state', ProspectLifecycleState::Replied));
 
         return [
@@ -33,7 +33,7 @@ class ProspectOutreachDashboard
                 'nurtured' => ProspectActivity::query()->whereIn('prospect_id', clone $accessibleProspects)->where('type', 'outreach_exhausted')->where('created_at', '>=', $today)->count(),
             ],
             'warmProspects' => Prospect::query()
-                ->accessibleTo($user)
+                ->accessibleTo($user)->when(array_key_exists((string) request('prospect_type'), Prospect::TYPES), fn (Builder $query) => $query->where('prospect_type', request('prospect_type')))
                 ->where('status', '!=', 'converted')->where('lead_temperature', 'warm')
                 ->with(['outreachState', 'engagementEvents' => fn ($query) => $query->where('score_delta', '>', 0)->latest('occurred_at')->limit(3)])
                 ->orderByDesc(ProspectOutreachState::query()->select('last_engagement_at')->whereColumn((new ProspectOutreachState)->qualifyColumn('prospect_id'), (new Prospect)->qualifyColumn('id'))->limit(1))

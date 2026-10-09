@@ -11,6 +11,7 @@ use App\Http\Requests\UpdateProspectRequest;
 use App\Jobs\AnalyzeProspect;
 use App\Models\Prospect;
 use App\Models\ProspectOutreachState;
+use App\Services\InitialProspectOutreachGenerator;
 use App\Services\LoomVideoThumbnail;
 use App\Services\ProspectDeletion;
 use App\Services\ProspectLifecycleManager;
@@ -34,11 +35,13 @@ class ProspectController extends Controller
             $activeTab = 'dashboard';
         }
 
-        $query = Prospect::query()->accessibleTo($request->user());
+        $query = Prospect::query()->accessibleTo($request->user())
+            ->when(array_key_exists($request->string('prospect_type')->toString(), Prospect::TYPES), fn ($query) => $query->where('prospect_type', $request->string('prospect_type')->toString()));
         $summary = (clone $query)->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
         $temperatureSummary = (clone $query)->where('status', '!=', 'converted')->selectRaw('lead_temperature, count(*) as total')->groupBy('lead_temperature')->pluck('total', 'lead_temperature');
         $hotVideoQuery = Prospect::query()->where('status', '!=', 'converted')
             ->accessibleTo($request->user())
+            ->when(array_key_exists($request->string('prospect_type')->toString(), Prospect::TYPES), fn ($query) => $query->where('prospect_type', $request->string('prospect_type')->toString()))
             ->whereHas('outreachState', fn ($query) => $query
                 ->whereIn('lifecycle_state', [ProspectLifecycleState::Hot, ProspectLifecycleState::NeedsPersonalisedVideo])
                 ->whereNull('video_sent_at'));
@@ -57,6 +60,7 @@ class ProspectController extends Controller
             ->get();
         $manualFollowUpQuery = Prospect::query()->where('status', '!=', 'converted')
             ->accessibleTo($request->user())
+            ->when(array_key_exists($request->string('prospect_type')->toString(), Prospect::TYPES), fn ($query) => $query->where('prospect_type', $request->string('prospect_type')->toString()))
             ->whereHas('outreachState', fn ($query) => $query->whereNotNull('manual_follow_up_required_at'));
         $manualFollowUpProspectsCount = (clone $manualFollowUpQuery)->count();
         $manualFollowUpProspects = $manualFollowUpQuery
@@ -81,7 +85,7 @@ class ProspectController extends Controller
         $matchingProspectsCount = (clone $query)->count();
         $prospects = $query
             ->select([
-                'id', 'business_name', 'contact_name', 'email', 'website_url',
+                'id', 'prospect_type', 'business_name', 'contact_name', 'email', 'website_url',
                 'status', 'lead_temperature', 'scheduled_send_at',
                 'opportunity_score', 'analysis_status', 'created_at', 'deleted_at',
             ])
@@ -105,15 +109,29 @@ class ProspectController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreProspectRequest $request, LoomVideoThumbnail $loomVideoThumbnail): RedirectResponse
+    public function store(StoreProspectRequest $request, LoomVideoThumbnail $loomVideoThumbnail, InitialProspectOutreachGenerator $outreachGenerator, ProspectLifecycleManager $lifecycleManager): RedirectResponse
     {
         $data = $request->validated();
         $data['website_url'] = filled($data['website_url'] ?? null) ? rtrim($data['website_url'], '/') : null;
         $data['showcase_video_thumbnail_url'] = $loomVideoThumbnail->fetch($data['showcase_video_url'] ?? null);
-        if (! $data['website_url']) {
+        $isPartnerProspect = in_array($data['prospect_type'] ?? 'potential_client', ['web_design_agency', 'freelance_web_developer'], true);
+        if ($isPartnerProspect) {
+            $data['analysis_status'] = 'skipped';
+            $data['status'] = 'drafted';
+            $data['include_site_audit'] = false;
+        }
+        if (! $isPartnerProspect && ! $data['website_url']) {
             $data = array_merge($data, $this->websiteOpportunityDraft($data['business_name']));
         }
         $prospect = $request->user()->prospects()->create($data);
+        if ($isPartnerProspect) {
+            $draft = $outreachGenerator->generate($prospect);
+            $prospect->update(['outreach_subject' => $draft['subject'], 'outreach_body' => $draft['body']]);
+            $lifecycleManager->markQualified($prospect);
+            $prospect->recordActivity('created', 'Partner prospect added; outreach draft prepared without website research.', $request->user());
+
+            return redirect()->route('admin.prospects.show', $prospect)->with('status', 'Partner added. Review and approve the draft before sending.');
+        }
         $prospect->recordActivity('created', $prospect->website_url ? 'Prospect added and queued for research.' : 'Prospect added as a website opportunity; website research skipped.', $request->user());
 
         if ($prospect->website_url) {
@@ -169,7 +187,17 @@ class ProspectController extends Controller
             $data['scheduled_send_at'] = null;
         }
         unset($data['suppressed']);
-        $draftChanged = (array_key_exists('include_site_audit', $data) && $prospect->include_site_audit !== $request->boolean('include_site_audit'))
+        $partnerFollowUpChanged = false;
+        if ($prospect->isAgencyPartner()) {
+            $data['include_site_audit'] = false;
+            if (isset($data['partner_follow_up_subject'], $data['partner_follow_up_body'])) {
+                $followUp = ['subject' => $data['partner_follow_up_subject'], 'body' => $data['partner_follow_up_body']];
+                $partnerFollowUpChanged = $followUp !== data_get($prospect->prospecting_context, 'partner_follow_up');
+                $data['prospecting_context'] = array_merge($prospect->prospecting_context ?? [], ['partner_follow_up' => $followUp]);
+            }
+        }
+        unset($data['partner_follow_up_subject'], $data['partner_follow_up_body']);
+        $draftChanged = $partnerFollowUpChanged || (array_key_exists('include_site_audit', $data) && $prospect->include_site_audit !== $request->boolean('include_site_audit'))
             || $prospect->outreach_subject !== ($data['outreach_subject'] ?? null)
             || $prospect->outreach_body !== ($data['outreach_body'] ?? null)
             || $prospect->showcase_video_url !== ($data['showcase_video_url'] ?? null);

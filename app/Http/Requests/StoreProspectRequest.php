@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Prospect;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreProspectRequest extends FormRequest
 {
@@ -23,6 +25,7 @@ class StoreProspectRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'prospect_type' => ['sometimes', 'required', Rule::in(array_keys(Prospect::TYPES))],
             'business_name' => ['required', 'string', 'max:255'],
             'contact_name' => ['nullable', 'string', 'max:255'],
             'email' => ['nullable', 'email:rfc', 'max:255'],

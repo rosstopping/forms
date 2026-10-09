@@ -11,6 +11,10 @@ class InitialProspectOutreachGenerator
     /** @return array{subject: string, body: string}|null */
     public function generate(Prospect $prospect): ?array
     {
+        if ($prospect->isAgencyPartner()) {
+            return app(ProspectOutreachContent::class)->partnerTemplate($prospect, 'initial');
+        }
+
         $context = $this->context($prospect);
 
         if ($context === null) {

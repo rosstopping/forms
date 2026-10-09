@@ -61,6 +61,16 @@ class ProspectOutreach extends Mailable
             $trackingOpenUrl = URL::signedRoute('prospect-outreach-opens.show', $this->delivery);
         }
 
+        $messageBody = $this->delivery?->body ?? $this->prospect->outreach_body;
+        $partnerMessageHtml = null;
+        if ($this->prospect->isAgencyPartner()) {
+            $agencyUrl = (string) config('outreach.agency_url');
+            $agencyLink = $this->delivery?->links->firstWhere('kind', 'sitewell');
+            $destination = $agencyLink ? URL::signedRoute('prospect-outreach-links.show', $agencyLink) : $agencyUrl;
+            $partnerMessageHtml = str_replace(e($agencyUrl), '<a href="'.e($destination).'">'.e($agencyUrl).'</a>', e($messageBody));
+            $showcaseVideoUrl = $auditReportUrl = $bookingUrl = null;
+        }
+
         return new Content(
             view: 'mail.prospects.outreach',
             with: [
@@ -73,7 +83,8 @@ class ProspectOutreach extends Mailable
                     'prospect' => $this->prospect,
                     ...($this->delivery ? [] : ['preview' => '1']),
                 ]),
-                'showOutreachDisclosure' => ! $isInitialOutreach,
+                'showOutreachDisclosure' => ! $this->prospect->isAgencyPartner() && ! $isInitialOutreach,
+                'partnerMessageHtml' => $partnerMessageHtml,
                 'messageBody' => $this->delivery?->body ?? $this->prospect->outreach_body,
             ],
         );

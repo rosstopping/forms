@@ -40,6 +40,15 @@ class ProspectOutreachTracker
                 return $delivery->load('links');
             }
 
+            if ($prospect->isAgencyPartner()) {
+                $agencyUrl = (string) config('outreach.agency_url');
+                if (str_contains($delivery->body, $agencyUrl)) {
+                    $delivery->links()->create(['kind' => 'sitewell', 'label' => 'Agency SEO service', 'destination_url' => $agencyUrl]);
+                }
+
+                return $delivery->load('links');
+            }
+
             if ($messageType !== ProspectOutreachMessageType::PostVideoFollowUp && filled($prospect->showcase_video_url)) {
                 $delivery->links()->create([
                     'kind' => 'showcase_video',

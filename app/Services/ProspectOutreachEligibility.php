@@ -20,7 +20,7 @@ class ProspectOutreachEligibility
             $prospect->approved_at === null => 'Approve this draft before sending.',
             $prospect->sent_at !== null && ! $prospect->isOutreachFollowUpDue() => 'This prospect is not due for another outreach email yet.',
             blank($prospect->email) => 'Add an email address before sending.',
-            blank($prospect->website_url) && blank($prospect->showcase_video_url) => 'Add this prospect\'s showcase video URL before sending.',
+            ! $prospect->isAgencyPartner() && blank($prospect->website_url) && blank($prospect->showcase_video_url) => 'Add this prospect\'s showcase video URL before sending.',
             default => null,
         };
     }

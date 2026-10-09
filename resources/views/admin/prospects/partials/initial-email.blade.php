@@ -23,7 +23,14 @@
                     <input type="hidden" name="suppressed" value="{{ $prospect->suppressed_at ? 1 : 0 }}"><input type="hidden" name="business_name" value="{{ $prospect->business_name }}"><input type="hidden" name="contact_name" value="{{ $prospect->contact_name }}"><input type="hidden" name="email" value="{{ $prospect->email }}"><input type="hidden" name="website_url" value="{{ $prospect->website_url }}"><input type="hidden" name="status" value="{{ $prospect->status }}">
                     <div><label for="outreach_subject" class="ui-label">Subject</label><input id="outreach_subject" name="outreach_subject" value="{{ old('outreach_subject', $prospect->outreach_subject) }}" class="ui-input mt-1 w-full" placeholder="Waiting for research…"></div>
                     <div><label for="outreach_body" class="ui-label">Message</label><textarea id="outreach_body" name="outreach_body" rows="8" class="ui-input mt-1 w-full" placeholder="Waiting for research…">{{ old('outreach_body', $prospect->outreach_body) }}</textarea></div>
+                    @unless ($prospect->isAgencyPartner())
                     <div><label for="showcase_video_url" class="ui-label">Video URL (optional)</label><input id="showcase_video_url" type="url" name="showcase_video_url" value="{{ old('showcase_video_url', $prospect->showcase_video_url) }}" placeholder="https://www.loom.com/share/..." class="ui-input mt-1 w-full"><p class="mt-1 text-slate-500 text-base sm:text-sm">This prospect-specific link appears behind the video button in test and live emails.</p>@error('showcase_video_url')<p class="mt-1 text-red-600 text-base sm:text-sm">{{ $message }}</p>@enderror</div>
+                    @endunless
+                    @if ($prospect->isAgencyPartner())
+                        @php($partnerFollowUp = app(\App\Services\ProspectOutreachContent::class)->followUp($prospect, \App\Enums\ProspectOutreachMessageType::ColdFollowUp))
+                        <div class="ui-well space-y-3 p-4"><h3 class="font-semibold">Partner follow-up</h3><p class="text-sm text-slate-500">One follow-up after {{ config('outreach.partner_follow_up_working_days', 6) }} working days. Check the video is on the agency page before sending the supplied introduction.</p><label for="partner_follow_up_subject" class="ui-label">Follow-up subject</label><input id="partner_follow_up_subject" name="partner_follow_up_subject" value="{{ old('partner_follow_up_subject', $partnerFollowUp['subject']) }}" required class="ui-input w-full"><label for="partner_follow_up_body" class="ui-label">Follow-up message</label><textarea id="partner_follow_up_body" name="partner_follow_up_body" rows="6" required class="ui-input w-full">{{ old('partner_follow_up_body', $partnerFollowUp['body']) }}</textarea>@error('partner_follow_up_body')<p class="text-sm text-red-600">{{ $message }}</p>@enderror</div>
+                    @endif
+                    @unless ($prospect->isAgencyPartner())
                     <input type="hidden" name="include_site_audit" value="0">
                     <div>
                         <label for="include_site_audit" class="flex items-center gap-2 text-base font-medium sm:text-sm">
@@ -33,6 +40,8 @@
                         <p class="mt-1 text-base text-slate-500 sm:text-sm">Adds the site audit after the video in test and live emails. Save the draft before sending a test. The audit needs a website URL and completed research.</p>
                         @error('include_site_audit')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                     </div>
+                    @endunless
+
                     <button type="submit" class="ui-button {{ $needsPersonalisedVideo ? 'ui-button-secondary' : 'ui-button-primary' }}">Save draft<span class="absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2 pointer-fine:hidden" aria-hidden="true"></span></button>
                 </form>
         <div class="mt-6 flex flex-wrap gap-2 border-t border-slate-950/10 pt-5">

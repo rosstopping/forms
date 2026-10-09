@@ -6,7 +6,7 @@
         <p class="text-base sm:text-sm"><a href="{{ route('admin.prospects.index') }}" class="font-medium text-slate-500 hover:text-teal-800">← Outreach</a></p>
         <div class="flex flex-wrap items-start justify-between gap-4">
             <div class="min-w-0 space-y-2">
-                <h1 class="break-words text-3xl font-semibold tracking-tight text-balance text-slate-950">{{ $prospect->business_name }}</h1>
+                <h1 class="break-words text-3xl font-semibold tracking-tight text-balance text-slate-950">{{ $prospect->business_name }}</h1><p class="mt-1 text-sm text-slate-500">{{ \App\Models\Prospect::TYPES[$prospect->prospect_type] }}</p>
                 <div class="flex flex-wrap items-center gap-3 text-base text-slate-500 sm:text-sm">
                     <p>{{ $prospect->contact_name ?: 'No contact name' }}</p>
                     @if ($prospect->email)<p class="break-all"><a href="mailto:{{ $prospect->email }}" class="hover:text-teal-800">{{ $prospect->email }}</a></p>@endif
@@ -41,7 +41,7 @@
 
     <nav class="ui-tabs" aria-label="Prospect sections">
         @foreach (['emails' => 'Emails & schedule', 'details' => 'Prospect & research', 'activity' => 'Activity', 'controls' => 'Controls'] as $key => $label)
-            <a href="{{ route('admin.prospects.show', [$prospect, 'section' => $key]) }}" class="ui-tab" @if ($prospectSection === $key) aria-current="page" @endif>{{ $label }}</a>
+            <a href="{{ route('admin.prospects.show', [$prospect, 'section' => $key]) }}" class="ui-tab" @if ($prospectSection === $key) aria-current="page" @endif>{{ $prospect->isAgencyPartner() && $key === 'details' ? 'Prospect details' : $label }}</a>
         @endforeach
     </nav>
 

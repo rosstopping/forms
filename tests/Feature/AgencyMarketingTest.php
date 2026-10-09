@@ -210,7 +210,7 @@ it('shows audit validation on the agency hero without displaying the legacy enqu
 it('shows the homepage search and AI logos beneath the agency hero', function (): void {
     $response = $this->get(route('marketing.agencies'))->assertSuccessful()
         ->assertSee('Where your clients’ websites should show up.')
-        ->assertSee('aria-label="Search engines and AI assistants"', false);
+        ->assertSee('aria-label="Search platforms"', false);
     foreach (['google', 'bing', 'openai', 'gemini', 'perplexity', 'claude'] as $mark) {
         $response->assertSee('src="'.asset('search-'.$mark.'.svg').'"', false);
     }

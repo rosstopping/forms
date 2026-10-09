@@ -31,6 +31,11 @@ class AnalyzeProspect implements ShouldQueue
             return;
         }
 
+        $this->prospect->refresh();
+        if ($this->prospect->isAgencyPartner()) {
+            return;
+        }
+
         $this->prospect->update(['analysis_status' => 'running', 'analysis_error' => null]);
 
         try {

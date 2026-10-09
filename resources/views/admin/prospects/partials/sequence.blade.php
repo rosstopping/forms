@@ -32,9 +32,13 @@
     <details class="mt-5 border-t border-slate-950/10 pt-5">
         <summary class="cursor-pointer text-base font-medium text-slate-800 sm:text-sm">How this sequence works</summary>
         <ul role="list" class="mt-3 space-y-3 text-base/6 text-slate-500 sm:text-sm/6">
+            @unless ($prospect->isAgencyPartner())
             <li>The first follow-up is due {{ config('outreach.timing.cold_retry_days') }} days after the initial email. It mentions the video only if the initial delivery included one; otherwise it reuses the saved initial message.</li>
             <li>The final follow-up is due {{ config('outreach.timing.final_follow_up_days') }} days after the first follow-up. It currently refers to the website audit.</li>
             <li>At most {{ config('outreach.maximum_follow_up_attempts') }} cold follow-ups send. A later completion check closes the sequence without another email.</li>
+            @else
+            <li>One partner follow-up is due after {{ config('outreach.partner_follow_up_working_days', 6) }} working days. No final follow-up is sent.</li>
+            @endunless
             <li>A recorded reply, suppression, stopped outcome, paused automation or meaningful engagement prevents cold follow-ups. Mark replies here if they have not been recorded automatically.</li>
             <li>The separate personalised-video email is manual. No automatic email follows it, including older pending video follow-ups.</li>
             <li>Conditional timings are estimates. Sending requires approval and eligibility; actual delivery can be later if the queue is delayed.</li>

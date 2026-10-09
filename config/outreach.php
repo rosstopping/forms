@@ -1,6 +1,19 @@
 <?php
 
 return [
+    'agency_url' => 'https://sitewell.digizu.co.uk/agencies',
+    'partner_follow_up_working_days' => 6,
+    'partner_templates' => [
+        'web_design_agency' => [
+            'initial' => ['subject' => 'Fancy offering SEO without doing the work?', 'body' => "Hi {first_name},\n\nI'm Ross, a fellow web developer from Doncaster.\n\nJust reaching out as I offer a white-label SEO service for web agencies, so you can offer SEO to your existing clients without having to do all the work yourself.\n\nYou keep your clients, set your own prices, and we do the SEO work. Hopefully everyone makes a few quid along the way 😂\n\nI've recorded a quick video explaining how it all works if you fancy a look:\n\n{agency_url}\n\nCheers,\nRoss"],
+            'follow_up' => ['subject' => 'Re: Fancy offering SEO without doing the work?', 'body' => "Hi {first_name},\n\nJust following up on this in case it got buried!\n\nIf you've got clients asking about SEO, I'd be happy to have a quick chat about how we could work together.\n\nCheers,\nRoss"],
+        ],
+        'freelance_web_developer' => [
+            'initial' => ['subject' => 'Fancy making a bit more from your web clients?', 'body' => "Hi {first_name},\n\nI'm Ross, a fellow web developer from Doncaster.\n\nJust reaching out as I offer a white-label SEO service that might be handy if you've got clients asking about Google rankings.\n\nBasically, you can offer SEO alongside your websites without having to do the work yourself.\n\nYou keep the client, charge whatever you like, and we handle the SEO. A nice bit of extra monthly income without adding more to your workload 😂\n\nI've recorded a quick video explaining how it works if you fancy a look:\n\n{agency_url}\n\nCheers,\nRoss"],
+            'follow_up' => ['subject' => 'Re: Fancy making a bit more from your web clients?', 'body' => "Hi {first_name},\n\nJust following up on this!\n\nIf you've got any clients who could do with a bit of SEO help, give me a shout. Could be a nice way to bring in some extra recurring work.\n\nCheers,\nRoss"],
+        ],
+    ],
+
     'automatic_follow_ups_enabled' => true,
 
     'timing' => [

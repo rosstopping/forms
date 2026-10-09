@@ -18,6 +18,11 @@ class ProspectOutreachContent
         if ($initial !== null) {
             $templates['initial'] = ['label' => 'Standard initial outreach', ...$initial];
         }
+        if ($prospect->isAgencyPartner()) {
+            $templates['partner_follow_up'] = ['label' => 'Partner follow-up', ...$this->partnerTemplate($prospect, 'follow_up')];
+
+            return $templates;
+        }
         foreach (config('outreach.templates', []) as $key => $template) {
             if (blank($template['body'] ?? null)) {
                 continue;
@@ -57,6 +62,9 @@ class ProspectOutreachContent
     /** @return array{subject: string, body: string} */
     public function followUp(Prospect $prospect, ProspectOutreachMessageType $type, bool $preview = false): array
     {
+        if ($prospect->isAgencyPartner()) {
+            return data_get($prospect->prospecting_context, 'partner_follow_up') ?? $this->partnerTemplate($prospect, 'follow_up');
+        }
         $key = $type === ProspectOutreachMessageType::ColdFollowUp && $this->initialIncludedVideo($prospect, $preview)
             ? 'cold_follow_up_with_video'
             : $type->value;
@@ -65,6 +73,18 @@ class ProspectOutreachContent
         return [
             'subject' => filled($template['subject'] ?? null) ? $this->render($template['subject'], $prospect) : (string) $prospect->outreach_subject,
             'body' => filled($template['body'] ?? null) ? $this->render($template['body'], $prospect) : (string) $prospect->outreach_body,
+        ];
+    }
+
+    /** @return array{subject: string, body: string} */
+    public function partnerTemplate(Prospect $prospect, string $step): array
+    {
+        $template = config('outreach.partner_templates.'.$prospect->prospect_type.'.'.$step);
+        $firstName = str((string) $prospect->contact_name)->squish()->before(' ')->toString();
+
+        return [
+            'subject' => $template['subject'],
+            'body' => strtr($template['body'], ['{first_name}' => filled($firstName) ? $firstName : 'there', '{agency_url}' => config('outreach.agency_url')]),
         ];
     }
 

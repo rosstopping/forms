@@ -219,7 +219,9 @@ class ProspectLifecycleManager
             $outreachState = $this->lockedState($prospect);
             $isInitialEmail = $outreachState->initial_email_sent_at === null;
             $nextActionAt = match ($messageType) {
-                ProspectOutreachMessageType::Initial => now()->addDays((int) config('outreach.timing.cold_retry_days', 4)),
+                ProspectOutreachMessageType::Initial => $prospect->isAgencyPartner()
+                    ? now()->setTimezone('Europe/London')->addWeekdays((int) config('outreach.partner_follow_up_working_days', 6))->utc()
+                    : now()->addDays((int) config('outreach.timing.cold_retry_days', 4)),
                 ProspectOutreachMessageType::ColdFollowUp => now()->addDays((int) config('outreach.timing.final_follow_up_days', 6)),
                 default => $outreachState->next_action_at,
             };

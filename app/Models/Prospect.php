@@ -19,11 +19,13 @@ class Prospect extends Model
 
     public const STATUSES = ['new', 'researched', 'drafted', 'approved', 'contacted', 'replied', 'converted', 'not_interested'];
 
+    public const TYPES = ['potential_client' => 'Potential Client', 'web_design_agency' => 'Web Design Agency', 'freelance_web_developer' => 'Freelance Web Developer'];
+
     public const LEAD_TEMPERATURES = ['cold', 'warm', 'hot'];
 
-    protected $fillable = ['user_id', 'website_id', 'prospecting_industry_profile_id', 'prospecting_location_id', 'business_name', 'contact_name', 'email', 'website_url', 'status', 'lead_temperature', 'analysis_status', 'opportunity_score', 'commercial_opportunity_score', 'prospecting_context', 'findings', 'analysis_error', 'contact_details', 'analysed_at', 'outreach_subject', 'outreach_body', 'include_site_audit', 'showcase_video_url', 'showcase_video_thumbnail_url', 'approved_at', 'approved_by', 'sent_at', 'scheduled_send_at', 'next_follow_up_at', 'replied_at', 'converted_at', 'suppressed_at', 'notes'];
+    protected $fillable = ['prospect_type', 'user_id', 'website_id', 'prospecting_industry_profile_id', 'prospecting_location_id', 'business_name', 'contact_name', 'email', 'website_url', 'status', 'lead_temperature', 'analysis_status', 'opportunity_score', 'commercial_opportunity_score', 'prospecting_context', 'findings', 'analysis_error', 'contact_details', 'analysed_at', 'outreach_subject', 'outreach_body', 'include_site_audit', 'showcase_video_url', 'showcase_video_thumbnail_url', 'approved_at', 'approved_by', 'sent_at', 'scheduled_send_at', 'next_follow_up_at', 'replied_at', 'converted_at', 'suppressed_at', 'notes'];
 
-    protected $attributes = ['lead_temperature' => 'cold'];
+    protected $attributes = ['lead_temperature' => 'cold', 'prospect_type' => 'potential_client'];
 
     protected $casts = ['include_site_audit' => 'boolean', 'prospecting_context' => 'array', 'findings' => 'array', 'contact_details' => 'array', 'analysed_at' => 'datetime', 'approved_at' => 'datetime', 'sent_at' => 'datetime', 'scheduled_send_at' => 'datetime', 'next_follow_up_at' => 'datetime', 'replied_at' => 'datetime', 'converted_at' => 'datetime', 'suppressed_at' => 'datetime', 'unsubscribed_at' => 'datetime'];
 
@@ -32,6 +34,11 @@ class Prospect extends Model
         static::created(function (Prospect $prospect): void {
             $prospect->outreachState()->create(ProspectOutreachState::initialAttributesFor($prospect));
         });
+    }
+
+    public function isAgencyPartner(): bool
+    {
+        return in_array($this->prospect_type, ['web_design_agency', 'freelance_web_developer'], true);
     }
 
     public function owner(): BelongsTo

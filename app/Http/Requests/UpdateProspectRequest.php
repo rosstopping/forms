@@ -32,6 +32,8 @@ class UpdateProspectRequest extends FormRequest
             'email' => ['nullable', 'email:rfc', 'max:255'],
             'website_url' => ['nullable', 'url:http,https', 'max:255'],
             'status' => ['required', 'string', Rule::in(Prospect::STATUSES)],
+            'partner_follow_up_subject' => ['sometimes', 'required', 'string', 'max:255'],
+            'partner_follow_up_body' => ['sometimes', 'required', 'string', 'max:10000'],
             'outreach_subject' => ['nullable', 'string', 'max:255'],
             'include_site_audit' => ['sometimes', 'boolean'],
             'outreach_body' => ['nullable', 'string', 'max:10000'],

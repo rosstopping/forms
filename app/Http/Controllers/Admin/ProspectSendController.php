@@ -19,6 +19,8 @@ class ProspectSendController extends Controller
         abort_if($eligibilityError = $sender->eligibilityError($prospect), 422, $eligibilityError);
         $sender->send($prospect, $request->user());
 
-        return back()->with('status', 'Outreach email sent. A follow-up reminder was scheduled for one week.');
+        return back()->with('status', $prospect->isAgencyPartner()
+            ? 'Outreach email sent. One follow-up is planned after '.config('outreach.partner_follow_up_working_days', 6).' working days, subject to replies and engagement.'
+            : 'Outreach email sent. A follow-up reminder was scheduled for one week.');
     }
 }

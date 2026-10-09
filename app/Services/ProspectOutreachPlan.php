@@ -30,12 +30,12 @@ class ProspectOutreachPlan
         if ($prospect->approved_at === null && $prospect->suppressed_at === null && ! $state->lifecycle_state->stopsNormalOutreach() && $state->automation_status !== ProspectAutomationStatus::Stopped) {
             $reason = 'Save and approve the initial draft before sending or scheduling.';
         }
-        $sendReason = $reason ?? (blank($prospect->website_url) && blank($prospect->showcase_video_url) ? 'Add a showcase video before sending outreach for a prospect without a website.' : null);
+        $sendReason = $reason ?? (! $prospect->isAgencyPartner() && blank($prospect->website_url) && blank($prospect->showcase_video_url) ? 'Add a showcase video before sending outreach for a prospect without a website.' : null);
         $autoReason = $sendReason ?? match (true) {
             $state->automation_status === ProspectAutomationStatus::Paused => 'Automation is paused. No automatic follow-up will send.',
             ! config('outreach.automatic_follow_ups_enabled', true) => 'Automatic follow-ups are switched off globally.',
             $state->engagement_score >= (int) config('outreach.temperature_thresholds.warm', 3) => 'Meaningful engagement has paused the cold email sequence.',
-            $state->follow_up_attempts >= (int) config('outreach.maximum_follow_up_attempts', 2) => 'The maximum number of automatic follow-ups has been reached.',
+            $state->follow_up_attempts >= ($prospect->isAgencyPartner() ? 1 : (int) config('outreach.maximum_follow_up_attempts', 2)) => 'The maximum number of automatic follow-ups has been reached.',
             $finished => 'No further automatic email is planned.',
             default => null,
         };
@@ -55,9 +55,12 @@ class ProspectOutreachPlan
             $summary = 'Scheduled initial email. Follow-up dates start from successful delivery.';
         }
         foreach ([
-            [ProspectOutreachMessageType::ColdFollowUp, 'First follow-up', $cold, ProspectSequenceStep::InitialEmail, $coldDays.' days after the initial email'],
+            [ProspectOutreachMessageType::ColdFollowUp, 'First follow-up', $cold, ProspectSequenceStep::InitialEmail, $prospect->isAgencyPartner() ? config('outreach.partner_follow_up_working_days', 6).' working days after the initial email' : $coldDays.' days after the initial email'],
             [ProspectOutreachMessageType::FinalFollowUp, 'Final follow-up', $final, ProspectSequenceStep::ColdFollowUp, $finalDays.' days after the first follow-up'],
         ] as [$type, $title, $delivery, $expectedStep, $relativeTime]) {
+            if ($prospect->isAgencyPartner() && $type === ProspectOutreachMessageType::FinalFollowUp && ! $delivery) {
+                continue;
+            }
             $message = $this->content->followUp($prospect, $type, true);
             $sent = $delivery?->sent_at;
             $isNext = ! $sent && ! $autoReason && $state->sequence_step === $expectedStep && $state->next_action_at !== null;
@@ -113,6 +116,10 @@ class ProspectOutreachPlan
 
     private function draftBlocks(Prospect $prospect): string
     {
+        if ($prospect->isAgencyPartner()) {
+            return 'Agency service link · unsubscribe';
+        }
+
         return collect([
             filled($prospect->showcase_video_url) ? 'Video' : null,
             $prospect->include_site_audit && filled($prospect->website_url) && $prospect->analysed_at ? 'Site audit' : null,
@@ -123,6 +130,10 @@ class ProspectOutreachPlan
 
     private function followUpBlocks(Prospect $prospect): string
     {
+        if ($prospect->isAgencyPartner()) {
+            return 'Unsubscribe';
+        }
+
         return collect([
             filled($prospect->showcase_video_url) ? 'Video' : null, 'Booking & phone',
             filled($prospect->website_url) && $prospect->analysed_at ? 'Site audit' : null, 'Digizu footer',

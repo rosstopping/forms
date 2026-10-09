@@ -49,12 +49,16 @@ class ProspectOutreachSequence
                     return;
                 }
 
+                if ($prospect->isAgencyPartner() && $this->sender->eligibilityError($prospect->fresh()) !== null) {
+                    return;
+                }
+
                 if (! (bool) config('outreach.automatic_follow_ups_enabled', true)) {
                     return;
                 }
 
                 if ($this->isColdSequenceStep($state->sequence_step)
-                    && $state->follow_up_attempts >= (int) config('outreach.maximum_follow_up_attempts', 2)) {
+                    && $state->follow_up_attempts >= ($prospect->isAgencyPartner() ? 1 : (int) config('outreach.maximum_follow_up_attempts', 2))) {
                     $this->exhaust($prospect, $state);
 
                     return;
@@ -107,6 +111,13 @@ class ProspectOutreachSequence
             $message['body'],
             'prospect:'.$prospect->getKey().':'.$messageType->value.':'.$attempt,
         );
+
+        if ($prospect->isAgencyPartner()) {
+            $state->update(['follow_up_attempts' => $attempt, 'last_outreach_at' => $delivery->sent_at]);
+            $this->exhaust($prospect, $state);
+
+            return;
+        }
 
         $nextActionAt = now()->addDays((int) config('outreach.timing.final_follow_up_days', 6));
         $state->update([

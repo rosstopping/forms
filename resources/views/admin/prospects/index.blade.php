@@ -12,7 +12,7 @@
             <a href="{{ $tab === 'dashboard' ? route('admin.prospects.index') : route('admin.prospects.index', ['tab' => $tab]) }}" class="ui-tab" @if ($activeTab === $tab) aria-current="page" @endif>{{ $label }}@if ($tab === 'hot') <span class="ml-1 rounded-full bg-red-100 px-2 py-0.5 text-xs text-red-800">{{ $temperatureSummary['hot'] ?? 0 }}</span>@elseif ($tab === 'warm') <span class="ml-1 rounded-full bg-orange-100 px-2 py-0.5 text-xs text-orange-800">{{ $temperatureSummary['warm'] ?? 0 }}</span>@endif</a>
         @endforeach
     </nav>
-    @if ($activeTab === 'dashboard' && ! request()->hasAny(['status', 'email_status', 'search']))
+    @if ($activeTab === 'dashboard' && ! request()->hasAny(['status', 'email_status', 'search', 'prospect_type']))
     <section class="ui-panel ui-section">
         <div><p class="font-semibold uppercase tracking-wider text-slate-500 text-base sm:text-sm">Daily command centre</p><h2 class="mt-1 text-xl font-semibold text-slate-950">Today’s priorities</h2></div>
         <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -25,7 +25,7 @@
         </div>
     </section>
     @endif
-    @if ($activeTab === 'hot' && ! request()->hasAny(['status', 'email_status', 'search']))
+    @if ($activeTab === 'hot' && ! request()->hasAny(['status', 'email_status', 'search', 'prospect_type']))
     @if ($hotVideoProspects->isNotEmpty())
         <section id="needs-personalised-video" class="scroll-mt-6 rounded-2xl border border-red-200 bg-red-50/70 p-5 shadow-sm">
             <div class="flex flex-wrap items-start justify-between gap-3">
@@ -56,7 +56,7 @@
         </section>
     @endif
     @endif
-    @if ($activeTab === 'warm' && ! request()->hasAny(['status', 'email_status', 'search']))
+    @if ($activeTab === 'warm' && ! request()->hasAny(['status', 'email_status', 'search', 'prospect_type']))
     @if ($warmProspects->isNotEmpty())
         <section id="warm-leads" class="scroll-mt-6 rounded-2xl border border-orange-200 bg-orange-50/70 p-5 shadow-sm">
             <div class="flex flex-wrap items-start justify-between gap-3"><div><p class="font-semibold uppercase tracking-wider text-orange-700 text-base sm:text-sm">Recent intent</p><h2 class="mt-1 text-xl font-semibold text-orange-950">Warm Leads</h2><p class="mt-1 text-orange-800 text-base sm:text-sm">Sorted by most recent engagement. Monitor these without crowding them.</p></div><span class="rounded-full bg-orange-600 px-3 py-1 text-sm font-semibold text-white">{{ $priorityCounts['warm'] }}</span></div>
@@ -68,7 +68,7 @@
         </section>
     @endif
     @endif
-    @if ($activeTab === 'replies' && ! request()->hasAny(['status', 'email_status', 'search']))
+    @if ($activeTab === 'replies' && ! request()->hasAny(['status', 'email_status', 'search', 'prospect_type']))
     @if ($recentReplies->isNotEmpty())
         <section id="recent-replies" class="scroll-mt-6 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-5 shadow-sm">
             <div><p class="font-semibold uppercase tracking-wider text-emerald-700 text-base sm:text-sm">Conversation required</p><h2 class="mt-1 text-xl font-semibold text-emerald-950">Recent Replies</h2><p class="mt-1 text-emerald-800 text-base sm:text-sm">Automation is stopped for these prospects.</p></div>
@@ -107,6 +107,7 @@
         @if ($activeTab !== 'dashboard')<input type="hidden" name="tab" value="{{ $activeTab }}">@endif
         <input name="search" value="{{ request('search') }}" placeholder="Search businesses or emails, separated by commas" aria-label="Search businesses or emails, separated by commas" class="ui-input min-w-64 flex-1">
         <select name="status" aria-label="Prospect status" class="ui-input"><option value="">All stages</option>@foreach (\App\Models\Prospect::STATUSES as $status)<option value="{{ $status }}" @selected(request('status') === $status)>{{ str($status)->replace('_', ' ')->title() }}</option>@endforeach<option value="deleted" @selected(request('status') === 'deleted')>Deleted</option></select>
+        <select name="prospect_type" aria-label="Prospect type" class="ui-input"><option value="">All prospect types</option>@foreach (\App\Models\Prospect::TYPES as $value => $label)<option value="{{ $value }}" @selected(request('prospect_type') === $value)>{{ $label }}</option>@endforeach</select>
         <select name="email_status" aria-label="Email address" class="ui-input"><option value="">All email statuses</option><option value="missing" @selected(request('email_status') === 'missing')>Without email address</option><option value="present" @selected(request('email_status') === 'present')>With email address</option></select>
         <button type="submit" class="ui-button ui-button-primary">Filter</button>
     </form>
@@ -117,7 +118,7 @@
             <ul role="list" class="mt-4 divide-y divide-slate-950/10">
                 @forelse ($prospects as $prospect)
                     <li class="flex flex-wrap items-start justify-between gap-3 py-4">
-                        <div class="min-w-0"><p class="break-words font-semibold">{{ $prospect->business_name }}</p><p class="break-all text-base text-slate-500 sm:text-sm">{{ $prospect->contact_name ?: 'No contact' }} · {{ $prospect->email ?: 'No email address' }}</p>@if ($prospect->website_url)<p class="break-all text-base text-slate-500 sm:text-sm">{{ $prospect->website_url }}</p>@endif</div>
+                        <div class="min-w-0"><p class="break-words font-semibold">{{ $prospect->business_name }}</p><p class="text-xs text-slate-500">{{ \App\Models\Prospect::TYPES[$prospect->prospect_type] }}</p><p class="break-all text-base text-slate-500 sm:text-sm">{{ $prospect->contact_name ?: 'No contact' }} · {{ $prospect->email ?: 'No email address' }}</p>@if ($prospect->website_url)<p class="break-all text-base text-slate-500 sm:text-sm">{{ $prospect->website_url }}</p>@endif</div>
                         <p class="text-base text-slate-500 tabular-nums sm:text-sm">Deleted {{ $prospect->deleted_at->setTimezone('Europe/London')->format('j M Y, H:i') }} UK</p>
                     </li>
                 @empty
@@ -134,6 +135,7 @@
         <input type="hidden" name="status" value="{{ request('status') }}">
         <input type="hidden" name="temperature" value="{{ in_array($activeTab, ['hot', 'warm'], true) ? $activeTab : '' }}">
         <input type="hidden" name="lifecycle_state" value="{{ $activeTab === 'replies' ? \App\Enums\ProspectLifecycleState::Replied->value : '' }}">
+        <input type="hidden" name="prospect_type" value="{{ request('prospect_type') }}">
         <input type="hidden" name="email_status" value="{{ request('email_status') }}">
         <div class="flex flex-col gap-3 border-b border-slate-950/10 bg-slate-50 p-3 lg:flex-row lg:items-center">
             <div class="flex items-center gap-3">
@@ -184,7 +186,7 @@
                 <div class="flex items-center gap-3 p-4 hover:bg-slate-50">
                     <input type="checkbox" name="prospect_ids[]" value="{{ $prospect->id }}" aria-label="Select {{ $prospect->business_name }}" data-bulk-prospects-checkbox class="size-5 shrink-0">
                     <a href="{{ route('admin.prospects.show', $prospect) }}" class="grid min-w-0 flex-1 gap-3 md:grid-cols-[2fr_1fr_1fr_auto] md:items-center">
-                        <div><p class="font-semibold text-slate-900">{{ $prospect->business_name }}</p><p class="text-slate-500 text-base sm:text-sm">{{ $prospect->contact_name ?: 'No contact' }} · {{ $prospect->email ?: 'No email yet' }}</p></div>
+                        <div><p class="font-semibold text-slate-900">{{ $prospect->business_name }}</p><p class="text-xs text-slate-500">{{ \App\Models\Prospect::TYPES[$prospect->prospect_type] }}</p><p class="text-slate-500 text-base sm:text-sm">{{ $prospect->contact_name ?: 'No contact' }} · {{ $prospect->email ?: 'No email yet' }}</p></div>
                         <div class="text-sm text-slate-600">@if ($prospect->website_url){{ parse_url($prospect->website_url, PHP_URL_HOST) }}@else<span class="font-medium text-violet-700">Website opportunity</span>@endif</div>
                         <div class="flex flex-wrap gap-2"><span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">{{ str($prospect->status)->replace('_', ' ')->title() }}</span>@if ($prospect->status !== 'converted')<span @class(['rounded-full px-2.5 py-1 text-xs font-semibold', 'bg-red-100 text-red-800' => $prospect->lead_temperature === 'hot', 'bg-orange-100 text-orange-800' => $prospect->lead_temperature === 'warm', 'bg-sky-100 text-sky-800' => $prospect->lead_temperature === 'cold'])>{{ str($prospect->lead_temperature)->title() }}</span>@endif @if ($prospect->scheduled_send_at)<span class="rounded-full bg-violet-100 px-2.5 py-1 text-xs font-semibold text-violet-800">Scheduled {{ $prospect->scheduled_send_at->setTimezone('Europe/London')->format('j M, H:i') }}</span>@endif</div>
                         <div class="text-right">@if ($prospect->opportunity_score !== null)<span class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">{{ $prospect->opportunity_score }} opportunity</span>@else<span class="text-xs text-slate-500">{{ str($prospect->analysis_status)->title() }}</span>@endif</div>

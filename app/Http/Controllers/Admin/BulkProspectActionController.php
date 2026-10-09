@@ -82,6 +82,7 @@ class BulkProspectActionController extends Controller
         }
 
         return $query
+            ->when(filled($data['prospect_type'] ?? null), fn (Builder $query) => $query->where('prospect_type', $data['prospect_type']))
             ->when(filled($data['status'] ?? null), fn (Builder $query) => $query->where('status', $data['status']))
             ->when(filled($data['temperature'] ?? null), fn (Builder $query) => $query->where('lead_temperature', $data['temperature']))
             ->when(filled($data['lifecycle_state'] ?? null), fn (Builder $query) => $query->whereHas('outreachState', fn (Builder $query) => $query->where('lifecycle_state', $data['lifecycle_state'])))
@@ -105,7 +106,7 @@ class BulkProspectActionController extends Controller
 
     private function researchAgain(Prospect $prospect, BulkProspectActionRequest $request): bool
     {
-        if (blank($prospect->website_url) || in_array($prospect->analysis_status, ['pending', 'running'], true)) {
+        if ($prospect->isAgencyPartner() || blank($prospect->website_url) || in_array($prospect->analysis_status, ['pending', 'running'], true)) {
             return false;
         }
 

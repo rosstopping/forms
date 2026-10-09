@@ -63,9 +63,7 @@ it('does not show or allow the outreach action for non-administrators', function
     $website->domains()->create(['domain' => 'owner-site.example', 'is_primary' => true]);
 
     $this->actingAs($owner)->get(route('admin.websites.show', $website))
-        ->assertSuccessful()
-        ->assertDontSee('Create outreach prospect')
-        ->assertDontSee('View outreach prospect');
+        ->assertForbidden();
 
     $this->post(route('admin.websites.prospect.store', $website))->assertForbidden();
     expect(Prospect::query()->count())->toBe(0);
