@@ -8,7 +8,7 @@
             <p class="text-slate-600 text-base sm:text-sm">Monitor audit health, search performance, content, and form activity for each website.</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
-            @if (Auth::user()?->isAdmin())
+            @if (Auth::user()?->hasAllWebsiteAccess())
                 <a href="{{ route('admin.website-setup.create') }}" class="ui-button ui-button-primary">Set up client</a>
                 <a href="{{ route('admin.website-builder.create') }}" class="ui-button ui-button-secondary">Build new website</a>
                 <a href="{{ route('admin.websites.create') }}" class="ui-button ui-button-secondary">Add website</a>

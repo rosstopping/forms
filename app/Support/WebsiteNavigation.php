@@ -28,6 +28,7 @@ class WebsiteNavigation
     {
         if (! $request->user()?->isAdmin()) {
             return match (true) {
+                $request->routeIs('admin.search-overview') => 'search',
                 $request->routeIs('admin.form-submissions.*') => 'leads',
                 $request->routeIs('admin.billing.*') => 'billing',
                 default => 'overview',

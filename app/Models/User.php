@@ -7,6 +7,7 @@ use App\Support\MembershipPlan;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -16,13 +17,15 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Lab404\Impersonate\Models\Impersonate;
 
-#[Fillable(['name', 'email', 'password', 'role', 'current_website_id', 'stripe_customer_id', 'stripe_subscription_id', 'membership_tier', 'admin_membership_tier', 'admin_membership_expires_at', 'membership_status', 'membership_current_period_end', 'membership_cancel_at', 'onboarding_status', 'onboarding_trial_ends_at', 'onboarding_call_booking_started_at', 'onboarding_call_booked_at', 'onboarding_call_completed_at', 'onboarding_health_report_viewed_at'])]
+#[Fillable(['name', 'email', 'password', 'role', 'admin_site_access', 'current_website_id', 'stripe_customer_id', 'stripe_subscription_id', 'membership_tier', 'admin_membership_tier', 'admin_membership_expires_at', 'membership_status', 'membership_current_period_end', 'membership_cancel_at', 'onboarding_status', 'onboarding_trial_ends_at', 'onboarding_call_booking_started_at', 'onboarding_call_booked_at', 'onboarding_call_completed_at', 'onboarding_health_report_viewed_at'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
     public const ROLE_ADMIN = 'admin';
 
     public const ROLE_USER = 'user';
+
+    protected $attributes = ['admin_site_access' => 'all'];
 
     /** @use HasFactory<UserFactory> */
     use HasFactory, Impersonate, Notifiable;
@@ -54,9 +57,30 @@ class User extends Authenticatable
         return $this->role === self::ROLE_ADMIN;
     }
 
+    public function hasAllWebsiteAccess(): bool
+    {
+        return $this->isAdmin() && $this->admin_site_access === 'all';
+    }
+
+    public function scopeAvailableForWebsite(Builder $query, Website $website): Builder
+    {
+        return $query->where(fn (Builder $query) => $query
+            ->where(fn (Builder $query) => $query->where('role', '!=', self::ROLE_ADMIN)
+                ->where(fn (Builder $query) => $query->whereKey($website->user_id)
+                    ->orWhereHas('sharedWebsites', fn (Builder $query) => $query->whereKey($website->id))))
+            ->orWhere(fn (Builder $query) => $query->where('role', self::ROLE_ADMIN)
+                ->where(fn (Builder $query) => $query->where('admin_site_access', 'all')
+                    ->orWhereHas('assignedWebsites', fn (Builder $query) => $query->whereKey($website->id)))));
+    }
+
+    public function assignedWebsites(): BelongsToMany
+    {
+        return $this->belongsToMany(Website::class, 'staff_website')->withTimestamps();
+    }
+
     public function canImpersonate(): bool
     {
-        return $this->isAdmin();
+        return $this->hasAllWebsiteAccess();
     }
 
     public function canBeImpersonated(): bool

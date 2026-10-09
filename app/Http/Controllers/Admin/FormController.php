@@ -18,7 +18,7 @@ class FormController extends Controller
     {
         $query = Form::query();
 
-        if (! $request->user()?->isAdmin()) {
+        if (! $request->user()?->hasAllWebsiteAccess()) {
             $query->whereHas('website', fn ($query) => $query->accessibleTo($request->user()));
         }
 

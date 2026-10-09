@@ -15,9 +15,10 @@ class WebsiteMailRecipients
 
         return User::query()
             ->where('role', User::ROLE_ADMIN)
+            ->where(fn ($query) => $query->where('admin_site_access', 'all')->orWhereHas('assignedWebsites', fn ($query) => $query->whereKey($website->id)))
             ->pluck('email')
-            ->push($website->owner?->email)
-            ->concat($website->members->pluck('email'))
+            ->push($website->owner && (! $website->owner->isAdmin() || $website->isAccessibleBy($website->owner)) ? $website->owner->email : null)
+            ->concat($website->members->filter(fn (User $member): bool => ! $member->isAdmin() || $website->isAccessibleBy($member))->pluck('email'))
             ->filter()
             ->unique()
             ->values()

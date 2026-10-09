@@ -49,6 +49,8 @@
                 @error('role')<p class="mt-1 text-red-700 text-base sm:text-sm">{{ $message }}</p>@enderror
             </div>
 
+            <x-admin-site-access :websites="$websites" :user="$user" :assigned-website-ids="$assignedWebsiteIds" />
+
             <div>
                 <label class="ui-label block" for="admin_membership_tier">Admin-managed membership</label>
                 <select id="admin_membership_tier" name="admin_membership_tier" class="ui-input mt-1 w-full">

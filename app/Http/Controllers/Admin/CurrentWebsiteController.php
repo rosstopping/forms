@@ -27,6 +27,10 @@ class CurrentWebsiteController extends Controller
 
         $section = $data['section'] ?? WebsiteNavigation::DEFAULT_SECTION;
         if (! $request->user()->isAdmin()) {
+            if ($section === 'search') {
+                return redirect()->route('admin.search-overview', $website);
+            }
+
             return redirect()->route(match ($section) {
                 'leads' => 'admin.form-submissions.index',
                 'billing' => 'admin.billing.index',

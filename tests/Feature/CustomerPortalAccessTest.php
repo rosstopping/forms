@@ -54,7 +54,7 @@ test('customer routes reject staff operations even with historical Complete and 
 })->with([
     ['GET', 'admin.websites.index', []],
     ['GET', 'admin.websites.show', ['website']],
-    ['GET', 'admin.websites.section', ['website', 'search']],
+    ['GET', 'admin.websites.section', ['website', 'health']],
     ['GET', 'admin.websites.section', ['website', 'settings']],
     ['GET', 'admin.ai-visibility.index', ['website']],
     ['GET', 'admin.google-ads.index', ['website']],
@@ -133,9 +133,10 @@ test('customer lead requests reject operational changes and empty protected inpu
 test('customer website switches preserve portal destinations and reject unassigned sites', function (): void {
     $site = Website::factory()->create();
     $site->members()->attach($this->customer, ['role' => Website::MEMBER_ROLE_VIEWER]);
-    foreach (['overview' => 'admin.dashboard', 'leads' => 'admin.form-submissions.index', 'billing' => 'admin.billing.index', 'search' => 'admin.dashboard'] as $section => $destination) {
+    foreach (['overview' => 'admin.dashboard', 'leads' => 'admin.form-submissions.index', 'billing' => 'admin.billing.index'] as $section => $destination) {
         $this->post(route('admin.current-website.update'), ['website_id' => $site->id, 'section' => $section])->assertRedirect(route($destination));
     }
+    $this->post(route('admin.current-website.update'), ['website_id' => $site->id, 'section' => 'search'])->assertRedirect(route('admin.search-overview', $site));
     $unassigned = Website::factory()->create();
     $this->post(route('admin.current-website.update'), ['website_id' => $unassigned->id])->assertNotFound();
     expect($this->customer->fresh()->current_website_id)->toBe($site->id);

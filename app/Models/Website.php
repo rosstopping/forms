@@ -127,6 +127,11 @@ class Website extends Model
         return $this->hasActiveService() && MembershipPlan::includes($this->service_package, $feature);
     }
 
+    public function assignedAdmins(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'staff_website')->withTimestamps();
+    }
+
     public function members(): BelongsToMany
     {
         return $this->belongsToMany(User::class)
@@ -137,7 +142,7 @@ class Website extends Model
     public function scopeAccessibleTo(Builder $query, User $user): Builder
     {
         if ($user->isAdmin()) {
-            return $query;
+            return $user->hasAllWebsiteAccess() ? $query : $query->whereHas('assignedAdmins', fn (Builder $query) => $query->whereKey($user->id));
         }
 
         return $query->where(fn (Builder $query) => $query
@@ -148,7 +153,7 @@ class Website extends Model
     public function scopeManageableBy(Builder $query, User $user): Builder
     {
         if ($user->isAdmin()) {
-            return $query;
+            return $user->hasAllWebsiteAccess() ? $query : $query->whereHas('assignedAdmins', fn (Builder $query) => $query->whereKey($user->id));
         }
 
         return $query->where(fn (Builder $query) => $query
@@ -162,12 +167,20 @@ class Website extends Model
 
     public function isAccessibleBy(?User $user): bool
     {
-        return $user !== null && ($user->isAdmin() || $this->user_id === $user->id || $this->members()->whereKey($user->id)->exists());
+        if ($user?->isAdmin()) {
+            return $user->hasAllWebsiteAccess() || $this->assignedAdmins()->whereKey($user->id)->exists();
+        }
+
+        return $user !== null && ($this->user_id === $user->id || $this->members()->whereKey($user->id)->exists());
     }
 
     public function isManageableBy(?User $user): bool
     {
-        return $user !== null && ($user->isAdmin() || $this->membershipRoleFor($user) === self::MEMBER_ROLE_MANAGER);
+        if ($user?->isAdmin()) {
+            return $this->isAccessibleBy($user);
+        }
+
+        return $user !== null && ($this->membershipRoleFor($user) === self::MEMBER_ROLE_MANAGER);
     }
 
     public function canUseAutoresponders(?User $actingUser = null): bool

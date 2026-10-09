@@ -31,6 +31,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | {config/agencies.php,app/Http/Controllers/AgencyMarketingController.php,app/Http/Requests/StoreAgencyBetaRequest.php,resources/views/marketing/agencies/**} | .ai/rules/agencies.md |
 | app/{Ai/Agents/PixelOptimisationWriter.php,Services/PixelOptimisationGenerator.php,Http/Controllers/Admin/*PageOptimisationsController.php} | .ai/rules/agents-controllers-admin.md |
 | app/{Ai/Agents/CompetitorAnalyst.php,Services/CompetitorBriefGenerator.php} | .ai/rules/agents.md |
+| app/Http/Middleware/RestrictCustomerWorkspace.php | .ai/rules/app-http-middleware.md |
 | app/Http/Requests/StoreFreeSiteAuditRequest.php | .ai/rules/app-http-requests.md |
 | app/{Jobs/Send*RankingReport.php,Services/GoogleAdsEmailSummary.php,Services/GoogleAdsClient.php,Mail/*RankingReport.php},resources/views/emails/*ranking-report.blade.php | .ai/rules/app-jobs-views-emails.md |
 | app/{Jobs/StartContentGeneration.php,Services/ContentGenerationPromptGenerator.php,Services/SeoTargetKeywordSelector.php,Models/ContentGeneration.php} | .ai/rules/app-jobs.md |
@@ -152,6 +153,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | {app/Services/WordPressStaticReleaseBuilder.php,app/Http/Controllers/WordPress*Release*Controller.php,wordpress-plugin/sitewell-by-digizu/**} | .ai/rules/sitewell-by-digizu.md |
 | app/{Support/WebsiteNavigation.php,Http/Controllers/Admin/CurrentWebsiteController.php} | .ai/rules/support-controllers-admin.md |
 | app/Support/WebsiteNavigation.php | .ai/rules/support.md |
+| app/{Models/User,Models/Website,Http/Middleware/RestrictAssignedAdmin,Http/Controllers/Admin/UserController,Services/WebsiteMailRecipients}.php | .ai/rules/user-controller-services.md |
 | {app/Models/User.php,app/Http/Controllers/Admin/UserImpersonationController.php,resources/views/{admin/users/index.blade.php,layouts/app.blade.php},routes/web.php,tests/Feature/UserImpersonationTest.php} | .ai/rules/users-feature.md |
 | app/{Models/User.php,Http/Controllers/Admin/{DashboardController.php,OnboardingCallController.php,UserOnboardingCallController.php,WebsiteHealthReportController.php},Http/Requests/UpdateUserOnboardingCallRequest.php},resources/views/{admin/dashboard.blade.php,admin/users/index.blade.php,layouts/app.blade.php},routes/web.php,database/migrations/**/*onboarding*progress*.php | .ai/rules/users-migrations.md |
 | app/{Models/{FormSubmission,ReviewInvitation}.php,Jobs/Send*Invitation.php,Services/ReviewInvitationService.php,Http/Controllers/Admin/*ReviewInvitationController.php},resources/views/admin/form-submissions/** | .ai/rules/views-admin-form-submissions.md |

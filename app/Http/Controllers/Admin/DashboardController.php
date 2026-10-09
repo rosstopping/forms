@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ContentGeneration;
 use App\Models\Optimisation;
 use App\Models\RemediationRun;
+use App\Models\SearchConsoleMetric;
 use App\Models\SeoImpact;
 use App\Models\SeoWin;
 use App\Models\Website;
@@ -113,6 +114,21 @@ class DashboardController extends Controller
             'remediationReviews' => $remediationReviews,
             'approvalCount' => $optimisations->total() + $contentReviews->total() + $remediationReviews->total(),
         ]);
+    }
+
+    public function searchOverview(Request $request, Website $website): View
+    {
+        abort_unless($website->isAccessibleBy($request->user()), 403);
+        $report = app(SearchConsoleProgress::class)->forWebsite($website, $request->only(['period', 'comparison', 'start', 'end']));
+        $connection = $website->searchConsoleConnection;
+        $history = SearchConsoleMetric::where('website_id', $website->id)
+            ->where('search_console_connection_id', $connection?->id)->where('property_hash', hash('sha256', $connection?->property_url ?? ''))
+            ->where('dimension_key', SearchConsoleMetric::SITE_DIMENSION_KEY)
+            ->whereDate('month', '<', now('America/Los_Angeles')->startOfMonth()->toDateString())
+            ->orderByDesc('month')->limit(16)->get()->reverse()->values()
+            ->map(fn ($metric): array => ['month' => $metric->month->format('Y-m'), 'clicks' => $metric->clicks, 'impressions' => $metric->impressions, 'position' => $metric->position]);
+
+        return view('admin.customer-search', ['website' => $website, 'searchProgress' => $report, 'searchHistory' => $history]);
     }
 
     public function weeklyOverview(Request $request, Website $website, DashboardSchedule $schedule): View

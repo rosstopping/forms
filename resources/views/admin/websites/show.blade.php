@@ -19,6 +19,7 @@
         <div class="flex flex-wrap items-center gap-2">
             @if (Auth::user()?->isAdmin())
                 <a href="{{ route('admin.website-setup.edit', $website) }}" class="ui-button ui-button-secondary">Client setup</a>
+                @if(Auth::user()?->hasAllWebsiteAccess())
                 @if ($outreachProspect)
                     <a href="{{ route('admin.prospects.show', $outreachProspect) }}" class="ui-button ui-button-secondary">View outreach prospect</a>
                 @else
@@ -26,6 +27,7 @@
                         @csrf
                         <button type="submit" class="ui-button ui-button-secondary">Create outreach prospect</button>
                     </form>
+                @endif
                 @endif
             @endif
             @if (Auth::user()?->isAdmin())
@@ -360,6 +362,7 @@
                     </form>
                 </details>
 
+                @if(Auth::user()?->hasAllWebsiteAccess())
                 <div class="border-t border-red-200 px-5 py-5 sm:px-6">
                     <h3 class="text-sm font-semibold text-red-900">Delete website</h3>
                     <p class="mt-1 text-red-700 text-base sm:text-sm">This permanently deletes the website, its forms, submissions, reports, and content settings.</p>
@@ -369,10 +372,11 @@
                         <button type="submit" class="ui-button ui-button-danger">Delete website</button>
                     </form>
                 </div>
+                @endif
             @endif
         </section>
 
-        @if (Auth::user()?->isAdmin())
+        @if (Auth::user()?->hasAllWebsiteAccess())
             <section class="ui-panel ui-section" aria-labelledby="website-service-title">
                 <h2 id="website-service-title" class="font-semibold">Managed service</h2>
                 <p class="mt-1 text-slate-600 text-base sm:text-sm">Set the agreed service for this website. Saving these settings does not change Stripe billing or enable scheduled work.</p>

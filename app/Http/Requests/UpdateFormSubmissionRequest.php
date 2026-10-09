@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\FormSubmission;
 use App\Models\LeadTag;
+use App\Models\User;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Str;
@@ -58,7 +59,8 @@ class UpdateFormSubmissionRequest extends FormRequest
             'message' => ['sometimes', 'nullable', 'string', 'max:10000', Rule::prohibitedIf(! $this->route('form_submission')?->is_manual)],
             'status' => ['required', 'string', Rule::in(FormSubmission::STATUSES)],
             'notes' => ['nullable', 'string', 'max:10000'],
-            'assigned_to' => ['nullable', 'integer', Rule::exists('users', 'id')],
+            'assigned_to' => ['nullable', 'integer', Rule::exists('users', 'id'),
+                Rule::when(! $this->user()->hasAllWebsiteAccess(), fn () => Rule::in(User::availableForWebsite($this->route('form_submission')->website)->pluck('id')->all()))],
             'follow_up_at' => ['nullable', 'date'],
             'tags_present' => ['sometimes', 'boolean'],
             'tag_ids' => ['sometimes', 'array', 'max:20'],

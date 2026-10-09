@@ -43,7 +43,7 @@ class WebsiteController extends Controller
 
     public function index(Request $request): View
     {
-        $query = Website::query();
+        $query = Website::query()->accessibleTo($request->user());
 
         if (! $request->user()?->isAdmin()) {
             $query->accessibleTo($request->user());

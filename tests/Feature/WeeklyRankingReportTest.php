@@ -170,12 +170,12 @@ test('weekly ranking email shows active target states and links to target keywor
         ->assertDontSeeInHtml('archived target');
 });
 
-test('managers control weekly ranking email delivery independently', function (): void {
+test('admins control weekly ranking email delivery independently', function (): void {
     $website = Website::factory()->create(['health_reports_enabled' => false, 'weekly_ranking_reports_enabled' => false]);
     $viewer = User::factory()->create();
     $website->members()->attach($viewer, ['role' => Website::MEMBER_ROLE_VIEWER]);
 
-    $this->actingAs($website->owner)
+    $this->actingAs(User::factory()->create(['role' => User::ROLE_ADMIN]))
         ->get(route('admin.websites.show', [$website, 'tab' => 'seo']))
         ->assertSuccessful()
         ->assertSee('Weekly ranking email')
@@ -190,7 +190,7 @@ test('managers control weekly ranking email delivery independently', function ()
     $otherWebsite = Website::factory()->create();
     $this->actingAs($otherWebsite->owner)->put(route('admin.weekly-ranking-report-settings.update', $website), ['weekly_ranking_reports_enabled' => false])->assertForbidden();
     $website->owner->update(['membership_tier' => 'essential']);
-    $this->actingAs($website->owner)->put(route('admin.weekly-ranking-report-settings.update', $website), ['weekly_ranking_reports_enabled' => false])->assertRedirect(route('admin.billing.index'));
+    $this->actingAs($website->owner)->put(route('admin.weekly-ranking-report-settings.update', $website), ['weekly_ranking_reports_enabled' => false])->assertForbidden();
 });
 
 test('weekly ranking dispatcher includes subscribed active websites with ranking data', function () {

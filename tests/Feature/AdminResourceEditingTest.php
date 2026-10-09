@@ -126,15 +126,14 @@ it('allows an administrator to grant and remove a membership without Stripe', fu
         ->post(route('admin.content-requests.store', $website), [
             'instructions' => 'Create a service page.',
         ])
-        ->assertRedirect(route('admin.websites.section', [$website, 'content']));
+        ->assertForbidden();
 
-    expect($website->contentRequests()->exists())->toBeTrue();
+    expect($website->contentRequests()->exists())->toBeFalse();
 
     $this->actingAs($user)
         ->get(route('admin.billing.index'))
         ->assertSuccessful()
-        ->assertSee('Growth')
-        ->assertSee('admin managed');
+        ->assertSee('Billing');
 
     $this->actingAs($admin)
         ->put(route('admin.users.update', $user), [
