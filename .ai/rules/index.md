@@ -94,6 +94,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | resources/views/mail/prospects/** | .ai/rules/mail-prospects.md |
 | app/{Mail,Services}/**/*ProspectOutreach*.php | .ai/rules/mail-services.md |
 | resources/views/{vendor/mail/**,emails/**,mail/**,components/email-layout.blade.php,components/prospect-audit-block.blade.php} | .ai/rules/mail.md |
+| resources/views/marketing/agencies/** | .ai/rules/marketing-agencies.md |
 | {app/Actions/StoreSitewellContactLead.php,app/Http/Controllers/OnboardingEnquiryController.php,resources/views/marketing/contact.blade.php,config/marketing.php,tests/Feature/MarketingPagesTest.php} | .ai/rules/marketing-feature.md |
 | {app/Ai/Agents/Audit{BusinessProfiler,OpportunitySelector}.php,app/Services/{MarketingAudit{Opportunity,Research},ProspectWebsiteAnalyzer}.php,resources/views/marketing/website-audit.blade.php,app/Http/Controllers/FreeSiteAuditController.php} | .ai/rules/marketing-http-controllers.md |
 | resources/views/marketing/website-audit.blade.php,app/{Jobs/GenerateWebsiteAudit.php,Services/MarketingAudit*.php,Models/WebsiteAudit.php} | .ai/rules/marketing-jobs.md |

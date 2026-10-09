@@ -1,7 +1,7 @@
 @php
     $isHub = !isset($page);
     $schemaUrl = $isHub ? route('marketing.agencies') : route('marketing.agencies.show', $slug);
-    $schemaTitle = $isHub ? 'Offer SEO to every client. Without building an SEO team.' : $page['heading'];
+    $schemaTitle = $isHub ? 'Offer SEO to your clients. We’ll do the work.' : $page['heading'];
     $breadcrumbs = [
         ['@type' => 'ListItem', 'position' => 1, 'name' => 'Home', 'item' => route('marketing.home')],
         ['@type' => 'ListItem', 'position' => 2, 'name' => 'For agencies', 'item' => route('marketing.agencies')],
@@ -13,7 +13,7 @@
         ? ['@type' => 'Article', 'headline' => $schemaTitle, 'author' => ['@type' => 'Organization', 'name' => 'Sitewell', 'url' => route('marketing.home')], 'mainEntityOfPage' => $schemaUrl]
         : ['@type' => 'WebPage', 'name' => $schemaTitle];
     $schema = ['@context' => 'https://schema.org', '@graph' => [
-        [...$entity, 'url' => $schemaUrl, 'description' => $isHub ? 'Explore Sitewell’s agency beta for ongoing website monitoring, SEO insights and reviewed improvements.' : $page['description']],
+        [...$entity, 'url' => $schemaUrl, 'description' => $isHub ? 'Fully managed SEO and website care for web agencies, delivered by Ross and Sitewell.' : $page['description']],
         ['@type' => 'BreadcrumbList', 'itemListElement' => $breadcrumbs],
     ]];
 @endphp

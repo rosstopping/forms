@@ -1,16 +1,19 @@
 <?php
 
+use App\Jobs\GenerateWebsiteAudit;
 use App\Mail\OnboardingEnquiryReceived;
 use App\Models\FormSubmission;
 use App\Models\Website;
+use App\Models\WebsiteAudit;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Queue;
 
 it('publishes eighteen distinct agency pages with metadata, breadcrumbs and sitemap coverage', function (): void {
     $pages = config('agencies.pages');
     expect($pages)->toHaveCount(17);
     $sitemap = $this->get(route('marketing.sitemap'))->assertSuccessful();
     $hubUrl = route('marketing.agencies');
-    $hub = $this->get($hubUrl)->assertSuccessful()->assertSee('Without building an SEO team.');
+    $hub = $this->get($hubUrl)->assertSuccessful()->assertSee('We’ll do the work.');
     $sitemap->assertSee('<loc>'.$hubUrl.'</loc>', false);
     $titles = $introductions = $descriptions = $headings = [];
     foreach ($pages as $slug => $page) {
@@ -66,12 +69,17 @@ it('keeps the flagged agency page titles within search result length guidance', 
     }
 });
 
-it('keeps the agency hub available outside navigation and labels proposed previews honestly', function (): void {
+it('presents the managed agency service with existing booking and honest availability', function (): void {
     $home = $this->get(route('marketing.home'))->assertSuccessful()->getContent();
     expect(substr_count($home, 'href="'.route('marketing.agencies').'"'))->toBe(0);
     $this->get(route('marketing.agencies'))->assertSuccessful()
-        ->assertSee('Agency beta / planned direction')->assertSee('fictional businesses and data')
-        ->assertSee('current customer access uses individual website workspaces')
+        ->assertSee('Fully managed, with me behind it')->assertSee('Video coming soon')
+        ->assertDontSee('fictional businesses and data')->assertDontSee('Join the agency beta')
+        ->assertSee('Up to three scheduled content improvements per week')
+        ->assertSee('data-audit-book-call', false)
+        ->assertSee('marketing-events')
+        ->assertSee('href="'.route('marketing.ppc.book').'"', false)
+        ->assertDontSee('action="'.route('marketing.agencies.store').'"', false)
         ->assertSee('id="join-beta"', false)->assertSee('id="how-it-works"', false)
         ->assertSee('id="available-now"', false);
     $this->get(route('marketing.agencies.show', 'seo-reporting'))->assertSuccessful()
@@ -138,7 +146,9 @@ it('renders accessible validation feedback and keeps entered values', function (
     $this->withCookie(config('session.cookie'), session()->getId());
     $this->get(route('marketing.agencies'))->assertSuccessful()
         ->assertSee('role="alert"', false)->assertSee('value="A &amp; B"', false)
-        ->assertSee('aria-describedby="beta-email-error"', false);
+        ->assertSee('aria-describedby="beta-email-error"', false)
+        ->assertSee('id="agency-enquiry"', false)
+        ->assertDontSee('suitable pilot');
 });
 
 it('rate limits public beta submissions', function (): void {
@@ -148,4 +158,60 @@ it('rate limits public beta submissions', function (): void {
     }
     $this->post(route('marketing.agencies.store'), [])->assertTooManyRequests();
     Mail::assertNothingOutgoing();
+});
+
+it('keeps the managed service metadata and schema consistent without unconfirmed prices', function (): void {
+    $response = $this->get(route('marketing.agencies'))->assertSuccessful()
+        ->assertSee('<title>SEO outsourcing for web agencies | Sitewell</title>', false)
+        ->assertDontSee('£150')->assertDontSee('£316')->assertDontSee('agency beta');
+    preg_match('/<script type="application\/ld\+json">(.*?)<\/script>/s', $response->getContent(), $matches);
+    $schema = json_decode($matches[1], true, flags: JSON_THROW_ON_ERROR);
+    expect($schema['@graph'][0]['name'])->toBe('Offer SEO to your clients. We’ll do the work.')
+        ->and($schema['@graph'][0]['description'])->toContain('Fully managed SEO')
+        ->and(substr_count($response->getContent(), 'id="join-beta"'))->toBe(1);
+});
+
+it('offers the homepage style audit form for agency clients with attribution and spam protection', function (): void {
+    config(['services.turnstile.marketing.enabled' => true, 'services.turnstile.marketing.site_key' => 'agency-site-key', 'services.turnstile.marketing.secret_key' => 'secret']);
+    $this->get(route('marketing.agencies').'?utm_source=agency-outreach')->assertSuccessful()
+        ->assertSee('id="agency-hero"', false)
+        ->assertSee('Try a client’s website to see where we’d start.')
+        ->assertSee('action="'.route('marketing.free-site-audit.store').'"', false)
+        ->assertSee('name="website_url"', false)
+        ->assertSee('name="_token"', false)
+        ->assertSee('name="_sitewell_check"', false)
+        ->assertSee('data-audit-form', false)
+        ->assertSee('data-sitekey="agency-site-key"', false)
+        ->assertSee('https://challenges.cloudflare.com/turnstile/v0/api.js', false);
+    expect(session('marketing_attribution.landing_page'))->toBe('agencies')
+        ->and(session('marketing_attribution.first_touch.utm_source'))->toBe('agency-outreach');
+});
+
+it('submits an agency client website through the existing audit flow', function (): void {
+    Queue::fake([GenerateWebsiteAudit::class]);
+    config(['services.turnstile.marketing.enabled' => false]);
+    $this->get(route('marketing.agencies'))->assertSuccessful();
+    $this->from(route('marketing.agencies'))->post(route('marketing.free-site-audit.store'), ['website_url' => 'client.example'])->assertRedirect();
+    $audit = WebsiteAudit::query()->sole();
+    expect($audit->domain)->toBe('client.example')
+        ->and($audit->marketing_attribution['landing_page'])->toBe('agencies');
+    Queue::assertPushed(GenerateWebsiteAudit::class, fn ($job): bool => $job->audit->is($audit));
+});
+
+it('shows audit validation on the agency hero without displaying the legacy enquiry form', function (): void {
+    $this->from(route('marketing.agencies'))->post(route('marketing.free-site-audit.store'), ['website_url' => 'not a website'])->assertRedirect(route('marketing.agencies'))->assertSessionHasErrors('website_url');
+    $this->withCookie(config('session.cookie'), session()->getId());
+    $this->get(route('marketing.agencies'))->assertSuccessful()
+        ->assertSee('id="hero-website-error"', false)
+        ->assertSee('value="not a website"', false)
+        ->assertDontSee('id="agency-enquiry"', false);
+});
+
+it('shows the homepage search and AI logos beneath the agency hero', function (): void {
+    $response = $this->get(route('marketing.agencies'))->assertSuccessful()
+        ->assertSee('Where your clients’ websites should show up.')
+        ->assertSee('aria-label="Search engines and AI assistants"', false);
+    foreach (['google', 'bing', 'openai', 'gemini', 'perplexity', 'claude'] as $mark) {
+        $response->assertSee('src="'.asset('search-'.$mark.'.svg').'"', false);
+    }
 });

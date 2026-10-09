@@ -1,80 +1,120 @@
 @extends('layouts.marketing')
-@section('title', 'SEO for agencies, without building an SEO team | Sitewell')
+@section('title', 'SEO outsourcing for web agencies | Sitewell')
 @section('concise_title', '1')
-@section('meta_description', 'Offer ongoing SEO to your website clients with Sitewell behind your agency. Explore monitoring, audits, reporting and reviewed improvements. Join the agency beta.')
+@section('meta_description', 'Offer fully managed SEO and website care to your agency’s clients. Ross handles the work; you set your prices and keep the relationship. Book a quick chat.')
 @section('structured_data')
     @include('marketing.agencies.schema')
+    @vite('resources/js/marketing-events.js')
 @endsection
 @section('content')
-    <section class="marketing-hero">
-        <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
-            <nav aria-label="Breadcrumb" class="flex gap-2 text-base text-ink/60 sm:text-sm"><a href="{{ route('marketing.home') }}" class="hover:text-garden">Home</a><span aria-hidden="true">/</span><span aria-current="page">For agencies</span></nav>
-            <div class="mt-10 grid items-center gap-10 lg:grid-cols-[3fr_2fr]">
-                <div>
-                    <p class="font-mono text-base uppercase tracking-wide text-garden sm:text-sm">Your agency. More to offer.</p>
-                    <h1 class="mt-5 max-w-[20ch] text-balance font-sans text-4xl font-medium tracking-tight sm:text-6xl lg:text-7xl">Offer SEO to every client.<br><span class="text-garden">Without building an SEO team.</span></h1>
-                    <p class="mt-7 max-w-[48ch] text-pretty text-lg/8 text-ink/70">Keep the client relationship. Explore website checks, search reporting and reviewed improvements through the Sitewell agency beta.</p>
-                    <div class="mt-8 flex flex-wrap items-center gap-6"><a href="#join-beta" class="rounded-full bg-garden px-5 py-3 text-base font-medium text-white hover:bg-moss focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-garden">Join the agency beta <span aria-hidden="true">↗</span></a><a href="#how-it-works" class="text-base font-medium underline decoration-ink/25 underline-offset-4 hover:decoration-garden">See how it works</a></div>
-                    <p class="mt-5 max-w-[56ch] text-pretty text-base text-ink/55 sm:text-sm">For web designers, development agencies and the teams looking after client websites.</p>
-                </div>
-                <figure class="rounded-3xl bg-lichen/60 p-6 sm:p-8">
-                    <figcaption class="font-mono text-base uppercase tracking-wide text-moss sm:text-sm">The agency model</figcaption>
-                    <ol role="list" class="mt-6 grid gap-3">
-                        <li class="rounded-lg bg-white p-5 ring-1 ring-ink/10"><p class="text-lg font-semibold">Your agency</p><p class="mt-2 text-base text-ink/65">Your clients, your service, your priorities.</p></li>
-                        <li aria-hidden="true" class="text-center text-2xl text-moss">↓</li>
-                        <li class="rounded-lg bg-garden p-5 text-white"><p class="font-sans text-3xl font-semibold tracking-tight">Sitewell</p><p class="mt-2 text-base text-white/85">Monitor · Understand · Improve · Report</p></li>
-                        <li aria-hidden="true" class="text-center text-2xl text-moss">↓</li>
-                        <li class="rounded-lg bg-white p-5 ring-1 ring-ink/10"><p class="text-lg font-semibold">Your client websites</p><p class="mt-2 text-base text-ink/65">Ongoing attention, beyond launch day.</p></li>
-                    </ol>
-                    <p class="mt-5 text-pretty text-base/6 text-moss sm:text-sm/6">The proposed agency service, built on Sitewell’s existing website tools.</p>
-                </figure>
+    <section class="bg-white px-3 pt-1 pb-6 text-[#151618] sm:px-6 sm:pt-2 sm:pb-8" aria-labelledby="agency-hero">
+        <div class="mx-auto grid max-w-7xl justify-items-center gap-6 rounded-3xl bg-[#faf7f4] px-5 py-10 text-center sm:gap-8 sm:px-10 sm:py-12 lg:py-16">
+            <p class="flex max-w-full items-center gap-2.5 rounded-full bg-[#fafaf9] py-2 pr-4 pl-2 text-sm font-medium text-[#151618] ring-1 ring-black/8 md:text-base"><span class="size-5 shrink-0 rounded-full border-[5px] border-[#ff5035] bg-white md:size-6 md:border-[6px]" aria-hidden="true"></span>For web designers, freelancers and agencies</p>
+            <h1 id="agency-hero" class="max-w-[19ch] text-4xl font-medium leading-[1.12] tracking-tight text-balance sm:text-6xl lg:text-7xl">Offer SEO to your clients. <span class="underline decoration-[#d63d24]/50 decoration-2 underline-offset-8 sm:decoration-4">We’ll do the work.</span></h1>
+            <p class="w-full max-w-3xl text-pretty text-base text-[#62666d] sm:text-xl">Fully managed website care and SEO, delivered by Sitewell and me. You set your prices and keep the client relationship. I handle setup, the ongoing work and reporting.</p>
+            <div class="grid w-full max-w-xl justify-items-center gap-3">
+                <p id="agency-audit-description" class="text-base text-[#62666d] sm:text-sm">Try a client’s website to see where we’d start.</p>
+                <form method="POST" action="{{ route('marketing.free-site-audit.store') }}" aria-describedby="agency-audit-description" data-audit-form data-marketing-attribution="{{ json_encode($attribution) }}" class="grid w-full gap-3">
+                    @csrf
+                    <div class="grid grid-cols-[minmax(0,1fr)_auto] items-center rounded-full bg-white p-1.5 ring-1 ring-black/15 focus-within:ring-2 focus-within:ring-[#d63d24]">
+                        <label for="hero-website-url" class="sr-only">Client website address</label>
+                        <input id="hero-website-url" name="website_url" type="text" required maxlength="255" inputmode="url" autocomplete="url" autocapitalize="none" spellcheck="false" placeholder="clientwebsite.com" value="{{ old('website_url') }}" aria-invalid="{{ $errors->has('website_url') ? 'true' : 'false' }}" @error('website_url') aria-describedby="hero-website-error" @enderror class="min-h-14 w-full min-w-0 rounded-full border-0 bg-transparent px-3 py-4 text-base text-[#151618] placeholder:text-[#62666d] focus:outline-none sm:px-5">
+                        <button type="submit" aria-label="Get your free search audit" class="inline-flex min-h-14 items-center justify-center gap-3 rounded-full bg-[#d63d24] py-4 pr-4 pl-5 font-medium text-white hover:bg-[#b9301b] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#d63d24]"><span class="sm:hidden">Free audit</span><span class="max-sm:hidden">Get your free search audit</span><span class="shrink-0" aria-hidden="true">→</span></button>
+                    </div>
+                    @error('website_url')<p id="hero-website-error" role="alert" class="text-base text-red-700 sm:text-sm">{{ $message }}</p>@enderror
+                    <div class="absolute left-[-9999px] size-px overflow-hidden" aria-hidden="true">
+                        <label for="hero-sitewell-check">Leave this field empty</label>
+                        <input id="hero-sitewell-check" name="_sitewell_check" type="text" tabindex="-1" autocomplete="off">
+                    </div>
+                    @if ($turnstileEnabled)
+                        <div class="cf-turnstile justify-self-center" data-sitekey="{{ $turnstileSiteKey }}" data-theme="light" data-size="flexible"></div>
+                        @error('cf-turnstile-response')<p role="alert" class="text-base text-red-700 sm:text-sm">{{ $message }}</p>@enderror
+                    @endif
+                </form>
+            </div>
+            <div class="flex flex-wrap items-center justify-center gap-6">
+                <a data-audit-book-call href="{{ route('marketing.ppc.book') }}" class="inline-flex min-h-12 items-center gap-3 rounded-full bg-white py-2 pr-5 pl-2 font-medium ring-1 ring-black/15 hover:bg-[#fafaf9] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#d63d24]"><img src="{{ asset('ross-topping.jpg') }}" alt="" width="32" height="32" class="size-8 rounded-full object-cover">Book a quick chat <span aria-hidden="true">↗</span></a>
+                <a href="#how-it-works" class="inline-flex min-h-12 items-center text-sm font-medium underline decoration-ink/25 underline-offset-4 hover:text-garden">See how it works</a>
+            </div>
+        </div>
+        <div class="mx-auto grid max-w-5xl justify-items-center gap-6 px-5 pt-8 sm:pt-10">
+            <p class="text-center text-base text-[#62666d] sm:text-sm">Where your clients’ websites should show up.</p>
+            <ul role="list" aria-label="Search engines and AI assistants" class="grid w-full grid-cols-2 gap-x-6 gap-y-6 sm:grid-cols-3 lg:grid-cols-6">
+                @foreach ([['google', 'Google'], ['bing', 'Bing'], ['openai', 'ChatGPT'], ['gemini', 'Gemini'], ['perplexity', 'Perplexity'], ['claude', 'Claude']] as [$mark, $name])
+                    <li class="flex items-center justify-center gap-2.5 text-lg font-medium tracking-tight text-[#62666d]">
+                        <img src="{{ asset('search-'.$mark.'.svg') }}" alt="{{ $name }} logo" width="24" height="24" class="size-6 shrink-0 opacity-60" decoding="async">
+                        <span aria-hidden="true">{{ $name }}</span>
+                    </li>
+                @endforeach
+            </ul>
+        </div>
+    </section>
+    <section aria-labelledby="ross-introduction" class="py-14 sm:py-20">
+        <div class="mx-auto grid max-w-6xl items-center gap-10 px-5 sm:px-8 lg:grid-cols-[3fr_2fr] lg:px-10">
+            <figure class="flex aspect-video flex-col items-center justify-center gap-4 rounded-3xl bg-lichen px-6 text-center ring-1 ring-ink/10">
+                <img src="{{ asset('ross-topping.jpg') }}" alt="Ross Topping, founder of Sitewell" width="96" height="96" class="size-24 rounded-full object-cover" loading="lazy">
+                <div><p class="text-lg font-medium">A quick introduction from Ross</p><p class="mt-2 text-sm text-ink/60">60–90 seconds · Video coming soon</p></div>
+                <figcaption class="max-w-sm text-sm/6 text-ink/60">Meet the person behind Sitewell and see how we could work together.</figcaption>
+            </figure>
+            <div>
+                <h2 id="ross-introduction" class="text-3xl font-medium tracking-tight sm:text-4xl">Hi, I’m Ross.</h2>
+                <p class="mt-5 text-base/7 text-ink/70">I’m a developer in Doncaster, with over 10 years of experience building and managing websites.</p>
+                <p class="mt-4 text-base/7 text-ink/70">I built Sitewell to automate the routine checks and monitoring, so I can spend more time on the improvements that need a person behind them.</p>
+                <p class="mt-4 text-base/7 text-ink/70">Software does the repetitive work. I take responsibility for the service.</p>
             </div>
         </div>
     </section>
-    <section id="how-it-works" class="scroll-mt-8 border-y border-ink/10 py-16 sm:py-20">
-        <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
-            <div class="grid gap-10 lg:grid-cols-2"><h2 class="max-w-[24ch] text-balance font-sans text-4xl font-medium tracking-tight">The website is live.<br>The opportunity is still there.</h2><p class="max-w-[56ch] text-pretty text-base/8 text-ink/70">Clients keep asking about Google, content and getting more from their website. But offering SEO can mean more tools, more analysis and a new delivery problem. Sitewell brings the evidence and workflows together so your agency can build a service around them.</p></div>
-            <ol role="list" class="mt-12 grid gap-10 md:grid-cols-3">
-                @foreach ([['01', 'Agree the client’s priorities', 'Choose suitable websites, confirm access and define what your agency will monitor and deliver.'], ['02', 'Keep finding the useful work', 'Use regular audits, keyword monitoring and connected search data to identify issues and opportunities.'], ['03', 'Review, improve and report', 'Approve the right work, use supported delivery routes and explain what changed in a clear client update.']] as [$number, $heading, $copy])<li class="border-t border-ink/20 pt-6"><p class="font-mono text-base text-garden sm:text-sm">{{ $number }}</p><h3 class="mt-4 text-xl font-medium">{{ $heading }}</h3><p class="mt-3 text-pretty text-base/7 text-ink/70">{{ $copy }}</p></li>@endforeach
+    <section id="how-it-works" class="scroll-mt-8 border-y border-ink/10 py-14 sm:py-20">
+        <div class="mx-auto max-w-6xl px-5 sm:px-8 lg:px-10">
+            <h2 class="text-3xl font-medium tracking-tight sm:text-4xl">Send me the website. I’ll take it from there.</h2>
+            <ol class="mt-10 grid gap-8 md:grid-cols-3">
+                @foreach ([['01', 'Send me your client’s website.', 'I handle onboarding and arrange the access needed.'], ['02', 'We take care of the work.', 'Website health, SEO, content improvements and ongoing reporting.'], ['03', 'You manage the relationship.', 'Set your customer’s price and build a recurring service.']] as [$number, $heading, $copy])
+                    <li class="border-t border-ink/20 pt-5"><p class="text-sm font-medium text-garden">{{ $number }}</p><h3 class="mt-3 text-xl font-medium">{{ $heading }}</h3><p class="mt-3 text-base/7 text-ink/70">{{ $copy }}</p></li>
+                @endforeach
             </ol>
         </div>
     </section>
-    <section class="py-16 sm:py-20">
-        <div class="mx-auto grid max-w-7xl items-center gap-10 px-5 sm:px-8 lg:grid-cols-2 lg:px-10">
-            <div><p class="font-mono text-base uppercase tracking-wide text-garden sm:text-sm">One agency, many websites</p><h2 class="mt-4 max-w-[24ch] text-balance font-sans text-4xl font-medium tracking-tight">Know where your attention is needed.</h2><p class="mt-6 max-w-[48ch] text-pretty text-lg/8 text-ink/70">A client with a new issue. A useful content opportunity. A change waiting for approval. That is the picture an agency needs across its portfolio.</p><p class="mt-5 max-w-[56ch] text-pretty text-base/7 text-ink/65">Sitewell already supports website-specific workspaces and permissions. We’re exploring a dedicated agency overview to bring those priorities together.</p><a href="{{ route('marketing.agencies.show', 'manage-multiple-websites') }}" class="mt-6 inline-block text-base font-medium text-garden underline decoration-garden/30 underline-offset-4 hover:decoration-garden">Explore the portfolio direction <span aria-hidden="true">→</span></a></div>
-            @include('marketing.agencies.preview', ['preview' => 'portfolio'])
+    <section id="available-now" class="scroll-mt-8 py-14 sm:py-20">
+        <div class="mx-auto grid max-w-6xl gap-8 px-5 sm:px-8 lg:grid-cols-[2fr_3fr] lg:px-10">
+            <div><p class="text-sm font-medium text-garden">Fully managed, with me behind it</p><h2 class="mt-4 text-3xl font-medium tracking-tight sm:text-4xl">The work behind your SEO service.</h2></div>
+            <ul class="divide-y divide-ink/10">
+                @foreach ([['Website care', 'Health and SEO audits, practical fixes and ongoing website updates.'], ['Regular content improvements', 'Up to three scheduled content improvements per week, prepared for review. Existing-page optimisation, new articles and landing pages.'], ['Search and competitor monitoring', 'Keyword rankings, Search Console performance and weekly competitor research to guide the next improvements.'], ['Google Business Profile management', 'Profile health checks and recommended changes, with Google posts and customer review replies prepared for approval.'], ['Reporting and support', 'Clear weekly reports, advanced lead handling and a dedicated website and SEO specialist.']] as [$heading, $copy])
+                    <li class="py-5 first:pt-0"><h3 class="text-lg font-medium">{{ $heading }}</h3><p class="mt-2 text-base/7 text-ink/70">{{ $copy }}</p></li>
+                @endforeach
+            </ul>
         </div>
     </section>
-    <section id="available-now" class="scroll-mt-8 border-y border-ink/10 bg-white/50 py-16 sm:py-20">
-        <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
-            <p class="font-mono text-base uppercase tracking-wide text-garden sm:text-sm">The tools behind your service</p><h2 class="mt-4 max-w-[30ch] text-balance font-sans text-4xl font-medium tracking-tight">More than another reporting tool.</h2><p class="mt-5 max-w-[65ch] text-pretty text-base/8 text-ink/70">These capabilities exist in Sitewell today. Availability depends on the website’s plan, configured connections and delivery compatibility. We’ll agree a suitable setup during the beta conversation.</p>
-            <div class="mt-10 grid gap-10 md:grid-cols-2 lg:grid-cols-3">
-                @foreach ([['seo-audits', 'Website audits', 'Keep checking website health and prioritise meaningful issues after launch.'], ['rank-tracking', 'Keyword monitoring', 'Follow agreed search terms and spot movement worth investigating.'], ['google-search-console', 'Search Console insights', 'Understand the queries and pages behind visibility, clicks and opportunities.'], ['google-business-profile', 'Local business care', 'Bring connected profile performance, reviews and updates into the conversation.'], ['automate-seo', 'Reviewed improvements', 'Move from a useful finding to content or page work through supported workflows.'], ['seo-reporting', 'Weekly summaries', 'Bring available performance, issues, opportunities and recorded work into a clear update.']] as [$slug, $heading, $copy])<div class="border-t border-ink/15 pt-5"><h3 class="text-xl font-medium"><a href="{{ route('marketing.agencies.show', $slug) }}" class="hover:text-garden">{{ $heading }} <span aria-hidden="true" class="text-garden">↗</span></a></h3><p class="mt-3 text-pretty text-base/7 text-ink/70">{{ $copy }}</p></div>@endforeach
-            </div>
-            <div class="mt-12 grid gap-6 border-t border-ink/15 pt-8 md:grid-cols-[1fr_2fr]"><h3 class="text-xl font-medium">Agency beta / planned direction</h3><p class="max-w-[68ch] text-pretty text-base/8 text-ink/70">Your own branding, agency-branded reports, a branded client dashboard and potentially custom domains. These are not available features today. We’re using the beta to understand what agencies need before promising a finished white-label programme.</p></div>
+    <section class="bg-lichen py-14 sm:py-20">
+        <div class="mx-auto grid max-w-6xl items-center gap-10 px-5 sm:px-8 lg:grid-cols-2 lg:px-10">
+            <div><h2 class="max-w-[24ch] text-balance text-3xl font-medium tracking-tight sm:text-4xl">A monthly service for clients who already trust you.</h2><p class="mt-5 max-w-lg text-base/7 text-ink/70">You’ve already built the relationship. Ongoing SEO gives you another useful service to offer after the website goes live.</p><p class="mt-4 max-w-lg text-base/7 text-ink/70">You set your client’s price. We agree Sitewell’s fee and the work included. The difference contributes to your margin, before your own costs.</p></div>
+            <div class="border-l-2 border-garden pl-6"><p class="text-2xl font-medium tracking-tight">Your clients. Your pricing.</p><p class="mt-4 max-w-md text-base/7 text-ink/70">Start with one suitable website and build from there. You don’t need to hire an SEO specialist or manage the delivery yourself.</p></div>
         </div>
     </section>
-    <section class="py-16 sm:py-20">
-        <div class="mx-auto grid max-w-7xl items-center gap-10 px-5 sm:px-8 lg:grid-cols-2 lg:px-10">
-            <div><p class="font-mono text-base uppercase tracking-wide text-garden sm:text-sm">A service worth coming back for</p><h2 class="mt-4 max-w-[24ch] text-balance font-sans text-4xl font-medium tracking-tight">Your next opportunity may already be a client.</h2><p class="mt-6 max-w-[48ch] text-pretty text-lg/8 text-ink/70">If you look after 30 websites, you already have 30 relationships. Some of those clients may need a clearer plan for being found, staying useful and improving their website.</p><p class="mt-5 max-w-[56ch] text-pretty text-base/7 text-ink/65">Start with a small pilot. Price the review time, client communication and implementation as well as the tools. Build around real demand and a scope you can deliver consistently.</p><a href="{{ route('marketing.agencies.show', 'add-recurring-revenue') }}" class="mt-6 inline-block text-base font-medium text-garden underline decoration-garden/30 underline-offset-4 hover:decoration-garden">Think through the agency economics <span aria-hidden="true">→</span></a></div>
-            <div class="border-l-2 border-garden pl-8"><p class="max-w-[25ch] text-balance font-sans text-3xl font-medium tracking-tight sm:text-4xl">Your agency remains the name your clients trust.</p><p class="mt-6 max-w-[56ch] text-pretty text-base/8 text-ink/70">Sitewell provides the technology and automation underneath the service. Your team brings the client knowledge, decisions and ongoing relationship.</p><a href="{{ route('marketing.agencies.show', 'white-label-seo') }}" class="mt-6 inline-block text-base font-medium text-garden underline decoration-garden/30 underline-offset-4 hover:decoration-garden">Explore the white-label model <span aria-hidden="true">→</span></a></div>
-        </div>
-    </section>
-    <section class="border-t border-ink/10 py-16 sm:py-20">
-        <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
-            <h2 class="max-w-[30ch] text-balance font-sans text-4xl font-medium tracking-tight">Find the right starting point for your agency.</h2><p class="mt-5 max-w-[65ch] text-pretty text-base/8 text-ink/70">For freelance designers, development teams, WordPress specialists, digital agencies, design studios, maintenance providers and hosting companies. Start with the part of your service you want to improve.</p>
-            <div class="mt-10 grid gap-10 md:grid-cols-2">
-                @foreach (collect($pages)->groupBy('group', preserveKeys: true) as $group => $groupPages)<nav aria-label="{{ $group }}" class="border-t border-ink/15 pt-5"><h3 class="text-xl font-medium">{{ $group }}</h3><ul role="list" class="mt-5 grid gap-3">@foreach ($groupPages as $slug => $resource)<li><a href="{{ route('marketing.agencies.show', $slug) }}" class="text-base text-ink/75 underline decoration-ink/20 underline-offset-4 hover:text-garden">{{ $resource['label'] }} <span aria-hidden="true">→</span></a></li>@endforeach</ul></nav>@endforeach
-            </div>
-        </div>
-    </section>
-    <section class="border-t border-ink/10 py-16 sm:py-20">
-        <div class="mx-auto grid max-w-7xl gap-10 px-5 sm:px-8 lg:grid-cols-2 lg:px-10">
-            <h2 class="max-w-[24ch] text-balance font-sans text-4xl font-medium tracking-tight">Before you join.</h2>
+    <section class="py-14 sm:py-20">
+        <div class="mx-auto grid max-w-6xl gap-8 px-5 sm:px-8 lg:grid-cols-[2fr_3fr] lg:px-10">
+            <h2 class="text-3xl font-medium tracking-tight sm:text-4xl">A few useful answers.</h2>
             <div class="divide-y divide-ink/15 border-y border-ink/15">
-                @foreach ([['Is the agency offering ready to buy off the shelf?', 'We are validating the agency offering through a beta. The underlying Sitewell tools exist, while agency packaging, pricing and white-label features are being shaped with participating agencies.'], ['Do we keep the client relationship?', 'That is the proposition. Your agency owns the relationship, scope and client conversation. We will agree access, communication and delivery responsibilities before a pilot.'], ['Can we use our own logo and domain?', 'Not yet. Agency branding, branded reports, client dashboards and custom domains are planned possibilities, not live self-service options.'], ['Does Sitewell automate all SEO work?', 'No. It automates repeated checks and supports analysis and improvement workflows. Strategy, accuracy, approvals and client priorities still need people.'], ['Can you work with any website?', 'Monitoring and implementation have different requirements. We will assess representative websites, access and supported delivery routes before agreeing your beta scope.'], ['Do you guarantee rankings or recurring income?', 'No. Search performance and commercial results depend on many factors. Start with a clear scope and measure the value and cost of delivery.']] as [$question, $answer])<details class="py-5"><summary class="cursor-pointer text-base font-medium focus-visible:outline-offset-4">{{ $question }}</summary><p class="mt-4 text-pretty text-base/7 text-ink/70">{{ $answer }}</p></details>@endforeach
+                @foreach ([['Do I need SEO experience?', 'No. You bring your knowledge of the client. I handle the technical work, priorities and ongoing delivery.'], ['Can you look after my existing clients?', 'Yes. Send me their website and I’ll handle onboarding, including checking the setup and arranging the access needed.'], ['Who communicates with my customers?', 'You do. You keep the client relationship, pricing and customer communication. I support you behind the scenes.'], ['Do you make the website changes?', 'Yes. I manage the agreed website and content improvements. Automation handles supported workflows, and I help where the work needs a person. Content improvements are prepared for review before publication.'], ['Is everything white-labelled?', 'Sitewell dashboards and reporting currently use Sitewell branding. Fully agency-branded dashboards and custom domains aren’t included. You still keep your client relationship and set your own pricing.'], ['What does it cost, and can I start with one website?', 'Yes, you can start with one website. Book a quick chat and we’ll agree the agency price, work included and any commitment before you start.']] as [$question, $answer])
+                    <details class="py-5"><summary class="cursor-pointer font-medium focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-garden">{{ $question }}</summary><p class="mt-4 text-base/7 text-ink/70">{{ $answer }}</p></details>
+                @endforeach
             </div>
         </div>
     </section>
-    @include('marketing.agencies.form')
+    <section id="join-beta" class="scroll-mt-8 border-t border-ink/10 py-14 sm:py-20">
+        <div class="mx-auto max-w-6xl px-5 sm:px-8 lg:px-10">
+            <h2 class="text-balance text-3xl font-medium tracking-tight sm:text-4xl">Fancy offering SEO to your clients?</h2>
+            <p class="mt-5 max-w-xl text-lg/8 text-ink/70">Let’s have a quick chat about your agency, your clients and how Sitewell could work for you.</p>
+            <a data-audit-book-call href="{{ route('marketing.ppc.book') }}" class="mt-7 inline-flex min-h-12 items-center rounded-full bg-garden px-6 py-3 font-medium text-white hover:bg-moss focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-garden">Book a quick chat <span aria-hidden="true" class="ml-3">↗</span></a>
+            <details class="mt-10 border-t border-ink/10 pt-5">
+                <summary class="cursor-pointer text-sm text-ink/60 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-garden">More about SEO for agencies</summary>
+                <nav aria-label="Agency resources" class="mt-5"><ul class="grid gap-3 sm:grid-cols-2">@foreach ($pages as $slug => $resource)<li><a href="{{ route('marketing.agencies.show', $slug) }}" class="text-sm text-ink/70 underline decoration-ink/20 underline-offset-4 hover:text-garden">{{ $resource['label'] }}</a></li>@endforeach</ul></nav>
+            </details>
+        </div>
+    </section>
+    @if (old('agency') !== null || $errors->has('agency') || session('agency_status'))
+        @include('marketing.agencies.form', ['enquirySectionId' => 'agency-enquiry'])
+    @endif
+    @if ($turnstileEnabled)
+        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    @endif
 @endsection

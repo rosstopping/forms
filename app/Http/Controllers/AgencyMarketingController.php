@@ -5,15 +5,23 @@ namespace App\Http\Controllers;
 use App\Actions\StoreSitewellContactLead;
 use App\Http\Requests\StoreAgencyBetaRequest;
 use App\Mail\OnboardingEnquiryReceived;
+use App\Services\MarketingTurnstileVerifier;
+use App\Support\MarketingJourney;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
 class AgencyMarketingController extends Controller
 {
-    public function index(): View
+    public function index(Request $request, MarketingTurnstileVerifier $turnstile, MarketingJourney $journey): View
     {
-        return view('marketing.agencies.index', ['pages' => config('agencies.pages')]);
+        return view('marketing.agencies.index', [
+            'pages' => config('agencies.pages'),
+            'turnstileEnabled' => $turnstile->enabled(),
+            'turnstileSiteKey' => config('services.turnstile.marketing.site_key'),
+            'attribution' => $journey->capture($request),
+        ]);
     }
 
     public function show(string $slug): View
