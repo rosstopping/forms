@@ -44,6 +44,15 @@ return [
             'after_commit' => false,
         ],
 
+        'amp-content' => [
+            'driver' => 'database',
+            'connection' => env('DB_QUEUE_CONNECTION'),
+            'table' => env('DB_QUEUE_TABLE', 'jobs'),
+            'queue' => 'amp-content',
+            'retry_after' => (int) env('AMP_CONTENT_TIMEOUT_SECONDS', 3600) + 900,
+            'after_commit' => false,
+        ],
+
         'beanstalkd' => [
             'driver' => 'beanstalkd',
             'host' => env('BEANSTALKD_QUEUE_HOST', 'localhost'),

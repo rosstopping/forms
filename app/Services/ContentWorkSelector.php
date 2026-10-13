@@ -27,7 +27,7 @@ class ContentWorkSelector
         $protectedKeys = app(SeoImpactTracker::class)->protectedKeys($website);
         $openKeys = $history->filter(fn (ContentGeneration $previous): bool => $previous->status === ContentGeneration::STATUS_PULL_REQUEST_OPEN
             && $previous->pull_request_state !== 'closed')->flatMap(fn (ContentGeneration $previous): array => $this->generationKeys($previous))->unique();
-        $recentKeys = $history->filter(fn (ContentGeneration $previous): bool => ($previous->merged_at ?? ($previous->copilot_task_id ? $previous->started_at : null))?->greaterThan(now()->subDays(14)) === true)
+        $recentKeys = $history->filter(fn (ContentGeneration $previous): bool => ($previous->merged_at ?? ($previous->wasAcceptedByAutomation() ? $previous->started_at : null))?->greaterThan(now()->subDays(14)) === true)
             ->flatMap(fn (ContentGeneration $previous): array => $this->generationKeys($previous))->unique();
         $manualRequests = $website->contentRequests()->whereNotNull('manual_started_at')
             ->where(fn ($query) => $query->whereNull('manual_completed_at')->orWhere('manual_completed_at', '>', now()->subDays(14)))
@@ -139,7 +139,7 @@ class ContentWorkSelector
                 }
                 $blocked = $blocked->merge($keys->intersect($this->generationKeys($previous)));
                 $review = $review || ($previous->status === ContentGeneration::STATUS_PULL_REQUEST_OPEN && $previous->pull_request_state !== 'closed');
-                $changed = $previous->merged_at ?? ($previous->copilot_task_id ? $previous->started_at : null);
+                $changed = $previous->merged_at ?? ($previous->wasAcceptedByAutomation() ? $previous->started_at : null);
                 if ($changed && $changed->greaterThan(now()->subDays(14))) {
                     $date = $changed->copy()->addDays(14);
                     $until = ! $until || $date->greaterThan($until) ? $date : $until;

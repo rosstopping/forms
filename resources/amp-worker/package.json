@@ -1,0 +1,16 @@
+{
+  "name": "sitewell-amp-worker",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "start": "node src/cli.mjs"
+  },
+  "dependencies": {
+    "@ampcode/sdk": "0.1.0-20260918210405-g81edbf0"
+  }
+}

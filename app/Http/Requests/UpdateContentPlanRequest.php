@@ -2,8 +2,11 @@
 
 namespace App\Http\Requests;
 
+use App\Models\ContentPlan;
 use App\Models\Website;
+use App\Services\AmpContentRunner;
 use App\Services\ContentSchedule;
+use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -37,6 +40,12 @@ class UpdateContentPlanRequest extends FormRequest
             'discovery_enabled' => ['sometimes', 'boolean'],
             'content_mode' => ['sometimes', 'required', Rule::in(['balanced', 'new_only', 'existing_only'])],
             'enabled' => ['required', 'boolean'],
+            'content_engine' => ['sometimes', 'required', Rule::in([ContentPlan::ENGINE_COPILOT, ContentPlan::ENGINE_AMP]),
+                function (string $attribute, mixed $value, Closure $fail): void {
+                    if ($value === ContentPlan::ENGINE_AMP && $this->user()?->isAdmin() && ! AmpContentRunner::available()) {
+                        $fail('Amp content execution is not enabled on this server.');
+                    }
+                }],
             'competitor_research_mode' => ['sometimes', 'required', Rule::in(['manual', 'research', 'drafts'])],
             'weekday' => ['required', 'integer', 'between:0,6'],
             'additional_weekdays' => ['sometimes', 'array', 'max:'.max(0, app(ContentSchedule::class)->weeklyLimit($this->route('website')) - 1)],

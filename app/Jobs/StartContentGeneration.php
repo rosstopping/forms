@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\ContentGeneration;
 use App\Models\ContentPlan;
+use App\Services\AmpContentRunner;
 use App\Services\BacklinkContentContext;
 use App\Services\CompetitorContentContext;
 use App\Services\ContentBudget;
@@ -57,7 +58,11 @@ class StartContentGeneration implements ShouldBeEncrypted, ShouldBeUnique, Shoul
 
                 return false;
             }
-            $this->generation->update(['status' => ContentGeneration::STATUS_RUNNING, 'started_at' => now()]);
+            $this->generation->update([
+                'status' => ContentGeneration::STATUS_RUNNING,
+                'started_at' => now(),
+                'engine' => $this->generation->engine ?? $plan->content_engine ?? ContentPlan::ENGINE_COPILOT,
+            ]);
 
             return true;
         });
@@ -69,7 +74,12 @@ class StartContentGeneration implements ShouldBeEncrypted, ShouldBeUnique, Shoul
         $connection = $this->generation->plan->website->searchConsoleConnection;
         $authorization = $this->generation->requester?->githubAuthorization;
 
-        if (! $authorization) {
+        if ($this->generation->usesAmp() && ! AmpContentRunner::available()) {
+            $this->skipGeneration('Amp is selected for this website but Amp content execution is not enabled on this server. Copilot is not used as a fallback.');
+
+            return;
+        }
+        if (! $authorization && ! $this->generation->usesAmp()) {
             $this->failGeneration('GitHub automation must remain authorized.');
 
             return;
@@ -172,13 +182,23 @@ class StartContentGeneration implements ShouldBeEncrypted, ShouldBeUnique, Shoul
         }
         app(SeoImpactTracker::class)->forGeneration($this->generation);
         $prompt = $prompts->generate($this->generation);
-        $this->generation->update(['status' => ContentGeneration::STATUS_RUNNING, 'prompt' => $prompt, 'started_at' => now(), 'error' => null]);
-        $task = $copilot->startTask($authorization, $this->generation->repository, $prompt);
-        $this->generation->update([
-            'copilot_task_id' => $task['id'],
-            'copilot_task_url' => $task['html_url'] ?? null,
-            'copilot_task_state' => $task['state'] ?? 'queued',
-        ]);
+        if ($this->generation->usesAmp()) {
+            $amp = app(AmpContentRunner::class);
+            $this->generation->update([
+                'prompt' => $amp->prompt($this->generation, $prompt),
+                'head_branch' => $amp->branch($this->generation),
+                'started_at' => now(),
+                'error' => null,
+            ]);
+        } else {
+            $this->generation->update(['status' => ContentGeneration::STATUS_RUNNING, 'prompt' => $prompt, 'started_at' => now(), 'error' => null]);
+            $task = $copilot->startTask($authorization, $this->generation->repository, $prompt);
+            $this->generation->update([
+                'copilot_task_id' => $task['id'],
+                'copilot_task_url' => $task['html_url'] ?? null,
+                'copilot_task_state' => $task['state'] ?? 'queued',
+            ]);
+        }
         $this->generation->targetKeyword?->update(['last_selected_at' => now()]);
         $this->generation->plan->website->contentRequests()
             ->whereKey($contentRequests->modelKeys())
@@ -187,7 +207,11 @@ class StartContentGeneration implements ShouldBeEncrypted, ShouldBeUnique, Shoul
                 'content_generation_id' => $this->generation->id,
                 'picked_up_at' => now(),
             ]);
-        SyncContentGeneration::dispatch($this->generation)->delay(now()->addMinute());
+        if ($this->generation->usesAmp()) {
+            RunAmpContentGeneration::dispatch($this->generation);
+        } else {
+            SyncContentGeneration::dispatch($this->generation)->delay(now()->addMinute());
+        }
     }
 
     protected function skipGeneration(string $reason): void
