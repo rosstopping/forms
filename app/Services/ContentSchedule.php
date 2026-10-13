@@ -35,7 +35,8 @@ class ContentSchedule
             ! $plan->enabled => 'Scheduled content is switched off.',
             $this->weeklyLimit($plan->website) === 0 => 'Scheduled content requires an active Growth or Complete website subscription.',
             ! $plan->website->repository => 'Connect a repository to enable scheduled content.',
-            ! $plan->creator?->githubAuthorization => 'Ask the Sitewell team to connect content automation.',
+            $plan->content_engine === ContentPlan::ENGINE_AMP && ! AmpContentRunner::available() => 'Amp is selected for this website but is not enabled on this server.',
+            ! $plan->creator || ($plan->content_engine !== ContentPlan::ENGINE_AMP && ! $plan->creator->githubAuthorization) => 'Ask the Sitewell team to connect content automation.',
             ! $plan->website->isManageableBy($plan->creator) => 'Ask the Sitewell team to reconnect content automation.',
             default => null,
         };

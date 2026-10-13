@@ -32,6 +32,19 @@
             @error('enabled')<p class="mt-2 text-base text-rose-700 sm:text-sm" role="alert">{{ $message }}</p>@enderror
         </div>
 
+        @if (Auth::user()?->isAdmin())
+            @php($ampAvailable = \App\Services\AmpContentRunner::available())
+            <div class="ui-well p-4 sm:p-5">
+                <label for="content-engine" class="ui-label block">Content engine</label>
+                <select id="content-engine" name="content_engine" class="ui-input mt-2 w-full" @if ($errors->has('content_engine')) aria-invalid="true" @endif>
+                    <option value="copilot" @selected(old('content_engine', $contentPlan?->content_engine ?? 'copilot') === 'copilot')>GitHub Copilot</option>
+                    <option value="amp" @selected(old('content_engine', $contentPlan?->content_engine) === 'amp') @disabled(! $ampAvailable && ($contentPlan?->content_engine ?? 'copilot') !== 'amp')>Amp{{ $ampAvailable ? '' : ' (not enabled on this server)' }}</option>
+                </select>
+                <p class="mt-2 text-sm text-slate-500">Staff only. Applies to new runs; runs already started keep their engine. Amp works on this repository’s Amp project and opens a draft pull request for review in GitHub. A failed run never switches engine.</p>
+                @error('content_engine')<p class="mt-2 text-sm text-rose-700" role="alert">{{ $message }}</p>@enderror
+            </div>
+        @endif
+
         <div class="ui-well p-4 sm:p-5">
             <label for="content-mode" class="ui-label block">Content strategy</label>
             <select id="content-mode" name="content_mode" class="ui-input mt-2 w-full">

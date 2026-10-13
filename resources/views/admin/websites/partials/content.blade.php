@@ -12,7 +12,7 @@
     $currentContentSection = is_string($requestedContentSection) && array_key_exists($requestedContentSection, $contentSections) ? $requestedContentSection : 'queue';
     if ($errors->has('instructions')) {
         $currentContentSection = 'queue';
-    } elseif ($canManageWebsite && collect(['trend_research_enabled', 'content_mode', 'monthly_article_limit', 'monthly_optimisation_limit', 'monthly_copilot_limit', 'discovery_enabled', 'enabled', 'weekday', 'hour', 'timezone', 'audience', 'guidance', 'additional_weekdays', 'additional_weekdays.*'])->contains(fn ($field) => $errors->has($field))) {
+    } elseif ($canManageWebsite && collect(['trend_research_enabled', 'content_mode', 'monthly_article_limit', 'monthly_optimisation_limit', 'monthly_copilot_limit', 'content_engine', 'discovery_enabled', 'enabled', 'weekday', 'hour', 'timezone', 'audience', 'guidance', 'additional_weekdays', 'additional_weekdays.*'])->contains(fn ($field) => $errors->has($field))) {
         $currentContentSection = 'automation';
     }
     $canSubmitContentRequest = $website->repository || (config('forms.pixel_ui_enabled') && $website->pixel_enabled);

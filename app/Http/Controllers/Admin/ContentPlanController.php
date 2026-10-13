@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateContentPlanRequest;
+use App\Jobs\RunAmpContentGeneration;
 use App\Jobs\StartContentGeneration;
 use App\Jobs\SyncContentGeneration;
 use App\Models\ContentGeneration;
 use App\Models\ContentPlan;
 use App\Models\Website;
+use App\Services\AmpContentRunner;
 use App\Services\ContentSchedule;
 use App\Services\CopilotAgentClient;
 use App\Services\GithubAppClient;
@@ -24,6 +26,9 @@ class ContentPlanController extends Controller
     public function update(UpdateContentPlanRequest $request, Website $website): RedirectResponse
     {
         $data = $request->validated();
+        if (! $request->user()->isAdmin()) {
+            unset($data['content_engine']);
+        }
         DB::transaction(function () use ($request, $website, $data): void {
             Website::query()->lockForUpdate()->findOrFail($website->id);
             $plan = $website->contentPlan()->lockForUpdate()->first() ?? $website->contentPlan()->make();
@@ -99,11 +104,21 @@ class ContentPlanController extends Controller
             if ($plan->generations()->whereKeyNot($generation->id)->whereIn('status', [ContentGeneration::STATUS_PENDING, ContentGeneration::STATUS_RUNNING])->exists()) {
                 return 'Another content run is queued or running. Wait for it to finish before retrying.';
             }
-            if (! $generation->requester?->githubAuthorization || ! $website->isManageableBy($generation->requester)) {
+            if ((! $generation->usesAmp() && ! $generation->requester?->githubAuthorization) || ! $website->isManageableBy($generation->requester)) {
                 return 'Reconnect GitHub for the original automation user before retrying this run.';
             }
             if (! $website->repository || $website->repository->id !== $generation->website_repository_id) {
                 return 'The connected repository has changed. This run cannot be retried against a different repository.';
+            }
+
+            if ($generation->usesAmp() && $generation->head_branch) {
+                if (! AmpContentRunner::available()) {
+                    return 'Amp content execution is not enabled on this server. Copilot is not used as a fallback.';
+                }
+                $generation->update(['status' => ContentGeneration::STATUS_RUNNING, 'completed_at' => null, 'error' => null]);
+                RunAmpContentGeneration::dispatch($generation)->afterCommit();
+
+                return null;
             }
 
             if ($generation->copilot_task_id) {
@@ -179,12 +194,15 @@ class ContentPlanController extends Controller
 
     protected function ensureReady(Request $request, Website $website): void
     {
-        $website->loadMissing('repository');
+        $website->loadMissing(['repository', 'contentPlan']);
         $errors = [];
         if (! $website->repository) {
             $errors['enabled'] = 'Connect a GitHub repository first.';
         }
-        if (! $request->user()?->githubAuthorization) {
+        $usesAmp = $website->contentPlan?->content_engine === ContentPlan::ENGINE_AMP;
+        if ($usesAmp && ! AmpContentRunner::available()) {
+            $errors['enabled'] = 'Amp is selected for this website but is not enabled on this server.';
+        } elseif (! $usesAmp && ! $request->user()?->githubAuthorization) {
             $errors['enabled'] = 'Authorize the GitHub automation first.';
         }
         if ($errors) {
