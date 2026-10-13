@@ -1,0 +1,145 @@
+#!/usr/bin/env bash
+# Amp orb setup: prepare the Sitewell (Laravel) toolchain and dependencies.
+# Must be non-interactive and idempotent; a warm run should take seconds.
+
+set -euo pipefail
+
+step() { echo "[$(date '+%H:%M:%S')] $*"; }
+
+SUDO=""
+if [ "$(id -u)" -ne 0 ]; then SUDO="sudo"; fi
+
+# ---------------------------------------------------------------------------
+# System packages: PHP 8.4 (packages.sury.org) and Chrome headless runtime deps
+# ---------------------------------------------------------------------------
+if ! command -v php8.4 > /dev/null 2>&1; then
+    step "Installing PHP 8.4 from packages.sury.org"
+    export DEBIAN_FRONTEND=noninteractive
+    $SUDO apt-get update -qq
+    $SUDO apt-get install -y -qq --no-install-recommends ca-certificates curl gnupg2
+    $SUDO curl -sSLo /usr/share/keyrings/sury-php.gpg https://packages.sury.org/php/apt.gpg
+    echo "deb [signed-by=/usr/share/keyrings/sury-php.gpg] https://packages.sury.org/php/ bookworm main" \
+        | $SUDO tee /etc/apt/sources.list.d/sury-php.list > /dev/null
+    $SUDO apt-get update -qq
+    $SUDO apt-get install -y -qq --no-install-recommends \
+        php8.4-cli php8.4-sqlite3 php8.4-mbstring php8.4-xml php8.4-curl \
+        php8.4-zip php8.4-intl php8.4-bcmath php8.4-gd
+    step "Installed $(php8.4 --version | head -n1)"
+else
+    step "PHP 8.4 already installed: $(php8.4 --version | head -n1)"
+fi
+
+# Runtime libraries for Puppeteer's chrome-headless-shell (Browsershot screenshots).
+CHROME_APT_PKGS=(
+    fonts-liberation libasound2 libatk-bridge2.0-0 libatk1.0-0 libcairo2
+    libcups2 libdbus-1-3 libgbm1 libglib2.0-0 libnspr4 libnss3
+    libpango-1.0-0 libx11-6 libxcb1 libxcomposite1 libxdamage1 libxext6
+    libxfixes3 libxkbcommon0 libxrandr2 xdg-utils
+)
+if ! dpkg -s libnss3 > /dev/null 2>&1; then
+    step "Installing Chrome headless runtime libraries"
+    export DEBIAN_FRONTEND=noninteractive
+    $SUDO apt-get update -qq
+    $SUDO apt-get install -y -qq --no-install-recommends "${CHROME_APT_PKGS[@]}"
+else
+    step "Chrome runtime libraries already installed"
+fi
+
+# ---------------------------------------------------------------------------
+# Composer (installed against PHP 8.4; the Debian composer package would pull PHP 8.2)
+# ---------------------------------------------------------------------------
+if ! command -v composer > /dev/null 2>&1; then
+    step "Installing Composer"
+    curl -sS https://getcomposer.org/installer | php8.4 -- \
+        --install-dir=/usr/local/bin --filename=composer --quiet
+fi
+step "Composer $(composer --version 2> /dev/null | head -n1)"
+
+# ---------------------------------------------------------------------------
+# Composer dependencies (skip when vendor matches composer.lock)
+# ---------------------------------------------------------------------------
+if [ ! -f vendor/autoload.php ] || [ composer.lock -nt vendor/autoload.php ]; then
+    step "Running composer install"
+    composer install --no-interaction --prefer-dist --no-progress
+else
+    step "Composer dependencies already installed"
+fi
+
+# ---------------------------------------------------------------------------
+# Environment file and application key
+# ---------------------------------------------------------------------------
+if [ ! -f .env ]; then
+    step "Creating .env from .env.example"
+    cp -- .env.example .env
+fi
+if grep -q '^APP_KEY=$' .env || ! grep -q '^APP_KEY=' .env; then
+    step "Generating APP_KEY"
+    php artisan key:generate --force > /dev/null
+fi
+
+# ---------------------------------------------------------------------------
+# SQLite database (app default; tests use in-memory SQLite)
+# ---------------------------------------------------------------------------
+if [ ! -f database/database.sqlite ]; then
+    step "Creating database/database.sqlite"
+    touch database/database.sqlite
+fi
+step "Running migrations"
+php artisan migrate --graceful > /dev/null
+
+# ---------------------------------------------------------------------------
+# npm dependencies (.npmrc sets ignore-scripts=true, so Puppeteer's browser is
+# deliberately NOT downloaded here; see the explicit install below)
+# ---------------------------------------------------------------------------
+if [ ! -d node_modules ] || [ package-lock.json -nt node_modules/.package-lock.json ]; then
+    step "Running npm ci"
+    npm ci --no-audit --no-fund
+else
+    step "npm dependencies already installed"
+fi
+
+# ---------------------------------------------------------------------------
+# chrome-headless-shell for spatie/browsershot (MarketingAuditScreenshot).
+# Browsershot launches with headless: shell and needs this binary, and .npmrc
+# ignore-scripts=true means no postinstall downloads it.
+# ---------------------------------------------------------------------------
+PUPPETEER_BROWSER_DIR="$HOME/.cache/puppeteer/chrome-headless-shell"
+if [ ! -d "$PUPPETEER_BROWSER_DIR" ]; then
+    step "Installing chrome-headless-shell via puppeteer"
+    npx puppeteer browsers install chrome-headless-shell
+fi
+CHROME_BIN="$(find "$PUPPETEER_BROWSER_DIR" -type f -name chrome-headless-shell 2> /dev/null | head -n1 || true)"
+if [ -n "$CHROME_BIN" ] && ! grep -q '^MARKETING_SCREENSHOT_CHROME_PATH=.\+' .env; then
+    step "Pointing MARKETING_SCREENSHOT_CHROME_PATH at $CHROME_BIN"
+    sed -i "s|^MARKETING_SCREENSHOT_CHROME_PATH=.*|MARKETING_SCREENSHOT_CHROME_PATH=$CHROME_BIN|" .env
+fi
+
+# ---------------------------------------------------------------------------
+# Vite production build (public/build is gitignored; rebuild when missing)
+# ---------------------------------------------------------------------------
+if [ ! -f public/build/manifest.json ]; then
+    step "Building frontend assets"
+    npm run build
+else
+    step "Frontend assets already built"
+fi
+
+# ---------------------------------------------------------------------------
+# Orb-specific agent notes
+# ---------------------------------------------------------------------------
+NOTES_MARKER="# sitewell orb setup notes"
+if ! grep -Fqx "$NOTES_MARKER" "$HOME/.config/amp/AGENTS.md" 2> /dev/null; then
+    step "Appending orb notes to ~/.config/amp/AGENTS.md"
+    mkdir -p "$HOME/.config/amp"
+    {
+        echo ""
+        echo "$NOTES_MARKER"
+        echo "This orb was prepared by .agents/setup:"
+        echo "- PHP 8.4 (sury), Composer, SQLite at database/database.sqlite (migrated)."
+        echo "- Frontend assets are prebuilt in public/build; run 'npm run dev' for HMR."
+        echo "- Browsershot screenshots use chrome-headless-shell via MARKETING_SCREENSHOT_CHROME_PATH in .env."
+        echo "- Run the test suite with 'php artisan test --compact'."
+    } >> "$HOME/.config/amp/AGENTS.md"
+fi
+
+step "Setup complete"

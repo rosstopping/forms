@@ -1,0 +1,12 @@
+services:
+  web:
+    # Setup and this service are Debian-only (apt, packages.sury.org).
+    platforms: [linux]
+    # Laravel dev server per https://ampcode.com/docs/orbs/portals: bind APP_URL
+    # to the public portal origin at runtime, never hardcode it.
+    command: >
+      php artisan optimize:clear &&
+      APP_URL="$PUBLIC_URL" ASSET_URL="$PUBLIC_URL"
+      php artisan serve --host=0.0.0.0 --port="$PORT"
+    health: /
+    portal: true

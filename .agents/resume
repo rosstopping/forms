@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Amp orb resume: fast, idempotent repair after activation or wake.
+# Must finish well within Amp's 10-second window; no dependency installs.
+
+set -euo pipefail
+
+# Repair the environment file if a restore dropped it (idempotent).
+if [ ! -f .env ] && [ -f .env.example ]; then
+    cp -- .env.example .env
+    php artisan key:generate --force > /dev/null
+fi
+
+# Repair the SQLite database if a restore dropped it (migrate is safe to rerun).
+if [ -f .env ] && [ ! -f database/database.sqlite ]; then
+    touch database/database.sqlite
+    php artisan migrate --graceful > /dev/null
+fi
