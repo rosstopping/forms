@@ -10,6 +10,8 @@ use App\Models\GithubUserAuthorization;
 use App\Models\User;
 use App\Models\Website;
 use App\Models\WebsiteRepository;
+use App\Services\AmpContentRunner;
+use App\Services\ContentBudget;
 use App\Services\ContentSchedule;
 use App\Services\CopilotAgentClient;
 use App\Services\GithubAppClient;
@@ -113,6 +115,7 @@ test('an Amp website runs through normal selection, never calls Copilot and queu
         ->and($generation->prompt)->toContain('Write a guide to villas in Tenerife.')
         ->and($generation->prompt)->toContain('belongs only to the GitHub repository rosstopping/digizu')
         ->and($generation->prompt)->toContain('gh pr create --repo rosstopping/digizu --base main --head sitewell/content-'.$generation->id.' --draft')
+        ->and($generation->prompt)->toContain("\n".AmpContentRunner::NO_ELIGIBLE_WORK."\n")
         ->and($request->fresh()->content_generation_id)->toBe($generation->id)
         ->and($request->fresh()->picked_up_at)->not->toBeNull();
     Queue::assertPushed(RunAmpContentGeneration::class, fn (RunAmpContentGeneration $job): bool => $job->generation->is($generation)
@@ -212,6 +215,36 @@ test('an Amp failure without a pull request fails the run with Amp\'s reason', f
         ->and($generation->fresh()->error)->toContain('No accessible Amp project matches')
         ->and($generation->fresh()->agent_thread_id)->toBe('T-0199aa11-2222-7333-8444-555566667777');
 });
+
+test('only an explicit no-eligible-work reply skips the run and returns its requests to the queue', function (string $reply, bool $skipped): void {
+    Mail::fake();
+    fakeGithubPullRequests();
+    $generation = runningAmpGeneration(['work_units' => ['articles' => 0, 'optimisations' => 1], 'budget_reserved_at' => now()]);
+    $request = ContentRequest::factory()->for($this->website)->create(['created_by' => $this->admin->id, 'content_generation_id' => $generation->id, 'picked_up_at' => now()]);
+    fakeAmpWorker(fn (): array => ['status' => 'completed', 'result' => $reply]);
+
+    app()->call([new RunAmpContentGeneration($generation), 'handle']);
+
+    $generation->refresh();
+    if ($skipped) {
+        expect($generation->status)->toBe(ContentGeneration::STATUS_SKIPPED)
+            ->and($generation->skip_reason)->toContain('the FAQ page is inside its 14-day cooldown until 26 Oct')
+            ->and($generation->skip_reason)->not->toContain('SITEWELL_RESULT')
+            ->and($generation->wasAcceptedByAutomation())->toBeFalse()
+            ->and($request->fresh()->picked_up_at)->toBeNull()
+            ->and($request->fresh()->content_generation_id)->toBeNull()
+            ->and(app(ContentBudget::class)->usage($this->plan)['copilot'])->toBe(0);
+    } else {
+        expect($generation->status)->toBe(ContentGeneration::STATUS_FAILED)
+            ->and($request->fresh()->picked_up_at)->not->toBeNull()
+            ->and($request->fresh()->content_generation_id)->toBe($generation->id);
+    }
+    Mail::assertNothingSent();
+})->with([
+    'explicit marker' => ["I haven't opened a pull request: the FAQ page is inside its 14-day cooldown until 26 Oct.\n\nSITEWELL_RESULT: NO_ELIGIBLE_WORK\n", true],
+    'no marker' => ["I couldn't push the branch, so there is no pull request.", false],
+    'marker not on the final line' => ["SITEWELL_RESULT: NO_ELIGIBLE_WORK\nActually I tried to push but gh failed.", false],
+]);
 
 test('a run whose Amp thread already started only rechecks GitHub and never starts a second Amp run', function (bool $pullRequestExists): void {
     fakeGithubPullRequests();
