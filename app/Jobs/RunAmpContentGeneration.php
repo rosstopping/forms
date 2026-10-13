@@ -12,6 +12,7 @@ use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Throwable;
 
 /**
@@ -66,14 +67,20 @@ class RunAmpContentGeneration implements ShouldBeEncrypted, ShouldBeUnique, Shou
             $pullRequest = $this->existingPullRequest($github);
             if ($pullRequest === null && $this->generation->agent_thread_id === null) {
                 $runError = null;
+                $reply = '';
                 try {
-                    $runner->run($this->generation);
+                    $reply = $runner->run($this->generation);
                 } catch (DomainException $exception) {
                     $runError = $exception;
                 }
                 $pullRequest = $this->existingPullRequest($github);
                 if ($pullRequest === null && $runError !== null) {
                     throw $runError;
+                }
+                if ($pullRequest === null && ($reason = $runner->noEligibleWorkReason($reply)) !== null) {
+                    $this->skipAndRequeue($reason);
+
+                    return;
                 }
             }
             if ($pullRequest === null) {
@@ -133,6 +140,22 @@ class RunAmpContentGeneration implements ShouldBeEncrypted, ShouldBeUnique, Shou
         }
 
         return $pullRequest;
+    }
+
+    /**
+     * Amp deliberately delivered nothing, so return the run's requests to the queue and release its budget.
+     */
+    protected function skipAndRequeue(string $reason): void
+    {
+        DB::transaction(function () use ($reason): void {
+            $this->generation->contentRequests()->update(['content_generation_id' => null, 'picked_up_at' => null]);
+            $this->generation->update([
+                'status' => ContentGeneration::STATUS_SKIPPED,
+                'skip_reason' => 'Amp found no eligible work; queued requests were returned to the queue. '.$reason,
+                'error' => null,
+                'completed_at' => now(),
+            ]);
+        });
     }
 
     protected function failGeneration(string $message): void

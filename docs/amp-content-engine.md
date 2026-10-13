@@ -29,6 +29,12 @@ StartContentGeneration ── selection, budgets, prompt (unchanged)
 - Retry rules for a failed Amp run:
   - If no Amp thread was recorded, Amp never started, so retrying starts a new Amp run.
   - Once a thread exists, retrying only checks GitHub for the run's pull request. It never starts a second paid run on the same branch.
+- If Amp decides nothing is eligible, for example because a page is in its cooldown after a change made outside Sitewell, it ends its reply with `SITEWELL_RESULT: NO_ELIGIBLE_WORK` and opens no PR. Sitewell then:
+  - marks the run **skipped**, using Amp's explanation as the reason;
+  - returns the run's requests to the queue;
+  - releases the run's budget reservation and cooldown.
+
+  Any other finish without a PR is marked **failed** and keeps the requests, because Sitewell can't tell whether work was partly delivered.
 - The monthly "Copilot tasks" limit counts Amp runs too, because both count as automation task starts.
 
 ## Deployment prerequisites

@@ -18,6 +18,8 @@ use Throwable;
  */
 class AmpContentRunner
 {
+    public const NO_ELIGIBLE_WORK = 'SITEWELL_RESULT: NO_ELIGIBLE_WORK';
+
     public static function available(): bool
     {
         return config('amp_content.enabled') && filled(config('amp_content.api_key'));
@@ -54,15 +56,30 @@ This run belongs only to the GitHub repository {$repository->full_name}. Never c
 3. Make and verify the changes described above. Do not change files under `.github/`, CI configuration, credentials or environment files.
 4. Commit, push `{$branch}`, then open exactly one draft pull request with `gh pr create --repo {$repository->full_name} --base {$repository->default_branch} --head {$branch} --draft`. Its description must contain everything the pull-request requirements above ask for.
 5. Never merge the pull request, approve it, or enable auto-merge; a person reviews it in GitHub.
-6. If no useful, independently deliverable work remains, do not open a pull request and explain why.
-Finish by replying with the pull request URL.
+6. If no useful, independently deliverable work remains, do not push or open a pull request. Explain why, then end your reply with this exact final line:
+SITEWELL_RESULT: NO_ELIGIBLE_WORK
+Otherwise finish by replying with the pull request URL.
 PROMPT;
     }
 
     /**
-     * Run Amp to completion. The thread ID is recorded as soon as Amp reports it.
+     * Amp's explanation when it deliberately delivered nothing, or null for any other outcome.
      */
-    public function run(ContentGeneration $generation): void
+    public function noEligibleWorkReason(string $result): ?string
+    {
+        $lines = preg_split('/\R/', rtrim($result));
+        if (trim((string) end($lines)) !== self::NO_ELIGIBLE_WORK) {
+            return null;
+        }
+        array_pop($lines);
+
+        return Str::limit(trim(implode("\n", $lines)), 2000) ?: 'Amp found no eligible work.';
+    }
+
+    /**
+     * Run Amp to completion and return its final reply. The thread ID is recorded as soon as Amp reports it.
+     */
+    public function run(ContentGeneration $generation): string
     {
         $this->ensureConfigured();
         $repository = $generation->repository;
@@ -142,6 +159,8 @@ PROMPT;
                 default => 'The Amp run failed.'.$detail,
             });
         }
+
+        return is_string($result['result'] ?? null) ? $result['result'] : '';
     }
 
     /**

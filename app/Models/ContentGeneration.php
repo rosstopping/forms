@@ -50,10 +50,11 @@ class ContentGeneration extends Model
 
     /**
      * Whether an automation engine accepted this run, which starts the content cooldown before merge.
+     * Skipped runs delivered nothing, so they never start a cooldown.
      */
     public function wasAcceptedByAutomation(): bool
     {
-        return $this->copilot_task_id !== null || $this->head_branch !== null;
+        return $this->status !== self::STATUS_SKIPPED && ($this->copilot_task_id !== null || $this->head_branch !== null);
     }
 
     public function plan(): BelongsTo
