@@ -573,14 +573,20 @@ it('shows the current monthly price for every plan', function (): void {
     $this->get(route('marketing.pricing'))
         ->assertSuccessful()
         ->assertSee('£149')
-        ->assertSee('20% off until 31 December 2026')
+        ->assertSee('20% off until 31 December 2027')
         ->assertSee('£316')
         ->assertSee('£395')
         ->assertSee('£695');
 
+    $this->travelTo('2027-09-07 12:00:00 Europe/London');
+
+    $this->get(route('marketing.pricing'))
+        ->assertSuccessful()
+        ->assertSee('20% off until 31 December 2027');
+
     $this->get(route('marketing.home'))
         ->assertSuccessful()
-        ->assertDontSee('2026 Growth offer:')
+        ->assertDontSee('2027 Growth offer:')
         ->assertDontSee('£');
 });
 
@@ -725,7 +731,7 @@ it('keeps pricing and the client list off the focused homepage', function (): vo
 });
 
 it('returns to standard pricing after the growth offer expires', function (): void {
-    $this->travelTo('2027-01-01 12:00:00 Europe/London');
+    $this->travelTo('2028-01-01 12:00:00 Europe/London');
 
     $this->get(route('marketing.pricing'))
         ->assertSuccessful()

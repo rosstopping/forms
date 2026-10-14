@@ -25,7 +25,7 @@
                 <div class="flex items-center justify-between gap-3"><h2 class="text-xl font-semibold text-slate-950">{{ $plan['name'] }}</h2>@if ($tier === 'growth')<span class="rounded-full bg-teal-100 px-2.5 py-1 text-xs font-semibold text-teal-800">Most popular</span>@endif</div>
                 <p class="mt-3 min-h-12 leading-6 text-slate-600 text-base sm:text-sm">{{ $plan['description'] }}</p>
                 @if ($tier === 'growth' && $growthOffer = \App\Support\MembershipPlan::activeGrowthOffer())
-                    <p class="mt-6 font-semibold uppercase tracking-widest text-teal-700 text-base sm:text-sm">20% off until 31 December 2026</p>
+                    <p class="mt-6 font-semibold uppercase tracking-widest text-teal-700 text-base sm:text-sm">20% off until 31 December 2027</p>
                     <p class="mt-2"><span class="text-4xl font-semibold tracking-tight text-slate-950">£{{ $growthOffer['price'] }}</span> <span class="text-sm text-slate-400 line-through">£{{ $plan['price'] }}</span><span class="text-sm text-slate-500">/month</span></p>
                 @else
                     <p class="mt-6"><span class="text-4xl font-semibold tracking-tight text-slate-950">£{{ $plan['price'] }}</span><span class="text-sm text-slate-500">/month</span></p>

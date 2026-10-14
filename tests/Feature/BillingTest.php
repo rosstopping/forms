@@ -64,7 +64,7 @@ it('starts a Stripe hosted subscription checkout for a selected package', functi
 });
 
 it('returns Growth checkout to its standard Stripe price after the offer ends', function (): void {
-    $this->travelTo('2027-01-01 00:00:00 Europe/London');
+    $this->travelTo('2028-01-01 00:00:00 Europe/London');
 
     expect(MembershipPlan::checkoutPriceId(MembershipPlan::GROWTH))->toBe('price_growth');
 });

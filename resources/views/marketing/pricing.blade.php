@@ -26,7 +26,7 @@
                                 <div class="flex items-baseline justify-between gap-4"><h2 class="font-sans text-2xl font-medium tracking-tight">{{ $plan['name'] }}</h2>@if ($recommended)<p class="font-mono text-sm text-garden">Most popular</p>@endif</div>
                                 <p class="mt-3 text-pretty text-base text-ink/55 sm:text-sm">{{ $plan['description'] }}</p>
                                 @if ($tier === 'growth' && $growthOffer = \App\Support\MembershipPlan::activeGrowthOffer())
-                                    <p class="mt-8 font-mono text-sm font-medium uppercase tracking-wide text-garden">20% off until 31 December 2026</p>
+                                    <p class="mt-8 font-mono text-sm font-medium uppercase tracking-wide text-garden">20% off until 31 December 2027</p>
                                     <div class="mt-2 flex items-baseline gap-2"><p class="font-sans text-5xl font-semibold tracking-tight tabular-nums">£{{ $growthOffer['price'] }}</p><p class="text-base text-ink/50 line-through sm:text-sm">£{{ $plan['price'] }}</p><p class="text-base text-ink/50 sm:text-sm">/month</p></div>
                                 @else
                                     <div class="mt-8 flex items-baseline gap-1"><p class="font-sans text-5xl font-semibold tracking-tight tabular-nums">£{{ $plan['price'] }}</p><p class="text-base text-ink/50 sm:text-sm">/month</p></div>

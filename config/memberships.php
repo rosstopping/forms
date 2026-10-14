@@ -5,7 +5,7 @@ return [
 
     'growth_offer' => [
         'starts_at' => '2026-09-07 00:00:00',
-        'ends_at' => '2026-12-31 23:59:59',
+        'ends_at' => '2027-12-31 23:59:59',
         'price' => 316,
         'discount_percentage' => 20,
         'stripe_price_id' => env('STRIPE_GROWTH_2026_OFFER_PRICE_ID'),

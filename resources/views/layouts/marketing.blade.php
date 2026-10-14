@@ -36,7 +36,7 @@
     <x-marketing.tag-manager noscript />
     <div class="isolate min-h-dvh">
         @if (request()->routeIs('marketing.pricing') && \App\Support\MembershipPlan::activeGrowthOffer())
-            <a href="{{ route('marketing.pricing') }}" class="flex items-center justify-center gap-2 bg-garden px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-moss"><span>2026 Growth offer: save 20% — now £316/month</span><span aria-hidden="true">→</span></a>
+            <a href="{{ route('marketing.pricing') }}" class="flex items-center justify-center gap-2 bg-garden px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-moss"><span>2027 Growth offer: save 20% — now £316/month</span><span aria-hidden="true">→</span></a>
         @endif
         <header class="bg-white text-ink">
             <div class="mx-auto flex max-w-7xl items-center justify-between gap-5 px-5 py-4 sm:px-8 sm:py-5 lg:px-10">
