@@ -52,6 +52,7 @@
                             <div class="ml-5 space-y-1 border-l border-white/10 pl-3" data-website-navigation>
                                 @foreach ([
                                     'health' => 'Website health',
+                                    'plan' => 'Plan of action',
                                     'search' => 'Search performance',
                                     'seo' => 'SEO Intelligence',
                                     'ai-visibility' => 'AI Visibility',
@@ -183,6 +184,7 @@
                                 <div class="ml-5 space-y-1 border-l border-white/10 pl-3" data-website-navigation>
                                 @foreach ([
                                     'health' => 'Website health',
+                                    'plan' => 'Plan of action',
                                     'search' => 'Search performance',
                                     'seo' => 'SEO Intelligence',
                                     'ai-visibility' => 'AI Visibility',

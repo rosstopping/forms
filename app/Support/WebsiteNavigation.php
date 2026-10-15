@@ -11,6 +11,7 @@ class WebsiteNavigation
 
     public const SECTIONS = [
         'health',
+        'plan',
         'search',
         'seo',
         'ai-visibility',
@@ -33,6 +34,10 @@ class WebsiteNavigation
                 $request->routeIs('admin.billing.*') => 'billing',
                 default => 'overview',
             };
+        }
+
+        if ($request->routeIs('admin.website-growth-plans.*')) {
+            return 'plan';
         }
 
         if ($request->routeIs('admin.google-ads.*')) {
@@ -64,6 +69,10 @@ class WebsiteNavigation
 
     public static function routeFor(Website $website, string $section): string
     {
+        if ($section === 'plan') {
+            return route('admin.website-growth-plans.index', $website);
+        }
+
         if ($section === 'leads') {
             return route('admin.form-submissions.index');
         }

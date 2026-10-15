@@ -79,6 +79,7 @@ use App\Http\Controllers\Admin\WebsiteAuditReviewController;
 use App\Http\Controllers\Admin\WebsiteAutoresponderController;
 use App\Http\Controllers\Admin\WebsiteBuilderController;
 use App\Http\Controllers\Admin\WebsiteController;
+use App\Http\Controllers\Admin\WebsiteGrowthPlanController;
 use App\Http\Controllers\Admin\WebsiteHealthReportController;
 use App\Http\Controllers\Admin\WebsiteHealthReportPageController;
 use App\Http\Controllers\Admin\WebsiteMemberController;
@@ -111,6 +112,7 @@ use App\Http\Controllers\ProspectUnsubscribeController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\WebsiteAuditEngagementController;
 use App\Http\Controllers\WebsiteAuditOnboardingController;
+use App\Http\Controllers\WebsiteGrowthPlanReportController;
 use App\Http\Controllers\WebsiteHealthReportController as PublicWebsiteHealthReportController;
 use App\Http\Middleware\AllowFormSubmissionCors;
 use App\Http\Middleware\EnsureAdmin;
@@ -254,6 +256,7 @@ Route::middleware(['web', 'signed', 'throttle:20,1'])->group(function () {
 });
 
 Route::middleware(['web', 'signed', 'throttle:20,1'])->group(function () {
+    Route::get('/website-growth-plans/{growthPlan}', WebsiteGrowthPlanReportController::class)->name('website-growth-plans.report');
     Route::get('/website-health-reports/{websiteHealthReport}', PublicWebsiteHealthReportController::class)
         ->name('website-health-reports.show');
     Route::get('/admin/websites/{website}/content-suggestions/queue', ContentSuggestionController::class)
@@ -281,9 +284,17 @@ Route::middleware(['web', 'auth', RestrictCustomerWorkspace::class, RestrictAssi
     Route::get('websites/{website}/setup/{step?}', [WebsiteSetupController::class, 'edit'])->name('website-setup.edit');
     Route::put('websites/{website}/setup/{step}', [WebsiteSetupController::class, 'update'])->name('website-setup.update');
     Route::post('websites/{website}/setup-wordpress', [WebsiteSetupController::class, 'pairing'])->middleware('throttle:6,1')->name('website-setup.pairing');
+    Route::middleware(EnsureAdmin::class)->prefix('websites/{website}/growth-plans')->name('website-growth-plans.')->group(function () {
+        Route::get('/', [WebsiteGrowthPlanController::class, 'edit'])->name('index');
+        Route::post('/', [WebsiteGrowthPlanController::class, 'store'])->middleware('throttle:6,1')->name('store');
+        Route::get('{growthPlan}/edit', [WebsiteGrowthPlanController::class, 'edit'])->name('edit');
+        Route::get('{growthPlan}/preview', [WebsiteGrowthPlanController::class, 'preview'])->name('preview');
+        Route::post('{growthPlan}/send', [WebsiteGrowthPlanController::class, 'send'])->middleware('throttle:6,1')->name('send');
+    });
     Route::resource('websites', WebsiteController::class);
     Route::put('websites/{website}/service', WebsiteServiceController::class)
         ->middleware(EnsureAdmin::class)->name('websites.service.update');
+    Route::get('websites/{website}/section/plan', [WebsiteGrowthPlanController::class, 'edit'])->middleware(EnsureAdmin::class)->name('website-growth-plans.section');
     Route::get('websites/{website}/section/ai-visibility', [AiVisibilityController::class, 'index'])->name('ai-visibility.index');
     Route::prefix('websites/{website}/ai-visibility')->name('ai-visibility.')->group(function () {
         Route::put('settings', [AiVisibilityController::class, 'settings'])->name('settings');
