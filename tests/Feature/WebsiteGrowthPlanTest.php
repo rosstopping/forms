@@ -16,6 +16,7 @@ use App\Models\WebsiteGrowthPlan;
 use App\Models\WebsiteHealthReport;
 use App\Models\WebsiteSetup;
 use App\Services\WebsiteGrowthPlanBuilder;
+use App\Services\WebsiteGrowthPlanPresentation;
 use App\Support\WebsiteNavigation;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
@@ -26,6 +27,13 @@ use Illuminate\Validation\ValidationException;
 function generatedGrowthPlanResponse(array $keywordIds = []): array
 {
     return [
+        'headline' => 'More of the right enquiries.',
+        'priorities' => [
+            ['title' => 'Fix the foundations', 'action' => 'Resolve confirmed indexing and availability issues before expanding the site.', 'outcome' => 'Make the key pages easier to find.'],
+            ['title' => 'Strengthen the service pages', 'action' => 'Add verified installation examples and clearer service answers to the existing heating page.', 'outcome' => 'Help facilities managers choose the right service.'],
+            ['title' => 'Make enquiries easier', 'action' => 'Connect relevant content to the enquiry pages with clear internal links.', 'outcome' => 'Turn relevant visits into qualified enquiries.'],
+        ],
+        'focus_keyword_ids' => array_slice($keywordIds, 0, 6),
         'summary' => 'Improve the existing heating pages to attract qualified installation enquiries.',
         'services' => 'Commercial heating', 'locations' => 'Sheffield', 'audience' => 'Facilities managers',
         'difference' => 'Confirm the business credentials before publishing claims.',
@@ -91,7 +99,7 @@ test('generation writes a complete ready protected report without a publish step
     expect($plan->isReady())->toBeTrue()->and($plan->completed_at)->not->toBeNull()
         ->and($plan->report['roadmap'])->toHaveCount(6)->and($plan->report['keywords'][0]['baseline']['position'])->toBe(23);
     $this->get($plan->shareUrl())->assertSuccessful()->assertSee('#23')->assertSee('#5–#15')->assertSee('Month 6')->assertSee('Improve the existing heating pages');
-    $this->get(route('admin.website-growth-plans.edit', [$this->site, $plan]))->assertSuccessful()->assertSee('Open protected report')->assertDontSee('<textarea', false);
+    $this->get(route('admin.website-growth-plans.edit', [$this->site, $plan]))->assertSuccessful()->assertSee('Open shareable report')->assertDontSee('<textarea', false)->assertDontSee('data-growth-plan-document', false);
     Mail::assertNothingQueued();
 });
 
@@ -209,7 +217,7 @@ test('active managed clients can generate without an attached customer account',
     $this->actingAs($this->staff)->post(route('admin.website-growth-plans.store', $this->site))->assertRedirect();
     $plan = WebsiteGrowthPlan::firstOrFail();
     (new GenerateWebsiteGrowthPlan($plan))->handle(app(WebsiteGrowthPlanBuilder::class));
-    $this->get(route('admin.website-growth-plans.edit', [$this->site, $plan]))->assertSuccessful()->assertSee('Open protected report')->assertDontSee('Email plan');
+    $this->get(route('admin.website-growth-plans.edit', [$this->site, $plan]))->assertSuccessful()->assertSee('Open shareable report')->assertDontSee('Email plan');
     Mail::assertNothingQueued();
 });
 
@@ -289,4 +297,56 @@ test('report text is escaped and plan navigation preserves the website context',
     $this->actingAs($this->staff)->post(route('admin.current-website.update'), ['website_id' => $this->site->id, 'section' => 'plan'])
         ->assertRedirect(route('admin.website-growth-plans.index', $this->site));
     $this->get(route('admin.websites.section', [$this->site, 'plan']))->assertSuccessful();
+});
+
+test('shared plans are standalone static documents with concise legacy content', function (): void {
+    $plan = WebsiteGrowthPlan::factory()->for($this->site)->create(['published_at' => now()]);
+    $report = $plan->report;
+    $report['summary'] = 'Improve the pages that turn relevant searches into enquiries. '.str_repeat('This historical introduction is much too long. ', 30);
+    $report['roadmap'] = array_fill(0, 6, str_repeat('Improve the relevant pages with clear evidence and useful answers. ', 12));
+    $report['health'] = ['failed' => 2, 'warnings' => 3, 'completed_at' => now()->toIso8601String(), 'findings' => []];
+    $report['keywords'] = collect(range(1, 12))->map(fn (int $index): array => [
+        'term' => 'heating keyword '.$index, 'intended_url' => 'https://example.com/service-'.$index,
+        'assignment_role' => $index === 12 ? 'primary' : 'supporting', 'action' => 'Improve this existing service page with verified installation examples.',
+        'baseline' => ['status' => 'ranked', 'position' => $index, 'observed_at' => now()->toIso8601String()],
+        'target_best' => null, 'target_worst' => null,
+    ])->all();
+    $plan->update(['report' => $report]);
+    $response = $this->get($plan->shareUrl())->assertSuccessful()
+        ->assertSee('marketing-site', false)->assertSee('@page', false)->assertSee('print:break-inside-avoid', false)
+        ->assertDontSee('This historical introduction')->assertDontSee('admin/websites', false);
+    $document = new DOMDocument;
+    @$document->loadHTML($response->getContent());
+    $xpath = new DOMXPath($document);
+    expect($xpath->query('//button|//input|//select|//textarea|//details|//summary|//a|//script|//nav|//iframe'))->toHaveCount(0)
+        ->and($xpath->query('//*[@data-plan-priority]'))->toHaveCount(3)
+        ->and($xpath->query('//*[@data-plan-keyword]'))->toHaveCount(6)
+        ->and($xpath->query('//*[@data-plan-milestone]'))->toHaveCount(6);
+    foreach ($xpath->query('//*[@data-plan-milestone]') as $milestone) {
+        expect(str_word_count($milestone->textContent))->toBeLessThanOrEqual(24);
+    }
+    $response->assertSee('heating keyword 12');
+});
+
+test('AI plans reject long introductions and invented shortlist ids', function (): void {
+    $context = app(WebsiteGrowthPlanBuilder::class)->snapshot($this->site);
+    WebsiteGrowthPlanner::fake([[...generatedGrowthPlanResponse(), 'summary' => str_repeat('Too much text. ', 40)]]);
+    expect(fn () => app(WebsiteGrowthPlanBuilder::class)->generate($context))->toThrow(ValidationException::class);
+    WebsiteGrowthPlanner::fake([[...generatedGrowthPlanResponse(), 'focus_keyword_ids' => [999]]]);
+    expect(fn () => app(WebsiteGrowthPlanBuilder::class)->generate($context))->toThrow(ValidationException::class);
+});
+
+test('the AI shortlist controls the report without changing saved ranking evidence', function (): void {
+    $context = app(WebsiteGrowthPlanBuilder::class)->snapshot($this->site);
+    $context['baseline_report']['keywords'] = collect(range(0, 8))->map(fn (int $id): array => [
+        'keyword_id' => $id, 'term' => 'heating '.$id, 'assignment_role' => 'supporting', 'intended_url' => null,
+        'baseline' => ['status' => 'ranked', 'position' => $id + 10, 'observed_at' => now()->toIso8601String()],
+    ])->all();
+    WebsiteGrowthPlanner::fake([[...generatedGrowthPlanResponse(range(0, 8)), 'focus_keyword_ids' => [8, 4, 2]]]);
+    $report = app(WebsiteGrowthPlanBuilder::class)->generate($context);
+    $plan = WebsiteGrowthPlan::factory()->for($this->site)->create(['report' => $report]);
+    $presentation = app(WebsiteGrowthPlanPresentation::class)->for($plan);
+    expect(array_column($presentation['keywords'], 'keyword_id'))->toBe([8, 4, 2])
+        ->and($presentation['keywords'][0]['baseline']['position'])->toBe(18)
+        ->and($report['summary'])->toBe(generatedGrowthPlanResponse()['summary']);
 });

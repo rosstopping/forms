@@ -8,9 +8,13 @@
     <title>{{ $plan->report['website_name'] }} · Website plan of action</title>
     <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
     <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}" sizes="180x180">
+    <meta name="theme-color" content="#faf7f4">
+    <style>
+        @page { size: A4; margin: 12mm; }
+    </style>
     @vite(['resources/css/app.css'])
 </head>
-<body class="prospect-workspace bg-white text-slate-950">
+<body class="marketing-site prospect-workspace bg-white font-sans text-ink [print-color-adjust:exact] [-webkit-print-color-adjust:exact]">
 @include('website-growth-plans.content')
 </body>
 </html>

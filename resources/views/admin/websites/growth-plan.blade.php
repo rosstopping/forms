@@ -35,8 +35,7 @@
     @elseif($plan?->isReady())
         <section class="ui-panel ui-section space-y-4" aria-label="Share plan">
             <div class="flex flex-wrap gap-3">
-                <a href="{{ $plan->shareUrl() }}" target="_blank" rel="noopener noreferrer" class="ui-button ui-button-secondary">Open protected report</a>
-                <a href="{{ route('admin.website-growth-plans.preview', [$website, $plan]) }}" target="_blank" rel="noopener" class="ui-button ui-button-secondary">View report</a>
+                <a href="{{ $plan->shareUrl() }}" target="_blank" rel="noopener noreferrer" class="ui-button ui-button-secondary">Open shareable report</a>
             </div>
             <p class="text-base text-slate-500 sm:text-sm">The protected client link lasts 30 days. Anyone with that link can read this report.</p>
             @if($plan->email_queued_at)
@@ -51,7 +50,7 @@
                 <p class="text-base text-slate-600 sm:text-sm">Add a customer in <a href="{{ route('admin.websites.section', [$website, 'settings']) }}" class="text-teal-700 underline">website settings</a> if you want to email the report.</p>
             @endif
         </section>
-        <div class="ui-panel overflow-hidden">@include('website-growth-plans.content', ['preview' => false])</div>
+        <p class="text-base text-slate-600 sm:text-sm">Your plan is ready. Open the shareable report to view the standalone client document.</p>
     @else
         <section class="ui-panel ui-section space-y-3">
             <h2 class="text-xl font-semibold text-balance">Your website’s next six months</h2>

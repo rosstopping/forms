@@ -103,18 +103,24 @@ class WebsiteGrowthPlanBuilder
     {
         $response = (new WebsiteGrowthPlanner)->prompt(json_encode($context, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR), timeout: 120)->toArray();
         $rules = [
-            'summary' => ['required', 'string', 'max:5000'], 'success_measure' => ['required', 'string', 'max:2500'],
-            'dependencies' => ['required', 'string', 'max:2500'], 'limitations' => ['required', 'string', 'max:3000'],
-            'roadmap' => ['required', 'array', 'size:6'], 'roadmap.*' => ['required', 'string', 'max:3000'],
+            'headline' => ['required', 'string', 'max:70'],
+            'priorities' => ['required', 'array', 'size:3'],
+            'priorities.*.title' => ['required', 'string', 'max:50'],
+            'priorities.*.action' => ['required', 'string', 'max:160'],
+            'priorities.*.outcome' => ['required', 'string', 'max:80'],
+            'focus_keyword_ids' => ['present', 'array', 'max:6'], 'focus_keyword_ids.*' => ['integer', 'distinct'],
+            'summary' => ['required', 'string', 'max:240'], 'success_measure' => ['required', 'string', 'max:150'],
+            'dependencies' => ['required', 'string', 'max:150'], 'limitations' => ['required', 'string', 'max:200'],
+            'roadmap' => ['required', 'array', 'size:6'], 'roadmap.*' => ['required', 'string', 'max:140'],
             'keyword_actions' => ['present', 'array', 'max:20'], 'keyword_actions.*.keyword_id' => ['required', 'integer', 'distinct'],
-            'keyword_actions.*.action' => ['required', 'string', 'max:2500'],
+            'keyword_actions.*.action' => ['required', 'string', 'max:160'],
             'keyword_actions.*.target_best' => ['required', 'integer', 'between:0,100'],
             'keyword_actions.*.target_worst' => ['required', 'integer', 'between:0,100'],
             'keyword_actions.*.target_reason' => ['present', 'nullable', 'string', 'max:1500'],
             'suggested_keywords' => ['present', 'array', 'max:5'],
             'suggested_keywords.*.term' => ['required', 'string', 'max:255'],
             'suggested_keywords.*.intended_url' => ['present', 'nullable', 'string', 'max:700'],
-            'suggested_keywords.*.action' => ['required', 'string', 'max:2500'],
+            'suggested_keywords.*.action' => ['required', 'string', 'max:160'],
         ];
         foreach (['services', 'locations', 'audience', 'difference'] as $field) {
             $rules[$field] = ['required', 'string', 'max:2000'];
@@ -125,6 +131,10 @@ class WebsiteGrowthPlanBuilder
         if ($actions->keys()->sort()->values()->all() !== collect($report['keywords'])->pluck('keyword_id')->sort()->values()->all()) {
             throw ValidationException::withMessages(['keyword_actions' => 'The generated plan must cover exactly the saved keyword candidates.']);
         }
+        if (array_diff($response['focus_keyword_ids'], $actions->keys()->all()) !== []) {
+            throw ValidationException::withMessages(['focus_keyword_ids' => 'Choose focus keywords from the saved candidate IDs.']);
+        }
+        $report['format_version'] = 2;
         $report['keywords'] = collect($report['keywords'])->map(function (array $keyword) use ($actions): array {
             $action = $actions->get($keyword['keyword_id']);
             $hasTarget = $keyword['baseline'] && $action['target_best'] > 0 && $action['target_worst'] >= $action['target_best'] && filled($action['target_reason']);
@@ -141,7 +151,7 @@ class WebsiteGrowthPlanBuilder
             $report['keywords'][] = [...$suggestion, 'assignment_role' => 'supporting', 'suggested' => true, 'baseline' => null, 'target_best' => null, 'target_worst' => null, 'target_reason' => null];
             $terms->push($term);
         }
-        foreach (['summary', 'success_measure', 'dependencies', 'limitations', 'roadmap'] as $field) {
+        foreach (['headline', 'summary', 'priorities', 'focus_keyword_ids', 'success_measure', 'dependencies', 'limitations', 'roadmap'] as $field) {
             $report[$field] = $response[$field];
         }
         $report['business'] = array_intersect_key($response, array_flip(['services', 'locations', 'audience', 'difference']));

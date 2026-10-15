@@ -8,6 +8,7 @@ use App\Jobs\GenerateWebsiteGrowthPlan;
 use App\Models\Website;
 use App\Models\WebsiteGrowthPlan;
 use App\Services\WebsiteGrowthPlanBuilder;
+use App\Services\WebsiteGrowthPlanPresentation;
 use App\Services\WebsiteGrowthPlanPublisher;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -67,12 +68,12 @@ class WebsiteGrowthPlanController extends Controller
         return redirect()->route('admin.website-growth-plans.edit', [$website, $plan])->with('status', 'Your plan is being generated from the saved website context. This page will update when it is ready.');
     }
 
-    public function preview(Request $request, Website $website, WebsiteGrowthPlan $growthPlan): View
+    public function preview(Request $request, Website $website, WebsiteGrowthPlan $growthPlan, WebsiteGrowthPlanPresentation $presentation): View
     {
         $this->authorizeWebsite($request, $website, $growthPlan);
         abort_unless($growthPlan->isReady(), 404);
 
-        return view('website-growth-plans.report', ['plan' => $growthPlan, 'preview' => true]);
+        return view('website-growth-plans.report', ['plan' => $growthPlan, 'document' => $presentation->for($growthPlan)]);
     }
 
     public function send(SendWebsiteGrowthPlanRequest $request, Website $website, WebsiteGrowthPlan $growthPlan): RedirectResponse
