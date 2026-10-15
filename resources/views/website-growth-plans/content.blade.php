@@ -12,19 +12,19 @@
         <div class="grid content-start gap-4">
             <p class="break-words text-base font-medium text-garden sm:text-sm">{{ $report['website_name'] }}</p>
             <h1 id="plan-title" class="max-w-[20ch] text-4xl font-medium tracking-tight text-balance sm:text-5xl print:text-4xl">{{ $document['headline'] }}</h1>
-            <p data-plan-intro class="max-w-[48ch] text-lg text-pretty text-ink/65">{{ $document['intro'] }}</p>
+            @include('website-growth-plans.hero-copy', ['copyKey' => 'intro', 'copyTitle' => 'The plan for '.$report['website_name'], 'copyClass' => 'max-w-[48ch] text-lg'])
             <p class="break-all text-base text-ink/50 sm:text-sm">{{ $report['domain'] }}</p>
         </div>
         <div class="grid content-between gap-8 border-t border-ink/10 pt-5 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-8 print:border-t-0 print:border-l print:pt-0 print:pl-6">
             <div class="grid gap-2"><p class="text-base font-medium text-garden sm:text-sm">The next six months</p><p class="text-3xl font-medium tracking-tight text-balance">Better visibility.<br>More opportunity.</p></div>
-            <div class="grid gap-2"><h2 class="text-base font-medium text-ink">What success looks like</h2><p class="max-w-[36ch] text-base text-pretty text-ink/65" data-plan-goal>{{ $document['goal'] }}</p></div>
+            <div class="grid gap-2"><h2 class="text-base font-medium text-ink">What success looks like</h2>@include('website-growth-plans.hero-copy', ['copyKey' => 'goal', 'copyTitle' => 'What success looks like', 'copyClass' => 'max-w-[36ch] text-base'])</div>
         </div>
     </section>
 
     <section class="@container py-7 sm:py-9 print:py-5 print:break-inside-avoid" aria-label="Your starting point">
         <dl class="grid grid-cols-3 gap-4 @lg:gap-8">
-            @foreach(['In focus' => $document['focus_count'], 'Top 10' => $document['top_ten_count'], 'Checks flagged' => $document['flagged_checks']] as $label => $value)
-                <div class="grid gap-1 border-t border-ink/10 pt-3"><dt class="truncate text-base font-medium text-ink/65 sm:text-sm">{{ $label }}</dt><dd class="text-3xl font-medium tracking-tight tabular-nums text-ink sm:text-4xl">{{ $value !== null ? number_format($value) : '—' }}</dd></div>
+            @foreach(['In focus' => [$document['focus_count'], 'Priority searches selected for this plan.'], 'Top 10' => [$document['top_ten_count'], 'Focus searches already in Google’s top 10.'], 'Checks flagged' => [$document['flagged_checks'], 'Audit warnings and failed checks to review.']] as $label => [$value, $description])
+                <div class="grid gap-1 border-t border-ink/10 pt-3"><dt class="truncate text-base font-medium text-ink/65 sm:text-sm">{{ $label }}</dt><dd class="text-3xl font-medium tracking-tight tabular-nums text-ink sm:text-4xl">{{ $value !== null ? number_format($value) : '—' }}</dd><dd class="text-base text-pretty text-ink/60 sm:text-sm">{{ $description }}</dd></div>
             @endforeach
         </dl>
         <p class="mt-3 text-base text-pretty text-ink/50 sm:text-sm">Search figures cover this shortlist.@if($document['health_date']) Checks from {{ \Illuminate\Support\Carbon::parse($document['health_date'])->format('j M Y') }}.@endif</p>

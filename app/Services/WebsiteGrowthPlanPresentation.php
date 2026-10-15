@@ -33,10 +33,15 @@ class WebsiteGrowthPlanPresentation
         $health = $report['health'] ?? null;
         $dates = $keywords->pluck('baseline.observed_at')->filter()->sort()->values();
 
+        $intro = $this->heroCopy($report['summary'] ?? '', 36, 'A focused six-month plan to improve your priority pages and reach more of the right people.');
+        $goal = $this->heroCopy($report['success_measure'] ?? 'Relevant searches. Better pages. More qualified enquiries.', 20, 'Measure progress through relevant search visibility, useful website visits and meaningful customer actions.');
+
         return [
+            'intro_full' => $intro['full'], 'intro_more' => $intro['more'],
+            'goal_full' => $goal['full'], 'goal_more' => $goal['more'],
             'headline' => $this->short($report['headline'] ?? 'A clearer route to growth.', 10),
-            'intro' => $this->sentence($report['summary'] ?? '', 36),
-            'goal' => $this->sentence($report['success_measure'] ?? 'Relevant searches. Better pages. More qualified enquiries.', 20),
+            'intro' => $intro['excerpt'],
+            'goal' => $goal['excerpt'],
             'priorities' => $priorities->take(3)->map(fn (array $priority): array => [
                 'title' => $this->short($priority['title'], 7), 'action' => $this->short($priority['action'], 24),
                 'outcome' => $this->short($priority['outcome'] ?? '', 12),
@@ -51,6 +56,17 @@ class WebsiteGrowthPlanPresentation
             'dependencies' => $this->sentence($report['dependencies'] ?? '', 24),
             'limitations' => $this->sentence($report['limitations'] ?? '', 32),
         ];
+    }
+
+    /** @return array{full: string, excerpt: string, more: bool} */
+    private function heroCopy(string $text, int $words, string $fallback): array
+    {
+        $full = Str::squish($text);
+        $sentences = preg_split('/(?<=[.!?])\s+/u', $full);
+        $first = $sentences[0] ?? '';
+        $excerpt = Str::wordCount($first) <= $words ? $first : $fallback;
+
+        return ['full' => $full, 'excerpt' => $excerpt, 'more' => $full !== $excerpt];
     }
 
     private function sentence(string $text, int $words): string

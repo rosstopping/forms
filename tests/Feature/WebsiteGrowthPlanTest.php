@@ -313,12 +313,15 @@ test('shared plans are standalone static documents with concise legacy content',
     ])->all();
     $plan->update(['report' => $report]);
     $response = $this->get($plan->shareUrl())->assertSuccessful()
+        ->assertSee('Priority searches selected for this plan.')->assertSee('Focus searches already in Google’s top 10.')->assertSee('Audit warnings and failed checks to review.')
         ->assertSee('marketing-site', false)->assertSee('@page', false)->assertSee('print:break-inside-avoid', false)
-        ->assertDontSee('This historical introduction')->assertDontSee('admin/websites', false);
+        ->assertSee('This historical introduction')->assertDontSee('admin/websites', false);
     $document = new DOMDocument;
     @$document->loadHTML($response->getContent());
     $xpath = new DOMXPath($document);
-    expect($xpath->query('//button|//input|//select|//textarea|//details|//summary|//a|//script|//nav|//iframe'))->toHaveCount(0)
+    expect($xpath->query('//input|//select|//textarea|//details|//summary|//a|//script|//nav|//iframe'))->toHaveCount(0)
+        ->and($xpath->query('//dialog'))->toHaveCount(1)
+        ->and($xpath->query('//form[@method="dialog"]'))->toHaveCount(1)
         ->and($xpath->query('//*[@data-plan-priority]'))->toHaveCount(3)
         ->and($xpath->query('//*[@data-plan-keyword]'))->toHaveCount(6)
         ->and($xpath->query('//*[@data-plan-milestone]'))->toHaveCount(6);
@@ -349,4 +352,29 @@ test('the AI shortlist controls the report without changing saved ranking eviden
     expect(array_column($presentation['keywords'], 'keyword_id'))->toBe([8, 4, 2])
         ->and($presentation['keywords'][0]['baseline']['position'])->toBe(18)
         ->and($report['summary'])->toBe(generatedGrowthPlanResponse()['summary']);
+});
+
+test('long hero copy has complete excerpts with full text in accessible dialogs and print output', function (): void {
+    $plan = WebsiteGrowthPlan::factory()->for($this->site)->create(['published_at' => now()]);
+    $report = $plan->report;
+    $report['summary'] = str_repeat('The website has relevant search opportunities and important pages to improve ', 10).'for more bookings.';
+    $report['success_measure'] = str_repeat('Success should be measured through relevant searches and qualified enquiries ', 10).'with completed bookings.';
+    $plan->update(['report' => $report]);
+    $response = $this->get($plan->shareUrl())->assertSuccessful()->assertSee('Read more');
+    $document = new DOMDocument;
+    @$document->loadHTML($response->getContent());
+    $xpath = new DOMXPath($document);
+    foreach (['intro' => 'summary', 'goal' => 'success_measure'] as $key => $field) {
+        $excerpt = $xpath->query('//*[@data-plan-'.$key.']')->item(0)->textContent;
+        expect($excerpt)->toEndWith('.')->not->toContain('…');
+        expect($xpath->query('//dialog[@id="plan-'.$key.'-dialog"]'))->toHaveCount(1);
+        expect($xpath->query('//dialog[@id="plan-'.$key.'-dialog"]/div/p')->item(0)->textContent)->toBe($report[$field]);
+        expect($xpath->query('//*[@data-plan-'.$key.'-print]')->item(0)->textContent)->toBe($report[$field]);
+        expect($xpath->query('//button[@aria-controls="plan-'.$key.'-dialog"]'))->toHaveCount(1);
+    }
+});
+
+test('short complete hero text needs no read more controls', function (): void {
+    $plan = WebsiteGrowthPlan::factory()->for($this->site)->create(['published_at' => now()]);
+    $this->get($plan->shareUrl())->assertSuccessful()->assertDontSee('Read more')->assertDontSee('<dialog', false);
 });
