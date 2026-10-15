@@ -134,8 +134,8 @@
                     @endif
                 </div>
                 @if ($comparisonCompetitors->isNotEmpty())
-                    <div class="mt-5 border-t border-slate-950/10 pt-4">
-                        <h4 class="text-sm font-semibold text-slate-950">Competitor comparison</h4>
+                    <details class="mt-5 border-t border-slate-950/10 pt-4">
+                        <summary class="cursor-pointer select-none text-sm font-semibold text-slate-950">Competitor comparison</summary>
                         @if ($successful?->organic_results !== null)
                             <p class="mt-1 text-slate-500 text-base sm:text-sm">Same search results · {{ $successful->observed_at->format('j M Y, H:i') }} · {{ strtoupper($successful->language_code) }} · Location {{ $successful->location_code }} · {{ ucfirst($successful->device) }}{{ $successful->cached ? ' · Cached result' : '' }}. Lower positions rank higher.</p>
                             <div class="mt-3 overflow-x-auto">
@@ -178,7 +178,7 @@
                         @else
                             <p class="mt-2 text-slate-600 text-base sm:text-sm">Run a ranking check to compare your position with tracked competitors. Older checks do not contain competitor results.</p>
                         @endif
-                    </div>
+                    </details>
                 @endif
             </article>
         @empty

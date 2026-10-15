@@ -270,3 +270,22 @@ test('comparison distinguishes missing historical evidence from an unranked webs
     'empty results' => [[], 'Neither in top 100'],
     'competitor ranks but website does not' => [[['domain' => 'rival.example', 'position' => 8, 'url' => 'https://rival.example/']], 'Ranks above you'],
 ]);
+
+test('competitor comparisons are collapsed by default', function (): void {
+    $website = Website::factory()->create();
+    $target = SeoTargetKeyword::factory()->for($website)->create();
+    $competitor = WebsiteCompetitor::factory()->for($website)->create();
+    $view = $this->view('admin.websites.partials.seo-target-keywords', [
+        'website' => $website,
+        'targetKeywords' => collect([$target->load('rankings')]),
+        'trackedCompetitors' => collect([$competitor]),
+        'canManageWebsite' => false,
+    ]);
+
+    $document = new DOMDocument;
+    @$document->loadHTML((string) $view);
+    $comparisons = (new DOMXPath($document))->query('//details[summary[normalize-space(.)="Competitor comparison"]]');
+    expect($comparisons)->toHaveCount(1);
+    expect($comparisons->item(0)->hasAttribute('open'))->toBeFalse();
+    expect($comparisons->item(0)->textContent)->toContain('Run a ranking check');
+});
