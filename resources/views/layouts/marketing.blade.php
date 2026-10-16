@@ -27,13 +27,14 @@
     @fonts
     @yield('structured_data')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    @if (request()->routeIs('marketing.home', 'marketing.free-site-audit', 'marketing.website-audits.show', 'marketing.website-audits.full', 'admin.onboarding.audits.show'))
+    @if (request()->routeIs('marketing.home', 'marketing.free-site-audit', 'marketing.website-audits.show', 'marketing.website-audits.full', 'admin.onboarding.audits.show') || session()->has('marketing_enquiry_event'))
         @vite('resources/js/marketing-events.js')
     @endif
 </head>
 <body class="marketing-site prospect-workspace min-h-dvh bg-white text-ink">
     <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-full focus:bg-white focus:px-5 focus:py-3 focus:text-ink focus:shadow-lg focus:outline-2 focus:outline-offset-2 focus:outline-garden">Skip to content</a>
     <x-marketing.tag-manager noscript />
+    <x-marketing.enquiry-event />
     <div class="isolate min-h-dvh">
         @if (request()->routeIs('marketing.pricing') && \App\Support\MembershipPlan::activeGrowthOffer())
             <a href="{{ route('marketing.pricing') }}" class="flex items-center justify-center gap-2 bg-garden px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-moss"><span>2026 Growth offer: save 20% — now £316/month</span><span aria-hidden="true">→</span></a>

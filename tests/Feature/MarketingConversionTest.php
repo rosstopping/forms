@@ -42,7 +42,7 @@ it('keeps first touch and replaces the whole last campaign without mixing click 
     );
 });
 
-it('records a lead only after saving an email and publishes it only to the capturing session once', function (): void {
+it('records a report email capture for analytics without classifying it as an advertising enquiry', function (): void {
     Mail::fake();
     $this->withoutMiddleware(ThrottleRequests::class);
     $audit = WebsiteAudit::factory()->create([
@@ -58,7 +58,7 @@ it('records a lead only after saving an email and publishes it only to the captu
     $this->post($url, ['email' => 'owner@example.com', 'personal_review' => true])->assertRedirect();
     $lead = MarketingConversion::query()->sole();
     expect($lead->name)->toBe('lead_captured')
-        ->and($lead->payload()['is_conversion'])->toBeTrue()
+        ->and($lead->payload()['is_conversion'])->toBeFalse()
         ->and($lead->attribution['first_touch']['gclid'])->toBe('original-ad-click')
         ->and(json_encode($lead->payload()))->not->toContain('owner@example.com');
     $publicUrl = route('marketing.website-audits.show', $audit);

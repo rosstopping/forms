@@ -23,11 +23,13 @@ class StoreOnboardingEnquiryRequest extends FormRequest
     public function rules(): array
     {
         return [
+            '_enquiry_id' => ['nullable', 'uuid'],
             'name' => ['required', 'string', 'max:100'],
             'email' => ['required', 'email', 'max:255'],
             'agency' => ['nullable', 'string', 'max:150'],
             'website' => ['nullable', 'url:http,https', 'max:2048'],
             'goals' => ['required', 'string', 'max:3000'],
+            '_honeypot' => ['nullable', 'string', 'max:0'],
             '_sitewell_check' => ['nullable', 'string', 'max:0'],
         ];
     }

@@ -27,6 +27,7 @@
                 @endif
                 <form method="POST" action="{{ route('marketing.contact.store') }}" class="grid grid-cols-1 gap-y-4">
                     @csrf
+                    <input type="hidden" name="_enquiry_id" value="{{ old('_enquiry_id', (string) \Illuminate\Support\Str::uuid()) }}">
 
                     <div
                         style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden"

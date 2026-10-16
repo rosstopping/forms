@@ -37,8 +37,10 @@ class AgencyMarketingController extends Controller
         $enquiry = $request->safe()->only(['name', 'agency', 'email', 'website', 'client_websites', 'offers_seo', 'goals']);
         $enquiry['goals'] ??= 'No additional notes supplied.';
         $enquiry['type'] = 'agency_beta';
-        $storeLead->handle($enquiry, $request, agencyBeta: true);
-        Mail::to(config('forms.default_recipient'))->queue(new OnboardingEnquiryReceived($enquiry));
+        $submission = $storeLead->handle($enquiry, $request, agencyBeta: true);
+        if ($submission->wasRecentlyCreated) {
+            Mail::to(config('forms.default_recipient'))->queue(new OnboardingEnquiryReceived($enquiry));
+        }
 
         return redirect()->to(route('marketing.agencies').'#join-beta')->with('agency_status', 'Thanks — we’ve received your agency beta enquiry. We’ll be in touch to discuss your websites and whether the beta is a good fit.');
     }

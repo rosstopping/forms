@@ -3,11 +3,12 @@ import { bootAuditReview } from './audit-review.js';
 import { bootAuditEngagement } from './audit-engagement.js';
 
 /**
- * Publish marketing hooks and hand successfully captured leads to GTM.
+ * Publish marketing hooks and hand successfully saved enquiries to GTM.
  * The GTM conversion tag must respect consent; do not also send this lead
  * through a server-side Ads conversion or a GA4 import.
  */
 export function publishMarketingEvent(payload, target = window) {
+    if (!payload || typeof payload.event_id !== 'string' || !payload.event_id.trim() || typeof payload.event !== 'string') return;
     target.sitewellEvents ??= [];
     const key = `sitewell:event:${payload.event_id}`;
     if (target.sitewellEvents.some((event) => event.event_id === payload.event_id)) return;
@@ -20,10 +21,10 @@ export function publishMarketingEvent(payload, target = window) {
     }
 
     target.sitewellEvents.push(payload);
-    if (payload.event === 'lead_captured' && payload.is_conversion === true) {
+    if (payload.event === 'enquiry_submitted' && payload.is_conversion === true) {
         target.dataLayer ??= [];
-        // Keep the existing GTM trigger so the installed Ads tag now counts saved emails.
-        target.dataLayer.push({ event: 'sitewell_audit_submitted', event_id: payload.event_id, conversion_stage: 'email_captured' });
+        // A separate event prevents report downloads from entering the enquiry conversion action.
+        target.dataLayer.push({ event: 'sitewell_enquiry_submitted', event_id: payload.event_id, transaction_id: payload.event_id, conversion_stage: 'enquiry_saved' });
     }
     target.dispatchEvent(new CustomEvent('sitewell:marketing-event', { detail: payload }));
 }

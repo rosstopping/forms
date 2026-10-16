@@ -24,7 +24,7 @@ class MarketingConversion extends Model
         return [
             'event' => $this->name,
             'event_id' => $this->event_id,
-            'is_conversion' => in_array($this->name, ['lead_captured', 'call_booked'], true),
+            'is_conversion' => in_array($this->name, ['enquiry_submitted', 'call_booked'], true) && ! data_get($this->attribution, 'internal_submission', false),
             'attribution' => $this->attribution ?? [],
         ];
     }

@@ -23,6 +23,7 @@
 </head>
 <body class="marketing-site prospect-workspace bg-white text-ink">
     <x-marketing.tag-manager noscript />
+    <x-marketing.enquiry-event />
     <div class="isolate min-h-dvh">
         <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-white focus:p-4">Skip to content</a>
         <header class="border-b border-ink/10">

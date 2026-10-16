@@ -15,8 +15,10 @@ class OnboardingEnquiryController extends Controller
         $enquiry = $request->safe()->only(['name', 'email', 'agency', 'website', 'goals']);
         $enquiry['agency'] ??= null;
         $enquiry['website'] ??= null;
-        $storeLead->handle($enquiry, $request);
-        Mail::to(config('forms.default_recipient'))->send(new OnboardingEnquiryReceived($enquiry));
+        $submission = $storeLead->handle($enquiry, $request);
+        if ($submission->wasRecentlyCreated) {
+            Mail::to(config('forms.default_recipient'))->send(new OnboardingEnquiryReceived($enquiry));
+        }
 
         return back()->with('status', 'Thanks — your request is with us. We’ll be in touch shortly.');
     }

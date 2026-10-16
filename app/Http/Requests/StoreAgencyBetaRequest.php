@@ -20,6 +20,7 @@ class StoreAgencyBetaRequest extends FormRequest
     public function rules(): array
     {
         return [
+            '_enquiry_id' => ['nullable', 'uuid'],
             'name' => ['required', 'string', 'max:100'],
             'agency' => ['required', 'string', 'max:150'],
             'email' => ['required', 'email', 'max:255'],
