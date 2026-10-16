@@ -289,6 +289,26 @@ class GithubAppClient
         return ['changes' => $changes, 'reviews' => $reviews];
     }
 
+    /** @return array{source: string, changed_files: int, head_sha: string, base_sha: string} */
+    public function contentBranchChanges(WebsiteRepository $repository, string $head): array
+    {
+        if (preg_replace('~^refs/heads/~', '', $head) === $repository->default_branch || str_contains($head, '..') || ! preg_match('~\A[A-Za-z0-9_./-]+\z~', $head)) {
+            throw new RuntimeException('The automation branch could not be verified.');
+        }
+        $request = $this->request($this->installationToken($repository->installation->installation_id));
+        $comparison = $request->get("repos/{$repository->full_name}/compare/".rawurlencode($repository->default_branch).'...'.rawurlencode($head))->throw()->json();
+        if (! is_array($comparison['files'] ?? null) || ! array_is_list($comparison['files'])
+            || ! in_array($comparison['status'] ?? null, ['ahead', 'identical'], true)
+            || ! is_string(data_get($comparison, 'base_commit.sha')) || ! is_string(data_get($comparison, 'merge_base_commit.sha'))
+            || ! is_int($comparison['ahead_by'] ?? null)) {
+            throw new RuntimeException('GitHub returned incomplete branch comparison evidence.');
+        }
+
+        return ['source' => 'github_branch_compare', 'changed_files' => count($comparison['files']),
+            'head_sha' => (string) data_get($comparison, 'commits.'.max(0, $comparison['ahead_by'] - 1).'.sha', data_get($comparison, 'base_commit.sha')),
+            'base_sha' => $comparison['base_commit']['sha']];
+    }
+
     public function installationToken(int $installationId): string
     {
         $token = $this->appRequest()

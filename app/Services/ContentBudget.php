@@ -24,6 +24,9 @@ class ContentBudget
             ->with('contentRequests:id,content_generation_id,work_type,budget_reserved_at')->get();
         $usage = ['articles' => 0, 'optimisations' => 0, 'copilot' => $rows->count()];
         foreach ($rows as $row) {
+            if ($row->status === ContentGeneration::STATUS_NO_WORK) {
+                continue;
+            }
             $units = $row->work_units ?? $this->units($row->contentRequests, $row->seo_target_keyword_id !== null);
             $usage['articles'] += $units['articles'];
             $usage['optimisations'] += $units['optimisations'];

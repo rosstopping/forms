@@ -78,7 +78,7 @@ class ContentRequestController extends Controller
                     'enqueue' => ['planning_status' => 'queued', 'preflight' => null],
                     'classify' => ['work_type' => $data['work_type'], 'preflight' => null],
                     'hold' => ['held_at' => now(), 'hold_reason' => $data['hold_reason']],
-                    'release' => ['held_at' => null, 'hold_reason' => null],
+                    'release' => ['held_at' => null, 'hold_reason' => null, 'preflight' => null],
                     'dependencies' => ['dependencies' => ['urls' => $data['urls'] ?? [], 'files' => $data['files'] ?? ($contentRequest->dependencies['files'] ?? [])], 'preflight' => null],
                 };
                 $contentRequest->update($attributes);

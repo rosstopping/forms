@@ -54,7 +54,7 @@ class ContentSchedule
     {
         $week = $at->setTimezone($plan->timezone)->startOfWeek(CarbonImmutable::MONDAY);
 
-        return $plan->generations()->where('trigger', '!=', 'manual')
+        return $plan->generations()->whereNull('opportunity_root_id')->where('trigger', '!=', 'manual')
             ->whereDate('scheduled_for', '>=', $week->toDateString())
             ->whereDate('scheduled_for', '<=', $week->addDays(6)->toDateString())
             ->count() < $this->weeklyLimit($plan->website);

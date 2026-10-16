@@ -147,7 +147,7 @@ class WebsiteController extends Controller
         ]);
         if ($website->contentPlan) {
             $website->contentPlan->setRelation('generations', $website->contentPlan->generations()
-                ->select(['id', 'content_plan_id', 'scheduled_for', 'status', 'skip_reason', 'error', 'pull_request_url', 'pull_request_number', 'copilot_task_id', 'engine', 'agent_thread_id', 'created_at'])
+                ->select(['id', 'content_plan_id', 'opportunity_root_id', 'opportunity_attempt', 'scheduled_for', 'status', 'skip_reason', 'error', 'pull_request_url', 'pull_request_number', 'copilot_task_id', 'engine', 'agent_thread_id', 'created_at'])
                 ->latest('created_at')->latest('id')->limit(8)->get());
         }
         $website->loadCount([

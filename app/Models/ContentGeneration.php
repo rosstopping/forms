@@ -25,15 +25,17 @@ class ContentGeneration extends Model
 
     public const STATUS_CANCELLED = 'cancelled';
 
+    public const STATUS_NO_WORK = 'no_work';
+
     public const STATUS_SKIPPED = 'skipped';
 
-    protected $fillable = ['budget_reserved_at', 'search_performance_property', 'work_units', 'trigger', 'skip_reason', 'backlink_context', 'competitor_context', 'target_keyword_context', 'seo_target_keyword_id', 'content_plan_id', 'website_repository_id', 'requested_by', 'scheduled_for', 'status', 'search_performance', 'prompt', 'copilot_task_id', 'copilot_task_url', 'copilot_task_state', 'pull_request_number', 'pull_request_url', 'pull_request_state', 'error', 'started_at', 'completed_at', 'merged_at', 'notification_emailed_at', 'engine', 'head_branch', 'agent_thread_id', 'agent_usage'];
+    protected $fillable = ['opportunity_root_id', 'opportunity_attempt', 'completion_evidence', 'budget_reserved_at', 'search_performance_property', 'work_units', 'trigger', 'skip_reason', 'backlink_context', 'competitor_context', 'target_keyword_context', 'seo_target_keyword_id', 'content_plan_id', 'website_repository_id', 'requested_by', 'scheduled_for', 'status', 'search_performance', 'prompt', 'copilot_task_id', 'copilot_task_url', 'copilot_task_state', 'pull_request_number', 'pull_request_url', 'pull_request_state', 'error', 'started_at', 'completed_at', 'merged_at', 'notification_emailed_at', 'engine', 'head_branch', 'agent_thread_id', 'agent_usage'];
 
-    protected $attributes = ['status' => self::STATUS_PENDING, 'trigger' => 'legacy'];
+    protected $attributes = ['opportunity_attempt' => 0, 'status' => self::STATUS_PENDING, 'trigger' => 'legacy'];
 
     protected function casts(): array
     {
-        return ['budget_reserved_at' => 'datetime', 'work_units' => 'array', 'backlink_context' => 'array', 'competitor_context' => 'array', 'target_keyword_context' => 'array', 'scheduled_for' => 'date', 'search_performance' => 'array', 'started_at' => 'datetime', 'completed_at' => 'datetime', 'merged_at' => 'datetime', 'notification_emailed_at' => 'datetime', 'agent_usage' => 'array'];
+        return ['completion_evidence' => 'array', 'opportunity_attempt' => 'integer', 'budget_reserved_at' => 'datetime', 'work_units' => 'array', 'backlink_context' => 'array', 'competitor_context' => 'array', 'target_keyword_context' => 'array', 'scheduled_for' => 'date', 'search_performance' => 'array', 'started_at' => 'datetime', 'completed_at' => 'datetime', 'merged_at' => 'datetime', 'notification_emailed_at' => 'datetime', 'agent_usage' => 'array'];
     }
 
     public function usesAmp(): bool
@@ -54,7 +56,7 @@ class ContentGeneration extends Model
      */
     public function wasAcceptedByAutomation(): bool
     {
-        return $this->status !== self::STATUS_SKIPPED && ($this->copilot_task_id !== null || $this->head_branch !== null);
+        return ! in_array($this->status, [self::STATUS_SKIPPED, self::STATUS_NO_WORK], true) && ($this->copilot_task_id !== null || $this->head_branch !== null);
     }
 
     public function plan(): BelongsTo

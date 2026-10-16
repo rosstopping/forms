@@ -9,6 +9,7 @@ use App\Services\BacklinkContentContext;
 use App\Services\CompetitorContentContext;
 use App\Services\ContentBudget;
 use App\Services\ContentGenerationPromptGenerator;
+use App\Services\ContentNoWorkRecovery;
 use App\Services\ContentSchedule;
 use App\Services\ContentStrategy;
 use App\Services\ContentWorkSelector;
@@ -71,6 +72,14 @@ class StartContentGeneration implements ShouldBeEncrypted, ShouldBeUnique, Shoul
         }
 
         $this->generation->loadMissing(['plan.website.searchConsoleConnection', 'repository', 'requester.githubAuthorization']);
+        if ($this->generation->opportunity_root_id && ($this->generation->opportunity_attempt < 1 || $this->generation->opportunity_attempt >= ContentNoWorkRecovery::MAX_ATTEMPTS
+            || ($this->generation->engine ?? ContentPlan::ENGINE_COPILOT) !== ($this->generation->plan->content_engine ?? ContentPlan::ENGINE_COPILOT)
+            || $this->generation->plan->website->repository?->id !== $this->generation->website_repository_id
+            || ! $this->generation->requester || ! $this->generation->plan->website->isManageableBy($this->generation->requester))) {
+            $this->skipGeneration('Engine, repository or staff access changed. Review the content setup before replacing this run.');
+
+            return;
+        }
         $connection = $this->generation->plan->website->searchConsoleConnection;
         $authorization = $this->generation->requester?->githubAuthorization;
 
@@ -90,11 +99,15 @@ class StartContentGeneration implements ShouldBeEncrypted, ShouldBeUnique, Shoul
             $schedule = app(ContentSchedule::class);
             $reason = $schedule->pauseReason($plan);
             if (! $reason && (! in_array($this->generation->scheduled_for->dayOfWeek, $schedule->weekdays($plan), true)
-                || $this->generation->scheduled_for->toDateString() !== now($plan->timezone)->toDateString())) {
+                || ($this->generation->opportunity_root_id
+                    ? now($plan->timezone)->toDateString() > $this->generation->scheduled_for->copy()->endOfWeek()->toDateString()
+                    : $this->generation->scheduled_for->toDateString() !== now($plan->timezone)->toDateString()))) {
                 $reason = 'The scheduled day has changed or this run has expired.';
             }
             $week = $this->generation->scheduled_for->copy()->startOfWeek(Carbon::MONDAY);
-            if (! $reason && $plan->generations()->where('trigger', '!=', 'manual')
+            if (! $reason && $plan->generations()->whereNull('opportunity_root_id')
+                ->when($this->generation->opportunity_root_id, fn ($query) => $query->whereKeyNot($this->generation->opportunity_root_id))
+                ->where('trigger', '!=', 'manual')
                 ->where('id', '<', $this->generation->id)
                 ->whereDate('scheduled_for', '>=', $week->toDateString())
                 ->whereDate('scheduled_for', '<=', $week->copy()->addDays(6)->toDateString())
@@ -199,7 +212,14 @@ class StartContentGeneration implements ShouldBeEncrypted, ShouldBeUnique, Shoul
                 'copilot_task_state' => $task['state'] ?? 'queued',
             ]);
         }
-        $this->generation->targetKeyword?->update(['last_selected_at' => now()]);
+        if ($target = $this->generation->targetKeyword) {
+            $selectedAt = now()->toDateTimeString();
+            $this->generation->update(['completion_evidence' => [
+                ...($this->generation->completion_evidence ?? []),
+                'previous_target_selected_at' => $target->last_selected_at?->toDateTimeString(), 'target_selected_at' => $selectedAt,
+            ]]);
+            $target->update(['last_selected_at' => $selectedAt]);
+        }
         $this->generation->plan->website->contentRequests()
             ->whereKey($contentRequests->modelKeys())
             ->whereNull('picked_up_at')
@@ -221,7 +241,9 @@ class StartContentGeneration implements ShouldBeEncrypted, ShouldBeUnique, Shoul
 
     public function failed(?Throwable $exception): void
     {
-        $this->failGeneration($exception?->getMessage() ?? 'The content generation could not be started.');
+        if (in_array($this->generation->fresh()?->status, [ContentGeneration::STATUS_PENDING, ContentGeneration::STATUS_RUNNING], true)) {
+            $this->failGeneration($exception?->getMessage() ?? 'The content generation could not be started.');
+        }
     }
 
     protected function failGeneration(string $message): void

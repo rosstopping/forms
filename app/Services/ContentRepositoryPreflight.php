@@ -14,7 +14,14 @@ class ContentRepositoryPreflight
     /** @return array{state: string, reason: string, eligible_at: ?string} */
     public function check(ContentRequest $request, WebsiteRepository $repository, ?float $deadline = null): array
     {
-        $files = $request->dependencies['files'] ?? [];
+        preg_match_all('~(?<![A-Za-z0-9:/.-])(?:[A-Za-z0-9_-]+/)+[A-Za-z0-9_.-]+\.(?:md|mdx|astro|vue|tsx|jsx|html|php|json|xml|ya?ml)(?![A-Za-z0-9_./-])~', $request->instructions, $matches);
+        $files = array_values(array_unique([...($request->dependencies['files'] ?? []), ...$matches[0]]));
+        if (count($files) > 10) {
+            $result = ['state' => 'preflight', 'reason' => 'More than ten repository dependencies were found. Split this request or declare a smaller scope before preparation.', 'eligible_at' => null];
+            $request->update(['preflight' => [...$result, 'checked_at' => now()->toIso8601String()]]);
+
+            return $result;
+        }
         $result = ['state' => 'ready', 'reason' => 'Declared repository dependencies are eligible.', 'eligible_at' => null];
         if ($files === []) {
             return $result;
@@ -45,7 +52,7 @@ class ContentRepositoryPreflight
             $result = ['state' => 'preflight', 'reason' => 'Repository dependencies could not be verified. They will be checked again before the next preparation attempt.', 'eligible_at' => null];
         }
 
-        $request->update(['preflight' => [...$result, 'checked_at' => now()->toIso8601String(), 'repository_id' => $repository->id]]);
+        $request->update(['preflight' => [...$result, 'checked_at' => now()->toIso8601String(), 'repository_id' => $repository->id, 'files' => $files]]);
 
         return $result;
     }

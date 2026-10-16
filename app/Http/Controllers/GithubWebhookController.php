@@ -84,7 +84,7 @@ class GithubWebhookController extends Controller
                 ->where('website_repository_id', $repository->id)
                 ->where('pull_request_number', $request->integer('pull_request.number'))
                 ->first();
-            if ($generation) {
+            if ($generation && $generation->status !== ContentGeneration::STATUS_NO_WORK) {
                 $generation->update([
                     'pull_request_state' => $request->string('pull_request.state')->toString(),
                     'status' => $merged ? ContentGeneration::STATUS_COMPLETED : $generation->status,

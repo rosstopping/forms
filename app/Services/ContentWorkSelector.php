@@ -37,6 +37,15 @@ class ContentWorkSelector
         $recentKeys = $recentKeys->merge($manualRequests->whereNotNull('manual_completed_at')
             ->flatMap(fn (ContentRequest $request): array => $this->requestKeys($request)))->unique();
         $pendingRequests = $website->contentRequests()->pendingInQueueOrder()->with('seoImpact')->get();
+        if ($generation->opportunity_root_id) {
+            $attempts = $generation->plan->generations()->where('status', ContentGeneration::STATUS_NO_WORK)
+                ->where(fn ($query) => $query->whereKey($generation->opportunity_root_id)->orWhere('opportunity_root_id', $generation->opportunity_root_id))
+                ->get(['completion_evidence']);
+            $attemptedIds = $attempts->flatMap(fn ($attempt): array => $attempt->completion_evidence['request_ids'] ?? []);
+            $attemptedFingerprints = $attempts->flatMap(fn ($attempt): array => $attempt->completion_evidence['request_fingerprints'] ?? []);
+            $pendingRequests = $pendingRequests->reject(fn ($request): bool => $attemptedIds->contains($request->id)
+                || $attemptedFingerprints->contains(hash('sha256', SeoTargetKeyword::normalize($request->instructions))));
+        }
         $automaticAuditIds = $pendingRequests->filter(fn (ContentRequest $request): bool => (bool) data_get($request->competitor_context, 'automatic'))
             ->pluck('competitor_context.audit_id')->filter();
         $eligibleAuditIds = $automaticAuditIds->isEmpty() ? collect() : app(CompetitorContentContext::class)->eligibleAudits($website)
@@ -64,7 +73,7 @@ class ContentWorkSelector
             }
         }
         $requests = $eligibleRequests;
-        if ($requests->isEmpty() && $generation->trigger === 'scheduled'
+        if ($requests->isEmpty() && ! $generation->opportunity_root_id && $generation->trigger === 'scheduled'
             && $generation->plan->competitor_research_mode === 'drafts'
             && ! app(ContentSchedule::class)->pauseReason($generation->plan)) {
             $blockedKeys = $openKeys->merge($recentKeys)->merge($protectedKeys);
@@ -100,7 +109,7 @@ class ContentWorkSelector
                 && $recentKeys->intersect($keys)->isEmpty();
         });
 
-        return ['requests' => $requests, 'target' => $requests->isEmpty() && ($generation->plan->content_mode ?? 'balanced') !== 'new_only' ? $this->targets->select($eligible) : null, 'snapshot' => $snapshot];
+        return ['requests' => $requests, 'target' => ! $generation->opportunity_root_id && $requests->isEmpty() && ($generation->plan->content_mode ?? 'balanced') !== 'new_only' ? $this->targets->select($eligible) : null, 'snapshot' => $snapshot];
     }
 
     /** @return array<int, array{state: string, reason: string, eligible_at: ?string}> */
@@ -189,7 +198,7 @@ class ContentWorkSelector
     /** @return Collection<int, ContentGeneration> */
     public function history(ContentGeneration $generation): Collection
     {
-        return $generation->plan->generations()->whereKeyNot($generation->id)
+        return $generation->plan->generations()->whereKeyNot($generation->id)->where('status', '!=', ContentGeneration::STATUS_NO_WORK)
             ->where(function ($query): void {
                 $query->where('status', ContentGeneration::STATUS_PULL_REQUEST_OPEN)
                     ->orWhere('started_at', '>', now()->subDays(14))
@@ -257,7 +266,7 @@ class ContentWorkSelector
         foreach ($request->dependencies['urls'] ?? [] as $url) {
             $keys[] = $this->urlKey($url);
         }
-        foreach ($request->dependencies['files'] ?? [] as $file) {
+        foreach (array_unique([...($request->dependencies['files'] ?? []), ...($request->preflight['files'] ?? [])]) as $file) {
             $keys[] = 'file:'.$file;
         }
 

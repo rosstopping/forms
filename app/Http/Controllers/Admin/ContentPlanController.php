@@ -155,6 +155,7 @@ class ContentPlanController extends Controller
     public function syncGeneration(Request $request, Website $website, ContentGeneration $contentGeneration, GithubAppClient $github, CopilotAgentClient $copilot): RedirectResponse
     {
         $this->authorizeGeneration($request, $website, $contentGeneration);
+        abort_if($contentGeneration->status === ContentGeneration::STATUS_NO_WORK, 422, 'This run was verified as no work. Review the held queue item instead.');
         abort_unless($contentGeneration->pull_request_number, 422);
 
         $contentGeneration->loadMissing(['repository.installation', 'requester.githubAuthorization']);

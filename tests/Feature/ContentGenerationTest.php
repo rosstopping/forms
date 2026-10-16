@@ -808,6 +808,12 @@ test('content synchronization stores the pull request resolved from the automati
             'number' => 42,
             'html_url' => 'https://github.com/acme/site/pull/42',
         ]);
+    $github->shouldReceive('pullRequestDetails')->once()->andReturn([
+        'pull_request' => ['number' => 42, 'html_url' => 'https://github.com/acme/site/pull/42', 'state' => 'open',
+            'base' => ['repo' => ['id' => $repository->repository_id], 'ref' => $repository->default_branch],
+            'head' => ['repo' => ['id' => $repository->repository_id], 'ref' => 'copilot/create-useful-content'], 'changed_files' => 1],
+        'files' => [['filename' => 'guide.md']],
+    ]);
     $notifier = $this->mock(ContentGenerationNotifier::class);
     $notifier->shouldReceive('ready')->once()->with($generation);
 
