@@ -9,7 +9,7 @@
             <p class="text-base font-medium sm:text-sm text-garden">Legal</p>
             <h1 class="mt-5 font-sans text-4xl font-medium tracking-tight text-balance sm:text-6xl">Privacy policy</h1>
             <p class="mt-6 max-w-2xl text-pretty text-lg text-ink/65">How Sitewell uses personal information when you visit our website, use our services, contact us, or connect a third-party service.</p>
-            <p class="mt-4 text-sm text-ink/50">Effective date: 7 October 2026</p>
+            <p class="mt-4 text-sm text-ink/50">Effective date: 16 October 2026</p>
 
             <div class="mt-14 space-y-12 text-base leading-7 text-ink/70">
                 <section class="space-y-4">
@@ -64,7 +64,9 @@
 
                 <section class="space-y-4">
                     <h2 class="font-sans text-3xl font-medium tracking-tight text-ink">7. Cookies</h2>
-                    <p>Sitewell uses cookies and similar storage needed for login sessions, security, preferences, and core service operation. We may also use limited measurement technologies where permitted. You can control cookies through your browser, but blocking essential cookies may prevent account features from working.</p>
+                    <p>Sitewell uses essential cookies and storage for login sessions, security, forms and your cookie choice. Optional Google Ads and Google Analytics measurement is off by default. Google Tag Manager and its measurement tags load only after you select Accept optional cookies. Rejecting optional cookies does not prevent you from browsing, requesting an audit or sending an enquiry.</p>
+                    <p>We remember your choice for up to 180 days using first-party storage. Use Cookie settings in the footer to change or withdraw it at any time. Withdrawal reloads the page to stop loaded measurement code and removes measurement cookies accessible on our domain; it cannot delete cookies held by Google on Google’s own domains.</p>
+                    <p>If you accept, Google may receive measurement data such as the page address, browser and device information and an advertising click identifier. Our saved-enquiry conversion event contains an opaque transaction ID, not your name, email address or enquiry message. Saving an enquiry and sending a reply work independently of optional advertising measurement.</p>
                 </section>
 
                 <section class="space-y-4">

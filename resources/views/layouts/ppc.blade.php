@@ -22,7 +22,7 @@
     @yield('structured_data')
 </head>
 <body class="marketing-site prospect-workspace bg-white text-ink">
-    <x-marketing.tag-manager noscript />
+    <x-marketing.consent-banner />
     <x-marketing.enquiry-event />
     <div class="isolate min-h-dvh">
         <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-white focus:p-4">Skip to content</a>
@@ -44,6 +44,7 @@
                 <nav aria-label="Company information" class="flex flex-wrap gap-x-6 gap-y-3">
                     <a class="font-normal hover:text-ink" href="{{ route('marketing.about') }}">About</a>
                     <a class="font-normal hover:text-ink" href="{{ route('marketing.contact') }}">Contact</a>
+                    <button type="button" data-consent-manage class="min-h-12 text-left hover:text-ink focus-visible:outline-offset-4">Cookie settings</button>
                     <a class="font-normal hover:text-ink" href="{{ route('marketing.privacy') }}">Privacy</a>
                     <a class="font-normal hover:text-ink" href="{{ route('marketing.terms') }}">Terms</a>
                     <a class="font-normal hover:text-ink" href="{{ route('login') }}">Log in</a>

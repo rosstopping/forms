@@ -33,7 +33,7 @@
 </head>
 <body class="marketing-site prospect-workspace min-h-dvh bg-white text-ink">
     <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-full focus:bg-white focus:px-5 focus:py-3 focus:text-ink focus:shadow-lg focus:outline-2 focus:outline-offset-2 focus:outline-garden">Skip to content</a>
-    <x-marketing.tag-manager noscript />
+    <x-marketing.consent-banner />
     <x-marketing.enquiry-event />
     <div class="isolate min-h-dvh">
         @if (request()->routeIs('marketing.pricing') && \App\Support\MembershipPlan::activeGrowthOffer())
@@ -59,6 +59,7 @@
                     <a href="{{ route('marketing.about') }}" class="inline-flex min-h-12 items-center hover:text-ink">About</a>
                     <a href="{{ route('marketing.faqs') }}" class="inline-flex min-h-12 items-center hover:text-ink">FAQs</a>
                     <a href="{{ route('marketing.journal') }}" class="inline-flex min-h-12 items-center hover:text-ink">Journal</a>
+                    <button type="button" data-consent-manage class="inline-flex min-h-12 items-center text-left hover:text-ink focus-visible:outline-offset-4">Cookie settings</button>
                     <a href="{{ route('marketing.privacy') }}" class="inline-flex min-h-12 items-center hover:text-ink">Privacy policy</a>
                     <a href="{{ route('marketing.terms') }}" class="inline-flex min-h-12 items-center hover:text-ink">Terms of service</a>
                 </nav>

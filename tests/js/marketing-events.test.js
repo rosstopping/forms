@@ -4,6 +4,7 @@ import { bootMarketingEvents, publishMarketingEvent } from '../../resources/js/m
 
 function browser(storage = new Map()) {
     return {
+        sitewellConsent: { choice: 'accepted' },
         crypto: { randomUUID: () => 'page-view-id' },
         sessionStorage: { getItem: (key) => storage.get(key), setItem: (key, value) => storage.set(key, value) },
         dispatched: [],

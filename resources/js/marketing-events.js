@@ -1,3 +1,4 @@
+import { queueEnquiryConversion } from './marketing-consent.js';
 import { bootCalBooking } from './cal-booking.js';
 import { bootAuditReview } from './audit-review.js';
 import { bootAuditEngagement } from './audit-engagement.js';
@@ -14,6 +15,7 @@ export function publishMarketingEvent(payload, target = window) {
     if (target.sitewellEvents.some((event) => event.event_id === payload.event_id)) return;
 
     try {
+        if (target.sitewellConsent?.choice !== 'accepted') throw new Error('Optional measurement is off');
         if (target.sessionStorage.getItem(key)) return;
         target.sessionStorage.setItem(key, '1');
     } catch {
@@ -22,9 +24,7 @@ export function publishMarketingEvent(payload, target = window) {
 
     target.sitewellEvents.push(payload);
     if (payload.event === 'enquiry_submitted' && payload.is_conversion === true) {
-        target.dataLayer ??= [];
-        // A separate event prevents report downloads from entering the enquiry conversion action.
-        target.dataLayer.push({ event: 'sitewell_enquiry_submitted', event_id: payload.event_id, transaction_id: payload.event_id, conversion_stage: 'enquiry_saved' });
+        queueEnquiryConversion(payload, target);
     }
     target.dispatchEvent(new CustomEvent('sitewell:marketing-event', { detail: payload }));
 }
