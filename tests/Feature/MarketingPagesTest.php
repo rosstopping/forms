@@ -834,3 +834,19 @@ it('restores the original hero while retaining managed delivery below it', funct
     expect($xpath->query('//section[@aria-labelledby="hero-spotlight"]//ul[@aria-label="Search engines and AI assistants"]')->length)->toBe(1)
         ->and($xpath->query('//section[@aria-labelledby="homepage-progress"]//ul[@aria-label="Search engines and AI assistants"]')->length)->toBe(0);
 });
+
+it('answers website care and management questions on the existing service pages', function (): void {
+    $this->get(route('marketing.landing', 'website-maintenance-packages'))
+        ->assertSuccessful()
+        ->assertSee('What is a website care plan?')
+        ->assertSee('Is a website health check the same as ongoing maintenance?')
+        ->assertSee('href="'.route('marketing.landing', 'seo-website-audits').'"', false);
+
+    $this->get(route('marketing.landing', 'website-management-services'))
+        ->assertSuccessful()
+        ->assertSee('Is a managed website service worth it for a small business?');
+
+    $this->get(route('marketing.landing', 'small-business-website-support'))
+        ->assertSuccessful()
+        ->assertSee('Who looks after a small business website after it goes live?');
+});
