@@ -49,6 +49,8 @@ return [
                 ['Can you manage a website you did not build?', 'Yes. You can bring an existing website to Sitewell. We review its current platform and agree the safest way to connect and manage it.'],
                 ['Do I have to move my website hosting?', 'Not necessarily. The right setup depends on how your website is built. We can discuss Pixel, WordPress and repository-based connection options before making changes.'],
                 ['Will I still own my website?', 'Yes. Your domain and connected business accounts remain yours, and we explain website portability and handover arrangements clearly.'],
+                ['Is a managed website service worth it for a small business?', 'It can be when the website brings in enquiries and nobody currently has time to check it. The value is in having one team notice problems, decide what matters and carry out agreed improvements, instead of you coordinating a developer, hosting company and SEO provider yourself.'],
+                ['How is small business website management different from a one-off build?', 'A build ends when the website goes live. Management continues afterwards, covering routine checks, content that stays accurate, enquiry handling and search improvements as the business changes.'],
             ],
             'related' => [
                 ['website-maintenance-packages', 'Website maintenance packages', 'See what ongoing website maintenance should include for a business site that needs regular care.'],
@@ -92,11 +94,14 @@ return [
                 ['Is website hosting the same as website maintenance?', 'No. Hosting keeps the website available on a server. Website maintenance is the ongoing work of checking, updating and improving the website so it continues to support the business.'],
                 ['Do small businesses need ongoing website maintenance?', 'If the website helps generate enquiries or supports local visibility, yes. Small problems can quietly affect leads, trust and search performance when nobody is reviewing the site regularly.'],
                 ['Can I start with a free website audit first?', 'Yes. The free audit is the best place to start if you want to see what needs attention before choosing ongoing website maintenance.'],
+                ['What is a website care plan?', 'A website care plan is an ongoing arrangement where someone regularly checks, updates and improves your website instead of leaving it untouched after launch. Compare plans by what is actually done each month and who is responsible, not just by the monthly price.'],
+                ['What should small business website maintenance cover each month?', 'At a minimum, expect checks on important pages, working links and forms, software and security updates, and a clear summary of anything that needs attention. Useful care also keeps service information accurate and picks up search problems early.'],
+                ['Is a website health check the same as ongoing maintenance?', 'No. A health check is a review at one point in time. Maintenance is the regular work that follows it. A free audit gives you the health check first, so you can decide what ongoing care is worth paying for.'],
             ],
             'related' => [
+                ['seo-website-audits', 'SEO website audits', 'Understand what a website review should show before you commit to ongoing maintenance.'],
                 ['website-management-services', 'Website management services', 'See the broader service for businesses that want one team handling maintenance, content, SEO and enquiries together.'],
                 ['small-business-website-support', 'Website support for small businesses', 'Get help with day-to-day changes, issues and website decisions alongside regular care.'],
-                ['seo-for-small-businesses', 'SEO for small businesses', 'Pair ongoing website maintenance with practical SEO improvements aimed at small business growth.'],
             ],
         ],
         'small-business-website-support' => [
@@ -134,6 +139,7 @@ return [
                 ['Can you support my existing website?', 'Yes. We first review the website and its platform, then recommend the most appropriate way to connect it to Sitewell.'],
                 ['What kinds of website changes can I request?', 'Requests can include updates to existing pages, new landing pages or articles, form improvements and other changes that fit your website and plan.'],
                 ['Is this only WordPress website support?', 'No. Sitewell can work through the Sitewell Pixel, a WordPress connection or a GitHub repository, depending on how the website is built.'],
+                ['Who looks after a small business website after it goes live?', 'Often nobody does, which is how websites become neglected. Someone needs to own routine checks, updates and enquiry handling. Sitewell can take that on, or work alongside your existing designer or developer where that suits you better.'],
                 ['Can I speak to someone about the website?', 'Yes. Specialist calls are available to discuss findings, connection options and the improvements worth prioritising.'],
             ],
             'related' => [
