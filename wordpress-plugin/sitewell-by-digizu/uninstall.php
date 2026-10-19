@@ -6,6 +6,7 @@
 
 declare(strict_types=1);
 use Sitewell\StaticFrontend\DirectDelivery;
+use Sitewell\StaticFrontend\RobotsPublisher;
 
 if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 	exit;
@@ -15,6 +16,9 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
  * Remove one site's Sitewell data.
  */
 function sitewell_static_frontend_uninstall_site(): void {
+	require_once __DIR__ . '/src/RobotsPublisher.php';
+	RobotsPublisher::forWordPress()->restore( true );
+	delete_option( 'sitewell_static_frontend_robots_error' );
 	require_once __DIR__ . '/src/DirectDelivery.php';
 	DirectDelivery::forWordPress()->disable();
 	delete_option( 'sitewell_static_frontend_direct' );

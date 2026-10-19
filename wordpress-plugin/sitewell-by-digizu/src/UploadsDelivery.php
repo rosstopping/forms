@@ -18,7 +18,7 @@ final class UploadsDelivery {
 		return new self( rtrim( (string) $uploads['basedir'], '/' ) . '/sitewell-assets', rtrim( (string) $uploads['baseurl'], '/' ) . '/sitewell-assets' );
 	}
 
-	public function enable( ?DirectDelivery $direct ): void {
+	public function enable( ?DirectDelivery $direct, ?RobotsPublisher $robots = null ): void {
 		if ( defined( 'SITEWELL_STATIC_FRONTEND_PUBLIC_PATH' ) ) {
 			throw new RuntimeException( 'This site uses a custom static virtual host. Restore its WordPress routing before switching delivery modes.' );
 		}
@@ -41,6 +41,7 @@ final class UploadsDelivery {
 				throw new RuntimeException( 'The installed website update is unavailable.' );
 			}
 			$release['rendered_path'] = $this->prepare( $release['path'] );
+			$robots?->synchronize( $release['path'] );
 			$direct?->disable();
 			update_option( SettingsPage::OPTION_ACTIVE_RELEASE, $release, false );
 			update_option( DirectDelivery::OPTION, false, false );

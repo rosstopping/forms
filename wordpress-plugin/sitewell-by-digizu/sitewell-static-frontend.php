@@ -5,7 +5,7 @@
  * Update URI: https://sitewell.digizu.co.uk/wordpress
  * Plugin URI: https://sitewell.digizu.co.uk
  * Description: Keep your website updated through Sitewell while retaining WordPress administration.
- * Version: 1.0.8
+ * Version: 1.0.9
  * Requires at least: 6.6
  * Requires PHP: 8.2
  * Author: Digizu
@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'SITEWELL_STATIC_FRONTEND_VERSION', '1.0.8' );
+define( 'SITEWELL_STATIC_FRONTEND_VERSION', '1.0.9' );
 define( 'SITEWELL_STATIC_FRONTEND_FILE', __FILE__ );
 define( 'SITEWELL_STATIC_FRONTEND_PATH', plugin_dir_path( __FILE__ ) );
 
@@ -42,6 +42,7 @@ require_once SITEWELL_STATIC_FRONTEND_PATH . 'src/StaticArtifactValidator.php';
 require_once SITEWELL_STATIC_FRONTEND_PATH . 'src/StaticPublisher.php';
 require_once SITEWELL_STATIC_FRONTEND_PATH . 'src/DeliveryRules.php';
 require_once SITEWELL_STATIC_FRONTEND_PATH . 'src/DirectDelivery.php';
+require_once SITEWELL_STATIC_FRONTEND_PATH . 'src/RobotsPublisher.php';
 require_once SITEWELL_STATIC_FRONTEND_PATH . 'src/UploadsDelivery.php';
 require_once SITEWELL_STATIC_FRONTEND_PATH . 'src/ReleaseInstaller.php';
 require_once SITEWELL_STATIC_FRONTEND_PATH . 'src/DeploymentManager.php';

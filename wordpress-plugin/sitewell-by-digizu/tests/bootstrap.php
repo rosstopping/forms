@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 if ( ! defined( 'SITEWELL_STATIC_FRONTEND_VERSION' ) ) {
-	define( 'SITEWELL_STATIC_FRONTEND_VERSION', '1.0.8' );
+	define( 'SITEWELL_STATIC_FRONTEND_VERSION', '1.0.9' );
 }
 
 if ( ! class_exists( 'WP_Error' ) ) {
@@ -92,6 +92,7 @@ require_once dirname( __DIR__ ) . '/src/StaticArtifactValidator.php';
 require_once dirname( __DIR__ ) . '/src/StaticPublisher.php';
 require_once dirname( __DIR__ ) . '/src/DeliveryRules.php';
 require_once dirname( __DIR__ ) . '/src/DirectDelivery.php';
+require_once dirname( __DIR__ ) . '/src/RobotsPublisher.php';
 require_once dirname( __DIR__ ) . '/src/UploadsDelivery.php';
 require_once dirname( __DIR__ ) . '/src/ReleaseInstaller.php';
 require_once dirname( __DIR__ ) . '/src/ActiveStaticRootProvider.php';
@@ -146,4 +147,10 @@ function download_url( string $url, int $timeout = 300 ): mixed {
 	$GLOBALS['sitewell_test_download_url'] = $url;
 
 	return $GLOBALS['sitewell_test_download'];
+}
+
+function delete_option( string $key ): bool {
+	unset( $GLOBALS['sitewell_test_options'][ $key ] );
+
+	return true;
 }

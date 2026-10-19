@@ -15,6 +15,8 @@ final class Plugin {
 
 	private readonly FrontendRouter $router;
 
+	private readonly RobotsPublisher $robots;
+
 	private readonly SettingsPage $settingsPage;
 
 	private readonly ConnectionActions $connectionActions;
@@ -25,19 +27,20 @@ final class Plugin {
 
 	private function __construct() {
 		$this->staticRoot         = new ActiveStaticRootProvider();
+		$this->robots             = RobotsPublisher::forWordPress();
 		$this->router             = new FrontendRouter(
 			new StaticPathResolver( $this->staticRoot->path() ),
 			new BypassPolicy(),
 			SITEWELL_STATIC_FRONTEND_PATH . 'templates/static-router.php',
 			is_string( SettingsPage::activeRelease()['rendered_path'] ?? null ) ? new StaticPathResolver( SettingsPage::activeRelease()['rendered_path'] ) : null,
 		);
-		$this->settingsPage       = new SettingsPage( $this->staticRoot, DirectDelivery::forWordPress(), UploadsDelivery::forWordPress() );
+		$this->settingsPage       = new SettingsPage( $this->staticRoot, DirectDelivery::forWordPress(), UploadsDelivery::forWordPress(), $this->robots );
 		$client                   = new SitewellClient( SITEWELL_STATIC_FRONTEND_API_URL );
 		$uploads                  = wp_upload_dir();
 		$releasesPath             = defined( 'SITEWELL_STATIC_FRONTEND_RELEASES_PATH' )
 			? (string) SITEWELL_STATIC_FRONTEND_RELEASES_PATH
 			: rtrim( (string) ( $uploads['basedir'] ?? '' ), '/\\' ) . '/sitewell-static-frontend/releases';
-		$this->deployments        = new DeploymentManager( $client, new ReleaseInstaller( $releasesPath, defined( 'SITEWELL_STATIC_FRONTEND_PUBLIC_PATH' ) ? (string) SITEWELL_STATIC_FRONTEND_PUBLIC_PATH : null, DirectDelivery::forWordPress(), UploadsDelivery::forWordPress() ) );
+		$this->deployments        = new DeploymentManager( $client, new ReleaseInstaller( $releasesPath, defined( 'SITEWELL_STATIC_FRONTEND_PUBLIC_PATH' ) ? (string) SITEWELL_STATIC_FRONTEND_PUBLIC_PATH : null, DirectDelivery::forWordPress(), UploadsDelivery::forWordPress(), $this->robots ) );
 		$this->deploymentEndpoint = new DeploymentEndpoint( $this->deployments );
 		$this->connectionActions  = new ConnectionActions( $client, $this->deployments );
 	}
@@ -58,6 +61,7 @@ final class Plugin {
 
 	public static function deactivate(): void {
 		try {
+			RobotsPublisher::forWordPress()->restore( true );
 			DirectDelivery::forWordPress()->disable();
 			update_option( SettingsPage::OPTION_ENABLED, false, false );
 		} catch ( \RuntimeException $exception ) {
@@ -69,6 +73,7 @@ final class Plugin {
 	public function boot(): void {
 		add_action( 'admin_menu', [ $this->settingsPage, 'register' ] );
 		add_action( 'admin_init', [ $this->settingsPage, 'registerSettings' ] );
+		add_action( 'admin_init', [ $this, 'synchronizeRobots' ] );
 		add_action( 'admin_post_sitewell_static_frontend_connect', [ $this->connectionActions, 'connect' ] );
 		add_action( 'admin_post_sitewell_static_frontend_heartbeat', [ $this->connectionActions, 'heartbeat' ] );
 		add_action( 'admin_post_sitewell_static_frontend_disconnect', [ $this->connectionActions, 'disconnect' ] );
@@ -115,8 +120,21 @@ final class Plugin {
 
 		try {
 			$this->deployments->checkForUpdate();
+			$this->synchronizeRobots();
 		} catch ( \RuntimeException $exception ) {
 			update_option( 'sitewell_static_frontend_last_deployment_error', sanitize_text_field( $exception->getMessage() ), false );
+		}
+	}
+
+	public function synchronizeRobots(): void {
+		$active = SettingsPage::activeRelease();
+		if ( SettingsPage::isEnabled() && is_string( $active['path'] ?? null ) ) {
+			try {
+				$this->robots->synchronize( $active['path'], true );
+				delete_option( 'sitewell_static_frontend_robots_error' );
+			} catch ( \RuntimeException $exception ) {
+				update_option( 'sitewell_static_frontend_robots_error', sanitize_text_field( $exception->getMessage() ), false );
+			}
 		}
 	}
 
