@@ -271,6 +271,7 @@ Route::middleware(['web', 'signed', 'throttle:20,1'])->group(function () {
 
 Route::middleware(['web', 'auth', RestrictCustomerWorkspace::class, RestrictAssignedAdmin::class, ResolveCurrentWebsite::class])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('content-queue', [ManualContentRequestController::class, 'index'])->middleware(EnsureAdmin::class)->name('content-queue.index');
     Route::get('/websites/{website}/weekly-overview', [DashboardController::class, 'weeklyOverview'])->name('weekly-overviews.show');
     Route::get('websites/{website}/search-overview', [DashboardController::class, 'searchOverview'])->name('search-overview');
     Route::post('current-website', CurrentWebsiteController::class)->name('current-website.update');

@@ -15,13 +15,13 @@
     } elseif ($canManageWebsite && collect(['trend_research_enabled', 'content_mode', 'monthly_article_limit', 'monthly_optimisation_limit', 'monthly_copilot_limit', 'content_engine', 'discovery_enabled', 'enabled', 'weekday', 'hour', 'timezone', 'audience', 'guidance', 'additional_weekdays', 'additional_weekdays.*'])->contains(fn ($field) => $errors->has($field))) {
         $currentContentSection = 'automation';
     }
-    $canSubmitContentRequest = $website->repository || (config('forms.pixel_ui_enabled') && $website->pixel_enabled);
+    $canSubmitContentRequest = $contentPlan?->content_engine === \App\Models\ContentPlan::ENGINE_MANUAL || $website->repository || (config('forms.pixel_ui_enabled') && $website->pixel_enabled);
 @endphp
 <div id="website-panel-content" class="space-y-6" role="region" aria-labelledby="website-tab-content" data-tab-panel="content" @if ($currentWebsiteSection !== 'content') hidden @endif>
     @if (! $canUseGrowthFeatures)
         <x-feature-upgrade-banner tier="Growth" title="Plan and request new content" description="Upgrade to Growth to submit content requests, plan improvements, and prepare reviewable website changes." />
         @include('admin.websites.partials.content-preview')
-    @elseif (! $hasContentDeliveryConnection)
+    @elseif (! $hasContentDeliveryConnection && ! Auth::user()?->isAdmin())
         <div class="space-y-5">
             @include('admin.websites.partials.content-connections')
         </div>

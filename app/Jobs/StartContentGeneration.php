@@ -54,6 +54,11 @@ class StartContentGeneration implements ShouldBeEncrypted, ShouldBeUnique, Shoul
             if ($this->generation->copilot_task_id || $this->generation->status !== ContentGeneration::STATUS_PENDING) {
                 return false;
             }
+            if ($plan->content_engine === ContentPlan::ENGINE_MANUAL) {
+                $this->skipGeneration('Manual content is selected. Use My content queue instead.');
+
+                return false;
+            }
             if ($plan->generations()->whereKeyNot($this->generation->id)->where('status', ContentGeneration::STATUS_RUNNING)->exists()) {
                 $this->skipGeneration('Another content generation is still running.');
 

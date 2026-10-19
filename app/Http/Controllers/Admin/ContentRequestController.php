@@ -10,6 +10,7 @@ use App\Models\BacklinkOpportunity;
 use App\Models\CompetitorOpportunity;
 use App\Models\ContentGeneration;
 use App\Models\ContentOpportunity;
+use App\Models\ContentPlan;
 use App\Models\ContentRequest;
 use App\Models\SearchOpportunity;
 use App\Models\SeoOpportunity;
@@ -32,7 +33,7 @@ class ContentRequestController extends Controller
 
         app(SeoImpactTracker::class)->forRequest($contentRequest);
 
-        if (config('forms.pixel_ui_enabled') && $website->pixel_enabled) {
+        if (config('forms.pixel_ui_enabled') && $website->pixel_enabled && $website->contentPlan?->content_engine !== ContentPlan::ENGINE_MANUAL) {
             GenerateContentRequestPixelOptimisations::dispatch($contentRequest, $request->user());
         }
 
@@ -87,7 +88,7 @@ class ContentRequestController extends Controller
             return true;
         });
         abort_if($updated === false, 422, 'Pixel is currently preparing this request. Wait for it to finish.');
-        if (in_array($request->input('action'), ['release', 'enqueue'], true) && config('forms.pixel_ui_enabled') && $website->pixel_enabled) {
+        if (in_array($request->input('action'), ['release', 'enqueue'], true) && config('forms.pixel_ui_enabled') && $website->pixel_enabled && $website->contentPlan?->content_engine !== ContentPlan::ENGINE_MANUAL) {
             GenerateContentRequestPixelOptimisations::dispatch($contentRequest, $request->user());
         }
 

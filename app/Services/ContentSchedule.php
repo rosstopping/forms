@@ -32,6 +32,7 @@ class ContentSchedule
     public function pauseReason(ContentPlan $plan): ?string
     {
         return match (true) {
+            $plan->content_engine === ContentPlan::ENGINE_MANUAL => 'Manual content is selected. Work through My content queue in Codex.',
             ! $plan->enabled => 'Scheduled content is switched off.',
             $this->weeklyLimit($plan->website) === 0 => 'Scheduled content requires an active Growth or Complete website subscription.',
             ! $plan->website->repository => 'Connect a repository to enable scheduled content.',

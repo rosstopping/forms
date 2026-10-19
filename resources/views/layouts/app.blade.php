@@ -41,7 +41,10 @@
                 </a>
 
                 <nav class="mt-10 pb-24" aria-label="Main navigation">
-                    <p class="truncate px-3 text-xs font-medium uppercase tracking-widest text-slate-500" data-website-navigation-heading title="{{ $currentWebsite?->name }}">{{ $currentWebsite?->name ?? 'Your website' }}</p>
+                    @if (Auth::user()?->isAdmin())
+                            <a href="{{ route('admin.content-queue.index') }}" class="flex rounded-lg px-3 py-3 text-sm font-medium text-slate-300 hover:bg-white/5 hover:text-white" @if(request()->routeIs('admin.content-queue.index')) aria-current="page" @endif>My content queue</a>
+                        @endif
+                        <p class="truncate px-3 text-xs font-medium uppercase tracking-widest text-slate-500" data-website-navigation-heading title="{{ $currentWebsite?->name }}">{{ $currentWebsite?->name ?? 'Your website' }}</p>
                     <div class="mt-2 space-y-1">
                         <a href="{{ route('admin.dashboard') }}" @class(['flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium', 'bg-white/10 text-white' => request()->routeIs('admin.dashboard'), 'text-slate-400 hover:bg-white/5 hover:text-white' => ! request()->routeIs('admin.dashboard')])>
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="size-5 shrink-0" aria-hidden="true"><path d="M4 13h6V4H4v9Zm0 7h6v-4H4v4Zm10 0h6v-9h-6v9Zm0-16v4h6V4h-6Z" stroke-linejoin="round"/></svg>
@@ -178,7 +181,10 @@
                             <button type="button" class="relative rounded-lg p-2 text-slate-400 hover:bg-white/5 hover:text-white" aria-label="Close navigation" data-mobile-nav-close><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="size-6" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" stroke-linecap="round"/></svg><span class="absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2" aria-hidden="true"></span></button>
                         </div>
                         <nav class="mt-8 space-y-2" aria-label="Mobile navigation">
-                            <p class="truncate px-3 text-xs font-medium uppercase tracking-widest text-slate-500" data-website-navigation-heading title="{{ $currentWebsite?->name }}">{{ $currentWebsite?->name ?? 'Your website' }}</p>
+                            @if (Auth::user()?->isAdmin())
+                            <a href="{{ route('admin.content-queue.index') }}" class="flex rounded-lg px-3 py-3 text-sm font-medium text-slate-300 hover:bg-white/5 hover:text-white" @if(request()->routeIs('admin.content-queue.index')) aria-current="page" @endif>My content queue</a>
+                        @endif
+                        <p class="truncate px-3 text-xs font-medium uppercase tracking-widest text-slate-500" data-website-navigation-heading title="{{ $currentWebsite?->name }}">{{ $currentWebsite?->name ?? 'Your website' }}</p>
                             <a href="{{ route('admin.dashboard') }}" class="flex rounded-lg px-3 py-3 text-base font-medium text-slate-200 hover:bg-white/5">Overview</a>
                             @if ($currentWebsite && Auth::user()?->isAdmin())
                                 <div class="ml-5 space-y-1 border-l border-white/10 pl-3" data-website-navigation>

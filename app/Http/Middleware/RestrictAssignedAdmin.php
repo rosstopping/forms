@@ -29,7 +29,7 @@ class RestrictAssignedAdmin
             }
         }
         if (! $hasSite) {
-            abort_unless($request->routeIs('admin.dashboard', 'admin.overview', 'admin.websites.index', 'admin.current-website.update',
+            abort_unless($request->routeIs('admin.dashboard', 'admin.overview', 'admin.content-queue.index', 'admin.websites.index', 'admin.current-website.update',
                 'admin.profile.*', 'admin.billing.index', 'admin.billing.portal', 'admin.forms.index',
                 'admin.form-submissions.index', 'admin.form-submissions.create', 'admin.form-submissions.store', 'admin.form-submissions.bulk',
                 'admin.search-console.callback', 'admin.github.callback', 'admin.google-ads.callback', 'admin.business-profile.callback'), 403);

@@ -4,7 +4,7 @@
             <h2 id="content-schedule-title" class="text-lg font-semibold text-balance text-slate-950">Content schedule</h2>
             <p class="mt-2 max-w-2xl text-base text-pretty text-slate-500 sm:text-sm">Set a steady rhythm for your website. Sitewell starts with queued requests, then eligible competitor briefs and target keywords, and prepares every change for review.</p>
         </div>
-        @if ($website->repository && Auth::user()?->isAdmin())
+        @if ($website->repository && Auth::user()?->isAdmin() && $contentPlan?->content_engine !== \App\Models\ContentPlan::ENGINE_MANUAL)
             <form method="POST" action="{{ route('admin.content-generations.store', $website) }}">
                 @csrf
                 <input type="hidden" name="content_section" value="activity">
@@ -37,10 +37,12 @@
             <div class="ui-well p-4 sm:p-5">
                 <label for="content-engine" class="ui-label block">Content engine</label>
                 <select id="content-engine" name="content_engine" class="ui-input mt-2 w-full" @if ($errors->has('content_engine')) aria-invalid="true" @endif>
+                    <option value="manual" @selected(old('content_engine', $contentPlan?->content_engine) === 'manual')>Manual — copy prompts into Codex</option>
                     <option value="copilot" @selected(old('content_engine', $contentPlan?->content_engine ?? 'copilot') === 'copilot')>GitHub Copilot</option>
                     <option value="amp" @selected(old('content_engine', $contentPlan?->content_engine) === 'amp') @disabled(! $ampAvailable && ($contentPlan?->content_engine ?? 'copilot') !== 'amp')>Amp{{ $ampAvailable ? '' : ' (not enabled on this server)' }}</option>
                 </select>
-                <p class="mt-2 text-sm text-slate-500">Staff only. Applies to new runs; runs already started keep their engine. Amp works on this repository’s Amp project and opens a draft pull request for review in GitHub. A failed run never switches engine.</p>
+                <p class="mt-2 text-sm text-slate-500">Manual turns off automated execution. Use My content queue to copy prompts and mark tasks done. Applies to new runs; runs already started keep their engine. Amp works on this repository’s Amp project and opens a draft pull request for review in GitHub. A failed run never switches engine.</p>
+                <a href="{{ route('admin.content-queue.index') }}" class="ui-button ui-button-secondary ui-button-small mt-3">My content queue</a>
                 @error('content_engine')<p class="mt-2 text-sm text-rose-700" role="alert">{{ $message }}</p>@enderror
             </div>
         @endif

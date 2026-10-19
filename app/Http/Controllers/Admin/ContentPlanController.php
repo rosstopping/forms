@@ -29,6 +29,9 @@ class ContentPlanController extends Controller
         if (! $request->user()->isAdmin()) {
             unset($data['content_engine']);
         }
+        if (($data['content_engine'] ?? $website->contentPlan?->content_engine) === ContentPlan::ENGINE_MANUAL) {
+            $data['enabled'] = false;
+        }
         DB::transaction(function () use ($request, $website, $data): void {
             Website::query()->lockForUpdate()->findOrFail($website->id);
             $plan = $website->contentPlan()->lockForUpdate()->first() ?? $website->contentPlan()->make();
@@ -95,6 +98,9 @@ class ContentPlanController extends Controller
         $error = DB::transaction(function () use ($website, $contentGeneration, $schedule): ?string {
             $plan = ContentPlan::query()->lockForUpdate()->findOrFail($contentGeneration->content_plan_id);
             $generation = $plan->generations()->lockForUpdate()->findOrFail($contentGeneration->id);
+            if ($plan->content_engine === ContentPlan::ENGINE_MANUAL) {
+                return 'Manual content is selected. Use My content queue instead.';
+            }
             if ($generation->status !== ContentGeneration::STATUS_FAILED) {
                 return 'Only failed content runs can be retried. This run may already have been retried.';
             }
@@ -196,6 +202,7 @@ class ContentPlanController extends Controller
     protected function ensureReady(Request $request, Website $website): void
     {
         $website->loadMissing(['repository', 'contentPlan']);
+        abort_if($website->contentPlan?->content_engine === ContentPlan::ENGINE_MANUAL, 422, 'Use My content queue for manual content work.');
         $errors = [];
         if (! $website->repository) {
             $errors['enabled'] = 'Connect a GitHub repository first.';

@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Models\ContentPlan;
 use App\Models\ContentRequest;
 use App\Models\User;
 use App\Services\ContentRequestPixelOptimisationGenerator;
@@ -40,6 +41,10 @@ class GenerateContentRequestPixelOptimisations implements ShouldBeUnique, Should
             $contentRequest = $this->contentRequest->fresh();
 
             if (! $contentRequest || ($contentRequest->planning_status ?? 'queued') !== 'queued' || $contentRequest->pixel_processed_at || $contentRequest->manual_started_at || $contentRequest->held_at) {
+                return;
+            }
+
+            if ($contentRequest->website->contentPlan?->content_engine === ContentPlan::ENGINE_MANUAL) {
                 return;
             }
 

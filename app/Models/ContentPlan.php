@@ -17,6 +17,8 @@ class ContentPlan extends Model
 
     public const ENGINE_AMP = 'amp';
 
+    public const ENGINE_MANUAL = 'manual';
+
     protected $fillable = ['keyword_research_enabled', 'keyword_researched_at', 'keyword_research', 'article_path', 'trend_research_enabled', 'trend_researched_at', 'trend_research', 'monthly_article_limit', 'monthly_optimisation_limit', 'monthly_copilot_limit', 'discovery_enabled', 'content_mode', 'website_id', 'created_by', 'enabled', 'additional_weekdays', 'weekday', 'hour', 'timezone', 'audience', 'guidance', 'last_generated_at', 'suggestion_reminder_sent_for', 'competitor_research_mode', 'competitor_researched_at', 'content_engine'];
 
     protected $attributes = ['keyword_research_enabled' => false, 'content_mode' => 'balanced', 'discovery_enabled' => false, 'trend_research_enabled' => false, 'enabled' => false, 'weekday' => 1, 'hour' => 8, 'timezone' => 'Europe/London', 'competitor_research_mode' => 'manual', 'content_engine' => self::ENGINE_COPILOT];
