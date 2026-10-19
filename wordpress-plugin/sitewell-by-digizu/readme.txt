@@ -4,7 +4,7 @@ Tags: website management, maintenance, seo, site audit
 Requires at least: 6.6
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 1.0.8
+Stable tag: 1.0.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -145,6 +145,9 @@ Updates are downloaded directly from Sitewell over verified HTTPS. The plugin ve
 The plugin does not add visitor tracking. Connection and deployment requests are limited to the operational data described in the External service section. See https://sitewell.digizu.co.uk/privacy-policy for details.
 
 == Changelog ==
+
+= 1.0.9 =
+* Keep the public robots.txt in sync with the active website, preserving the original for rollback and reporting file conflicts.
 
 = 1.0.8 =
 * Allow external HTTPS and protocol-relative CSS, JavaScript and fonts from any host.

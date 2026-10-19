@@ -47,7 +47,7 @@ final class ReleaseInstaller {
 		'xsl',
 	];
 
-	public function __construct( private readonly string $releasesPath, private readonly ?string $publicPath = null, private readonly ?DirectDelivery $delivery = null, private readonly ?UploadsDelivery $uploadsDelivery = null ) {}
+	public function __construct( private readonly string $releasesPath, private readonly ?string $publicPath = null, private readonly ?DirectDelivery $delivery = null, private readonly ?UploadsDelivery $uploadsDelivery = null, private readonly ?RobotsPublisher $robots = null ) {}
 
 	/**
 	 * @param  array{release_id: string, checksum: string, size: int}  $release
@@ -145,6 +145,13 @@ final class ReleaseInstaller {
 				$this->removeDirectory( $releasePath );
 				throw $exception;
 			}
+		}
+
+		try {
+			$this->robots?->synchronize( $releasePath, true );
+		} catch ( RuntimeException $exception ) {
+			$this->removeDirectory( $releasePath );
+			throw $exception;
 		}
 
 		$current  = get_option( SettingsPage::OPTION_ACTIVE_RELEASE );

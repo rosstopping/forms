@@ -7,6 +7,7 @@ namespace Sitewell\StaticFrontend\Admin;
 use RuntimeException;
 use Sitewell\StaticFrontend\Contracts\StaticRootProvider;
 use Sitewell\StaticFrontend\DirectDelivery;
+use Sitewell\StaticFrontend\RobotsPublisher;
 use Sitewell\StaticFrontend\UploadsDelivery;
 
 final class SettingsPage {
@@ -19,7 +20,7 @@ final class SettingsPage {
 
 	public const OPTION_PREVIOUS_RELEASE = 'sitewell_static_frontend_previous_release';
 
-	public function __construct( private readonly StaticRootProvider $staticRoot, private readonly ?DirectDelivery $delivery = null, private readonly ?UploadsDelivery $uploadsDelivery = null ) {}
+	public function __construct( private readonly StaticRootProvider $staticRoot, private readonly ?DirectDelivery $delivery = null, private readonly ?UploadsDelivery $uploadsDelivery = null, private readonly ?RobotsPublisher $robots = null ) {}
 
 	public function register(): void {
 		add_options_page(
@@ -50,10 +51,13 @@ final class SettingsPage {
 				if ( $this->uploadsDelivery === null ) {
 					throw new RuntimeException( 'Static delivery is unavailable.' );
 				}
-				$this->uploadsDelivery->enable( $this->delivery );
+				$this->uploadsDelivery->enable( $this->delivery, $this->robots );
 			} else {
+				$this->robots?->restore( true );
 				$this->delivery?->disable();
 			}
+
+			delete_option( 'sitewell_static_frontend_robots_error' );
 
 			return $enable;
 		} catch ( RuntimeException $exception ) {
@@ -149,6 +153,9 @@ final class SettingsPage {
 
 			<hr>
 		<?php settings_errors( self::OPTION_ENABLED ); ?>
+		<?php if ( get_option( 'sitewell_static_frontend_robots_error' ) ) { ?>
+			<p role="alert"><?php echo esc_html( (string) get_option( 'sitewell_static_frontend_robots_error' ) ); ?></p>
+		<?php } ?>
 			<p><?php echo esc_html__( 'Sitewell publishes images, fonts, styles and scripts as ordinary WordPress uploads. Pages use WordPress routing. No web server configuration is required for this mode.', 'sitewell-static-frontend' ); ?></p>
 
 			<p>

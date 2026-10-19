@@ -6,8 +6,10 @@ namespace Sitewell\StaticFrontend\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
 use Sitewell\StaticFrontend\Admin\SettingsPage;
+use Sitewell\StaticFrontend\Contracts\StaticRootProvider;
 use Sitewell\StaticFrontend\DirectDelivery;
 use Sitewell\StaticFrontend\ReleaseInstaller;
+use Sitewell\StaticFrontend\RobotsPublisher;
 use Sitewell\StaticFrontend\UploadsDelivery;
 use ZipArchive;
 
@@ -214,6 +216,57 @@ final class UploadsDeliveryTest extends TestCase {
 		}
 	}
 
+	public function test_enabling_updating_and_disabling_manage_the_public_robots_file(): void {
+		file_put_contents( $this->root . '/robots.txt', 'original origin file' );
+		$this->install(
+			[
+				'index.html' => '<h1>First</h1>',
+				'robots.txt' => 'first release',
+			],
+			null
+		);
+		self::assertSame( 'original origin file', file_get_contents( $this->root . '/robots.txt' ) );
+		$robots = new RobotsPublisher( $this->root, $this->root . '/locks' );
+		$this->delivery()->enable( null, $robots );
+		self::assertSame( 'first release', file_get_contents( $this->root . '/robots.txt' ) );
+		update_option( SettingsPage::OPTION_ENABLED, true );
+		$this->install(
+			[
+				'index.html' => '<h1>Second</h1>',
+				'robots.txt' => 'second release',
+			],
+			null,
+			true,
+			'wsr_1234567890abcdefghijklmnopqr'
+		);
+		self::assertSame( 'second release', file_get_contents( $this->root . '/robots.txt' ) );
+		$provider = new class() implements StaticRootProvider
+		{
+			public function path(): string {
+				return '';
+			}
+		};
+		$settings = new SettingsPage( $provider, null, $this->delivery(), $robots );
+		self::assertFalse( $settings->saveEnabled( false ) );
+		self::assertFalse( SettingsPage::isEnabled() );
+		self::assertSame( 'original origin file', file_get_contents( $this->root . '/robots.txt' ) );
+	}
+
+	public function test_a_robots_conflict_does_not_activate_a_new_website_release(): void {
+		update_option( SettingsPage::OPTION_ENABLED, true );
+		$this->install( [ 'index.html' => '<h1>First</h1>', 'robots.txt' => 'first release' ], null );
+		$active = get_option( SettingsPage::OPTION_ACTIVE_RELEASE );
+		file_put_contents( $this->root . '/robots.txt', 'external edit' );
+		try {
+			$this->install( [ 'index.html' => '<h1>Second</h1>', 'robots.txt' => 'second release' ], null, true, 'wsr_1234567890abcdefghijklmnopqr' );
+			self::fail( 'Expected a robots conflict' );
+		} catch ( \RuntimeException $exception ) {
+			self::assertStringContainsString( 'outside Sitewell', $exception->getMessage() );
+		}
+		self::assertSame( $active, get_option( SettingsPage::OPTION_ACTIVE_RELEASE ) );
+		self::assertSame( 'external edit', file_get_contents( $this->root . '/robots.txt' ) );
+	}
+
 	private function delivery(): UploadsDelivery {
 		return new UploadsDelivery( $this->root . '/wp-content/uploads/sitewell-assets', self::URL );
 	}
@@ -236,7 +289,7 @@ final class UploadsDeliveryTest extends TestCase {
 			$zip->addFromString( $path, $content );
 		}
 		$zip->close();
-		( new ReleaseInstaller( $this->root . '/releases', null, null, $prepare ? $this->delivery() : null ) )->install(
+		( new ReleaseInstaller( $this->root . '/releases', null, null, $prepare ? $this->delivery() : null, new RobotsPublisher( $this->root, $this->root . '/locks' ) ) )->install(
 			[
 				'release_id' => $id,
 				'checksum'   => hash_file( 'sha256', $archive ),
