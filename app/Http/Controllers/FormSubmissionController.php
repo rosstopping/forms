@@ -16,6 +16,7 @@ use App\Services\SourceWebsiteResolver;
 use App\Services\SpamDetector;
 use App\Services\TurnstileVerifier;
 use App\Services\WebhookSender;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
@@ -45,6 +46,10 @@ class FormSubmissionController extends Controller
             $website = $this->resolveWebsite($request);
             $form = $this->resolveForm($request, $website);
             $submission = $this->createSubmission($request, $website, $form, true);
+
+            if ($request->wantsJson() && ! $request->filled('_form_success_url')) {
+                return $this->jsonSuccess($submission, $form);
+            }
 
             return redirect($this->redirectResolver->resolveSuccess($request, $website ?: $this->createFallbackWebsite($request), $form ?: $this->createFallbackForm($request)));
         }
@@ -87,15 +92,25 @@ class FormSubmissionController extends Controller
         }
 
         if ($request->wantsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Your form was submitted successfully.',
-                'submission_id' => $submission->id,
-                'form' => ['name' => $form->name, 'slug' => $form->slug],
-            ]);
+            return $this->jsonSuccess($submission, $form);
         }
 
         return redirect($this->redirectResolver->resolveSuccess($request, $website, $form));
+    }
+
+    protected function jsonSuccess(FormSubmission $submission, ?Form $form): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'message' => 'Your form was submitted successfully.',
+            'submission_id' => $submission->id,
+            'form' => ['name' => $form?->name, 'slug' => $form?->slug],
+            'conversion_event_id' => $submission->is_spam ? null : hash_hmac(
+                'sha256',
+                'form-submission:'.$submission->id,
+                config('app.key'),
+            ),
+        ]);
     }
 
     protected function resolveWebsite(Request $request): ?Website

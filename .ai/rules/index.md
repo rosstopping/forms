@@ -31,6 +31,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | {config/agencies.php,app/Http/Controllers/AgencyMarketingController.php,app/Http/Requests/StoreAgencyBetaRequest.php,resources/views/marketing/agencies/**} | .ai/rules/agencies.md |
 | app/{Ai/Agents/PixelOptimisationWriter.php,Services/PixelOptimisationGenerator.php,Http/Controllers/Admin/*PageOptimisationsController.php} | .ai/rules/agents-controllers-admin.md |
 | app/{Ai/Agents/CompetitorAnalyst.php,Services/CompetitorBriefGenerator.php} | .ai/rules/agents.md |
+| app/Http/Controllers/FormSubmissionController.php | .ai/rules/app-http-controllers.md |
 | app/Http/Middleware/RestrictCustomerWorkspace.php | .ai/rules/app-http-middleware.md |
 | app/Http/Requests/StoreFreeSiteAuditRequest.php | .ai/rules/app-http-requests.md |
 | app/{Jobs/Send*RankingReport.php,Services/GoogleAdsEmailSummary.php,Services/GoogleAdsClient.php,Mail/*RankingReport.php},resources/views/emails/*ranking-report.blade.php | .ai/rules/app-jobs-views-emails.md |

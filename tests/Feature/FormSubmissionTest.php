@@ -21,6 +21,36 @@ beforeEach(function (): void {
     Http::preventStrayRequests();
 });
 
+it('returns an opaque conversion receipt only after saving an accepted enquiry', function (): void {
+    $response = $this->withHeader('Origin', 'https://digizu.co.uk')->postJson('/submit', [
+        '_form_name' => 'Contact',
+        'name' => 'Grace Hopper',
+        'email' => 'grace@example.com',
+        'message' => 'Please help us improve our company website.',
+    ])->assertSuccessful()->assertJsonPath('success', true);
+
+    $submission = FormSubmission::query()->sole();
+
+    expect($submission->is_spam)->toBeFalse();
+    $response->assertJsonPath('conversion_event_id', hash_hmac('sha256', 'form-submission:'.$submission->id, config('app.key')));
+    expect($response->json('conversion_event_id'))->toMatch('/^[a-f0-9]{64}$/');
+    expect($response->getContent())->not->toContain('grace@example.com');
+});
+
+it('does not issue a conversion receipt for quarantined enquiries', function (array $payload): void {
+    $this->withHeader('Origin', 'https://digizu.co.uk')->postJson('/submit', [
+        '_form_name' => 'Contact',
+        'name' => 'Grace Hopper',
+        ...$payload,
+    ])->assertSuccessful()->assertJsonPath('success', true)->assertJsonPath('conversion_event_id', null);
+
+    expect(FormSubmission::query()->sole()->is_spam)->toBeTrue();
+    Mail::assertNothingSent();
+})->with([
+    'honeypot' => [['_honeypot' => 'filled']],
+    'spam message' => [['message' => 'Is this your business listing on this web index? https://example.com/check']],
+]);
+
 it('auto-registers a website and form and stores the submission', function (): void {
     $response = $this->withHeader('Origin', 'https://example.com')
         ->post('/submit', [
