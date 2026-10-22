@@ -104,6 +104,7 @@ use App\Http\Controllers\GithubWebhookController;
 use App\Http\Controllers\MarketingController;
 use App\Http\Controllers\OnboardingEnquiryController;
 use App\Http\Controllers\OnboardingLifecycleClickController;
+use App\Http\Controllers\PhpSecurityCheckController;
 use App\Http\Controllers\PpcLandingController;
 use App\Http\Controllers\ProspectOutreachClickController;
 use App\Http\Controllers\ProspectOutreachOpenController;
@@ -185,6 +186,9 @@ Route::middleware(['signed', 'throttle:30,1'])->group(function () {
 });
 
 Route::redirect('/free-site-audit', '/get-started', 301);
+Route::get('/php-security-check', [PhpSecurityCheckController::class, 'create'])->name('marketing.php-security-check');
+Route::post('/php-security-check', [PhpSecurityCheckController::class, 'store'])->middleware('throttle:5,1')->name('marketing.php-security-check.store');
+
 Route::get('/get-started', [FreeSiteAuditController::class, 'create'])->name('marketing.free-site-audit');
 Route::post('/get-started', [FreeSiteAuditController::class, 'store'])
     ->middleware('throttle:website-audits')
