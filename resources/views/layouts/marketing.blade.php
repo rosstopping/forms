@@ -36,12 +36,6 @@
     <x-marketing.consent-banner />
     <x-marketing.enquiry-event />
     <div class="isolate min-h-dvh">
-        <aside aria-label="Website security notice" class="bg-ink text-white">
-            <div class="mx-auto flex max-w-7xl flex-col items-start gap-3 px-5 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:px-8 lg:px-10">
-                <p class="text-pretty text-base sm:text-sm">A critical PHP security update is available. Check whether your website could be affected.</p>
-                <a href="{{ route('marketing.php-security-check') }}" class="inline-flex min-h-12 shrink-0 items-center rounded-full px-4 py-3 text-base font-medium ring-1 ring-white/40 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:text-sm">Check your website</a>
-            </div>
-        </aside>
         @if (request()->routeIs('marketing.pricing') && \App\Support\MembershipPlan::activeGrowthOffer())
             <a href="{{ route('marketing.pricing') }}" class="flex items-center justify-center gap-2 bg-garden px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-moss"><span>2026 Growth offer: save 20% — now £316/month</span><span aria-hidden="true">→</span></a>
         @endif

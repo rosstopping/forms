@@ -241,16 +241,9 @@ it('keeps the visitor result simple for detected PHP platforms', function (): vo
         ->assertDontSee('Laravel indicators')->assertDontSee('What we found');
 });
 
-it('links the public security banner directly to the checker', function (string $route): void {
+it('keeps the security banner off Sitewell marketing pages', function (string $route): void {
     $this->withoutVite();
-    $response = $this->get(route($route))->assertSuccessful();
-    $document = new DOMDocument;
-    @$document->loadHTML($response->getContent());
-    $xpath = new DOMXPath($document);
-    $banner = $xpath->query('//aside[@aria-label="Website security notice"]');
-    expect($banner->length)->toBe(1);
-    expect($banner->item(0)->textContent)->toContain('critical PHP security update');
-    $link = $xpath->query('//aside[@aria-label="Website security notice"]//a')->item(0);
-    expect($link->getAttribute('href'))->toBe(route('marketing.php-security-check'));
-    expect(trim($link->textContent))->toBe('Check your website');
+    $this->get(route($route))->assertSuccessful()
+        ->assertDontSee('Website security notice')
+        ->assertDontSee('A critical PHP security update is available.');
 })->with(['marketing.home', 'marketing.contact', 'marketing.php-security-check']);
