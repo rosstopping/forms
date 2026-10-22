@@ -182,3 +182,75 @@ it('rejects missing DNS answers and permits public IPv6', function (): void {
     expect($checker->requests)->toBeEmpty();
     expect($checker->isPublicAddress('2606:4700:4700::1111'))->toBeTrue();
 });
+
+it('recognises specific PHP platform fingerprints without fetching more pages', function (array $headers, string $html, string $platform): void {
+    $checker = securityCheckerFixture([['status' => 200, 'headers' => ['content-type' => 'text/html', ...$headers], 'body' => $html]]);
+    $result = $checker->check('https://example.com');
+    expect($result['status'])->toBe('potential');
+    expect(implode(' ', $result['evidence']))->toContain($platform);
+    expect($checker->requests)->toHaveCount(1);
+})->with([
+    'Laravel default underscore cookie' => [['set-cookie' => 'laravel_session=abc; HttpOnly'], '', 'Laravel'],
+    'Laravel default hyphen cookie' => [['set-cookie' => 'laravel-session=abc; HttpOnly'], '', 'Laravel'],
+    'Drupal response header' => [['x-generator' => 'Drupal 11 (https://www.drupal.org)'], '', 'Drupal'],
+    'Drupal generator' => [[], '<meta content="Drupal 11 (https://www.drupal.org)" name="Generator">', 'Drupal'],
+    'Joomla generator' => [[], '<meta name="generator" content="Joomla! - Open Source Content Management">', 'Joomla'],
+    'TYPO3 generator' => [[], "<meta content='TYPO3 CMS' name='generator'>", 'TYPO3'],
+    'Magento cookie with expiry' => [['set-cookie' => 'other=1; Expires=Wed, 28 Oct 2026 10:00:00 GMT; Path=/, X-Magento-Vary=abc123; Secure'], '', 'Magento'],
+    'Craft header' => [['x-powered-by' => 'Craft CMS'], '', 'Craft CMS'],
+    'Symfony matching profiler headers' => [['x-debug-token' => '110e1e', 'x-debug-token-link' => 'https://example.com/_profiler/110e1e'], '', 'Symfony'],
+]);
+
+it('recognises renamed Laravel sessions only with corroborating encrypted-cookie evidence', function (): void {
+    $cookie = rawurlencode(encrypt('test-session'));
+    $checker = securityCheckerFixture([['status' => 200, 'headers' => ['content-type' => 'text/html', 'set-cookie' => 'XSRF-TOKEN=token; Path=/, the_amp_camp_session='.$cookie.'; HttpOnly'], 'body' => '<meta name="csrf-token" content="test-token">']]);
+    $result = $checker->check('https://example.com');
+    expect($result['status'])->toBe('potential');
+    expect(implode(' ', $result['evidence']))->toContain('Laravel');
+});
+
+it('does not infer PHP from generic or misleading platform mentions', function (array $headers, string $html): void {
+    $checker = securityCheckerFixture([['status' => 200, 'headers' => ['content-type' => 'text/html', ...$headers], 'body' => $html]]);
+    expect($checker->check('https://example.com')['status'])->toBe('unknown');
+})->with([
+    'framework names in article' => [[], '<p>Laravel, Symfony, Drupal, Joomla, Magento, TYPO3 and Craft CMS tutorials.</p>'],
+    'generic CSRF meta' => [[], '<meta name="csrf-token" content="token">'],
+    'generic XSRF cookie' => [['set-cookie' => 'XSRF-TOKEN=abc; Path=/'], ''],
+    'generic session cookie' => [['set-cookie' => 'custom_session=abc; HttpOnly'], ''],
+    'custom session plus XSRF and CSRF without Laravel encryption' => [['set-cookie' => 'XSRF-TOKEN=abc; Path=/, custom_session=abc; HttpOnly'], '<meta name="csrf-token" content="token">'],
+    'Laravel cookie name inside cookie value' => [['set-cookie' => 'analytics=laravel_session=abc; Path=/'], ''],
+    'Laravel cookie suffix' => [['set-cookie' => 'not_laravel_session=abc; Path=/'], ''],
+    'Drupal in description' => [[], '<meta name="description" content="Drupal 11 development services">'],
+    'generator tutorial name' => [[], '<meta name="generator" content="Drupal tutorial site builder">'],
+    'escaped generator example' => [[], '&lt;meta name="generator" content="Joomla! - Open Source Content Management"&gt;'],
+    'commented generator' => [[], '<!-- <meta name="generator" content="TYPO3 CMS"> -->'],
+    'JS string generator example' => [[], '<script>const example = \'<meta name="generator" content="Drupal 11">\';</script>'],
+    'Craft name prefix' => [['x-powered-by' => 'Craft CMS-like site builder'], ''],
+    'Magento cookie text inside other value' => [['set-cookie' => 'analytics=X-Magento-Vary=abc; Path=/'], ''],
+    'Symfony token only' => [['x-debug-token' => '110e1e'], ''],
+    'Symfony mismatched token' => [['x-debug-token' => '110e1e', 'x-debug-token-link' => 'https://example.com/_profiler/aaaaaa'], ''],
+    'JavaScript frontend' => [[], '<meta name="generator" content="Next.js"><script src="/_nuxt/app.js"></script>'],
+]);
+
+it('keeps the visitor result simple for detected PHP platforms', function (): void {
+    $this->withoutVite();
+    $this->instance(PhpSecurityChecker::class, securityCheckerFixture([['status' => 200, 'headers' => ['content-type' => 'text/html', 'set-cookie' => 'laravel_session=abc'], 'body' => '']]));
+    $this->post(route('marketing.php-security-check.store'), ['url' => 'https://example.com'])
+        ->assertSuccessful()->assertSee('Your website could be affected')
+        ->assertSee('does not mean your website is vulnerable')
+        ->assertDontSee('Laravel indicators')->assertDontSee('What we found');
+});
+
+it('links the public security banner directly to the checker', function (string $route): void {
+    $this->withoutVite();
+    $response = $this->get(route($route))->assertSuccessful();
+    $document = new DOMDocument;
+    @$document->loadHTML($response->getContent());
+    $xpath = new DOMXPath($document);
+    $banner = $xpath->query('//aside[@aria-label="Website security notice"]');
+    expect($banner->length)->toBe(1);
+    expect($banner->item(0)->textContent)->toContain('critical PHP security update');
+    $link = $xpath->query('//aside[@aria-label="Website security notice"]//a')->item(0);
+    expect($link->getAttribute('href'))->toBe(route('marketing.php-security-check'));
+    expect(trim($link->textContent))->toBe('Check your website');
+})->with(['marketing.home', 'marketing.contact', 'marketing.php-security-check']);

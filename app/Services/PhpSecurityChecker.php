@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use DOMDocument;
+use DOMXPath;
 use GuzzleHttp\Psr7\Uri;
 use GuzzleHttp\Psr7\UriResolver;
 use RuntimeException;
@@ -48,6 +50,8 @@ class PhpSecurityChecker
                     $evidence[] = 'The page contains WordPress clues. WordPress normally runs on PHP, although a cached or static copy can retain these clues.';
                 }
 
+                $evidence = [...$evidence, ...$this->platformEvidence($response['headers'], $response['body'])];
+
                 return ['status' => $evidence ? 'potential' : 'unknown', 'evidence' => $evidence, 'url' => $url];
             }
         } catch (RuntimeException|\InvalidArgumentException) {
@@ -55,6 +59,94 @@ class PhpSecurityChecker
         }
 
         return ['status' => 'unavailable', 'evidence' => [], 'url' => $url];
+    }
+
+    /**
+     * @param  array<string, string>  $headers
+     * @return list<string>
+     */
+    private function platformEvidence(array $headers, string $html): array
+    {
+        $platforms = [];
+        $cookies = [];
+        preg_match_all('/(?:^|,\s*)([A-Za-z0-9_-]+)=([^;,]*)/', $headers['set-cookie'] ?? '', $matches, PREG_SET_ORDER);
+        foreach ($matches as $match) {
+            $cookies[$match[1]] = $match[2];
+        }
+        if (isset($cookies['laravel_session']) || isset($cookies['laravel-session'])) {
+            $platforms[] = 'Laravel';
+        }
+        if (! empty($cookies['X-Magento-Vary'])) {
+            $platforms[] = 'Magento';
+        }
+        if (preg_match('/^Drupal(?:\s+\d|\s*\(|$)/i', $headers['x-generator'] ?? '')) {
+            $platforms[] = 'Drupal';
+        }
+        if (preg_match('/^Craft CMS(?:[\s\/]|$)/i', $headers['x-powered-by'] ?? '')) {
+            $platforms[] = 'Craft CMS';
+        }
+        $debugToken = $headers['x-debug-token'] ?? '';
+        if (preg_match('/^[a-f0-9]{6,32}$/i', $debugToken)
+            && preg_match('~/_(?:profiler)/'.preg_quote($debugToken, '~').'/?$~', parse_url($headers['x-debug-token-link'] ?? '', PHP_URL_PATH) ?: '')) {
+            $platforms[] = 'Symfony';
+        }
+        if ($html !== '') {
+            $document = new DOMDocument;
+            $previous = libxml_use_internal_errors(true);
+            try {
+                $document->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+                $xpath = new DOMXPath($document);
+                $hasCsrfMeta = false;
+                foreach ($xpath->query('//meta[@name][@content]') as $meta) {
+                    $name = strtolower($meta->getAttribute('name'));
+                    $content = trim($meta->getAttribute('content'));
+                    if ($name === 'csrf-token' && $content !== '') {
+                        $hasCsrfMeta = true;
+                    }
+                    if ($name !== 'generator') {
+                        continue;
+                    }
+                    foreach ([
+                        'Drupal' => '/^Drupal(?:\s+\d|\s*\(|$)/i',
+                        'Joomla' => '/^Joomla!?(?:\s+-\s+Open Source Content Management|\s+\d|$)/i',
+                        'TYPO3' => '/^TYPO3 CMS(?:\s+\d|$)/i',
+                    ] as $platform => $pattern) {
+                        if (preg_match($pattern, $content)) {
+                            $platforms[] = $platform;
+                        }
+                    }
+                }
+                if ($hasCsrfMeta && isset($cookies['XSRF-TOKEN'])) {
+                    foreach ($cookies as $name => $value) {
+                        if (preg_match('/[_-]session$/', $name) && $this->isLaravelCookie($value)) {
+                            $platforms[] = 'Laravel';
+                        }
+                    }
+                }
+            } finally {
+                libxml_clear_errors();
+                libxml_use_internal_errors($previous);
+            }
+        }
+
+        return array_map(fn (string $platform): string => $platform.' indicators were found; this does not confirm the live PHP runtime or patch status.', array_values(array_unique($platforms)));
+    }
+
+    private function isLaravelCookie(string $value): bool
+    {
+        $decoded = base64_decode(rawurldecode($value), true);
+        if ($decoded === false) {
+            return false;
+        }
+        $payload = json_decode($decoded, true);
+
+        return is_array($payload)
+            && is_string($payload['iv'] ?? null)
+            && strlen(base64_decode($payload['iv'], true) ?: '') === 16
+            && is_string($payload['value'] ?? null)
+            && (base64_decode($payload['value'], true) ?: '') !== ''
+            && is_string($payload['mac'] ?? null)
+            && preg_match('/^[a-f0-9]{64}$/i', $payload['mac']) === 1;
     }
 
     /** @return list<string> */
