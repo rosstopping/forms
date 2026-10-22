@@ -32,7 +32,10 @@ function securityCheckerFixture(array $responses = [], array $addresses = ['93.1
 it('renders the public form without asking for email', function (): void {
     $this->withoutVite();
     $this->get(route('marketing.php-security-check'))->assertSuccessful()
-        ->assertSee('Check my website')->assertDontSee('name="email"', false);
+        ->assertSee('Is your website affected?')
+        ->assertSee('Enter your website below to check whether it could be affected by the latest security issue.')
+        ->assertSee('Check my website')->assertDontSee('name="email"', false)
+        ->assertDontSee('security-url-help')->assertDontSee('attack attempts');
 });
 
 it('uses cautious public results', function (array $headers, string $body, string $status): void {
@@ -96,8 +99,8 @@ it('normalises bare domains and renders results before the help action', functio
     $this->withoutVite();
     $this->instance(PhpSecurityChecker::class, securityCheckerFixture([['status' => 200, 'headers' => ['content-type' => 'text/html', 'x-powered-by' => 'PHP/8.4.27'], 'body' => '']]));
     $response = $this->post(route('marketing.php-security-check.store'), ['url' => 'example.com']);
-    $response->assertSuccessful()->assertSeeInOrder(['Potentially affected', 'Ask Ross to help'])
-        ->assertSee('does not confirm a vulnerability')->assertSee('backport')->assertDontSee('name="email"', false);
+    $response->assertSuccessful()->assertSeeInOrder(['Your website could be affected', 'Ask Ross for help'])
+        ->assertSee('does not mean your website is vulnerable')->assertSee('Your hosting provider may already have fixed it')->assertDontSee('name="email"', false);
 });
 
 it('validates input and the honeypot', function (): void {
@@ -167,10 +170,10 @@ it('renders uncertainty without a safe verdict', function (string $status, strin
     $this->withoutVite();
     $this->mock(PhpSecurityChecker::class)->shouldReceive('check')->once()->andReturn(['status' => $status, 'evidence' => [], 'url' => 'https://example.com']);
     $this->post(route('marketing.php-security-check.store'), ['url' => 'https://example.com'])
-        ->assertSuccessful()->assertSee($message)->assertSee('Ask Ross to help')->assertDontSee('Your website is safe');
+        ->assertSuccessful()->assertSee($message)->assertSee('Ask Ross for help')->assertDontSee('Your website is safe');
 })->with([
-    ['unknown', 'Unable to confirm PHP'],
-    ['unavailable', 'We couldn’t check this website'],
+    ['unknown', 'We can’t tell from this check'],
+    ['unavailable', 'We couldn’t check your website'],
 ]);
 
 it('rejects missing DNS answers and permits public IPv6', function (): void {
