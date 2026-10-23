@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AgentContentTask;
 use App\Models\CompetitorOpportunity;
 use App\Models\ContentGeneration;
 use App\Models\ContentOpportunity;
@@ -76,6 +77,10 @@ class AgentWorkOverview
 
         return [
             'generated_at' => now()->toIso8601String(), 'read_only' => true,
+            'links' => ['websites' => route('agent.websites.index')],
+            'agent_tasks' => AgentContentTask::query()->whereIn('website_id', $websiteIds)->where('user_id', $user->id)
+                ->whereHas('contentRequest', fn ($query) => $query->whereNull('manual_completed_at')->where('manual_taken_by', $user->id)->whereNotNull('manual_started_at'))
+                ->latest('id')->limit(25)->get(['id', 'website_id', 'content_request_id', 'status', 'scheduled_for', 'pull_request_url', 'blocked_reason']),
             'summary' => ['due_today' => $due->count(), 'empty_due_today' => $due->where('waiting_count', 0)->count(),
                 'approved_tasks' => $taskCount, 'ready_tasks' => $tasks->where('state', 'ready')->count(),
                 'suggestions_awaiting_approval' => $suggestionCount, 'planned_awaiting_approval' => $plannedCount, 'needs_attention' => $attention->count()],

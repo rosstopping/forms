@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AgentContentTask;
 use App\Models\ContentGeneration;
 use App\Models\ContentPlan;
 use App\Models\ContentRequest;
@@ -61,8 +62,9 @@ class ManualContentRequestController extends Controller
         }
 
         $dueWebsites = $schedule->forUser($user);
+        $agentTask = $selected ? AgentContentTask::query()->where('content_request_id', $selected->id)->first(['status', 'pull_request_url', 'blocked_reason']) : null;
 
-        return view('admin.content-queue', compact('tasks', 'selected', 'pauseReason', 'dueWebsites'));
+        return view('admin.content-queue', compact('tasks', 'selected', 'pauseReason', 'dueWebsites', 'agentTask'));
     }
 
     public function skipToday(Request $request, Website $website, ManualContentSchedule $schedule): RedirectResponse

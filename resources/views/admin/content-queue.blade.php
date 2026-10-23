@@ -55,6 +55,14 @@
                         <p class="text-sm font-medium text-teal-700">{{ $selected->website->name }}</p>
                         <h2 id="manual-task-title" class="mt-2 text-lg font-semibold text-slate-950">{{ $selected->manual_started_at ? 'Continue in Codex' : 'Next content task' }}</h2>
                         <p class="mt-3 whitespace-pre-line break-words text-sm text-slate-700">{{ $selected->instructions }}</p>
+                        @if ($agentTask?->pull_request_url)
+                            <div class="ui-well mt-5 p-4">
+                                <p class="text-sm text-slate-700">A draft pull request has been prepared for your review. It has not been merged or published automatically.</p>
+                                <a href="{{ $agentTask->pull_request_url }}" target="_blank" rel="noopener noreferrer" class="ui-button ui-button-primary ui-button-small mt-3">Review draft PR</a>
+                            </div>
+                        @elseif ($agentTask?->blocked_reason)
+                            <p class="ui-well mt-5 p-4 text-sm text-amber-800">{{ $agentTask->blocked_reason }}</p>
+                        @endif
                         @if ($selected->manual_started_at)
                             <div class="mt-5 flex flex-wrap gap-3">
                                 <button type="button" class="ui-button ui-button-primary js-copy-text" data-copy-target="manual-task-prompt" data-copy-label="Copy AI prompt" data-copied-label="Copied">Copy AI prompt</button>

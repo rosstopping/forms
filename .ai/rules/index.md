@@ -53,6 +53,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Http/Controllers/Admin/SearchConsoleController.php,Services/SearchConsolePropertyMatcher.php,Actions/VerifyWebsiteDomainFromSearchConsole.php},resources/views/admin/websites/search-console-property.blade.php | .ai/rules/controllers-admin-views-admin-websites.md |
 | app/{Services/OptimisationValueSanitizer.php,Services/PixelDeploymentDriver.php,Http/Requests/*Optimisation*.php,Http/Controllers/Admin/Optimisation*.php} | .ai/rules/controllers-admin.md |
 | {app/Http/Controllers/FreeSiteAuditController.php,app/Mail/WebsiteAudit*.php,resources/views/marketing/website-audit.blade.php} | .ai/rules/controllers-mail-views-marketing.md |
+| {app/Services/Agent*.php,app/Http/{Controllers/AgentContentTaskController.php,Requests/*AgentContentTaskRequest.php},app/Models/AgentContentTask.php,app/Console/Commands/ManageAgentTask.php} | .ai/rules/controllers-models-console-commands.md |
 | {app/Http/Controllers/MarketingController.php,wordpress-plugin/sitewell-by-digizu/**} | .ai/rules/controllers-sitewell-by-digizu.md |
 | app/{Models,Services,Jobs,Http/Controllers}/**/*Prospect*.php,resources/views/admin/prospects/** | .ai/rules/controllers-views-admin-prospects.md |
 | app/{Models/Website.php,Http/Controllers/FormSubmissionController.php},resources/views/admin/websites/show.blade.php | .ai/rules/controllers-views-admin-websites.md |
@@ -112,6 +113,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Actions/ActivateWebsiteAuditTrial.php,Models/{WebsiteAudit.php,WebsiteDomain.php},Http/Controllers/WebsiteAuditOnboardingController.php},database/migrations/**/*website*claim*.php,tests/Feature/**/*WebsiteAudit*.php | .ai/rules/migrations-feature.md |
 | {app/Models/GoogleAdsCampaignDraft.php,app/Services/GoogleAds{Client,CampaignCreator}.php,database/migrations/*google_ads_campaign_drafts*.php,database/migrations/*sitewell*service*campaign*.php} | .ai/rules/migrations-migrations.md |
 | app/{Enums,Models,Services,Jobs,Http/Controllers}/**/*Prospect*.php,config/outreach.php,database/migrations/**/*prospect*.php | .ai/rules/migrations.md |
+| {app/Services/Agent*.php,app/Services/SitewellAgentClient.php,app/Http/{Controllers/AgentWebsiteController.php,Requests/ReadAgentEvidenceRequest.php},app/Models/WebsiteLocalProject.php,app/Console/Commands/{ReadAgentEvidence,LinkAgentProject}.php} | .ai/rules/models-console-commands.md |
 | app/{Models/ContentRequest.php,Jobs/StartContentGeneration.php,Http/Controllers/Admin/{ContentRequestController.php,ContentRequestPixelController.php}},resources/views/admin/websites/show.blade.php | .ai/rules/models-controllers-admin-views-admin-websites.md |
 | app/{Models/PixelPageSighting.php,Services/PixelHeartbeatRecorder.php,Http/Controllers/PixelHeartbeatController.php}, public/pixel.js | .ai/rules/models-controllers.md |
 | {app/Http/Controllers/GithubWebhookController.php,app/Models/WebsiteRepository.php,database/migrations/*website_repositories*.php} | .ai/rules/models-migrations.md |
