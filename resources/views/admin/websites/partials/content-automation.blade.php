@@ -20,7 +20,7 @@
         <div class="rounded-xl bg-teal-50/70 p-4">
             <label for="content-schedule-enabled" class="ui-label flex items-center gap-3 bg-transparent text-teal-950 hover:bg-transparent">
                 <input id="content-schedule-enabled" type="checkbox" name="enabled" value="1" @checked(old('enabled', $contentPlan?->enabled))>
-                <span>Enable scheduled content improvements</span>
+                <span>Enable automatic content execution</span>
             </label>
             @if ($nextContentRun)
                 <p class="mt-2 text-base text-teal-800 sm:text-sm">Next scheduled run: {{ $nextContentRun->copy()->setTimezone($contentPlan->timezone)->format('l j F, H:i') }} ({{ $contentPlan->timezone }}).</p>
@@ -41,7 +41,14 @@
                     <option value="copilot" @selected(old('content_engine', $contentPlan?->content_engine ?? 'copilot') === 'copilot')>GitHub Copilot</option>
                     <option value="amp" @selected(old('content_engine', $contentPlan?->content_engine) === 'amp') @disabled(! $ampAvailable && ($contentPlan?->content_engine ?? 'copilot') !== 'amp')>Amp{{ $ampAvailable ? '' : ' (not enabled on this server)' }}</option>
                 </select>
-                <p class="mt-2 text-sm text-slate-500">Manual turns off automated execution. Use My content queue to copy prompts and mark tasks done. Applies to new runs; runs already started keep their engine. Amp works on this repository’s Amp project and opens a draft pull request for review in GitHub. A failed run never switches engine.</p>
+                <p class="mt-2 text-sm text-slate-500">Manual turns off automated execution. Your selected days and time are used for reminders in My content queue, where you approve work, copy prompts and mark tasks done. Applies to new runs; runs already started keep their engine. Amp works on this repository’s Amp project and opens a draft pull request for review in GitHub. A failed run never switches engine.</p>
+                <input type="hidden" name="manual_reminders_enabled" value="0">
+                <label for="manual-reminders-enabled" class="ui-label mt-4 flex items-center gap-3">
+                    <input id="manual-reminders-enabled" type="checkbox" name="manual_reminders_enabled" value="1" @checked(old('manual_reminders_enabled', $contentPlan?->manual_reminders_enabled ?? true))>
+                    <span>Show due-today reminders when Manual is selected</span>
+                </label>
+                <p class="mt-2 text-sm text-slate-500">Uses the days, time and timezone below. Empty queues still appear. Starting or completing a manual task handles today’s reminder; Skip today dismisses it for today only. This never starts content automatically.</p>
+                @error('manual_reminders_enabled')<p class="mt-2 text-sm text-rose-700" role="alert">{{ $message }}</p>@enderror
                 <a href="{{ route('admin.content-queue.index') }}" class="ui-button ui-button-secondary ui-button-small mt-3">My content queue</a>
                 @error('content_engine')<p class="mt-2 text-sm text-rose-700" role="alert">{{ $message }}</p>@enderror
             </div>

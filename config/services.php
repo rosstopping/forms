@@ -14,6 +14,13 @@ return [
     |
     */
 
+    'sitewell_agent' => [
+        'token_hash' => env('SITEWELL_AGENT_TOKEN_HASH'),
+        'user_id' => env('SITEWELL_AGENT_USER_ID'),
+        'endpoint' => env('SITEWELL_AGENT_ENDPOINT'),
+        'token' => env('SITEWELL_AGENT_TOKEN'),
+    ],
+
     'postmark' => [
         'key' => env('POSTMARK_API_KEY'),
         'account_token' => env('POSTMARK_ACCOUNT_TOKEN'),

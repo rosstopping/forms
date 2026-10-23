@@ -42,6 +42,7 @@ class ManualContentRequest
         $generation->setRelation('targetKeyword', null);
 
         return "Manual content task for your AI coding assistant. Prepare a reviewable change; do not publish or merge automatically.\n"
+            ."Create a new branch before making changes. After implementing and checking the changes, commit and push the branch, then open a draft pull request for review and return its URL. Do not merge or publish automatically.\n\n"
             .'Website domain: '.($website->primaryDomain()?->domain ?? 'Confirm the canonical website domain from the repository.')."\n"
             .'Search Console snapshot: '.($performanceSnapshot?->started_at?->toIso8601String() ?? 'No recent saved snapshot is available.')."\n"
             ."This brief uses saved Sitewell evidence; no fresh Search Console data was fetched. Inspect the current repository and open reviews before editing.\n\n"

@@ -19,13 +19,13 @@ class ContentPlan extends Model
 
     public const ENGINE_MANUAL = 'manual';
 
-    protected $fillable = ['keyword_research_enabled', 'keyword_researched_at', 'keyword_research', 'article_path', 'trend_research_enabled', 'trend_researched_at', 'trend_research', 'monthly_article_limit', 'monthly_optimisation_limit', 'monthly_copilot_limit', 'discovery_enabled', 'content_mode', 'website_id', 'created_by', 'enabled', 'additional_weekdays', 'weekday', 'hour', 'timezone', 'audience', 'guidance', 'last_generated_at', 'suggestion_reminder_sent_for', 'competitor_research_mode', 'competitor_researched_at', 'content_engine'];
+    protected $fillable = ['manual_reminders_enabled', 'manual_skipped_on', 'keyword_research_enabled', 'keyword_researched_at', 'keyword_research', 'article_path', 'trend_research_enabled', 'trend_researched_at', 'trend_research', 'monthly_article_limit', 'monthly_optimisation_limit', 'monthly_copilot_limit', 'discovery_enabled', 'content_mode', 'website_id', 'created_by', 'enabled', 'additional_weekdays', 'weekday', 'hour', 'timezone', 'audience', 'guidance', 'last_generated_at', 'suggestion_reminder_sent_for', 'competitor_research_mode', 'competitor_researched_at', 'content_engine'];
 
-    protected $attributes = ['keyword_research_enabled' => false, 'content_mode' => 'balanced', 'discovery_enabled' => false, 'trend_research_enabled' => false, 'enabled' => false, 'weekday' => 1, 'hour' => 8, 'timezone' => 'Europe/London', 'competitor_research_mode' => 'manual', 'content_engine' => self::ENGINE_COPILOT];
+    protected $attributes = ['manual_reminders_enabled' => true, 'keyword_research_enabled' => false, 'content_mode' => 'balanced', 'discovery_enabled' => false, 'trend_research_enabled' => false, 'enabled' => false, 'weekday' => 1, 'hour' => 8, 'timezone' => 'Europe/London', 'competitor_research_mode' => 'manual', 'content_engine' => self::ENGINE_COPILOT];
 
     protected function casts(): array
     {
-        return ['keyword_research_enabled' => 'boolean', 'keyword_researched_at' => 'datetime', 'keyword_research' => 'array', 'trend_research_enabled' => 'boolean', 'trend_researched_at' => 'datetime', 'trend_research' => 'array', 'monthly_article_limit' => 'integer', 'monthly_optimisation_limit' => 'integer', 'monthly_copilot_limit' => 'integer', 'discovery_enabled' => 'boolean', 'additional_weekdays' => 'array', 'weekday' => 'integer', 'hour' => 'integer', 'enabled' => 'boolean', 'last_generated_at' => 'datetime', 'suggestion_reminder_sent_for' => 'datetime', 'competitor_researched_at' => 'datetime'];
+        return ['manual_reminders_enabled' => 'boolean', 'manual_skipped_on' => 'date', 'keyword_research_enabled' => 'boolean', 'keyword_researched_at' => 'datetime', 'keyword_research' => 'array', 'trend_research_enabled' => 'boolean', 'trend_researched_at' => 'datetime', 'trend_research' => 'array', 'monthly_article_limit' => 'integer', 'monthly_optimisation_limit' => 'integer', 'monthly_copilot_limit' => 'integer', 'discovery_enabled' => 'boolean', 'additional_weekdays' => 'array', 'weekday' => 'integer', 'hour' => 'integer', 'enabled' => 'boolean', 'last_generated_at' => 'datetime', 'suggestion_reminder_sent_for' => 'datetime', 'competitor_researched_at' => 'datetime'];
     }
 
     public function website(): BelongsTo

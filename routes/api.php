@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AgentWorkController;
 use App\Http\Controllers\PixelHeartbeatController;
 use App\Http\Controllers\PixelPayloadController;
 use App\Http\Controllers\WordPressConnectionController;
@@ -9,6 +10,7 @@ use App\Http\Controllers\WordPressHeartbeatController;
 use App\Http\Controllers\WordPressReleaseActivatedController;
 use App\Http\Controllers\WordPressReleaseDownloadController;
 use App\Http\Middleware\AllowPixelCors;
+use App\Http\Middleware\AuthenticateSitewellAgent;
 use Illuminate\Support\Facades\Route;
 
 Route::get('pixel/{siteKey}', PixelPayloadController::class)
@@ -45,3 +47,7 @@ Route::get('wordpress/connections/{connectionId}/releases/{releaseId}/download',
 Route::post('wordpress/connections/{connectionId}/releases/{releaseId}/activated', WordPressReleaseActivatedController::class)
     ->middleware('throttle:30,1')
     ->name('wordpress-connections.releases.activated');
+
+Route::get('agent/v1/work', AgentWorkController::class)
+    ->middleware(['throttle:10,1', AuthenticateSitewellAgent::class])
+    ->name('agent.work');

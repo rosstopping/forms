@@ -9,6 +9,7 @@ use App\Models\ContentRequest;
 use App\Models\Website;
 use App\Services\ContentWorkSelector;
 use App\Services\ManualContentRequest;
+use App\Services\ManualContentSchedule;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -16,7 +17,7 @@ use Illuminate\Http\Request;
 
 class ManualContentRequestController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request, ManualContentSchedule $schedule): View
     {
         $user = $request->user();
         abort_unless($user?->isAdmin(), 403);
@@ -59,7 +60,19 @@ class ManualContentRequestController extends Controller
             }
         }
 
-        return view('admin.content-queue', compact('tasks', 'selected', 'pauseReason'));
+        $dueWebsites = $schedule->forUser($user);
+
+        return view('admin.content-queue', compact('tasks', 'selected', 'pauseReason', 'dueWebsites'));
+    }
+
+    public function skipToday(Request $request, Website $website, ManualContentSchedule $schedule): RedirectResponse
+    {
+        abort_unless($request->user()?->isAdmin() && $website->isManageableBy($request->user()), 403);
+        $plan = $website->contentPlan;
+        abort_unless($plan && $schedule->dueAt($plan), 422, 'This website has no manual content reminder due today.');
+        $plan->update(['manual_skipped_on' => now($plan->timezone)->toDateString()]);
+
+        return redirect()->route('admin.content-queue.index')->with('status', 'Today’s content reminder skipped. Existing requests are unchanged.');
     }
 
     public function take(Request $request, Website $website, ContentRequest $contentRequest, ManualContentRequest $manual): RedirectResponse

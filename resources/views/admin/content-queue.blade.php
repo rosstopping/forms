@@ -6,9 +6,35 @@
             <h1 class="text-2xl font-semibold tracking-tight text-slate-950">My content queue</h1>
             <p class="mt-2 text-sm text-slate-600">Work through manual content across your websites. Start a task, copy its prompt into Codex, then mark it done.</p>
         </header>
+        @if ($dueWebsites->isNotEmpty())
+            <section class="ui-panel ui-section" aria-labelledby="due-content-title">
+                <h2 id="due-content-title" class="text-lg font-semibold text-slate-950">Due today</h2>
+                <p class="mt-2 text-sm text-slate-600">These websites are due content attention. What would you like to work on? Suggestions need your approval before they enter the queue.</p>
+                <div class="mt-5 space-y-4">
+                    @foreach ($dueWebsites as $dueWebsite)
+                        <article class="ui-well p-4">
+                            <h3 class="font-semibold text-slate-950">{{ $dueWebsite['website'] }}</h3>
+                            <p class="mt-1 text-sm text-slate-500">{{ \Carbon\CarbonImmutable::parse($dueWebsite['scheduled_at'])->format('H:i') }} · {{ $dueWebsite['timezone'] }}</p>
+                            <p class="mt-2 text-sm text-slate-700">{{ $dueWebsite['waiting_count'] ? $dueWebsite['waiting_count'].' approved '.Str::plural('request', $dueWebsite['waiting_count']).' waiting. Check the queue for any holds or blockers.' : 'There’s nothing approved in this website’s queue.' }}</p>
+                            <div class="mt-4 flex flex-wrap items-center gap-3">
+                                <a href="{{ $dueWebsite['suggestions_url'] }}" class="ui-button ui-button-primary ui-button-small">Choose a suggestion</a>
+                                @if ($dueWebsite['planned_count'])
+                                    <a href="{{ $dueWebsite['plan_url'] }}" class="ui-button ui-button-secondary ui-button-small">Review planned content ({{ $dueWebsite['planned_count'] }})</a>
+                                @endif
+                                <a href="{{ $dueWebsite['queue_url'] }}" class="ui-button ui-button-secondary ui-button-small">{{ $dueWebsite['waiting_count'] ? 'Open queue' : 'Add a request' }}</a>
+                                <form method="POST" action="{{ route('admin.content-queue.skip-today', $dueWebsite['website_id']) }}">
+                                    @csrf
+                                    <button type="submit" class="ui-button ui-button-secondary ui-button-small">Skip today</button>
+                                </form>
+                            </div>
+                        </article>
+                    @endforeach
+                </div>
+            </section>
+        @endif
         @if ($tasks->isEmpty())
             <section class="ui-panel ui-section">
-                <h2 class="font-semibold text-slate-950">You’re all caught up</h2>
+                <h2 class="font-semibold text-slate-950">{{ $dueWebsites->isEmpty() ? 'You’re all caught up' : 'No approved tasks waiting' }}</h2>
                 <p class="mt-2 text-sm text-slate-600">No manual tasks are waiting. Select Manual in a website’s Content engine settings and add or approve requests into its content queue.</p>
             </section>
         @else

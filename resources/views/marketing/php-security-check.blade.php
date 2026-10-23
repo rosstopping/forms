@@ -41,6 +41,45 @@
             </div>
         </section>
     @endif
+    <div class="mt-10">
+        <section aria-labelledby="php-guide-heading" class="grid gap-8">
+            <div class="grid gap-4">
+                <p class="text-base font-medium text-garden sm:text-sm">A quick guide for website owners</p>
+                <h2 id="php-guide-heading" class="max-w-[40ch] text-balance text-3xl font-medium tracking-tight">Could this affect my website?</h2>
+                <p class="max-w-[56ch] text-pretty text-base text-ink/70">You don’t need to know the technical details. If you answer yes to any of these, ask whoever looks after your website to check.</p>
+            </div>
+            <ol role="list" class="grid gap-8 lg:grid-cols-3">
+                <li class="grid content-start gap-4 border-t border-black/15 pt-6">
+                    <p class="text-3xl font-medium tabular-nums text-garden" aria-hidden="true">01</p>
+                    <h3 class="text-balance text-xl font-medium">Does your website use WordPress?</h3>
+                    <p class="text-pretty text-base text-ink/70">That includes websites with WooCommerce shops. WordPress uses PHP behind the scenes.</p>
+                    <p class="text-base font-medium text-garden">Yes? Ask for a check <span aria-hidden="true">↓</span></p>
+                </li>
+                <li class="grid content-start gap-4 border-t border-black/15 pt-6">
+                    <p class="text-3xl font-medium tabular-nums text-garden" aria-hidden="true">02</p>
+                    <h3 class="text-balance text-xl font-medium">Recognise any of these names?</h3>
+                    <p class="text-pretty text-base text-ink/70">Laravel, Drupal, Magento, Adobe Commerce, Joomla, Symfony, Craft CMS or TYPO3. If your website was built using one of these, it uses PHP too.</p>
+                    <p class="text-base font-medium text-garden">Yes? Ask for a check <span aria-hidden="true">↓</span></p>
+                </li>
+                <li class="grid content-start gap-4 border-t border-black/15 pt-6">
+                    <p class="text-3xl font-medium tabular-nums text-garden" aria-hidden="true">03</p>
+                    <h3 class="text-balance text-xl font-medium">Been told your website uses PHP?</h3>
+                    <p class="text-pretty text-base text-ink/70">It might be a custom website or booking system. PHP is the software that helps run it on the server.</p>
+                    <p class="text-base font-medium text-garden">Yes? Ask for a check <span aria-hidden="true">↓</span></p>
+                </li>
+            </ol>
+            <div class="grid gap-4 rounded-3xl bg-lichen p-6 sm:p-8">
+                <h3 class="text-balance text-2xl font-medium tracking-tight">Send this to your developer or hosting provider</h3>
+                <blockquote class="max-w-[56ch] text-pretty text-lg font-medium">“Does my website use PHP, and has the October 2026 PHP security update been applied to the server running it?”</blockquote>
+                <p class="max-w-[65ch] text-pretty text-base text-ink/70">Your host may already have applied the fix. Using PHP means you should check; it doesn’t mean your website is still vulnerable.</p>
+                <p class="max-w-[65ch] text-pretty text-base text-ink/70">Updating WordPress, plugins or themes doesn’t confirm that PHP itself has been patched.</p>
+            </div>
+            <div class="grid gap-2 border-l-2 border-garden pl-5">
+                <h3 class="text-balance text-xl font-medium">No idea what your website uses?</h3>
+                <p class="max-w-[65ch] text-pretty text-base text-ink/70">That’s okay. Send the same question to whoever looks after it. Not recognising these names doesn’t mean your website is unaffected.</p>
+            </div>
+        </section>
+    </div>
     <div class="mt-10 grid gap-8 lg:grid-cols-2">
         <div>
             <h2 class="text-balance text-2xl font-medium tracking-tight">Why this matters</h2>

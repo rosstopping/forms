@@ -39,7 +39,11 @@ test('admins preview a scoped full content prompt without changing the queue or 
         ->assertSuccessful()->assertSee('Copy prompt')->assertSee('Take for manual work')
         ->assertSee('Local families')->assertSee('Preserve verified prices.')
         ->assertSee('Use the family services brief.')->assertSee('Work in site.')
-        ->assertSee('14-day')->assertDontSee('PRIVATE OTHER WEBSITE BRIEF');
+        ->assertSee('14-day')->assertDontSee('PRIVATE OTHER WEBSITE BRIEF')
+        ->assertViewHas('contentPrompt', fn (string $prompt): bool => str_starts_with($prompt,
+            "Manual content task for your AI coding assistant. Prepare a reviewable change; do not publish or merge automatically.\n"
+            ."Create a new branch before making changes. After implementing and checking the changes, commit and push the branch, then open a draft pull request for review and return its URL. Do not merge or publish automatically.\n\n"
+        ));
 
     expect($this->request->fresh()->picked_up_at)->toBeNull();
     expect(ContentGeneration::count())->toBe(0);
@@ -51,7 +55,7 @@ test('manual work is reserved excluded from selection and can return with its or
     $this->post(route('admin.content-requests.manual.take', [$this->website, $this->request]))->assertRedirect();
     $request = $this->request->fresh();
     expect($request->manual_taken_by)->toBe($this->admin->id)
-        ->and($request->manual_prompt)->toContain('Improve the services page for families.')
+        ->and($request->manual_prompt)->toContain('Improve the services page for families.', 'Create a new branch before making changes.', 'commit and push the branch, then open a draft pull request for review and return its URL.')
         ->and($request->manual_started_at)->not->toBeNull()
         ->and($this->website->contentRequests()->pendingInQueueOrder()->exists())->toBeFalse();
 

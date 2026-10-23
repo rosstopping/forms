@@ -40,6 +40,7 @@ class UpdateContentPlanRequest extends FormRequest
             'discovery_enabled' => ['sometimes', 'boolean'],
             'content_mode' => ['sometimes', 'required', Rule::in(['balanced', 'new_only', 'existing_only'])],
             'enabled' => ['required', 'boolean'],
+            'manual_reminders_enabled' => ['sometimes', 'boolean'],
             'content_engine' => ['sometimes', 'required', Rule::in([ContentPlan::ENGINE_COPILOT, ContentPlan::ENGINE_AMP, ContentPlan::ENGINE_MANUAL]),
                 function (string $attribute, mixed $value, Closure $fail): void {
                     if ($value === ContentPlan::ENGINE_AMP && $this->user()?->isAdmin() && ! AmpContentRunner::available()) {
