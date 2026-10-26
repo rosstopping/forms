@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'report_emails_enabled' => (bool) env('FORMS_REPORT_EMAILS_ENABLED', true),
     'default_recipient' => env('FORMS_DEFAULT_RECIPIENT', 'hello@example.com'),
     'from_address' => env('FORMS_FROM_ADDRESS', 'hello@example.com'),
     'from_name' => env('FORMS_FROM_NAME', 'Central Forms'),

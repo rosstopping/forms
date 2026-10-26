@@ -11,6 +11,10 @@ class WebsiteMailRecipients
     /** @return array<int, string> */
     public function forReports(Website $website): array
     {
+        if (! config('forms.report_emails_enabled', true)) {
+            return [];
+        }
+
         $website->loadMissing(['owner', 'members']);
 
         return User::query()
