@@ -459,7 +459,8 @@ it('stores page titles longer than the varchar limit', function (): void {
         ->and(mb_strlen($page->title))->toBeGreaterThan(255);
 });
 
-it('audits a website and queues role-appropriate reports for all website users', function (): void {
+it('audits a website and respects the report email switch', function (bool $emailsEnabled): void {
+    config(['forms.report_emails_enabled' => $emailsEnabled]);
     Mail::fake();
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     GithubUserAuthorization::factory()->for($admin)->create();
@@ -572,6 +573,13 @@ it('audits a website and queues role-appropriate reports for all website users',
         ->assertSee('Organization schema opportunity')
         ->assertSee('Last seven days of forms');
 
+    if (! $emailsEnabled) {
+        Mail::assertNothingOutgoing();
+        expect($report->fresh()->emailed_at)->toBeNull();
+
+        return;
+    }
+
     Mail::assertQueued(WebsiteHealthReportReady::class, 4);
     Mail::assertQueued(WebsiteHealthReportReady::class, fn ($mail) => $mail->hasTo($admin->email));
     Mail::assertQueued(WebsiteHealthReportReady::class, fn ($mail) => $mail->hasTo($owner->email));
@@ -602,7 +610,7 @@ it('audits a website and queues role-appropriate reports for all website users',
         ->assertSee('Structured data and schema recommendations')
         ->assertSee('Organization schema opportunity')
         ->assertSee('resources/views/guides/event-forms.blade.php');
-});
+})->with([true, false]);
 
 it('omits form submission details from audit emails for websites without forms', function (): void {
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
