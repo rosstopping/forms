@@ -14,7 +14,7 @@ class SpamDetector
             ->map(fn (mixed $value): string => (string) $value);
 
         $content = $fields->implode("\n");
-        $normalizedContent = preg_replace('/(?<=[\pL\pN])\s*\.\s*(?=[\pL])/u', '.', $content) ?? $content;
+        $normalizedContent = preg_replace('/(?<=[\pL\pN])[ \t]+\.[ \t]*(?=[\pL])/u', '.', $content) ?? $content;
         $score = 0;
         $urlCount = preg_match_all(
             '/(?:https?:\/\/|www\.)[^\s<]+|(?<![@\pL\pN._-])(?:[a-z0-9-]+\.)+[a-z]{2,63}(?![@\pL\pN._-])(?:\/[^\s<]*)?/iu',
