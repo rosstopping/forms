@@ -276,11 +276,11 @@ it('detects the site honeypot field without storing it', function (): void {
     Http::assertNothingSent();
 });
 
-it('accepts submissions that pass Turnstile verification', function (): void {
+it('accepts submissions that pass Turnstile verification', function (string $origin, string $hostname): void {
     Http::fake([
         'https://challenges.cloudflare.com/turnstile/v0/siteverify' => Http::response([
             'success' => true,
-            'hostname' => 'turnstile.example',
+            'hostname' => $hostname,
         ]),
     ]);
     $website = Website::factory()->create([
@@ -290,7 +290,7 @@ it('accepts submissions that pass Turnstile verification', function (): void {
     $website->domains()->create(['domain' => 'turnstile.example', 'is_primary' => true]);
     Form::factory()->for($website)->create(['name' => 'Contact form', 'slug' => 'contact-form']);
 
-    $this->withHeader('Origin', 'https://turnstile.example')->post('/submit', [
+    $this->withHeader('Origin', $origin)->post('/submit', [
         '_form_name' => 'Contact form',
         'name' => 'Ada Lovelace',
         'email' => 'ada@example.com',
@@ -302,9 +302,13 @@ it('accepts submissions that pass Turnstile verification', function (): void {
     Http::assertSent(fn ($request): bool => $request['secret'] === 'secret-key'
         && $request['response'] === 'valid-token'
         && $request['remoteip'] === '127.0.0.1');
-});
+})->with([
+    'apex' => ['https://turnstile.example', 'turnstile.example'],
+    'www' => ['https://www.turnstile.example', 'www.turnstile.example'],
+    'mixed case www' => ['https://www.turnstile.example', 'WWW.TURNSTILE.EXAMPLE'],
+]);
 
-it('silently quarantines submissions that fail Turnstile verification', function (?string $token): void {
+it('returns an explicit error for submissions that fail Turnstile verification', function (?string $token): void {
     Http::fake([
         'https://challenges.cloudflare.com/turnstile/v0/siteverify' => Http::response(['success' => false]),
     ]);
@@ -320,16 +324,17 @@ it('silently quarantines submissions that fail Turnstile verification', function
         'name' => 'Automated visitor',
         'message' => 'A message without links.',
         'cf-turnstile-response' => $token,
-    ], fn (mixed $value): bool => $value !== null))->assertRedirectContains('/submitted');
+    ], fn (mixed $value): bool => $value !== null))->assertUnprocessable();
 
-    expect(FormSubmission::query()->latest('id')->firstOrFail()->is_spam)->toBeTrue();
+    expect(FormSubmission::query()->count())->toBe(0);
     Mail::assertNothingSent();
+    Queue::assertNothingPushed();
 })->with([
     'invalid token' => 'invalid-token',
     'missing token' => null,
 ]);
 
-it('quarantines a valid Turnstile token issued for another hostname', function (): void {
+it('rejects a valid Turnstile token issued for another hostname', function (): void {
     Http::fake([
         'https://challenges.cloudflare.com/turnstile/v0/siteverify' => Http::response([
             'success' => true,
@@ -348,9 +353,11 @@ it('quarantines a valid Turnstile token issued for another hostname', function (
         'name' => 'Automated visitor',
         'message' => 'A message without links.',
         'cf-turnstile-response' => 'token-for-another-site',
-    ])->assertRedirectContains('/submitted');
+    ])->assertUnprocessable();
 
-    expect(FormSubmission::query()->latest('id')->firstOrFail()->is_spam)->toBeTrue();
+    expect(FormSubmission::query()->count())->toBe(0);
+    Mail::assertNothingSent();
+    Queue::assertNothingPushed();
 });
 
 it('quarantines link-heavy submissions without sending notifications', function (): void {

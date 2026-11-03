@@ -45,7 +45,7 @@ class FormSubmissionController extends Controller
         if ($this->honeypotIsFilled($request)) {
             $website = $this->resolveWebsite($request);
             $form = $this->resolveForm($request, $website);
-            $submission = $this->createSubmission($request, $website, $form, true);
+            $submission = $this->createSubmission($request, $website, $form, true, ['honeypot']);
 
             if ($request->wantsJson() && ! $request->filled('_form_success_url')) {
                 return $this->jsonSuccess($submission, $form);
@@ -72,15 +72,38 @@ class FormSubmissionController extends Controller
             return response()->json(['message' => 'This form is disabled.'], 403);
         }
 
+        $verification = $this->turnstileVerifier->verify(
+            $website,
+            $request->string('cf-turnstile-response')->toString(),
+            $request->ip(),
+        );
+
+        if (! $verification->passed) {
+            logger()->log($verification->unavailable ? 'warning' : 'info', 'Form verification rejected', [
+                'website_id' => $website->id,
+                'form_id' => $form->id,
+                'reason' => $verification->reason,
+            ]);
+
+            $message = $verification->unavailable
+                ? 'Verification is temporarily unavailable. Your enquiry has not been submitted. Please wait a moment, refresh the page and try again.'
+                : 'Verification could not be completed. Your enquiry has not been submitted. Please refresh the page and complete the security check again.';
+            $status = $verification->unavailable ? 503 : 422;
+            $response = $request->wantsJson()
+                ? response()->json(['success' => false, 'message' => $message], $status)
+                : response($message, $status)->header('Content-Type', 'text/plain; charset=UTF-8');
+
+            return $verification->unavailable ? $response->header('Retry-After', '30') : $response;
+        }
+
+        $isContentSpam = $this->spamDetector->isSpam($this->formDataSanitiser->sanitise($request->all()));
         $submission = $this->createSubmission(
             $request,
             $website,
             $form,
-            ! $this->turnstileVerifier->passes(
-                $website,
-                $request->string('cf-turnstile-response')->toString(),
-                $request->ip(),
-            ) || $this->spamDetector->isSpam($this->formDataSanitiser->sanitise($request->all())),
+            $isContentSpam,
+            $isContentSpam ? ['content'] : [],
+            $verification->reason,
         );
 
         if (! $submission->is_spam) {
@@ -174,7 +197,8 @@ class FormSubmissionController extends Controller
         ]);
     }
 
-    protected function createSubmission(Request $request, ?Website $website, ?Form $form, bool $isSpam): FormSubmission
+    /** @param list<string> $spamReasons */
+    protected function createSubmission(Request $request, ?Website $website, ?Form $form, bool $isSpam, array $spamReasons = [], ?string $verificationReason = null): FormSubmission
     {
         $payload = $request->all();
         $sanitised = $this->formDataSanitiser->sanitise($payload);
@@ -189,7 +213,10 @@ class FormSubmissionController extends Controller
             'user_agent' => $request->userAgent(),
             'is_spam' => $isSpam,
         ]);
-        $submission->recordActivity('created', 'Lead received'.($submission->source_domain ? ' from '.$submission->source_domain : '').'.');
+        $submission->recordActivity('created', 'Lead received'.($submission->source_domain ? ' from '.$submission->source_domain : '').'.', metadata: [
+            'spam_reasons' => $spamReasons,
+            'verification_reason' => $verificationReason,
+        ]);
 
         if ($form) {
             $form->update(['last_submission_at' => now()]);

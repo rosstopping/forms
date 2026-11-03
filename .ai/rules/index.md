@@ -54,6 +54,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Services/OptimisationValueSanitizer.php,Services/PixelDeploymentDriver.php,Http/Requests/*Optimisation*.php,Http/Controllers/Admin/Optimisation*.php} | .ai/rules/controllers-admin.md |
 | {app/Http/Controllers/FreeSiteAuditController.php,app/Mail/WebsiteAudit*.php,resources/views/marketing/website-audit.blade.php} | .ai/rules/controllers-mail-views-marketing.md |
 | {app/Services/Agent*.php,app/Http/{Controllers/AgentContentTaskController.php,Requests/*AgentContentTaskRequest.php},app/Models/AgentContentTask.php,app/Console/Commands/ManageAgentTask.php} | .ai/rules/controllers-models-console-commands.md |
+| {app/Http/Controllers/FormSubmissionController.php,app/Services/Turnstile*.php} | .ai/rules/controllers-services.md |
 | {app/Http/Controllers/MarketingController.php,wordpress-plugin/sitewell-by-digizu/**} | .ai/rules/controllers-sitewell-by-digizu.md |
 | app/{Models,Services,Jobs,Http/Controllers}/**/*Prospect*.php,resources/views/admin/prospects/** | .ai/rules/controllers-views-admin-prospects.md |
 | app/{Models/Website.php,Http/Controllers/FormSubmissionController.php},resources/views/admin/websites/show.blade.php | .ai/rules/controllers-views-admin-websites.md |
