@@ -50,6 +50,14 @@ final class DeploymentEndpoint {
 
 		try {
 			$installed = $this->deployments->checkForUpdate();
+		} catch ( DeploymentInProgress $exception ) {
+			return new WP_REST_Response(
+				[
+					'installed'   => false,
+					'in_progress' => true,
+				],
+				202
+			);
 		} catch ( RuntimeException $exception ) {
 			return new WP_Error( 'sitewell_deployment_failed', $exception->getMessage(), [ 'status' => 500 ] );
 		}

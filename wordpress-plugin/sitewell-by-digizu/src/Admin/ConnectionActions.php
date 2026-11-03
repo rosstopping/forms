@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Sitewell\StaticFrontend\Admin;
 
 use RuntimeException;
+use Sitewell\StaticFrontend\DeploymentInProgress;
 use Sitewell\StaticFrontend\DeploymentManager;
 use Sitewell\StaticFrontend\SitewellClient;
 
@@ -82,6 +83,8 @@ final class ConnectionActions {
 				? __( 'The latest Sitewell update is now live.', 'sitewell-static-frontend' )
 				: __( 'This website is already running the latest update.', 'sitewell-static-frontend' ),
 			);
+		} catch ( DeploymentInProgress $exception ) {
+			$this->redirectWithNotice( 'success', $exception->getMessage() );
 		} catch ( RuntimeException $exception ) {
 			$this->redirectWithNotice( 'error', $exception->getMessage() );
 		}

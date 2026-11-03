@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 if ( ! defined( 'SITEWELL_STATIC_FRONTEND_VERSION' ) ) {
-	define( 'SITEWELL_STATIC_FRONTEND_VERSION', '1.0.9' );
+	define( 'SITEWELL_STATIC_FRONTEND_VERSION', '1.0.10' );
 }
 
 if ( ! class_exists( 'WP_Error' ) ) {
@@ -94,6 +94,7 @@ require_once dirname( __DIR__ ) . '/src/DeliveryRules.php';
 require_once dirname( __DIR__ ) . '/src/DirectDelivery.php';
 require_once dirname( __DIR__ ) . '/src/RobotsPublisher.php';
 require_once dirname( __DIR__ ) . '/src/UploadsDelivery.php';
+require_once dirname( __DIR__ ) . '/src/DeploymentInProgress.php';
 require_once dirname( __DIR__ ) . '/src/ReleaseInstaller.php';
 require_once dirname( __DIR__ ) . '/src/ActiveStaticRootProvider.php';
 require_once dirname( __DIR__ ) . '/src/ResolvedStaticFile.php';
@@ -153,4 +154,40 @@ function delete_option( string $key ): bool {
 	unset( $GLOBALS['sitewell_test_options'][ $key ] );
 
 	return true;
+}
+
+require_once dirname( __DIR__ ) . '/src/DeploymentManager.php';
+require_once dirname( __DIR__ ) . '/src/DeploymentEndpoint.php';
+
+function wp_tempnam( string $filename ): string|false {
+	return tempnam( sys_get_temp_dir(), 'sitewell-update-test-' );
+}
+
+if ( ! class_exists( 'WP_REST_Request' ) ) {
+	class WP_REST_Request {
+
+		private array $params = [];
+
+		public function set_param( string $key, mixed $value ): void {
+			$this->params[ $key ] = $value;
+		}
+
+		public function get_param( string $key ): mixed {
+			return $this->params[ $key ] ?? null;
+		}
+	}
+}
+if ( ! class_exists( 'WP_REST_Response' ) ) {
+	class WP_REST_Response {
+
+		public function __construct( private readonly array $data, private readonly int $status = 200 ) {}
+
+		public function get_status(): int {
+			return $this->status;
+		}
+
+		public function get_data(): array {
+			return $this->data;
+		}
+	}
 }

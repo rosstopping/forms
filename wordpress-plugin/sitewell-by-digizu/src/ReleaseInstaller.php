@@ -62,7 +62,11 @@ final class ReleaseInstaller {
 			throw new RuntimeException( 'Could not open the deployment lock.' );
 		}
 		try {
-			if ( ! flock( $lock, LOCK_EX ) ) {
+			$wouldBlock = 0;
+			if ( ! flock( $lock, LOCK_EX | LOCK_NB, $wouldBlock ) ) {
+				if ( $wouldBlock ) {
+					throw new DeploymentInProgress( 'A Sitewell update or delivery change is already in progress. Please check again shortly.' );
+				}
 				throw new RuntimeException( 'Could not lock deployment.' );
 			}
 			foreach ( [ SettingsPage::OPTION_ACTIVE_RELEASE, SettingsPage::OPTION_PREVIOUS_RELEASE, DirectDelivery::OPTION ] as $option ) {

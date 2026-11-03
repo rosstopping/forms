@@ -40,7 +40,7 @@ final class Plugin {
 		$releasesPath             = defined( 'SITEWELL_STATIC_FRONTEND_RELEASES_PATH' )
 			? (string) SITEWELL_STATIC_FRONTEND_RELEASES_PATH
 			: rtrim( (string) ( $uploads['basedir'] ?? '' ), '/\\' ) . '/sitewell-static-frontend/releases';
-		$this->deployments        = new DeploymentManager( $client, new ReleaseInstaller( $releasesPath, defined( 'SITEWELL_STATIC_FRONTEND_PUBLIC_PATH' ) ? (string) SITEWELL_STATIC_FRONTEND_PUBLIC_PATH : null, DirectDelivery::forWordPress(), UploadsDelivery::forWordPress(), $this->robots ) );
+		$this->deployments        = new DeploymentManager( $client, new ReleaseInstaller( $releasesPath, defined( 'SITEWELL_STATIC_FRONTEND_PUBLIC_PATH' ) ? (string) SITEWELL_STATIC_FRONTEND_PUBLIC_PATH : null, DirectDelivery::forWordPress(), UploadsDelivery::forWordPress(), $this->robots ), $releasesPath );
 		$this->deploymentEndpoint = new DeploymentEndpoint( $this->deployments );
 		$this->connectionActions  = new ConnectionActions( $client, $this->deployments );
 	}
@@ -121,6 +121,8 @@ final class Plugin {
 		try {
 			$this->deployments->checkForUpdate();
 			$this->synchronizeRobots();
+		} catch ( DeploymentInProgress $exception ) {
+			return;
 		} catch ( \RuntimeException $exception ) {
 			update_option( 'sitewell_static_frontend_last_deployment_error', sanitize_text_field( $exception->getMessage() ), false );
 		}
