@@ -5,6 +5,7 @@ namespace App\Services\DataForSEO;
 use App\Contracts\SerpProvider;
 use App\Data\SerpResult;
 use App\Data\SerpSearchResponse;
+use App\Services\GoogleSerpRedirectResolver;
 
 class DataForSEOSerpProvider implements SerpProvider
 {
@@ -43,6 +44,6 @@ class DataForSEOSerpProvider implements SerpProvider
             ->filter(fn (SerpResult $result): bool => $result->position > 0 && $result->url !== '' && $result->domain !== '')
             ->values();
 
-        return new SerpSearchResponse('dataforseo', self::ENDPOINT, $results, $response->cost, $response->taskId);
+        return new SerpSearchResponse('dataforseo', self::ENDPOINT, app(GoogleSerpRedirectResolver::class)->resolve($results), $response->cost, $response->taskId);
     }
 }

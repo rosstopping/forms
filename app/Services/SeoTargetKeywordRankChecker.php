@@ -34,11 +34,13 @@ class SeoTargetKeywordRankChecker
                 ])
                 ->unique('domain')->values();
             $match = $results->firstWhere('domain', $domain);
+            $incomplete = $response->results->contains(fn (SerpResult $result): bool => GoogleSerpRedirectResolver::isRedirect($result->url) && ($match === null || $result->position <= $match['position']));
             $ranking = $keyword->rankings()->create([
                 'website_id' => $keyword->website_id, 'provider' => $response->provider,
                 'location_code' => $locationCode, 'language_code' => $languageCode, 'device' => 'desktop',
-                'status' => $match ? SeoTargetKeywordRanking::STATUS_RANKED : SeoTargetKeywordRanking::STATUS_NOT_FOUND,
-                'position' => $match['position'] ?? null, 'ranking_url' => $match['url'] ?? null, 'cached' => $response->cached,
+                'status' => $incomplete ? SeoTargetKeywordRanking::STATUS_FAILED : ($match ? SeoTargetKeywordRanking::STATUS_RANKED : SeoTargetKeywordRanking::STATUS_NOT_FOUND),
+                'error' => $incomplete ? 'Google redirect destinations could not all be resolved; ranking is inconclusive.' : null,
+                'position' => $incomplete ? null : ($match['position'] ?? null), 'ranking_url' => $incomplete ? null : ($match['url'] ?? null), 'cached' => $response->cached,
                 'organic_results' => $results->all(),
                 'provider_task_id' => $response->taskId, 'observed_at' => $response->fetchedAt ?? $observedAt,
             ]);

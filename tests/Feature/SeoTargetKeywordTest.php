@@ -289,3 +289,32 @@ test('competitor comparisons are collapsed by default', function (): void {
     expect($comparisons->item(0)->hasAttribute('open'))->toBeFalse();
     expect($comparisons->item(0)->textContent)->toContain('Run a ranking check');
 });
+
+test('unresolved Google wrappers produce inconclusive checks rather than false losses and retain paid usage', function (): void {
+    $target = SeoTargetKeyword::factory()->create();
+    $target->website->domains()->create(['domain' => 'example.com', 'is_primary' => true]);
+    $this->mock(CachedSerpProvider::class)->shouldReceive('searchForMarket')->once()->andReturn(
+        new SerpSearchResponse('dataforseo', 'serp/live', collect([
+            new SerpResult(1, 'https://google.com/goto?url=unresolved', 'google.com'),
+            new SerpResult(94, 'https://example.com/calendar', 'example.com'),
+        ]), .02, 'task-incomplete'),
+    );
+    $ranking = app(SeoTargetKeywordRankChecker::class)->check($target);
+    expect($ranking->status)->toBe('failed')->and($ranking->position)->toBeNull()
+        ->and($ranking->ranking_url)->toBeNull()->and($ranking->error)->toContain('inconclusive')
+        ->and($ranking->organic_results)->toHaveCount(2)
+        ->and(ExternalApiUsage::query()->sole()->provider_task_id)->toBe('task-incomplete');
+});
+
+test('unresolved lower results do not invalidate an already identified higher rank', function (): void {
+    $target = SeoTargetKeyword::factory()->create();
+    $target->website->domains()->create(['domain' => 'example.com', 'is_primary' => true]);
+    $this->mock(CachedSerpProvider::class)->shouldReceive('searchForMarket')->once()->andReturn(
+        new SerpSearchResponse('dataforseo', 'serp/live', collect([
+            new SerpResult(2, 'https://example.com/service', 'example.com'),
+            new SerpResult(94, 'https://google.com/goto?url=unresolved', 'google.com'),
+        ]), .02, 'task-complete-through-match'),
+    );
+    $ranking = app(SeoTargetKeywordRankChecker::class)->check($target);
+    expect($ranking->status)->toBe('ranked')->and($ranking->position)->toBe(2);
+});
