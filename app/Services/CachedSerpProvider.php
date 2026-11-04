@@ -86,14 +86,14 @@ class CachedSerpProvider implements SerpProvider
         return new SerpSearchResponse(
             provider: (string) $payload['provider'],
             endpoint: (string) $payload['endpoint'],
-            results: collect($payload['results'])->map(fn (array $result): SerpResult => new SerpResult(
+            results: app(GoogleSerpRedirectResolver::class)->resolve(collect($payload['results'])->map(fn (array $result): SerpResult => new SerpResult(
                 position: (int) $result['position'],
                 url: (string) $result['url'],
                 domain: (string) $result['domain'],
                 title: $result['title'],
                 description: $result['description'],
                 websiteName: $result['website_name'],
-            )),
+            ))),
             cost: $cached ? 0 : (float) $payload['cost'],
             taskId: $cached ? null : $payload['task_id'],
             cached: $cached,
