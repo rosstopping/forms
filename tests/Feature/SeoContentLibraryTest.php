@@ -103,9 +103,10 @@ it('publishes article authorship and dates and keeps FAQ schema identical to vis
     }
     foreach (config('seo_library.landing_pages') as $slug => $page) {
         $response = $this->get(route('marketing.landing', $slug))->assertSuccessful();
-        preg_match('/<script type="application\/ld\+json">(.*?)<\/script>/s', $response->getContent(), $match);
-        $schema = json_decode($match[1], true, flags: JSON_THROW_ON_ERROR);
-        expect($schema['@type'])->toBe('FAQPage');
+        preg_match_all('/<script type="application\/ld\+json">(.*?)<\/script>/s', $response->getContent(), $matches);
+        $schema = collect($matches[1])->map(fn (string $json): array => json_decode($json, true, flags: JSON_THROW_ON_ERROR))
+            ->firstWhere('@type', 'FAQPage');
+        expect($schema)->not->toBeNull();
         foreach ($page['faqs'] as $index => [$question, $answer]) {
             $response->assertSee($question)->assertSee($answer);
             expect($schema['mainEntity'][$index]['name'])->toBe($question)
@@ -149,4 +150,22 @@ it('improves existing topic URLs and rejects unknown library slugs', function ()
     $this->get('/journal/not-a-real-guide')->assertNotFound();
     $this->get('/for/not-a-real-industry')->assertNotFound();
     $this->get('/not-a-real-seo-service')->assertNotFound();
+});
+
+it('helps owners discover and export queries while preserving the keyword guide URL and original publication date', function (): void {
+    $url = route('marketing.article', 'how-to-find-website-keyword-rankings');
+    $response = $this->get($url.'?utm_source=review')->assertSuccessful()
+        ->assertSee('What keywords does my website rank for?')
+        ->assertSee('Find the queries for one page and export the results')
+        ->assertSee('Why some keywords are missing')
+        ->assertSee('No row for a phrase does not prove')
+        ->assertSee('Export button')
+        ->assertSee('Updated 5 November 2026')
+        ->assertSee('<link rel="canonical" href="'.$url.'">', false)
+        ->assertSee('href="'.route('marketing.landing', 'seo-rank-tracking-services').'"', false);
+
+    preg_match('/<script type="application\/ld\+json">(.*?)<\/script>/s', $response->getContent(), $match);
+    $schema = json_decode($match[1], true, flags: JSON_THROW_ON_ERROR);
+    expect($schema['datePublished'])->toBe('2026-05-28')
+        ->and($schema['dateModified'])->toBe('2026-11-05');
 });

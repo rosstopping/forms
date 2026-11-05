@@ -3247,18 +3247,32 @@ return [
         [
             'slug' => 'how-to-find-website-keyword-rankings',
             'title' => 'How to find out what keywords your website ranks for',
-            'seo_title' => 'Find your website’s keyword rankings | Sitewell',
-            'excerpt' => 'Use Search Console to find real query data, connect searches to pages and understand why a rank tracker may report a different position.',
+            'seo_title' => 'What keywords does my website rank for? | Sitewell',
+            'excerpt' => 'Find the Google searches your website appears for, check which pages rank and export your keyword data with this practical Search Console walkthrough.',
             'category' => 'Search measurement',
             'date' => '28 May 2026',
             'date_iso' => '2026-05-28',
-            'read_time' => '2 min read',
+            'date_modified' => '2026-11-05',
+            'read_time' => '4 min read',
             'sections' => [
                 [
-                    'heading' => 'Start with the Search Console property for your website',
+                    'heading' => 'What keywords does my website rank for?',
                     'paragraphs' => [
-                        'Open the Performance report for search results, choose a useful date range and review the Queries table. Confirm you are viewing the correct domain or URL-prefix property. If the website is new or has little search activity, there may be little data to inspect.',
-                        'Query data reflects recorded search activity, not every phrase your website could ever rank for. Some query detail is omitted for privacy, so visible rows may not sum to the total.',
+                        'Google Search Console shows the queries that brought your website impressions and clicks in Google Search. Start with the Queries table in the Performance report, then check which pages appeared for the searches relevant to your business. You need access to a verified property for your website.',
+                        'You do not need to buy a rank tracker to make this first check. Search Console helps you discover searches already showing your site; a tracker is useful when you want repeated checks for a chosen list of phrases, including ones with no visible Search Console data.',
+                    ],
+                ],
+                [
+                    'heading' => 'Start with the Search Console property for your website',
+                    'steps' => [
+                        'Select the verified domain or URL-prefix property that covers your website.',
+                        'Open Performance, then Search results where that option is shown, and use the Web search type.',
+                        'Choose a date range with enough activity to review, such as the last three months. Keep a note of the period so you can repeat the comparison.',
+                        'Enable clicks, impressions, average CTR and average position.',
+                        'Scroll to the Queries table. Sort by impressions to find searches showing your website, or by clicks to see which searches bring visits.',
+                    ],
+                    'paragraphs' => [
+                        'If you want to understand UK mobile searches, apply those country and device filters before comparing results. An unfiltered report mixes audiences and devices.',
                     ],
                     'source' => [
                         'url' => 'https://support.google.com/webmasters/answer/7576553?hl=en',
@@ -3274,6 +3288,23 @@ return [
                         'Record clicks, impressions and average position together.',
                     ],
                     'paragraph_note' => 'Do not compare an unfiltered site average with one keyword’s position. They describe different sets of impressions.',
+                ],
+                [
+                    'heading' => 'Find the queries for one page and export the results',
+                    'steps' => [
+                        'To start with a service or product, select it in the Pages table, then return to Queries with that page filter applied.',
+                        'Use the Export button to save the report for review. Keep the property, date range and country/device filters with your notes.',
+                        'Make a shortlist of relevant searches, the page shown, clicks, impressions and average position. Mark business-name queries separately.',
+                    ],
+                    'paragraph_note' => 'The export reflects the report and its limits. It is not a complete list of every keyword your website could rank for.',
+                ],
+                [
+                    'heading' => 'Why some keywords are missing',
+                    'paragraphs' => [
+                        'A new website, a short date range or a restrictive page filter may leave very little to inspect. Check the selected property and filters before concluding that a page never appears in search.',
+                        'Google omits some query details for privacy, and report tables have limits. Visible query rows may not add up to the headline totals. No row for a phrase does not prove that your site has never ranked for it.',
+                        'Search Console covers Google Search, not every search engine. A manual search can also differ because results depend on the searcher and the time of the check.',
+                    ],
                 ],
                 [
                     'heading' => 'Separate brand searches from service searches',
