@@ -129,9 +129,12 @@ class MarketingController extends Controller
         return view('marketing.article', compact('article'));
     }
 
-    public function contact(): View
+    public function contact(MarketingTurnstileVerifier $turnstile): View
     {
-        return view('marketing.contact');
+        return view('marketing.contact', [
+            'turnstileEnabled' => $turnstile->enabled(),
+            'turnstileSiteKey' => config('services.turnstile.marketing.site_key'),
+        ]);
     }
 
     public function wordpress(): View

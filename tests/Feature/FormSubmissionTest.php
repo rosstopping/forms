@@ -689,3 +689,51 @@ it('queues customer acknowledgements only for active plan entitlements', functio
 })->with([
     ['essential', 'active', true], ['growth', 'active', true], ['complete', 'active', true], ['essential', 'canceled', false],
 ]);
+
+it('rejects incomplete Northern Prep enquiries before saving or sending', function (array $changes, array $errors): void {
+    $website = Website::factory()->create(['auto_discovered' => false]);
+    $website->domains()->create(['domain' => 'northernprepsquad.co.uk', 'is_primary' => true]);
+
+    $this->withHeader('Origin', 'https://www.northernprepsquad.co.uk')->postJson('/submit', array_replace([
+        '_form_name' => 'Contact form',
+        'name' => 'Alex Morgan',
+        'email' => 'alex@example.com',
+        'subject' => 'General enquiry',
+        'message' => 'Please tell me about your classes.',
+    ], $changes))->assertUnprocessable()->assertJsonValidationErrors($errors);
+
+    $this->assertDatabaseCount('form_submissions', 0);
+    Mail::assertNothingOutgoing();
+    Queue::assertNothingPushed();
+})->with([
+    'blank details' => [['name' => ' ', 'email' => '', 'message' => ''], ['name', 'email', 'message']],
+    'invalid email' => [['email' => 'invalid'], ['email']],
+    'missing subject' => [['subject' => null], ['subject']],
+    'array message' => [['message' => ['bad']], ['message']],
+    'different form name cannot bypass rules' => [['_form_name' => 'Other', 'email' => ''], ['email']],
+]);
+
+it('accepts a complete verified Northern Prep enquiry', function (): void {
+    Http::fake(['*siteverify' => Http::response(['success' => true, 'hostname' => 'northernprepsquad.co.uk'])]);
+    $website = Website::factory()->create(['auto_discovered' => false, 'turnstile_enabled' => true, 'turnstile_secret_key' => 'test-secret']);
+    $website->domains()->create(['domain' => 'northernprepsquad.co.uk', 'is_primary' => true]);
+
+    $this->withHeader('Origin', 'https://northernprepsquad.co.uk')->postJson('/submit', [
+        '_form_name' => 'Contact form',
+        'name' => 'Alex Morgan',
+        'email' => 'alex@example.com',
+        'subject' => 'General enquiry',
+        'message' => 'Please tell me about your classes.',
+        'cf-turnstile-response' => 'test-token',
+    ])->assertSuccessful();
+
+    expect(FormSubmission::query()->sole()->is_spam)->toBeFalse();
+});
+
+it('shows readable validation errors for the static Northern Prep form', function (): void {
+    $website = Website::factory()->create();
+    $website->domains()->create(['domain' => 'northernprepsquad.co.uk', 'is_primary' => true]);
+    $this->withHeader('Referer', 'https://northernprepsquad.co.uk/contact/')->post('/submit', [])
+        ->assertUnprocessable()->assertSee('Your enquiry has not been submitted.')->assertSee('email');
+    $this->assertDatabaseCount('form_submissions', 0);
+});

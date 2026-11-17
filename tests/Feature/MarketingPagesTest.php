@@ -4,6 +4,7 @@ use App\Jobs\GenerateWebsiteAudit;
 use App\Mail\OnboardingEnquiryReceived;
 use App\Models\FormSubmission;
 use App\Models\WebsiteAudit;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 
@@ -849,4 +850,35 @@ it('answers website care and management questions on the existing service pages'
     $this->get(route('marketing.landing', 'small-business-website-support'))
         ->assertSuccessful()
         ->assertSee('Who looks after a small business website after it goes live?');
+});
+
+it('renders Turnstile on the contact form when configured', function (): void {
+    config()->set('services.turnstile.marketing', ['enabled' => true, 'site_key' => 'contact-key', 'secret_key' => 'test-secret']);
+    $this->get(route('marketing.contact'))->assertSuccessful()
+        ->assertSee('data-sitekey="contact-key"', false)
+        ->assertSee('https://challenges.cloudflare.com/turnstile/v0/api.js', false);
+});
+
+it('rejects unverified contact enquiries without saving or emailing', function (?string $token): void {
+    Mail::fake();
+    Http::fake(['*siteverify' => Http::response(['success' => false])]);
+    config()->set('services.turnstile.marketing', ['enabled' => true, 'site_key' => 'contact-key', 'secret_key' => 'test-secret']);
+    $this->from(route('marketing.contact'))->post(route('marketing.contact.store'), [
+        'name' => 'Alex Morgan', 'email' => 'alex@example.com', 'goals' => 'Please help with our website.',
+        'cf-turnstile-response' => $token,
+    ])->assertRedirect(route('marketing.contact'))->assertSessionHasErrors('cf-turnstile-response');
+    $this->assertDatabaseCount('form_submissions', 0);
+    Mail::assertNothingOutgoing();
+})->with([null, 'invalid-token']);
+
+it('accepts a verified contact enquiry', function (): void {
+    Mail::fake();
+    Http::fake(['*siteverify' => Http::response(['success' => true, 'hostname' => 'localhost'])]);
+    config()->set('services.turnstile.marketing', ['enabled' => true, 'site_key' => 'contact-key', 'secret_key' => 'test-secret', 'hostname' => 'localhost']);
+    $this->postJson(route('marketing.contact.store'), [
+        'name' => 'Alex Morgan', 'email' => 'alex@example.com', 'goals' => 'Please help with our website.',
+        'cf-turnstile-response' => 'valid-token',
+    ])->assertRedirect();
+    $this->assertDatabaseCount('form_submissions', 1);
+    Mail::assertQueued(OnboardingEnquiryReceived::class);
 });

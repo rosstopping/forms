@@ -51,9 +51,17 @@
                     <div><label for="website" class="text-base font-medium sm:text-sm">Current website <span class="font-normal text-ink/50">(if you have one)</span></label><input id="website" name="website" type="url" inputmode="url" value="{{ old('website') }}" autocomplete="url" placeholder="https://example.com" @class(['mt-2 w-full rounded-md bg-white px-3.5 py-3 text-base shadow-sm ring-1 ring-ink/10 placeholder:text-ink/35 hover:ring-ink/20 focus:outline-2 focus:-outline-offset-1 focus:outline-garden sm:py-2.5 sm:text-sm', 'ring-red-600' => $errors->has('website')])>@error('website')<p class="mt-2 text-base text-red-700 sm:text-sm">{{ $message }}</p>@enderror</div>
                     <div><label for="goals" class="text-base font-medium sm:text-sm">What would you like to improve?</label><textarea id="goals" name="goals" rows="6" required placeholder="Tell us about your website today and what you would like it to do better for your business." @class(['mt-2 w-full resize-y rounded-md bg-white px-3.5 py-3 text-base shadow-sm ring-1 ring-ink/10 placeholder:text-ink/35 hover:ring-ink/20 focus:outline-2 focus:-outline-offset-1 focus:outline-garden sm:py-2.5 sm:text-sm', 'ring-red-600' => $errors->has('goals')])>{{ old('goals') }}</textarea>@error('goals')<p class="mt-2 text-base text-red-700 sm:text-sm">{{ $message }}</p>@enderror</div>
                     <div class="absolute -left-[9999rem]" aria-hidden="true"><label for="_sitewell_check">Leave this blank</label><input id="_sitewell_check" name="_sitewell_check" type="text" tabindex="-1" autocomplete="off"></div>
+                    @if ($turnstileEnabled)
+                        <div class="cf-turnstile" data-sitekey="{{ $turnstileSiteKey }}" data-theme="light" data-size="flexible"></div>
+                        @error('cf-turnstile-response')<p role="alert" class="text-base text-red-700 sm:text-sm">{{ $message }}</p>@enderror
+                    @endif
                     <div class="flex flex-wrap items-center justify-between gap-5"><p class="max-w-[48ch] text-pretty text-base text-ink/50 sm:text-sm">We’ll use these details only to respond to your request.</p><button type="submit" class="rounded-full bg-garden px-4 py-3 text-base font-medium text-white ring-1 ring-garden hover:bg-moss focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden sm:text-sm">Send enquiry</button></div>
                 </form>
             </div>
         </div>
     </section>
 @endsection
+
+@if ($turnstileEnabled)
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+@endif
