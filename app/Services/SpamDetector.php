@@ -21,8 +21,12 @@ class SpamDetector
             $normalizedContent,
         );
 
-        if ($urlCount > 0 && config('forms.spam.links_are_spam', true)) {
+        if ($urlCount > 0 && config('forms.spam.links_are_spam', false)) {
             return true;
+        }
+
+        if ($urlCount > 0) {
+            $score += config('forms.spam.link_score', 1);
         }
 
         if ($this->containsInvalidEmail($payload)) {

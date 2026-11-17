@@ -37,6 +37,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Jobs/Send*RankingReport.php,Services/GoogleAdsEmailSummary.php,Services/GoogleAdsClient.php,Mail/*RankingReport.php},resources/views/emails/*ranking-report.blade.php | .ai/rules/app-jobs-views-emails.md |
 | app/{Jobs/StartContentGeneration.php,Services/ContentGenerationPromptGenerator.php,Services/SeoTargetKeywordSelector.php,Models/ContentGeneration.php} | .ai/rules/app-jobs.md |
 | {app/Services/MarketingAuditScreenshot.php,package.json,.npmrc} | .ai/rules/app-services-2.md |
+| {app/Services/SpamDetector.php,config/forms.php,tests/Feature/FormSubmissionTest.php} | .ai/rules/app-services-feature.md |
 | {app/Services/MarketingAuditResearch.php,resources/views/marketing/audit-email-gate.blade.php} | .ai/rules/app-services-views-marketing-2.md |
 | app/{Services/MarketingAudit*.php,Services/WebsiteHealthAuditor.php,Services/AiVisibility*.php},resources/views/marketing/** | .ai/rules/app-services-views-marketing.md |
 | app/{Services/Github*,Models/GithubUserAuthorization.php,Jobs/{StartCopilotRemediation,SyncCopilotRemediation}.php}, app/{Services/SearchConsoleHistoryStore.php,Services/WebsiteAiContext.php,Jobs/SyncSearchConsoleHistory.php}, app/{Services/Content*,Jobs/StartContentGeneration.php}, app/{Services/ProspectPersonalisedVideo.php,Models/ProspectOutreachState.php,Mail/ProspectOutreach.php}, app/{Services/Content*,Services/SeoTargetKeyword*,Services/SeoImpact*,Models/Content*,Models/SeoTargetKeyword*,Jobs/*Content*}.php | .ai/rules/app-services.md |

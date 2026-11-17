@@ -294,7 +294,7 @@ it('accepts submissions that pass Turnstile verification', function (string $ori
         '_form_name' => 'Contact form',
         'name' => 'Ada Lovelace',
         'email' => 'ada@example.com',
-        'message' => 'Please send me a quote.',
+        'message' => 'Please quote for these villas: https://example.com/villas?guests=13. Our agency is https://agency.example/',
         'cf-turnstile-response' => 'valid-token',
     ])->assertRedirectContains('/submitted');
 
@@ -360,7 +360,7 @@ it('rejects a valid Turnstile token issued for another hostname', function (): v
     Queue::assertNothingPushed();
 });
 
-it('quarantines link-heavy submissions without sending notifications', function (): void {
+it('accepts multiple links without other spam evidence', function (): void {
     $this->withHeader('Origin', 'https://spam-check.example')
         ->post('/submit', [
             '_form_name' => 'Contact form',
@@ -372,8 +372,7 @@ it('quarantines link-heavy submissions without sending notifications', function 
 
     $submission = FormSubmission::query()->latest('id')->firstOrFail();
 
-    expect($submission->is_spam)->toBeTrue();
-    Mail::assertNothingSent();
+    expect($submission->is_spam)->toBeFalse();
     Http::assertNothingSent();
 });
 
@@ -406,7 +405,7 @@ it('quarantines unsolicited music download promotions', function (): void {
     Http::assertNothingSent();
 });
 
-it('quarantines any submission containing a link', function (string $message): void {
+it('accepts ordinary links in genuine enquiries', function (string $message): void {
     $this->withHeader('Origin', 'https://single-link-check.example')
         ->post('/submit', [
             '_form_name' => 'Contact form',
@@ -416,14 +415,12 @@ it('quarantines any submission containing a link', function (string $message): v
         ])
         ->assertRedirectContains('/submitted');
 
-    expect(FormSubmission::query()->latest('id')->firstOrFail()->is_spam)->toBeTrue();
-    Mail::assertNothingSent();
+    expect(FormSubmission::query()->latest('id')->firstOrFail()->is_spam)->toBeFalse();
 })->with([
     'full URL' => 'Could you review https://example.com/brief?',
     'www URL' => 'Could you review www.example.com/brief?',
     'bare domain with an uncommon suffix' => 'Start here: gnosis.link/RoRZxz',
     'short domain' => 'Start here: is.gd/qySLUJ',
-    'obfuscated domain' => 'Remove me at brnd .li/delist',
 ]);
 
 it('does not flag a Robert name with an ordinary phone number', function (): void {

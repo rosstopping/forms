@@ -49,7 +49,8 @@ return [
     ],
     'spam' => [
         'threshold' => (int) env('FORMS_SPAM_THRESHOLD', 3),
-        'links_are_spam' => filter_var(env('FORMS_SPAM_LINKS_ARE_SPAM', true), FILTER_VALIDATE_BOOL),
+        'links_are_spam' => filter_var(env('FORMS_SPAM_LINKS_ARE_SPAM', false), FILTER_VALIDATE_BOOL),
+        'link_score' => (int) env('FORMS_SPAM_LINK_SCORE', 1),
         'long_content_length' => (int) env('FORMS_SPAM_LONG_CONTENT_LENGTH', 4000),
         'empty_content_score' => (int) env('FORMS_SPAM_EMPTY_CONTENT_SCORE', 3),
         'html_link_score' => (int) env('FORMS_SPAM_HTML_LINK_SCORE', 3),

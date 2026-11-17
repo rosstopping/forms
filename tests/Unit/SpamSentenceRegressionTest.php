@@ -17,7 +17,9 @@ it('does not turn sentence punctuation into a spam link', function (string $mess
     'lowercase following sentence' => 'We need a quote. please let us know the next steps.',
 ]);
 
-it('continues to quarantine real and obfuscated links', function (string $message): void {
+it('can explicitly enable strict link quarantine', function (string $message): void {
+    config()->set('forms.spam.links_are_spam', true);
+
     expect(app(SpamDetector::class)->isSpam([
         'name' => 'Example Sender',
         'email' => 'sender@example.com',
