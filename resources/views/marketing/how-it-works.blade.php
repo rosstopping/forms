@@ -1,122 +1,69 @@
 @extends('layouts.marketing')
 
 @section('title', 'How Sitewell works')
-@section('meta_description', 'See how Sitewell specialists take over the ongoing management of your website, SEO, enquiries, and local visibility.')
+@section('meta_description', 'Start with a search audit, agree the priorities with Ross and see the website and SEO work completed. Learn how Sitewell connects to your existing website.')
 
 @section('content')
-    <section class="marketing-hero overflow-hidden border-b border-ink/10">
-        <div class="mx-auto grid max-w-7xl items-center gap-10 px-5 sm:px-8 lg:grid-cols-[11fr_9fr] lg:px-10">
-            <div>
-                <p class="text-base font-medium sm:text-sm text-garden">How Sitewell works</p>
-                <h1 class="mt-5 max-w-[18ch] font-sans text-4xl font-medium tracking-tight text-balance sm:text-6xl">We take care of your website.</h1>
-                <p class="mt-6 max-w-[54ch] text-pretty text-lg leading-8 text-ink/65">Bring your website or start with a new one. We handle setup, ongoing fixes and the SEO work in your plan.</p>
-                <div class="mt-8 flex flex-col items-start gap-5 sm:flex-row sm:items-center">
-                    <a href="{{ route('marketing.contact') }}" class="inline-flex min-h-12 items-center justify-center rounded-full bg-garden px-5 py-3 text-base font-medium text-white ring-1 ring-garden hover:bg-moss focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden sm:text-sm">Talk to a specialist</a>
-                    <a href="#walkthrough" class="text-base font-medium text-ink underline decoration-ink/25 underline-offset-4 hover:decoration-ink sm:text-sm">Watch the overview ↓</a>
-                </div>
-            </div>
-
-            <div class="relative mx-auto w-full max-w-lg py-7" aria-label="Your website connects to Sitewell using either the Pixel or WordPress connector">
-                <div class="absolute top-1/2 left-[18%] h-px w-[64%] -translate-y-1/2 bg-ink/15" aria-hidden="true"></div>
-                <div class="relative grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-                    <div class="rounded-3xl bg-lichen p-5 text-center ring-1 ring-ink/10 shadow-sm">
-                        <p class="font-mono text-xs uppercase tracking-wide text-ink/45">Your</p>
-                        <p class="mt-2 font-sans text-xl font-semibold tracking-tight">Website</p>
-                    </div>
-                    <div class="flex size-12 items-center justify-center rounded-full bg-lichen font-mono text-xs font-medium text-garden ring-8 ring-paper">or</div>
-                    <div class="rounded-3xl bg-lichen p-5 text-center text-ink shadow-none">
-                        <p class="font-mono text-xs uppercase tracking-wide text-ink/50">Connected to</p>
-                        <p class="mt-2 font-sans text-xl font-semibold tracking-tight">Sitewell</p>
-                    </div>
-                </div>
-                <div class="relative mt-4 flex justify-center gap-2 text-xs text-ink/55">
-                    <span class="rounded-full bg-paper px-3 py-1.5 ring-1 ring-ink/10">Pixel</span>
-                    <span class="rounded-full bg-paper px-3 py-1.5 ring-1 ring-ink/10">WordPress</span>
-                    <span class="rounded-full bg-paper px-3 py-1.5 ring-1 ring-ink/10">Fully managed</span>
-                </div>
+    <section class="marketing-hero">
+        <div class="mx-auto grid max-w-7xl gap-6 px-5 sm:px-8 lg:px-10">
+            <h1 class="max-w-[24ch] text-4xl font-medium tracking-tight text-balance sm:text-5xl lg:text-6xl">How Sitewell looks after your website</h1>
+            <p class="max-w-[56ch] text-lg text-ink/70">Start with a search audit, then agree the priorities with me. I’m Ross, the developer behind Sitewell. I’ll arrange the connection, carry out the agreed website and SEO work and keep you updated.</p>
+            <div class="flex flex-wrap items-center gap-5">
+                <a href="{{ route('marketing.free-site-audit') }}" class="inline-flex min-h-12 items-center justify-center rounded-full bg-garden px-5 py-3 text-base font-medium text-white hover:bg-moss focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-garden">Get your free search audit</a>
+                <a href="#walkthrough" class="inline-flex min-h-12 items-center text-base font-medium underline underline-offset-4">Watch the walkthrough</a>
             </div>
         </div>
     </section>
 
-    <section class="py-12 sm:py-16">
+    <section class="py-12 sm:py-16" aria-labelledby="process-heading">
         <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
-            <div class="grid gap-10 lg:grid-cols-[2fr_3fr]">
-                <div>
-                    <p class="text-base font-medium sm:text-sm text-garden">One accountable team</p>
-                    <h2 class="mt-4 max-w-[16ch] font-sans text-4xl font-medium tracking-tight text-balance sm:text-5xl">Getting started.</h2>
-                </div>
-                <dl class="grid gap-8 sm:grid-cols-3">
-                    @foreach ([
-                        ['01', 'Understand', 'We learn how your business wins work, which services matter, and what the website needs to do better.'],
-                        ['02', 'Take responsibility', 'Our specialists set up or take over the website, reporting, enquiries, and SEO included in your plan.'],
-                        ['03', 'Manage and improve', 'We monitor performance, complete routine improvements, and involve you when a business decision needs your input.'],
-                    ] as [$number, $title, $copy])
-                        <div class="border-t border-ink/15 pt-5">
-                            <dt><span class="font-mono text-sm text-garden">{{ $number }}</span><span class="mt-4 block font-sans text-2xl font-semibold tracking-tight">{{ $title }}</span></dt>
-                            <dd class="mt-3 text-pretty text-base leading-7 text-ink/60 sm:text-sm sm:leading-6">{{ $copy }}</dd>
-                        </div>
-                    @endforeach
-                </dl>
-            </div>
+            <h2 id="process-heading" class="max-w-[32ch] text-3xl font-medium tracking-tight sm:text-4xl">From the first review to ongoing improvements</h2>
+            <ol role="list" class="mt-8 grid gap-8 md:grid-cols-3">
+                @foreach ([
+                    ['Agree the work', 'We’ll discuss your services, website and available search data, then agree the priorities, scope and cost before making changes.'],
+                    ['Connect your website', 'I’ll choose the connection that suits your website and arrange access with you or your existing provider. You don’t need to set it up yourself.'],
+                    ['Improve and review', 'I’ll work on the agreed content, technical fixes and SEO priorities. Your updates show completed work, available search measures and what comes next.'],
+                ] as [$title, $copy])
+                    <li class="grid content-start gap-3 border-t border-ink/10 pt-6"><h3 class="text-xl font-medium">{{ $title }}</h3><p class="text-base text-ink/70">{{ $copy }}</p></li>
+                @endforeach
+            </ol>
         </div>
     </section>
 
-    <section id="walkthrough" class="border-y border-ink/10 bg-lichen py-12 sm:py-16">
-        <div class="mx-auto max-w-5xl px-5 sm:px-8 lg:px-10">
-            <div class="text-center">
-                <p class="text-base font-medium sm:text-sm text-garden">Video walkthrough</p>
-                <h2 class="mt-4 font-sans text-4xl font-medium tracking-tight text-balance sm:text-5xl">Take a look inside.</h2>
-                <p class="mx-auto mt-5 max-w-[54ch] text-pretty text-base leading-7 text-ink/60">See your reports, website changes and search performance in one place.</p>
-            </div>
-            <div class="mt-10 overflow-hidden rounded-3xl bg-lichen shadow-none ring-1 ring-ink/15"><iframe src="https://www.loom.com/embed/d406218f4a2843f7a7d8abbf804f2ba6?hideEmbedTopBar=true&amp;hide_owner=true&amp;hide_title=true&amp;hide_share=true" title="See how Sitewell looks after your website" class="aspect-[2000/1299] w-full bg-black" loading="lazy" allow="fullscreen" allowfullscreen></iframe></div>
-        </div>
-    </section>
-
-    <section class="py-12 sm:py-16">
+    <section id="walkthrough" class="bg-lichen py-12 sm:py-16" aria-labelledby="walkthrough-heading">
         <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
-            <div class="max-w-3xl">
-                <p class="text-base font-medium sm:text-sm text-garden">Three ways to connect</p>
-                <h2 class="mt-4 font-sans text-4xl font-medium tracking-tight text-balance sm:text-5xl">We handle the setup.</h2>
-                <p class="mt-5 max-w-[58ch] text-pretty text-lg text-ink/65 sm:text-base">We’ll choose the connection that suits your website and work with your provider if needed.</p>
-            </div>
+            <h2 id="walkthrough-heading" class="text-3xl font-medium tracking-tight sm:text-4xl">See the work and reports in Sitewell</h2>
+            <p class="mt-5 max-w-[64ch] text-lg text-ink/70">The walkthrough shows website changes, reports and search performance in one place. Search figures depend on the data connected to your website.</p>
+            <div class="mt-8 overflow-hidden rounded-xl bg-white ring-1 ring-ink/10"><iframe src="https://www.loom.com/embed/d406218f4a2843f7a7d8abbf804f2ba6?hideEmbedTopBar=true&amp;hide_owner=true&amp;hide_title=true&amp;hide_share=true" title="See how Sitewell looks after your website" class="aspect-[2000/1299] w-full bg-black" loading="lazy" allow="fullscreen" allowfullscreen></iframe></div>
+        </div>
+    </section>
 
-            <div class="mt-14 grid gap-10 lg:grid-cols-3 lg:gap-0">
-                <article class="lg:pr-10">
-                    <p class="font-mono text-sm text-garden">01 / Works with almost any website</p>
-                    <h3 class="mt-4 font-sans text-3xl font-medium tracking-tight text-balance">The Sitewell Pixel</h3>
-                    <p class="mt-5 text-pretty text-base leading-7 text-ink/65">For many existing websites, our team can add a lightweight connection without replacing your CMS or changing your hosting.</p>
-                    <dl class="mt-8 grid gap-6">
-                        <div class="border-t border-ink/15 pt-4"><dt class="font-medium">Best for</dt><dd class="mt-2 text-base leading-7 text-ink/55 sm:text-sm sm:leading-6">Custom-built, hosted, or non-WordPress websites where adding a short code snippet is the simplest route.</dd></div>
-                        <div class="border-t border-ink/15 pt-4"><dt class="font-medium">What it enables</dt><dd class="mt-2 text-base leading-7 text-ink/55 sm:text-sm sm:leading-6">Page detection and approved, targeted SEO or content changes such as titles and meta descriptions.</dd></div>
-                        <div class="border-t border-ink/15 pt-4"><dt class="font-medium">How it stays safe</dt><dd class="mt-2 text-base leading-7 text-ink/55 sm:text-sm sm:leading-6">It fails silently, does not collect page-view analytics, and can be disabled to remove all Pixel-delivered changes immediately.</dd></div>
-                    </dl>
+    <section class="py-12 sm:py-16" aria-labelledby="connections-heading">
+        <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
+            <h2 id="connections-heading" class="text-3xl font-medium tracking-tight sm:text-4xl">Connecting your existing website</h2>
+            <p class="mt-5 max-w-[64ch] text-lg text-ink/70">You can often keep your current website and hosting. The right connection depends on how it was built and the changes we agree to make.</p>
+            <div class="mt-8 grid gap-8 lg:grid-cols-3">
+                <article class="grid content-start gap-4 border-t border-ink/10 pt-6">
+                    <h3 class="text-2xl font-medium tracking-tight">The Sitewell Pixel</h3>
+                    <p class="text-base text-ink/70">For many custom-built and hosted websites, I can add a short code snippet to detect pages and apply approved changes such as titles and meta descriptions.</p>
+                    <p class="text-base text-ink/70">It doesn’t replace your content editor or require a hosting move.</p>
+                    <details class="border-t border-ink/10 pt-4"><summary class="cursor-pointer font-medium marker:text-garden">Pixel access and removal</summary><p class="mt-4 text-base text-ink/70">The Pixel doesn’t collect page-view analytics. It fails silently if it can’t load. Disabling it removes the changes it delivers.</p></details>
                 </article>
-
-                <article class="border-t border-ink/10 pt-12 lg:border-t-0 lg:border-l lg:px-10 lg:pt-0">
-                    <p class="font-mono text-sm text-garden">02 / Built for WordPress</p>
-                    <h3 class="mt-4 font-sans text-3xl font-medium tracking-tight text-balance">The WordPress connector</h3>
-                    <p class="mt-5 text-pretty text-base leading-7 text-ink/65">For WordPress websites, our secure connector lets our specialists manage approved releases while keeping WordPress administration available.</p>
-                    <dl class="mt-8 grid gap-6">
-                        <div class="border-t border-ink/15 pt-4"><dt class="font-medium">Best for</dt><dd class="mt-2 text-base leading-7 text-ink/55 sm:text-sm sm:leading-6">Existing WordPress websites that need managed frontend updates without moving away from WordPress.</dd></div>
-                        <div class="border-t border-ink/15 pt-4"><dt class="font-medium">What it enables</dt><dd class="mt-2 text-base leading-7 text-ink/55 sm:text-sm sm:leading-6">Verified website releases delivered over HTTPS, with checks on every package before activation.</dd></div>
-                        <div class="border-t border-ink/15 pt-4"><dt class="font-medium">How it stays safe</dt><dd class="mt-2 text-base leading-7 text-ink/55 sm:text-sm sm:leading-6">Unsafe files are rejected. Deactivate the plugin to return to the original WordPress website immediately.</dd></div>
-                    </dl>
-                    <a href="{{ route('marketing.wordpress') }}" class="mt-8 inline-flex text-base font-medium text-garden underline decoration-garden/30 underline-offset-4 hover:decoration-garden sm:text-sm">Technical details for your website provider →</a>
+                <article class="grid content-start gap-4 border-t border-ink/10 pt-6">
+                    <h3 class="text-2xl font-medium tracking-tight">The WordPress connector</h3>
+                    <p class="text-base text-ink/70">For WordPress sites, the connector delivers approved website releases while keeping WordPress administration available.</p>
+                    <p class="text-base text-ink/70">Each release is checked before activation. Your website can stay on WordPress.</p>
+                    <details class="border-t border-ink/10 pt-4"><summary class="cursor-pointer font-medium marker:text-garden">WordPress access and removal</summary><p class="mt-4 text-base text-ink/70">Releases are delivered over HTTPS and unsafe files are rejected. Deactivate the plugin to return to the original WordPress website immediately.</p></details>
+                    <a href="{{ route('marketing.wordpress') }}" class="justify-self-start text-base text-garden underline underline-offset-4">Technical details for your provider</a>
                 </article>
-
-                <article class="border-t border-ink/10 pt-12 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-10">
-                    <p class="font-mono text-sm text-garden">03 / Hands-off website care</p>
-                    <h3 class="mt-4 font-sans text-3xl font-medium tracking-tight text-balance">Fully managed by Sitewell</h3>
-                    <p class="mt-5 text-pretty text-base leading-7 text-ink/65">If you want one team to take full responsibility, our specialists manage the website, hosting connection, changes, releases, and ongoing care for you.</p>
-                    <dl class="mt-8 grid gap-6">
-                        <div class="border-t border-ink/15 pt-4"><dt class="font-medium">Best for</dt><dd class="mt-2 text-base leading-7 text-ink/55 sm:text-sm sm:leading-6">Non-WordPress websites where you want one team to handle day-to-day website management.</dd></div>
-                        <div class="border-t border-ink/15 pt-4"><dt class="font-medium">What we manage</dt><dd class="mt-2 text-base leading-7 text-ink/55 sm:text-sm sm:leading-6">Connection setup, technical changes, deployments, monitoring, and ongoing website care.</dd></div>
-                        <div class="border-t border-ink/15 pt-4"><dt class="font-medium">How you stay informed</dt><dd class="mt-2 text-base leading-7 text-ink/55 sm:text-sm sm:leading-6">You receive clear updates while our specialists handle the day-to-day technical and SEO work.</dd></div>
-                    </dl>
+                <article class="grid content-start gap-4 border-t border-ink/10 pt-6">
+                    <h3 class="text-2xl font-medium tracking-tight">Fully managed by Sitewell</h3>
+                    <p class="text-base text-ink/70">For non-WordPress websites needing day-to-day management, I can handle connection setup, technical changes, deployments, monitoring and ongoing website care.</p>
+                    <p class="text-base text-ink/70">We’ll agree hosting, access and responsibilities before work begins. You receive updates on the work completed.</p>
                 </article>
             </div>
         </div>
     </section>
 
-    <x-marketing.cta />
+    <x-marketing.cta title="Discuss your website with Ross" text="Send me your website and tell me what you need help with. We’ll discuss the work and the best way to connect." label="Talk to Ross" route="marketing.contact" />
 @endsection

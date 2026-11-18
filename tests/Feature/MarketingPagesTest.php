@@ -29,7 +29,7 @@ it('shows each public marketing page', function (string $route, string $copy): v
 
 })->with([
     'home' => ['marketing.home', 'Turn more searches into'],
-    'how it works' => ['marketing.how-it-works', 'We take care of your website.'],
+    'how it works' => ['marketing.how-it-works', 'How Sitewell looks after your website'],
     'features' => ['marketing.features', 'Website care. SEO. Content.'],
     'pricing' => ['marketing.pricing', 'Choose your level of support.'],
     'examples' => ['marketing.examples', 'The work we do.'],
@@ -297,9 +297,12 @@ it('explains every website connection option and shows the walkthrough video', f
         ->assertSee('The WordPress connector')
         ->assertSee('Fully managed by Sitewell')
         ->assertSee('https://www.loom.com/embed/d406218f4a2843f7a7d8abbf804f2ba6')
-        ->assertSee('our team can add a lightweight connection')
+        ->assertSee('You can often keep your current website and hosting.')
+        ->assertDontSee('our team')
+        ->assertDontSee('our specialists')
+        ->assertSee('href="'.route('marketing.free-site-audit').'"', false)
         ->assertSee('Deactivate the plugin to return to the original WordPress website')
-        ->assertSee('Connection setup, technical changes, deployments, monitoring, and ongoing website care')
+        ->assertSee('connection setup, technical changes, deployments, monitoring and ongoing website care')
         ->assertSee('href="'.route('marketing.wordpress').'"', false)
         ->assertSee('href="'.route('marketing.contact').'"', false);
 });
