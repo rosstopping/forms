@@ -16,150 +16,67 @@
 
 @section('content')
 <section class="marketing-hero">
-    <div class="mx-auto grid max-w-7xl gap-10 px-5 sm:px-8 lg:grid-cols-[7fr_5fr] lg:items-center lg:px-10">
-        <div class="grid content-start gap-5">
-            <p class="font-mono text-base text-moss sm:text-sm">{{ $landing['eyebrow'] }}</p>
-            <h1 class="max-w-[22ch] font-sans text-4xl font-medium tracking-tight text-balance sm:text-4xl lg:text-6xl">{{ $landing['heading'] }}</h1>
-            <p class="max-w-[40ch] text-pretty text-xl font-medium text-moss sm:text-2xl">{{ $landing['promise'] }}</p>
-            <p class="max-w-[48ch] text-pretty text-base text-ink/75 sm:text-lg">{{ $landing['intro'] }}</p>
-            <x-marketing.ppc-actions primary />
-            <p class="text-base text-ink/65 sm:text-sm">No email or website access needed for the check.</p>
-        </div>
-        <aside aria-label="How Sitewell turns findings into work" class="grid gap-6 rounded-xl bg-moss p-6 text-ink sm:p-8">
-            <div class="flex items-center justify-between gap-4 border-b border-paper/20 pb-5">
-                <p class="font-sans text-2xl font-semibold tracking-tight">A website that gets attention.</p>
-                <p class="shrink-0 font-mono text-base text-garden sm:text-sm">Every week</p>
-            </div>
-            <ol role="list" class="grid gap-6">
-                @foreach ([['01', 'Find what needs attention', 'Website checks and useful search opportunities.'], ['02', 'Do something about it', 'Content and technical improvements, carried out for you.'], ['03', 'Show you the work', 'A weekly update on changes, progress and next steps.']] as [$number, $title, $copy])
-                    <li class="flex items-start gap-5">
-                        <p class="shrink-0 font-mono text-base text-garden sm:text-sm">{{ $number }}</p>
-                        <div class="grid gap-1"><p class="font-medium">{{ $title }}</p><p class="text-pretty text-base text-ink/80 sm:text-sm">{{ $copy }}</p></div>
-                    </li>
-                @endforeach
-            </ol>
-            <p class="border-t border-paper/20 pt-5 text-base text-ink/80 sm:text-sm">The check is the start. The ongoing work is the service.</p>
-        </aside>
+    <div class="mx-auto grid max-w-7xl gap-6 px-5 sm:px-8 lg:px-10">
+        <h1 class="max-w-[24ch] text-4xl font-medium tracking-tight text-balance sm:text-5xl lg:text-6xl">{{ $landing['heading'] }}</h1>
+        <p class="max-w-[56ch] text-lg text-ink/70">{{ $landing['intro'] }}</p>
+        <x-marketing.ppc-actions primary />
+        <p class="max-w-[64ch] text-base text-ink/65">The initial check uses public information. Website access is only needed for agreed changes.</p>
     </div>
 </section>
-
-<div class="border-y border-ink/10 bg-lichen/50 py-5">
-    <ul role="list" class="mx-auto flex max-w-7xl flex-wrap justify-between gap-x-8 gap-y-3 px-5 text-base font-medium text-moss sm:px-8 sm:text-sm lg:px-10">
-        <li>Based in Doncaster, working across the UK</li>
-        <li>Work carried out for you</li>
-        <li>No long-term contract</li>
-    </ul>
-</div>
-
-<section class="py-14 sm:py-20">
-    <div class="mx-auto grid max-w-7xl gap-10 px-5 sm:px-8 lg:grid-cols-2 lg:px-10">
+<section class="py-12 sm:py-16">
+    <div class="mx-auto grid max-w-7xl gap-8 px-5 sm:px-8 lg:grid-cols-2 lg:gap-12 lg:px-10">
         <div class="grid content-start gap-5">
-            <p class="font-mono text-base text-moss sm:text-sm">Sound familiar?</p>
-            <h2 class="max-w-[26ch] font-sans text-3xl font-medium tracking-tight text-balance sm:text-4xl">{{ $landing['problem_title'] }}</h2>
-            <p class="max-w-[48ch] text-pretty text-lg text-ink/75">{{ $landing['problem'] }}</p>
+            <h2 class="max-w-[30ch] text-3xl font-medium tracking-tight sm:text-4xl">{{ $landing['problem_title'] }}</h2>
+            <p class="max-w-[56ch] text-lg text-ink/70">{{ $landing['problem'] }}</p>
         </div>
-        <div class="grid content-start gap-7">
-            <div class="grid gap-3 border-b border-ink/15 pb-7">
-                <p class="font-mono text-base text-ink/60 sm:text-sm">An audit on its own</p>
-                <p class="max-w-[40ch] font-sans text-2xl tracking-tight">“Here are the problems. Over to you.”</p>
-                <p class="text-pretty text-base text-ink/70">The findings are useful. But someone still needs to act on them.</p>
-            </div>
-            <div class="grid gap-3">
-                <p class="font-mono text-base text-garden sm:text-sm">With Sitewell</p>
-                <p class="max-w-[40ch] font-sans text-2xl tracking-tight text-moss">“Here is what needs improving. Let’s get it done.”</p>
-                <p class="text-pretty text-base text-ink/70">We agree the priorities, do the work and keep checking the website.</p>
-            </div>
+        <div class="grid content-start gap-4 border-t border-ink/10 pt-6">
+            <h3 class="text-2xl font-medium tracking-tight">An example of the work</h3>
+            <p class="max-w-[56ch] text-base text-ink/70">{{ $landing['example'] }}</p>
+            <p class="text-base text-ink/65 sm:text-sm">Illustrative example. This isn’t a measured client result.</p>
         </div>
     </div>
 </section>
-
-<section id="work" class="border-y border-ink/10 bg-white/40 py-14 sm:py-20">
-    <div class="mx-auto grid max-w-7xl gap-10 px-5 sm:px-8 lg:px-10">
-        <div class="grid gap-4">
-            <p class="font-mono text-base text-moss sm:text-sm">What we actually work on</p>
-            <h2 class="max-w-[26ch] font-sans text-3xl font-medium tracking-tight text-balance sm:text-4xl">Useful changes. Relevant to your business.</h2>
-        </div>
-        <dl class="grid gap-10 md:grid-cols-3">
+<section id="work" class="bg-lichen py-12 sm:py-16">
+    <div class="mx-auto grid max-w-7xl gap-8 px-5 sm:px-8 lg:px-10">
+        <h2 class="max-w-[30ch] text-3xl font-medium tracking-tight sm:text-4xl">Website and SEO improvements</h2>
+        <dl class="grid gap-8 md:grid-cols-3">
             @foreach ($landing['priorities'] as [$title, $copy])
-                <div class="grid content-start gap-3 border-t border-ink/15 pt-5">
-                    <dt class="text-lg font-medium">{{ $title }}</dt>
-                    <dd class="text-pretty text-base text-ink/75">{{ $copy }}</dd>
-                </div>
+                <div class="grid content-start gap-3 border-t border-ink/10 pt-6"><dt class="text-xl font-medium">{{ $title }}</dt><dd class="text-base text-ink/70">{{ $copy }}</dd></div>
             @endforeach
         </dl>
-        <div class="grid gap-4 border-l-2 border-garden pl-6">
-            <p class="font-mono text-base text-moss sm:text-sm">An example of the work — not a customer result</p>
-            <h3 class="max-w-[40ch] font-sans text-2xl font-medium tracking-tight text-balance">{{ $landing['example_title'] }}</h3>
-            <p class="max-w-[80ch] text-pretty text-base text-ink/75">{{ $landing['example'] }}</p>
-        </div>
     </div>
 </section>
-
-<section class="py-14 sm:py-20">
-    <div class="mx-auto grid max-w-7xl gap-10 px-5 sm:px-8 lg:grid-cols-2 lg:px-10">
-        <div class="grid content-start gap-5">
-            <p class="font-mono text-base text-moss sm:text-sm">A simple way to get started</p>
-            <h2 class="max-w-[26ch] font-sans text-3xl font-medium tracking-tight text-balance sm:text-4xl">Check first. Decide when you have seen the findings.</h2>
-            <p class="max-w-[48ch] text-pretty text-lg text-ink/75">The initial check reviews public website signals. No account or commitment is needed to see what it finds.</p>
-            <p class="text-base font-medium"><a href="{{ route('marketing.free-site-audit') }}" class="inline-flex min-h-12 items-center underline decoration-garden/30 underline-offset-4 hover:decoration-garden">Check my website <span aria-hidden="true" class="pl-3">→</span></a></p>
-        </div>
-        <ol role="list" class="grid divide-y divide-ink/10">
-            @foreach ([['Enter your website', 'We check public signals such as titles, headings, crawl access and security basics.'], ['Review the findings together', 'If you want help, we discuss your priorities and agree how to connect your site and search data.'], ['We make the improvements', 'Content, on-page and technical SEO work, prioritised around your website and plan.'], ['Get your weekly update', 'See completed work and available ranking, search and audit changes. Then we repeat.']] as [$title, $copy])
-                <li class="flex items-start gap-5 py-5 first:pt-0 last:pb-0">
-                    <p class="shrink-0 font-mono text-base text-garden sm:text-sm">0{{ $loop->iteration }}</p>
-                    <div class="grid gap-2"><h3 class="font-medium">{{ $title }}</h3><p class="text-pretty text-base text-ink/75">{{ $copy }}</p></div>
-                </li>
+<section class="py-12 sm:py-16">
+    <div class="mx-auto grid max-w-7xl gap-8 px-5 sm:px-8 lg:grid-cols-2 lg:gap-12 lg:px-10">
+        <div class="grid content-start gap-5"><h2 class="max-w-[30ch] text-3xl font-medium tracking-tight sm:text-4xl">From your first check to ongoing work</h2><p class="max-w-[56ch] text-lg text-ink/70">Start with the free search audit. If you want help with the findings, we’ll agree the priorities, access and scope before making changes.</p></div>
+        <ol role="list" class="grid gap-6">
+            @foreach ([['Review your website', 'Check the available search and website evidence, then agree what needs attention.'], ['Make the agreed improvements', 'Work on content, service pages and technical issues around your website and plan.'], ['Report on progress', 'Receive weekly updates on completed work and available search measures, with the next priorities.']] as [$title, $copy])
+                <li class="grid gap-2 border-t border-ink/10 pt-5"><h3 class="text-xl font-medium">{{ $title }}</h3><p class="text-base text-ink/70">{{ $copy }}</p></li>
             @endforeach
         </ol>
     </div>
 </section>
-
-<section class="bg-moss py-14 text-ink sm:py-20">
-    <div class="mx-auto grid max-w-7xl gap-10 px-5 sm:px-8 lg:grid-cols-2 lg:px-10">
-        <div class="grid content-start gap-5">
-            <p class="font-mono text-base text-garden sm:text-sm">Clear weekly reporting</p>
-            <h2 class="max-w-[26ch] font-sans text-3xl font-medium tracking-tight text-balance sm:text-4xl">Know what changed. And what comes next.</h2>
-            <p class="max-w-[48ch] text-pretty text-lg text-ink/85">See the work completed on your website and what comes next.</p>
-            <p class="text-base font-medium"><a href="https://www.loom.com/share/d406218f4a2843f7a7d8abbf804f2ba6" target="_blank" rel="noopener noreferrer" class="inline-flex min-h-12 items-center underline decoration-paper/40 underline-offset-4 hover:decoration-paper">Watch the real Sitewell walkthrough <span class="pl-3" aria-hidden="true">↗</span></a></p>
-        </div>
-        <dl class="grid divide-y divide-paper/20">
-            @foreach ([['Work completed', 'The improvements made to your pages, content and website.'], ['Search and ranking changes', 'Selected keyword positions and Search Console clicks and impressions, when connected.'], ['Website health and next priorities', 'Audit findings, resolved issues and the opportunities worth working on next.']] as [$title, $copy])
-                <div class="grid gap-2 py-5 first:pt-0 last:pb-0"><dt class="font-medium">{{ $title }}</dt><dd class="text-pretty text-base text-ink/85">{{ $copy }}</dd></div>
-            @endforeach
-        </dl>
+<section id="ross" class="bg-lichen py-12 sm:py-16">
+    <div class="mx-auto grid max-w-7xl gap-8 px-5 sm:px-8 lg:grid-cols-2 lg:gap-12 lg:px-10">
+        <div class="grid content-start gap-5"><h2 class="max-w-[30ch] text-3xl font-medium tracking-tight sm:text-4xl">Work directly with Ross</h2><p class="max-w-[56ch] text-lg text-ink/70">I’m a web developer based in Doncaster. Sitewell brings together the checks, priorities and ongoing work involved in looking after your website and SEO.</p><p class="text-base text-ink/70">No long-term contract. We’ll explain the scope and access needed before you decide.</p></div>
+        <div class="grid content-start gap-5"><h3 class="text-2xl font-medium tracking-tight">See how Sitewell works</h3><p class="max-w-[56ch] text-base text-ink/70">The walkthrough shows how website work and progress are recorded.</p><a href="https://www.loom.com/share/d406218f4a2843f7a7d8abbf804f2ba6" target="_blank" rel="noopener noreferrer" class="justify-self-start text-garden underline underline-offset-4">Watch the Sitewell walkthrough</a><a href="{{ route('marketing.ppc.book') }}" class="justify-self-start text-garden underline underline-offset-4">Book a call with Ross</a></div>
     </div>
 </section>
-
-<section id="ross" class="border-y border-ink/10 bg-lichen py-14 sm:py-20">
-    <div class="mx-auto grid max-w-7xl gap-10 px-5 sm:px-8 lg:grid-cols-2 lg:px-10">
-        <div class="grid content-start gap-5"><p class="font-mono text-base text-moss sm:text-sm">A real person behind the work</p><h2 class="max-w-[26ch] font-sans text-3xl font-medium tracking-tight text-balance sm:text-4xl">Hi, I’m Ross.<br>A web developer based in Doncaster.</h2></div>
-        <div class="grid content-start gap-5">
-            <p class="max-w-[48ch] text-pretty text-lg text-ink/75">Sitewell grew out of building and managing websites, and seeing how easily they get left behind after launch.</p>
-            <p class="max-w-[48ch] text-pretty text-lg text-ink/75">I wanted a better way to keep checking a website, spot useful improvements and get the work done. That is what Sitewell is here to do.</p>
-            <p class="font-medium"><a href="{{ route('marketing.ppc.book') }}" class="inline-flex min-h-12 items-center underline decoration-ink/30 underline-offset-4 hover:decoration-ink">Book a call with Ross <span class="pl-3" aria-hidden="true">↗</span></a></p>
-        </div>
-    </div>
-</section>
-
-<section class="py-14 sm:py-20">
-    <div class="mx-auto grid max-w-7xl gap-10 px-5 sm:px-8 lg:grid-cols-2 lg:px-10">
-        <div class="grid content-start gap-5"><p class="font-mono text-base text-moss sm:text-sm">Before you get started</p><h2 class="max-w-[26ch] font-sans text-3xl font-medium tracking-tight text-balance sm:text-4xl">Fair questions.<br>Straight answers.</h2></div>
+<section class="py-12 sm:py-16">
+    <div class="mx-auto grid max-w-7xl gap-8 px-5 sm:px-8 lg:grid-cols-2 lg:gap-12 lg:px-10">
+        <h2 class="max-w-[30ch] text-3xl font-medium tracking-tight sm:text-4xl">Questions about the service</h2>
         <div class="divide-y divide-ink/15 border-y border-ink/15">
             @foreach ($faqs as [$question, $answer])
-                <details class="group py-5"><summary class="cursor-pointer font-medium marker:text-garden">{{ $question }}</summary><p class="mt-4 max-w-[56ch] text-pretty text-base text-ink/75">{{ $answer }}</p></details>
+                <details class="group py-5"><summary class="cursor-pointer font-medium marker:text-garden">{{ $question }}</summary><p class="mt-4 max-w-[56ch] text-base text-ink/70">{{ $answer }}</p></details>
             @endforeach
         </div>
     </div>
 </section>
-
-<section class="border-t border-ink/10 bg-lichen/50 py-14 sm:py-20">
-    <div class="mx-auto grid max-w-7xl gap-7 px-5 sm:px-8 lg:px-10">
-        <h2 class="max-w-[26ch] font-sans text-3xl font-medium tracking-tight text-balance sm:text-4xl">See how your website is performing.</h2>
-        <p class="max-w-[48ch] text-pretty text-lg text-ink/75">Start with a check. See what needs attention. Then decide whether you want us to take care of it.</p>
-        <x-marketing.ppc-actions />
-        <nav aria-label="Related SEO services" class="flex flex-wrap gap-x-6 gap-y-3 pt-4 text-base text-ink/70 sm:text-sm">
+<section class="mx-3 mb-12 rounded-3xl bg-lichen py-12 sm:mx-6 sm:py-16">
+    <div class="mx-auto grid max-w-7xl gap-6 px-5 sm:px-8 lg:px-10"><h2 class="max-w-[30ch] text-3xl font-medium tracking-tight sm:text-4xl">Start with your website</h2><x-marketing.ppc-actions primary />
+        <nav aria-label="Related SEO services" class="flex flex-wrap gap-x-6 gap-y-3 text-base text-ink/70">
             @foreach ($landing['related'] as $related)
-                <a href="{{ route('marketing.ppc.'.$related) }}" class="underline decoration-ink/20 underline-offset-4 hover:text-ink">{{ config('ppc.pages.'.$related.'.heading') }}</a>
+                <a href="{{ route('marketing.ppc.'.$related) }}" class="underline underline-offset-4 hover:text-ink">{{ config('ppc.pages.'.$related.'.heading') }}</a>
             @endforeach
         </nav>
     </div>

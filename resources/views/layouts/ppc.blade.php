@@ -4,7 +4,7 @@
     <x-marketing.tag-manager />
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#f4f1e8">
+    <meta name="theme-color" content="#ffffff">
     <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="16x16 32x32 48x48">
     <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
     <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}" sizes="180x180">
@@ -28,7 +28,7 @@
         <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-white focus:p-4">Skip to content</a>
         <header class="border-b border-ink/10">
             <div class="mx-auto flex max-w-7xl items-center justify-between gap-5 px-5 py-4 sm:px-8 lg:px-10">
-                <p class="font-sans text-2xl font-semibold tracking-tight"><a href="{{ route('marketing.home') }}" aria-label="Homepage">sitewell<span class="text-garden">.</span></a></p>
+                <p class="font-sans text-2xl font-semibold tracking-tight sm:text-3xl"><a href="{{ route('marketing.home') }}" aria-label="Homepage">sitewell<span class="text-garden">.</span></a></p>
                 <nav aria-label="Landing page navigation" class="flex items-center gap-6 text-base sm:text-sm">
                     <a href="#ross" class="hover:text-garden max-sm:hidden">Meet Ross</a>
                     <a href="{{ route('marketing.ppc.book') }}" class="inline-flex min-h-12 items-center underline decoration-ink/30 underline-offset-4 hover:decoration-ink">Book a call <span class="pl-2" aria-hidden="true">↗</span></a>
@@ -40,7 +40,7 @@
         </main>
         <footer class="border-t border-ink/15 py-8">
             <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-6 px-5 text-base text-ink/70 sm:px-8 sm:text-sm lg:px-10">
-                <p>© {{ now()->year }} Sitewell. Your website, well looked after.</p>
+                <p>© {{ now()->year }} Sitewell.</p>
                 <nav aria-label="Company information" class="flex flex-wrap gap-x-6 gap-y-3">
                     <a class="font-normal hover:text-ink" href="{{ route('marketing.about') }}">About</a>
                     <a class="font-normal hover:text-ink" href="{{ route('marketing.contact') }}">Contact</a>
