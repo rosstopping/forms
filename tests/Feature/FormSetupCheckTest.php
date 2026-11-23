@@ -50,12 +50,12 @@ it('reports disabled forms, unresolved domains, invalid recipients and incomplet
     ]);
 });
 
-it('treats optional disabled delivery as valid and excludes viewer notification recipients', function (): void {
+it('accepts explicitly configured viewers and treats optional disabled delivery as valid', function (): void {
     $viewer = User::factory()->create();
     $this->website->members()->attach($viewer, ['role' => Website::MEMBER_ROLE_VIEWER]);
     $this->form->update(['email_recipients_override' => [$viewer->email]]);
     $checks = collect(app(FormSetupChecker::class)->check($this->form->fresh()))->keyBy('key');
-    expect($checks['recipients']['status'])->toBe('needs_attention');
+    expect($checks['recipients']['status'])->toBe('passed');
     $this->form->update(['email_enabled_override' => false, 'webhook_enabled_override' => false]);
     $checks = collect(app(FormSetupChecker::class)->check($this->form->fresh()))->keyBy('key');
     expect($checks['recipients']['status'])->toBe('passed')->and($checks->has('mail'))->toBeFalse()->and($checks['webhook']['status'])->toBe('passed');

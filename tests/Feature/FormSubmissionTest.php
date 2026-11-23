@@ -77,12 +77,14 @@ it('allows public submissions without a CSRF token', function (): void {
     $response->assertStatus(302);
 });
 
-it('does not send operational form alerts to website viewers', function (): void {
+it('sends form alerts to explicitly configured viewers without changing their access', function (): void {
     $viewer = User::factory()->create(['email' => 'viewer@example.com']);
     $manager = User::factory()->create(['email' => 'manager@example.com']);
+    $unlistedViewer = User::factory()->create(['email' => 'unlisted@example.com']);
     $website = Website::factory()->create();
     $website->domains()->create(['domain' => 'recipient-policy.example', 'is_primary' => true]);
     $website->members()->attach($viewer, ['role' => Website::MEMBER_ROLE_VIEWER]);
+    $website->members()->attach($unlistedViewer, ['role' => Website::MEMBER_ROLE_VIEWER]);
     $website->members()->attach($manager, ['role' => Website::MEMBER_ROLE_MANAGER]);
     Form::factory()->for($website)->create([
         'name' => 'Contact form',
@@ -100,7 +102,10 @@ it('does not send operational form alerts to website viewers', function (): void
         ->assertRedirectContains('/submitted');
 
     Mail::assertSent(FormSubmissionReceived::class, fn (FormSubmissionReceived $mail): bool => $mail->hasTo($manager->email));
-    Mail::assertNotSent(FormSubmissionReceived::class, fn (FormSubmissionReceived $mail): bool => $mail->hasTo($viewer->email));
+    Mail::assertSent(FormSubmissionReceived::class, fn (FormSubmissionReceived $mail): bool => $mail->hasTo($viewer->email));
+    Mail::assertNotSent(FormSubmissionReceived::class, fn (FormSubmissionReceived $mail): bool => $mail->hasTo($unlistedViewer->email));
+    expect($website->members()->findOrFail($viewer->id)->pivot->role)->toBe(Website::MEMBER_ROLE_VIEWER)
+        ->and(FormSubmission::latest('id')->firstOrFail()->email_sent_at)->not->toBeNull();
 });
 
 it('redirects to the submitted success url even when the request accepts json', function (): void {

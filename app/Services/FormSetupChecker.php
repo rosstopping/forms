@@ -49,7 +49,7 @@ class FormSetupChecker
         $emailEnabled = $this->settings->resolveEmailEnabled($form);
         $recipients = $this->settings->resolveEmailRecipients($form);
         $validRecipients = $recipients !== [] && Validator::make(['recipients' => $recipients], ['recipients' => 'array', 'recipients.*' => 'required|email:rfc'])->passes();
-        $add('recipients', 'Notification recipients', ! $emailEnabled || $validRecipients, ! $emailEnabled ? 'Email notifications are switched off; submissions remain in Leads.' : ($validRecipients ? 'Eligible notification recipients are configured.' : 'Email notifications are enabled but no valid eligible recipient list is configured. Viewer members do not receive these notifications.'), 'form');
+        $add('recipients', 'Notification recipients', ! $emailEnabled || $validRecipients, ! $emailEnabled ? 'Email notifications are switched off; submissions remain in Leads.' : ($validRecipients ? 'Notification recipients are configured.' : 'Email notifications are enabled but no valid recipient list is configured.'), 'form');
         if ($emailEnabled) {
             $mailReady = Validator::make(['from' => config('mail.from.address')], ['from' => 'required|email:rfc'])->passes()
                 && $this->mailerConfigured((string) config('mail.default'));

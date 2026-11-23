@@ -7,7 +7,7 @@ paths:
 # Views Emails
 
 ## Restrict viewer email delivery
-Website members with the viewer role receive only weekly ranking updates and website health audit emails (apart from account/invitation transactions). Exclude viewers from operational/action emails. Viewer report copies must not contain direct GitHub links; render GitHub-backed update details as non-linked text.
+Website members with the viewer role receive only weekly ranking updates and website health audit emails (apart from account/invitation transactions). Exclude viewers from automatic operational/action recipient lists. Explicit form notification recipients are an exception: honour the addresses saved in the form settings regardless of Viewer membership, without changing dashboard permissions or adding other members. Viewer report copies must not contain direct GitHub links; render GitHub-backed update details as non-linked text.
 
 ## Monthly search reports use complete stored months
 Monthly ranking reports are separate from the existing weekly report. Send on the 8th after the monthly Search Console history has synced, compare only complete stored calendar months, keep verified Search Console figures distinct from third-party SEO estimates, and exclude viewer website members.

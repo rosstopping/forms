@@ -6,11 +6,10 @@ use App\Models\User;
 use App\Models\Website;
 use App\Services\AutoresponderHtmlSanitizer;
 use App\Services\FormSettingsResolver;
-use App\Services\WebsiteMailRecipients;
 use App\Support\MembershipPlan;
 
 it('does not send email by default unless form recipients are configured', function (): void {
-    $resolver = new FormSettingsResolver(new AutoresponderHtmlSanitizer, new WebsiteMailRecipients);
+    $resolver = new FormSettingsResolver(new AutoresponderHtmlSanitizer);
     $form = new Form(['name' => 'Contact']);
     $form->setRelation('website', new Website(['name' => 'Example', 'email_enabled' => false, 'email_recipients' => []]));
 
@@ -19,7 +18,7 @@ it('does not send email by default unless form recipients are configured', funct
 });
 
 it('uses form-level email and webhook settings when configured', function (): void {
-    $resolver = new FormSettingsResolver(new AutoresponderHtmlSanitizer, new WebsiteMailRecipients);
+    $resolver = new FormSettingsResolver(new AutoresponderHtmlSanitizer);
     $form = new Form([
         'email_enabled_override' => true,
         'email_recipients_override' => ['ops@example.com'],
@@ -37,7 +36,7 @@ it('uses form-level email and webhook settings when configured', function (): vo
 });
 
 it('disables automatic replies for essential websites even when previously enabled', function (): void {
-    $resolver = new FormSettingsResolver(new AutoresponderHtmlSanitizer, new WebsiteMailRecipients);
+    $resolver = new FormSettingsResolver(new AutoresponderHtmlSanitizer);
     $owner = new User([
         'membership_tier' => MembershipPlan::ESSENTIAL,
         'membership_status' => 'active',
@@ -51,7 +50,7 @@ it('disables automatic replies for essential websites even when previously enabl
 });
 
 it('replaces tags for any submitted form field', function (): void {
-    $resolver = new FormSettingsResolver(new AutoresponderHtmlSanitizer, new WebsiteMailRecipients);
+    $resolver = new FormSettingsResolver(new AutoresponderHtmlSanitizer);
     $website = new Website(['name' => 'Example', 'autoresponder_delay_minutes' => 10]);
     $form = new Form([
         'name' => 'Quote request',
@@ -74,7 +73,7 @@ it('replaces tags for any submitted form field', function (): void {
 });
 
 it('preserves raw html while escaping submission tag values', function (): void {
-    $resolver = new FormSettingsResolver(new AutoresponderHtmlSanitizer, new WebsiteMailRecipients);
+    $resolver = new FormSettingsResolver(new AutoresponderHtmlSanitizer);
     $website = new Website([
         'name' => 'Example',
         'autoresponder_content_type' => 'text',

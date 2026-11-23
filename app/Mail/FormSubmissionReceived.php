@@ -5,6 +5,7 @@ namespace App\Mail;
 use App\Models\FormSubmission;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -19,8 +20,9 @@ class FormSubmissionReceived extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
+            from: new Address('mail@digizu.co.uk', $this->submission->website->name),
             subject: $this->submission->resolvedEmailSubject(),
-            replyTo: [$this->submission->replyToEmail() ?: config('forms.from_address')],
+            replyTo: [$this->submission->replyToEmail() ?: 'mail@digizu.co.uk'],
         );
     }
 
