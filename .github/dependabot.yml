@@ -1,17 +1,23 @@
 version: 2
 updates:
-  - package-ecosystem: "composer"
-    directories:
-      - "/"
-      - "/wordpress-plugin/sitewell-by-digizu"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 0
-  - package-ecosystem: "npm"
-    directories:
-      - "/"
-      - "/resources/amp-worker"
-      - "/resources/copilot-worker"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 0
+- package-ecosystem: composer
+  directories:
+  - /
+  - /wordpress-plugin/sitewell-by-digizu
+  schedule:
+    interval: weekly
+  open-pull-requests-limit: 0
+- package-ecosystem: npm
+  directories:
+  - /
+  - /resources/amp-worker
+  - /resources/copilot-worker
+  schedule:
+    interval: weekly
+  open-pull-requests-limit: 0
+- package-ecosystem: github-actions
+  directories:
+  - /
+  schedule:
+    interval: weekly
+  open-pull-requests-limit: 0
