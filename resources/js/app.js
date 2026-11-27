@@ -1,7 +1,9 @@
+import { initializeBusinessPostPhotos } from './business-profile-photo';
 import 'trix';
 import { initializeHomeReveals } from './home-reveal';
 import { initializeOutreachDraftEditors } from './outreach-draft-editor';
 
+initializeBusinessPostPhotos(document);
 initializeHomeReveals(document);
 initializeOutreachDraftEditors(document);
 

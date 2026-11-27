@@ -17,7 +17,7 @@
                 </div>
                 <p class="mt-3 text-base font-medium text-pretty break-words text-slate-900 sm:text-sm">{{ $post->topic ?: 'Business update' }}</p>
                 @if (in_array($post->status, ['pending_approval', 'failed']) && $canManageWebsite)
-                    <form method="POST" action="{{ route('admin.business-profile.posts.update', [$website, $post]) }}" class="mt-4 space-y-3" x-data="{ photoUrl: {{ Illuminate\Support\Js::from(old('photo_url', $post->photo_url ?? '')) }} }">
+                    <form method="POST" action="{{ route('admin.business-profile.posts.update', [$website, $post]) }}" class="mt-4 space-y-3" data-business-post-form>
                         @csrf @method('PUT')
                         <div><label for="business-summary-{{ $post->id }}" class="ui-label">Post text</label><textarea id="business-summary-{{ $post->id }}" name="summary" rows="5" required maxlength="1500" class="{{ $profileInput }} mt-1">{{ old('summary', $post->summary) }}</textarea></div>
                         <div class="grid gap-3 sm:grid-cols-2">
@@ -26,11 +26,11 @@
                         </div>
                         <div>
                             <label for="business-photo-{{ $post->id }}" class="ui-label">Photo link (optional)</label>
-                            <input id="business-photo-{{ $post->id }}" type="url" name="photo_url" x-model="photoUrl" value="{{ old('photo_url', $post->photo_url) }}" maxlength="2048" placeholder="https://" aria-describedby="business-photo-help-{{ $post->id }}" class="{{ $profileInput }} mt-1">
+                            <input id="business-photo-{{ $post->id }}" type="url" name="photo_url" data-business-post-photo value="{{ old('photo_url', $post->photo_url) }}" maxlength="2048" placeholder="https://" aria-describedby="business-photo-help-{{ $post->id }}" class="{{ $profileInput }} mt-1">
                             <p id="business-photo-help-{{ $post->id }}" class="mt-1 text-sm text-slate-600">Use a public HTTPS link directly to the photo. Google will fetch it when you publish.</p>
                             @error('photo_url')<p class="mt-1 text-sm text-rose-700">{{ $message }}</p>@enderror
                         </div>
-                        <img x-show="photoUrl.startsWith('https://')" x-bind:src="photoUrl.startsWith('https://') ? photoUrl : null" alt="Post photo preview" referrerpolicy="no-referrer" class="max-h-64 w-full rounded-lg object-contain" x-cloak>
+                        <img data-business-post-photo-preview hidden alt="Post photo preview" referrerpolicy="no-referrer" class="max-h-64 w-full rounded-lg object-contain">
                         <button type="submit" class="ui-button ui-button-secondary ui-button-small">Approve & publish</button>
                     </form>
                 @elseif ($post->summary)
