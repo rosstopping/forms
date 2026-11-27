@@ -40,20 +40,20 @@ it('records only observed AI mentions and citations for one unbranded question',
     $service = new MarketingAuditAiVisibility($provider, app(AiVisibilityAnalyzer::class));
     $context = 'We are garden office fitters and garden office builders serving local businesses.';
     AuditServiceQuestionSelector::fake([['supported' => true, 'client_names' => [], 'services' => [
-        ['service' => 'garden office fitters', 'evidence' => $context],
-        ['service' => 'garden office builders', 'evidence' => $context],
+        ['service' => 'garden office fitters', 'evidence' => $context, 'question' => 'Who installs garden offices for small businesses?', 'intent' => 'provider'],
+        ['service' => 'garden office builders', 'evidence' => $context, 'question' => 'How much does a garden office cost?', 'intent' => 'price'],
     ]]])->preventStrayPrompts();
     $question = $service->question('example.com', ['keywords' => [['term' => 'unrelated client name']]], $context);
-    expect($question)->toBe('Which businesses would you recommend for garden office fitters?');
+    expect($question)->toBe('Who installs garden offices for small businesses?');
     expect($service->questions('example.com', null, $context))
-        ->toBe(['Which businesses would you recommend for garden office fitters?', 'Which businesses would you recommend for garden office builders?']);
+        ->toBe(['Who installs garden offices for small businesses?', 'How much does a garden office cost?']);
     $result = $service->check('example.com', $question);
     expect($result)->toMatchArray(['status' => 'completed', 'website_mentioned' => true, 'website_cited' => true, 'provider' => 'OpenAI']);
     expect($service->check('example.com', $question))->toBe($result);
 });
 
 it('finishes a requested private AI check without blocking the saved audit', function (): void {
-    $audit = WebsiteAudit::factory()->create(['status' => WebsiteAudit::STATUS_COMPLETED, 'insights' => ['full_report' => ['status' => 'completed'], 'ai_visibility' => ['status' => 'pending', 'questions' => ['Which businesses would you recommend for garden offices?', 'Which businesses would you recommend for garden office fitters?']]]]);
+    $audit = WebsiteAudit::factory()->create(['status' => WebsiteAudit::STATUS_COMPLETED, 'insights' => ['full_report' => ['status' => 'completed'], 'ai_visibility' => ['status' => 'pending', 'questions' => ['Which businesses would you recommend for garden offices?', 'Who installs garden offices for small businesses?']]]]);
     $service = Mockery::mock(MarketingAuditAiVisibility::class);
     $service->shouldReceive('available')->once()->andReturn(true);
     $service->shouldReceive('check')->twice()->andReturn(['status' => 'completed', 'website_mentioned' => false, 'website_cited' => false, 'checked_at' => now()->toIso8601String()]);

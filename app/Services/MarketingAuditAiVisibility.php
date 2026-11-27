@@ -33,17 +33,17 @@ class MarketingAuditAiVisibility
     /** @return array{questions: array<int, string>, evidence: array<int, array<string, string>>, method: string} */
     public function selection(string $domain, string $businessContext): array
     {
-        $empty = ['questions' => [], 'evidence' => [], 'method' => 'own_services_v2'];
+        $empty = ['questions' => [], 'evidence' => [], 'method' => 'natural_buyer_questions_v1'];
         $context = Str::squish(mb_substr($businessContext, 0, 12000));
         if (mb_strlen($context) < 40) {
             return $empty;
         }
-        $key = 'marketing-audit-service-questions:v2:'.hash('sha256', Str::lower($domain).'|'.$context);
+        $key = 'marketing-audit-service-questions:v3:'.hash('sha256', Str::lower($domain).'|'.$context);
         if (is_array($cached = Cache::get($key))) {
             return $cached;
         }
         try {
-            $response = (new AuditServiceQuestionSelector)->prompt(json_encode(['domain' => $domain, 'website_text' => $context], JSON_THROW_ON_ERROR), timeout: 35)->toArray();
+            $response = (new AuditServiceQuestionSelector)->prompt(json_encode(['domain' => $domain, 'website_text' => $context], JSON_THROW_ON_ERROR), provider: 'openai', timeout: 35)->toArray();
             $selection = $this->validatedSelection($domain, $context, $response);
             Cache::put($key, $selection, now()->addDays(7));
 
@@ -60,41 +60,69 @@ class MarketingAuditAiVisibility
      */
     public function validatedSelection(string $domain, string $context, array $selection): array
     {
-        $result = ['questions' => [], 'evidence' => [], 'method' => 'own_services_v2'];
+        $result = ['questions' => [], 'evidence' => [], 'method' => 'natural_buyer_questions_v1'];
         if (($selection['supported'] ?? false) !== true) {
             return $result;
         }
         $context = Str::lower(Str::squish($context));
         $brand = Str::before(preg_replace('/^www\./', '', Str::lower($domain)), '.');
         $clients = collect($selection['client_names'] ?? [])->filter(fn ($name): bool => is_string($name) && mb_strlen(trim($name)) >= 3 && Str::contains($context, Str::lower(Str::squish($name))))->map(fn (string $name): string => Str::lower(Str::squish($name)))->all();
+        $businessName = Str::lower(Str::squish((string) ($selection['business_name'] ?? '')));
+        $excluded = [$brand, ...$clients];
+        if (mb_strlen($businessName) >= 3 && Str::contains($context, $businessName)) {
+            $excluded[] = $businessName;
+        }
         $seen = [];
         foreach (array_slice($selection['services'] ?? [], 0, 6) as $item) {
-            $service = Str::squish((string) ($item['service'] ?? ''));
-            $quote = Str::squish((string) ($item['evidence'] ?? ''));
-            $normalised = Str::lower($service);
-            if (mb_strlen($service) < 3 || mb_strlen($service) > 90 || mb_strlen($quote) < 15 || mb_strlen($quote) > 350
-                || ! preg_match("~^[\pL\pN &+'()/–-]+$~u", $service) || count(explode(' ', $service)) > 10
-                || ! Str::contains($context, Str::lower($quote)) || ! Str::contains(Str::lower($quote), $normalised)
-                || Str::contains($normalised, [$brand, ...$clients]) || isset($seen[$normalised])) {
+            if (! is_array($item)) {
                 continue;
             }
-            $question = 'Which businesses would you recommend for '.$service.'?';
+            $service = Str::squish((string) ($item['service'] ?? ''));
+            $quote = Str::squish((string) ($item['evidence'] ?? ''));
+            $question = Str::squish((string) ($item['question'] ?? ''));
+            $normalised = Str::lower($question);
+            $intent = $item['intent'] ?? '';
+            $location = Str::squish((string) ($item['location'] ?? ''));
+            $locationQuote = Str::squish((string) ($item['location_evidence'] ?? ''));
+            if (mb_strlen($service) < 3 || mb_strlen($service) > 90 || mb_strlen($quote) < 8 || mb_strlen($quote) > 350
+                || ! Str::contains($context, Str::lower($quote)) || ! Str::contains(Str::lower($quote), Str::lower($service))
+                || mb_strlen($question) < 20 || mb_strlen($question) > 200 || ! str_ends_with($question, '?')
+                || ! in_array($intent, ['provider', 'booking', 'price', 'comparison'], true)
+                || preg_match('~[<>\r\n]|https?://|www\.|[\pL\pN-]+\.(?:com|co\.uk|net|org)\b~iu', $question)
+                || preg_match('/^(?:which|what) (?:businesses|companies|providers) (?:would you recommend|are best|do you recommend) (?:for|to)/iu', $question)
+                || preg_match('/\byour(?:s)?\b|\byou (?:offer|provide|sell|charge|have|include)\b/iu', $question)
+                || preg_match('/^(?:can|could|would|will) you (?:build|create|design|book|sell|provide)\b/iu', $question)
+                || preg_match('/[£$€]\s*\d|\b\d+\s*(?:pounds|euros|dollars)\b/iu', $question)
+                || Str::contains($normalised, $excluded) || isset($seen[$normalised])) {
+                continue;
+            }
+            if ($location !== '' && (mb_strlen($locationQuote) < 15 || ! Str::contains($context, Str::lower($locationQuote))
+                || ! Str::contains(Str::lower($locationQuote), Str::lower($location)) || ! Str::contains($normalised, Str::lower($location)))) {
+                continue;
+            }
+            $tokens = preg_split('/[^\pL\pN]+/u', Str::lower($service), -1, PREG_SPLIT_NO_EMPTY);
+            $tokens = array_filter($tokens, fn (string $token): bool => mb_strlen($token) >= 3 && ! in_array($token, ['and', 'for', 'the', 'our', 'services', 'service', 'work', 'custom', 'bespoke'], true));
+            if ($tokens === [] || ! collect($tokens)->contains(fn (string $token): bool => Str::contains($normalised, rtrim($token, 's')))) {
+                continue;
+            }
+            preg_match_all('/\b\d+(?:[.,]\d+)*\b/u', $question, $numbers);
+            if (collect($numbers[0])->contains(fn (string $number): bool => ! Str::contains($quote.' '.$locationQuote, $number))) {
+                continue;
+            }
+            preg_match_all('/\b[\p{Lu}][\pL\pN]+\b/u', $question, $names);
+            $ordinary = ['Where', 'Who', 'How', 'What', 'Which', 'Can', 'Could', 'Does', 'Do', 'Is', 'Are', 'Should'];
+            if (collect($names[0])->contains(fn (string $name): bool => ! in_array($name, $ordinary, true) && ! Str::contains($context, Str::lower($name)))) {
+                continue;
+            }
             $seen[$normalised] = true;
             $result['questions'][] = $question;
-            $result['evidence'][] = ['service' => $service, 'quote' => $quote, 'question' => $question];
-
+            $result['evidence'][] = ['service' => $service, 'quote' => $quote, 'question' => $question, 'intent' => $intent, 'location' => $location, 'location_quote' => $locationQuote];
+            if (count($result['questions']) === 2) {
+                break;
+            }
         }
 
-        usort($result['evidence'], fn (array $a, array $b): int => $this->isSeoService($b['service']) <=> $this->isSeoService($a['service']));
-        $result['evidence'] = array_slice($result['evidence'], 0, 2);
-        $result['questions'] = array_column($result['evidence'], 'question');
-
         return $result;
-    }
-
-    private function isSeoService(string $service): bool
-    {
-        return preg_match('/\bseo\b|search engine optimi[sz]ation/iu', $service) === 1;
     }
 
     /** @return array<string, mixed> */

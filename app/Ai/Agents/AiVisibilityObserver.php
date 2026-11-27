@@ -17,7 +17,7 @@ class AiVisibilityObserver implements Agent, HasProviderOptions, HasTools
 
     public function instructions(): string
     {
-        return 'Answer the user’s business recommendation question using public evidence and web search where useful. Do not invent businesses or unsupported endorsements. If recommending businesses, start each item with its business name in bold. Use numbered recommendations only when presenting an ordered list. Keep the answer under 1000 words. Cite sources where supported. If there is insufficient evidence, say so.';
+        return 'Answer the user’s question using public evidence and web search where useful. Do not invent businesses or unsupported endorsements. If recommending businesses, start each item with its business name in bold. Use numbered recommendations only when presenting an ordered list. Keep the answer under 1000 words. Cite sources where supported. If there is insufficient evidence, say so.';
     }
 
     public function tools(): iterable
