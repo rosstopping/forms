@@ -12,6 +12,7 @@ use App\Models\ContentGeneration;
 use App\Models\ContentOpportunity;
 use App\Models\ContentRequest;
 use App\Models\RemediationRun;
+use App\Models\ReportingSnapshot;
 use App\Models\SearchConsoleDailyMetric;
 use App\Models\SearchConsoleMetric;
 use App\Models\SearchOpportunity;
@@ -25,6 +26,7 @@ use App\Models\SeoTargetKeywordRanking;
 use App\Models\Website;
 use App\Models\WebsiteHealthReport;
 use App\Models\WebsiteHealthReportPage;
+use App\Models\WeeklyReport;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -32,7 +34,7 @@ use Illuminate\Validation\ValidationException;
 
 class AgentSeoEvidence
 {
-    public const SECTIONS = ['targets', 'rankings', 'snapshots', 'keywords', 'search-console', 'search-console-daily', 'health-reports', 'health-pages', 'competitor-audits', 'competitor-keywords', 'competitor-pages', 'search-opportunities', 'seo-opportunities', 'content-opportunities', 'backlink-audits', 'backlink-opportunities', 'impacts', 'impact-reviews', 'content-requests', 'content-runs', 'competitor-opportunities', 'remediation-runs'];
+    public const SECTIONS = ['weekly-reports', 'indexing', 'analytics', 'targets', 'rankings', 'snapshots', 'keywords', 'search-console', 'search-console-daily', 'health-reports', 'health-pages', 'competitor-audits', 'competitor-keywords', 'competitor-pages', 'search-opportunities', 'seo-opportunities', 'content-opportunities', 'backlink-audits', 'backlink-opportunities', 'impacts', 'impact-reviews', 'content-requests', 'content-runs', 'competitor-opportunities', 'remediation-runs'];
 
     /** @return array<string, array<string, mixed>> */
     private function sources(Website $website): array
@@ -49,6 +51,9 @@ class AgentSeoEvidence
         $estimate = 'Third-party search estimate';
 
         return [
+            'weekly-reports' => $this->source(WeeklyReport::where('website_id', $id)->whereNotNull('generated_at'), 'id,website_id,period_start,period_end,overview,recommended_priority,snapshot,generated_at', 'period_end', 'Saved weekly SEO report'),
+            'indexing' => $this->source(ReportingSnapshot::where('website_id', $id)->where('source', 'indexing')->where('property', $property), 'id,property,period_end,metrics', 'period_end', 'Google URL Inspection sample of up to five URLs'),
+            'analytics' => $this->source(ReportingSnapshot::where('website_id', $id)->where('source', 'analytics')->where('property', (string) config('reporting.analytics_properties.'.$id)), 'id,property,period_start,period_end,metrics', 'period_end', 'GA4 sessions and active users over the full week'),
             'targets' => $this->source(SeoTargetKeyword::query()->where('website_id', $id), 'id,term,priority,note,intended_url,assignment_role,search_intent,archived_at,updated_at', 'updated_at', 'Staff-selected keyword strategy', ['term', 'note']),
             'rankings' => [...$this->source(SeoTargetKeywordRanking::query()->where('website_id', $id)->whereHas('targetKeyword', fn ($query) => $query->where('website_id', $id))->with('targetKeyword:id,term,intended_url'), 'id,seo_target_keyword_id,provider,location_code,language_code,device,status,position,ranking_url,cached,observed_at,organic_results', 'observed_at', 'Saved top-100 rank observation'), 'keyword_relation' => 'targetKeyword', 'keyword_columns' => ['term'], 'market_columns' => ['location_code', 'language_code', 'device']],
             'snapshots' => [...$this->source($snapshots(), 'id,provider,domain,location_code,language_code,status,snapshot_date,completed_at,organic_keywords,estimated_organic_traffic,top_3_keywords,top_10_keywords,top_20_keywords,top_100_keywords,backlinks,referring_domains,broken_backlinks,domain_rank', 'snapshot_date', $estimate), 'market_columns' => ['location_code', 'language_code']],
@@ -207,6 +212,8 @@ class AgentSeoEvidence
     private function reportUrl(Website $website, string $section, Model $row): string
     {
         return match ($section) {
+            'weekly-reports' => route('admin.reporting.weekly', [$website, 'weekly_report' => $row->id]),
+            'indexing', 'analytics' => route('admin.reporting.site', $website),
             'health-reports' => route('admin.website-health-reports.show', [$website, $row->id]),
             'health-pages' => route('admin.website-health-report-pages.show', [$website, $row->website_health_report_id, $row->id]),
             'competitor-opportunities' => route('admin.competitor-audits.show', [$website, $row->competitor_audit_id]),

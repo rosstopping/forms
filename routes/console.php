@@ -83,5 +83,8 @@ Schedule::command('leads:dispatch-follow-up-reminders')
 
 Schedule::command('content:discover')->dailyAt('08:00')->onOneServer()->withoutOverlapping();
 
+Schedule::command('reporting:sync')->weeklyOn(1, '06:15')->when(fn () => config('reporting.staff_only_reports'))
+    ->onOneServer()->withoutOverlapping()->runInBackground();
+
 Schedule::command('search-console:sync-daily')->dailyAt('03:00')->onOneServer()->withoutOverlapping();
 Schedule::command('seo:detect-wins')->dailyAt('07:30')->onOneServer()->withoutOverlapping();

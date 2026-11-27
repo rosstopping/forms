@@ -75,7 +75,11 @@ class AgentWorkOverview
             'reason' => Str::limit($item['reason'], 500), 'url' => $item['url'],
         ]);
 
+        $reporting = app(ReportingOverview::class);
+        $sites = Website::whereKey($websiteIds)->with(['searchConsoleConnection', 'latestWeeklyReport:id,website_id,period_end'])->get();
+
         return [
+            'reporting_attention' => $reporting->attention($reporting->rows($sites), $attention),
             'generated_at' => now()->toIso8601String(), 'read_only' => true,
             'links' => ['websites' => route('agent.websites.index')],
             'agent_tasks' => AgentContentTask::query()->whereIn('website_id', $websiteIds)->where('user_id', $user->id)

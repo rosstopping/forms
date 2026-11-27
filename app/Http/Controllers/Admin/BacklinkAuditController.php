@@ -38,7 +38,7 @@ class BacklinkAuditController extends Controller
         $audit->load(['competitors', 'opportunities' => fn ($query) => $query->orderByDesc('priority_score')]);
         $cost = ExternalApiUsage::where('backlink_audit_id', $audit->id)->sum('cost');
 
-        return view('admin.websites.backlink-audit', ['website' => $website, 'audit' => $audit, 'links' => $links, 'pages' => $pages, 'gaps' => $gaps, 'linkFilter' => $linkFilter, 'cost' => $cost, 'canManageWebsite' => $website->isManageableBy($request->user()), 'canAccessOutreach' => Gate::allows('access-outreach')]);
+        return view('admin.websites.backlink-audit', ['website' => $website, 'audit' => $audit, 'links' => $links, 'pages' => $pages, 'gaps' => $gaps, 'linkFilter' => $linkFilter, 'cost' => $cost, 'canManageWebsite' => ! config('reporting.staff_only_reports') && $website->isManageableBy($request->user()), 'canAccessOutreach' => ! config('reporting.staff_only_reports') && Gate::allows('access-outreach')]);
     }
 
     public function queue(Request $request, Website $website, BacklinkOpportunity $opportunity, ContentOpportunityQueuer $queuer): RedirectResponse

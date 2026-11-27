@@ -11,7 +11,7 @@ use RuntimeException;
 
 class GoogleOAuthClient
 {
-    public function authorizationUrl(string $state): string
+    public function authorizationUrl(string $state, bool $analytics = false): string
     {
         $this->ensureConfigured();
 
@@ -19,7 +19,7 @@ class GoogleOAuthClient
             'client_id' => config('services.google.client_id'),
             'redirect_uri' => route('admin.search-console.callback'),
             'response_type' => 'code',
-            'scope' => 'https://www.googleapis.com/auth/webmasters.readonly',
+            'scope' => 'https://www.googleapis.com/auth/webmasters.readonly'.($analytics ? ' https://www.googleapis.com/auth/analytics.readonly' : ''),
             'access_type' => 'offline',
             'prompt' => 'consent',
             'include_granted_scopes' => 'true',

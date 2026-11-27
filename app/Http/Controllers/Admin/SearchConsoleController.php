@@ -39,7 +39,7 @@ class SearchConsoleController extends Controller
         $this->authorizeWebsite($request, $website);
         $state = Crypt::encryptString(json_encode(['website_id' => $website->id, 'user_id' => $request->user()->id], JSON_THROW_ON_ERROR));
 
-        return Redirect::away($this->oauth->authorizationUrl($state));
+        return Redirect::away($this->oauth->authorizationUrl($state, filled(config('reporting.analytics_properties.'.$website->id))));
     }
 
     public function callback(Request $request): RedirectResponse

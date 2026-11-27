@@ -230,6 +230,11 @@ class Website extends Model
         return $this->hasMany(WebsiteHealthReport::class);
     }
 
+    public function latestWeeklyReport(): HasOne
+    {
+        return $this->hasOne(WeeklyReport::class)->ofMany(['period_end' => 'max', 'id' => 'max'], fn ($query) => $query->whereNotNull('generated_at'));
+    }
+
     public function latestHealthReport(): HasOne
     {
         return $this->hasOne(WebsiteHealthReport::class)->latestOfMany();

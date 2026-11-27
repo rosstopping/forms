@@ -34,7 +34,7 @@ class WebsiteHealthReportPageController extends Controller
             'report' => $websiteHealthReport,
             'page' => $websiteHealthReportPage,
             'optimisationTypes' => OptimisationType::cases(),
-            'canManageWebsite' => $website->isManageableBy($request->user()),
+            'canManageWebsite' => ! config('reporting.staff_only_reports') && $website->isManageableBy($request->user()),
             'canUsePixel' => config('forms.pixel_ui_enabled') && ($request->user()?->isAdmin() || $website->owner?->hasMembershipFeature(MembershipPlan::FEATURE_GROWTH)),
         ]);
     }

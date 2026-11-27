@@ -33,12 +33,12 @@ test('competitors normalize domains and reject unsafe inputs', function (): void
     }
 });
 
-test('managers add exclude restore and audit competitors without spending on reads', function (): void {
+test('staff add exclude restore and audit competitors without spending on reads', function (): void {
     Queue::fake();
     $owner = User::factory()->create();
     $website = Website::factory()->for($owner, 'owner')->create();
     $website->domains()->create(['domain' => 'example.com', 'is_primary' => true]);
-    $this->actingAs($owner)->post(route('admin.competitors.store', $website), ['domain' => 'https://www.competitor.example/guide/'])->assertRedirect();
+    $this->actingAs(User::factory()->create(['role' => User::ROLE_ADMIN]))->post(route('admin.competitors.store', $website), ['domain' => 'https://www.competitor.example/guide/'])->assertRedirect();
     $competitor = $website->competitors()->sole();
     $this->post(route('admin.competitors.store', $website), ['domain' => 'competitor.example'])->assertRedirect();
     expect($website->competitors()->count())->toBe(1);
@@ -61,14 +61,14 @@ test('viewers cannot mutate and other websites cannot access competitor audits',
     $audit = CompetitorAudit::factory()->for($competitor, 'competitor')->create();
     $viewer = User::factory()->create();
     $competitor->website->members()->attach($viewer, ['role' => 'viewer']);
-    $this->actingAs($viewer)->get(route('admin.competitor-audits.show', [$competitor->website, $audit]))->assertSuccessful();
+    $this->actingAs($viewer)->get(route('admin.competitor-audits.show', [$competitor->website, $audit]))->assertForbidden();
     $this->post(route('admin.competitors.audit', [$competitor->website, $competitor]))->assertForbidden();
     $this->post(route('admin.competitors.store', $competitor->website), ['domain' => 'other.example'])->assertForbidden();
     $other = Website::factory()->create();
-    $this->actingAs($other->owner)->get(route('admin.competitor-audits.show', [$other, $audit]))->assertNotFound();
+    $this->actingAs(User::factory()->create(['role' => User::ROLE_ADMIN]))->get(route('admin.competitor-audits.show', [$other, $audit]))->assertNotFound();
     $this->post(route('admin.competitors.audit', [$other, $competitor]))->assertNotFound();
     $competitor->website->owner->update(['membership_tier' => 'essential']);
-    $this->actingAs($competitor->website->owner)->post(route('admin.competitors.audit', [$competitor->website, $competitor]))->assertRedirect(route('admin.billing.index'));
+    $this->actingAs($competitor->website->owner)->post(route('admin.competitors.audit', [$competitor->website, $competitor]))->assertForbidden();
 });
 
 test('fresh audits are reused while failed audits resume their saved stage', function (): void {
@@ -189,7 +189,7 @@ test('audits render keyword filters and analysed opportunities without provider 
     CompetitorKeyword::factory()->for($audit, 'audit')->create(['keyword' => 'missing term']);
     CompetitorKeyword::factory()->for($audit, 'audit')->create(['keyword' => 'shared term', 'comparison' => 'shared', 'our_position' => 20]);
     CompetitorOpportunity::factory()->for($audit, 'audit')->create();
-    $this->actingAs($audit->website->owner)->get(route('admin.competitor-audits.show', [$audit->website, $audit, 'filter' => 'missing']))->assertSuccessful()->assertSee('missing term')->assertDontSee('shared term')->assertSee('Queue content brief');
+    $this->actingAs(User::factory()->create(['role' => User::ROLE_ADMIN]))->get(route('admin.competitor-audits.show', [$audit->website, $audit, 'filter' => 'missing']))->assertSuccessful()->assertSee('missing term')->assertDontSee('shared term')->assertSee('Queue content brief');
     $this->get(route('admin.competitor-audits.show', [$audit->website, $audit, 'filter' => 'outranked']))->assertSuccessful()->assertSee('shared term')->assertDontSee('missing term');
     Http::assertNothingSent();
 });

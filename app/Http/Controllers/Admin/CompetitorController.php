@@ -53,7 +53,7 @@ class CompetitorController extends Controller
         $audit->load(['competitor', 'pages', 'opportunities' => fn ($query) => $query->orderByDesc('priority_score')]);
         $pageKeywords = $audit->keywords()->get(['ranking_url', 'keyword'])->groupBy('ranking_url');
         $cost = ExternalApiUsage::where('competitor_audit_id', $audit->id)->sum('cost');
-        $canManageWebsite = $website->isManageableBy($request->user());
+        $canManageWebsite = ! config('reporting.staff_only_reports') && $website->isManageableBy($request->user());
 
         return view('admin.websites.competitor-audit', compact('website', 'audit', 'keywords', 'filter', 'pageKeywords', 'cost', 'canManageWebsite'));
     }

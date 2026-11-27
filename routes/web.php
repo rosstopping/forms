@@ -54,6 +54,7 @@ use App\Http\Controllers\Admin\ProspectScheduleController;
 use App\Http\Controllers\Admin\ProspectSendController;
 use App\Http\Controllers\Admin\ProspectTestEmailController;
 use App\Http\Controllers\Admin\RemediationRunController;
+use App\Http\Controllers\Admin\ReportingController;
 use App\Http\Controllers\Admin\ReportRemediationController;
 use App\Http\Controllers\Admin\RerunSeoProspectSearchController;
 use App\Http\Controllers\Admin\RunAutomatedProspectDiscoveryController;
@@ -120,6 +121,7 @@ use App\Http\Middleware\EnsureAdmin;
 use App\Http\Middleware\ResolveCurrentWebsite;
 use App\Http\Middleware\RestrictAssignedAdmin;
 use App\Http\Middleware\RestrictCustomerWorkspace;
+use App\Http\Middleware\StaffReportingWorkspace;
 use App\Support\WebsiteNavigation;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Http\Request;
@@ -273,7 +275,12 @@ Route::middleware(['web', 'signed', 'throttle:20,1'])->group(function () {
         ->name('prospect-reports.show');
 });
 
-Route::middleware(['web', 'auth', RestrictCustomerWorkspace::class, RestrictAssignedAdmin::class, ResolveCurrentWebsite::class])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['web', 'auth', RestrictCustomerWorkspace::class, RestrictAssignedAdmin::class, StaffReportingWorkspace::class, ResolveCurrentWebsite::class])->prefix('admin')->name('admin.')->group(function () {
+    Route::middleware(EnsureAdmin::class)->controller(ReportingController::class)->group(function (): void {
+        Route::get('reports', 'index')->name('reporting.index');
+        Route::get('websites/{website}/reports', 'site')->name('reporting.site');
+        Route::get('websites/{website}/reports/weekly', 'weekly')->name('reporting.weekly');
+    });
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::post('websites/{website}/content-queue/skip-today', [ManualContentRequestController::class, 'skipToday'])->middleware(EnsureAdmin::class)->name('content-queue.skip-today');
     Route::get('content-queue', [ManualContentRequestController::class, 'index'])->middleware(EnsureAdmin::class)->name('content-queue.index');

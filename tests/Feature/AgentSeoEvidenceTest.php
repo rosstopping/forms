@@ -11,6 +11,7 @@ use App\Models\ContentOpportunity;
 use App\Models\ContentPlan;
 use App\Models\ContentRequest;
 use App\Models\RemediationRun;
+use App\Models\ReportingSnapshot;
 use App\Models\SearchConsoleConnection;
 use App\Models\SearchConsoleDailyMetric;
 use App\Models\SearchConsoleMetric;
@@ -28,6 +29,7 @@ use App\Models\WebsiteHealthReport;
 use App\Models\WebsiteHealthReportPage;
 use App\Models\WebsiteLocalProject;
 use App\Models\WebsiteSetup;
+use App\Models\WeeklyReport;
 use App\Services\AgentSeoEvidence;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
@@ -80,7 +82,13 @@ test('every SEO evidence section reads its own stored records with provenance an
     $impact = SeoImpact::factory()->for($this->website)->create();
     $backlink = BacklinkAudit::factory()->for($this->website)->create();
     $plan = ContentPlan::factory()->for($this->website)->create();
+    config(['reporting.analytics_properties' => [$this->website->id => '12345']]);
+    $property = $section === 'analytics' ? '12345' : $this->connection->property_url;
     match ($section) {
+        'weekly-reports' => WeeklyReport::factory()->for($this->website)->create(),
+        'indexing', 'analytics' => ReportingSnapshot::create(['website_id' => $this->website->id, 'source' => $section,
+            'property' => $property, 'property_hash' => hash('sha256', $property), 'period_start' => today()->subDays(6),
+            'period_end' => today(), 'metrics' => $section === 'analytics' ? ['active_users' => 0, 'sessions' => 1] : ['checked' => 1, 'indexed' => 1]]),
         'targets', 'snapshots', 'competitor-audits', 'health-reports', 'impacts', 'backlink-audits' => null,
         'rankings' => SeoTargetKeywordRanking::factory()->for($target, 'targetKeyword')->create(['website_id' => $this->website->id]),
         'keywords' => SeoKeyword::factory()->for($snapshot, 'snapshot')->create(['website_id' => $this->website->id]),

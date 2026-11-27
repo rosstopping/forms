@@ -30,6 +30,9 @@
                 </form>
             </div>
         @endImpersonating
+        @if(Auth::user()->isAdmin() && config('reporting.staff_only_reports'))
+            @include('admin.reporting.header')
+        @else
         <div class="isolate min-h-dvh lg:grid lg:grid-cols-[17rem_minmax(0,1fr)]">
             <aside class="hidden min-h-dvh flex-col bg-slate-950 px-4 py-5 text-white lg:flex">
                 <a href="{{ route('admin.dashboard') }}" aria-label="Homepage" class="flex items-center gap-3 px-2">
@@ -255,6 +258,7 @@
                 </main>
             </div>
         </div>
+        @endif
     @else
         <main class="isolate mx-auto min-h-dvh max-w-7xl p-4 sm:p-6">
             @yield('content')

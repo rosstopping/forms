@@ -32,12 +32,12 @@ function backlinkAuditResponse(array $items, string $task = 'backlink-task'): ar
     return ['status_code' => 20000, 'tasks' => [['id' => $task, 'status_code' => 20000, 'cost' => .02, 'result_count' => 1, 'result' => [['items' => $items, 'total_count' => count($items)]]]]];
 }
 
-test('managers request matching audits with up to three website competitors and fresh results are reused', function (): void {
+test('staff request matching audits with up to three website competitors and fresh results are reused', function (): void {
     Queue::fake();
     $website = Website::factory()->create();
     $website->domains()->create(['domain' => 'example.com', 'is_primary' => true]);
     $competitors = WebsiteCompetitor::factory()->count(3)->for($website)->create();
-    $this->actingAs($website->owner)->post(route('admin.backlink-audits.store', $website), ['competitor_ids' => $competitors->modelKeys()])->assertRedirect();
+    $this->actingAs(User::factory()->create(['role' => User::ROLE_ADMIN]))->post(route('admin.backlink-audits.store', $website), ['competitor_ids' => $competitors->modelKeys()])->assertRedirect();
     $audit = $website->backlinkAudits()->sole();
     expect($audit->competitors()->pluck('domain')->sort()->values()->all())->toBe($competitors->pluck('domain')->sort()->values()->all());
     Queue::assertPushed(ProcessBacklinkAuditStage::class, 1);
@@ -50,12 +50,12 @@ test('backlink audit access is website scoped and viewers cannot start paid work
     $audit = BacklinkAudit::factory()->create();
     $viewer = User::factory()->create();
     $audit->website->members()->attach($viewer, ['role' => 'viewer']);
-    $this->actingAs($viewer)->get(route('admin.backlink-audits.show', [$audit->website, $audit]))->assertSuccessful();
+    $this->actingAs($viewer)->get(route('admin.backlink-audits.show', [$audit->website, $audit]))->assertForbidden();
     $this->post(route('admin.backlink-audits.store', $audit->website))->assertForbidden();
     $other = Website::factory()->create();
-    $this->actingAs($other->owner)->get(route('admin.backlink-audits.show', [$other, $audit]))->assertNotFound();
+    $this->actingAs(User::factory()->create(['role' => User::ROLE_ADMIN]))->get(route('admin.backlink-audits.show', [$other, $audit]))->assertNotFound();
     $audit->website->owner->update(['membership_tier' => 'essential']);
-    $this->actingAs($audit->website->owner)->get(route('admin.backlink-audits.show', [$audit->website, $audit]))->assertRedirect(route('admin.billing.index'));
+    $this->actingAs($audit->website->owner)->get(route('admin.backlink-audits.show', [$audit->website, $audit]))->assertForbidden();
 });
 
 test('detailed link evidence is mapped and provider cost is checkpointed once', function (): void {
@@ -220,7 +220,7 @@ test('stored referring domains are searchable and audit views do not spend', fun
     $snapshot = $website->seoSnapshots()->create(['provider' => 'dataforseo', 'domain' => 'example.com', 'location_code' => 2826, 'language_code' => 'en', 'status' => 'completed', 'snapshot_date' => today()]);
     $snapshot->referringDomains()->createMany([['website_id' => $website->id, 'domain' => 'publisher.example', 'domain_rank' => 70, 'backlinks_count' => 4], ['website_id' => $website->id, 'domain' => 'other.example', 'domain_rank' => 20, 'backlinks_count' => 1]]);
     $audit = BacklinkAudit::factory()->for($website)->create(['status' => 'completed', 'completed_at' => now()]);
-    $this->actingAs($website->owner)->get(route('admin.websites.show', [$website, 'tab' => 'seo', 'seo_section' => 'backlinks', 'backlink_search' => 'publisher']))->assertSuccessful()->assertSee('publisher.example')->assertDontSee('other.example');
+    $this->actingAs(User::factory()->create(['role' => User::ROLE_ADMIN]))->get(route('admin.websites.show', [$website, 'tab' => 'seo', 'seo_section' => 'backlinks', 'backlink_search' => 'publisher']))->assertSuccessful()->assertSee('publisher.example')->assertDontSee('other.example');
     $this->get(route('admin.websites.show', [$website, 'tab' => 'seo', 'seo_section' => 'backlinks', 'backlink_min_rank' => 70]))->assertSuccessful()->assertSee('publisher.example')->assertDontSee('other.example');
     $this->get(route('admin.backlink-audits.show', [$website, $audit]))->assertSuccessful()->assertSee('Backlink audit');
     Http::assertNothingSent();

@@ -102,7 +102,8 @@ test('viewers see the access notice without a reconnect control', function (): v
     SearchConsoleConnection::factory()->for($website)->create(['access_denied_at' => now()]);
 
     $this->actingAs($viewer)->get(route('admin.websites.section', [$website, 'search']))
-        ->assertSuccessful()
+        ->assertRedirectToRoute('admin.search-overview', $website);
+    $this->get(route('admin.search-overview', $website))->assertSuccessful()
         ->assertSee('Search Console access needs attention')
         ->assertDontSee('Reconnect Google');
 });

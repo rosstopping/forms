@@ -60,7 +60,7 @@ class WebsiteHealthReportController extends Controller
                 ->latest('created_at')
                 ->latest('id')
                 ->get(['id', 'website_id', 'status', 'overall_status', 'passed_checks', 'warning_checks', 'failed_checks', 'created_at']),
-            'canManageWebsite' => $website->isManageableBy($request->user()),
+            'canManageWebsite' => ! config('reporting.staff_only_reports') && $website->isManageableBy($request->user()),
             'canUsePixel' => config('forms.pixel_ui_enabled') && ($request->user()?->isAdmin() || $website->owner?->hasMembershipFeature(MembershipPlan::FEATURE_GROWTH)),
             'aiPrompt' => $request->user()?->isAdmin() && $websiteHealthReport->status === WebsiteHealthReport::STATUS_COMPLETED
                 ? $this->promptGenerator->generate($websiteHealthReport)

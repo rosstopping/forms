@@ -41,7 +41,7 @@
                 @if (! $reportHistory->first()?->is($report))
                     <a href="{{ route('admin.websites.section', [$report->website, 'health']) }}" class="ui-button ui-button-secondary">Open latest</a>
                 @endif
-                @if (auth()->user()?->isAdmin())
+                @if (auth()->user()?->isAdmin() && !config('reporting.staff_only_reports'))
                     <form method="POST" action="{{ route('admin.website-health-reports.store', $report->website) }}" class="shrink-0">
                         @csrf
                         <button type="submit" class="ui-button ui-button-secondary w-full @md:w-auto">Run report again</button>
@@ -139,7 +139,7 @@
                         @endif
                     </div>
                 @endif
-                @if (Auth::user()?->isAdmin() && $remediationRun->status === \App\Models\RemediationRun::STATUS_PULL_REQUEST_OPEN)
+                @if ($canManageWebsite && $remediationRun->status === \App\Models\RemediationRun::STATUS_PULL_REQUEST_OPEN)
                     <form method="POST" action="{{ route('admin.remediation-runs.complete', [$report->website, $report, $remediationRun]) }}" class="mt-3">
                         @csrf
                         @method('PATCH')
