@@ -31,7 +31,11 @@
                     <button type="button" data-confirm-action data-confirm-title="Delete this lead?" data-confirm-message="This submission will be permanently deleted. This cannot be undone." data-confirm-label="Delete lead" data-confirm-danger class="ui-button ui-button-danger">Delete</button>
                 </form>
             @endif
-            <a href="{{ route('admin.form-submissions.index') }}" class="ui-button ui-button-secondary">Back to submissions</a>
+            @if (config('reporting.staff_only_reports'))
+                <a href="{{ route('admin.reporting.index') }}" class="ui-button ui-button-secondary">Back to reports</a>
+            @else
+                <a href="{{ route('admin.form-submissions.index') }}" class="ui-button ui-button-secondary">Back to submissions</a>
+            @endif
         </div>
     </div>
 

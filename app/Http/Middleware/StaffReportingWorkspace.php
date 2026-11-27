@@ -15,7 +15,7 @@ class StaffReportingWorkspace
             return $next($request);
         }
         // Keep evidence permalinks, Google authorisation and active Codex work usable.
-        if ($request->routeIs('admin.reporting.*', 'admin.profile.*', 'admin.search-overview', 'admin.search-console.connect', 'admin.search-console.callback', 'admin.search-console.property', 'admin.search-console.property.store', 'admin.search-console.performance', 'admin.search-console.queries.show',
+        if ($request->routeIs('admin.reporting.*', 'admin.form-submissions.show', 'admin.profile.*', 'admin.search-overview', 'admin.search-console.connect', 'admin.search-console.callback', 'admin.search-console.property', 'admin.search-console.property.store', 'admin.search-console.performance', 'admin.search-console.queries.show',
             'admin.content-queue.*', 'admin.content-requests.manual.*', 'admin.website-health-reports.show', 'admin.website-health-report-pages.show',
             'admin.backlink-audits.show', 'admin.competitor-audits.show', 'admin.onboarding.audits.*', 'admin.impersonation.destroy')) {
             return $next($request);

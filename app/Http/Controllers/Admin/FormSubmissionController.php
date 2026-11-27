@@ -131,7 +131,7 @@ class FormSubmissionController extends Controller
         $formSubmission->load(['website', 'form', 'assignee', 'activities.user', 'tags', 'reviewInvitation.requester']);
 
         $users = $request->user()?->isAdmin() ? User::query()->when(! $request->user()->hasAllWebsiteAccess(), fn ($query) => $query->availableForWebsite($formSubmission->website))->orderBy('name')->get(['id', 'name']) : collect([$request->user()]);
-        $canManage = $formSubmission->website?->isManageableBy($request->user()) === true;
+        $canManage = ! config('reporting.staff_only_reports') && $formSubmission->website?->isManageableBy($request->user()) === true;
 
         $leadTags = LeadTag::query()->where('website_id', $formSubmission->website_id)->orderBy('name')->get();
 

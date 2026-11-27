@@ -3,6 +3,7 @@
 use App\Models\BacklinkAudit;
 use App\Models\CompetitorAudit;
 use App\Models\ContentOpportunity;
+use App\Models\FormSubmission;
 use App\Models\ReportingSnapshot;
 use App\Models\SearchConsoleConnection;
 use App\Models\SearchConsoleDailyMetric;
@@ -35,6 +36,20 @@ test('staff land on scoped reports and retired forms cannot change records', fun
     expect($this->site->fresh()->name)->toBe('Rowglo');
     $this->actingAs($this->site->owner)->get(route('admin.reporting.index'))->assertForbidden();
     $this->get(route('admin.dashboard'))->assertOk();
+});
+
+test('staff can read submission permalinks only for their sites', function (): void {
+    $submission = FormSubmission::factory()->for($this->site)->create([
+        'is_spam' => true,
+        'data' => ['message' => 'Group availability enquiry'],
+    ]);
+    $other = FormSubmission::factory()->for($this->other)->create();
+
+    $this->actingAs($this->staff)->get(route('admin.form-submissions.show', $submission))
+        ->assertOk()->assertSee('Group availability enquiry')->assertSee('Back to reports')
+        ->assertDontSee('Delete lead')->assertDontSee('Save lead')->assertDontSee('Back to submissions');
+    $this->get(route('admin.form-submissions.show', $other))->assertForbidden();
+    $this->post(route('admin.form-submissions.resend-notification', $submission))->assertGone();
 });
 
 test('site report shows scoped search, keyword checks, ideas and historical weekly reports', function (): void {
