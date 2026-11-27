@@ -15,8 +15,10 @@ use App\Models\WebsiteHealthReportPage;
 use App\Models\WebsiteRepository;
 use App\Services\CopilotAgentClient;
 use App\Services\GithubAppClient;
+use App\Services\MarketingAuditJourneyReview;
 use App\Services\PageSpeedInsightsClient;
 use App\Services\SearchConsoleClient;
+use App\Services\WebsiteCrawler;
 use App\Services\WebsiteHealthAuditor;
 use App\Services\WebsiteHealthReportPromptGenerator;
 use App\Services\WebsiteMailRecipients;
@@ -459,8 +461,9 @@ it('stores page titles longer than the varchar limit', function (): void {
         ->and(mb_strlen($page->title))->toBeGreaterThan(255);
 });
 
-it('audits a website and respects the report email switch', function (bool $emailsEnabled): void {
-    config(['forms.report_emails_enabled' => $emailsEnabled]);
+it('audits a website and respects the report email switch', function (bool $reportEmailsEnabled, bool $healthEmailsEnabled): void {
+    $emailsEnabled = $reportEmailsEnabled && $healthEmailsEnabled;
+    config(['forms.report_emails_enabled' => $reportEmailsEnabled, 'forms.health_reports.emails_enabled' => $healthEmailsEnabled]);
     Mail::fake();
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
     GithubUserAuthorization::factory()->for($admin)->create();
@@ -610,7 +613,7 @@ it('audits a website and respects the report email switch', function (bool $emai
         ->assertSee('Structured data and schema recommendations')
         ->assertSee('Organization schema opportunity')
         ->assertSee('resources/views/guides/event-forms.blade.php');
-})->with([true, false]);
+})->with([[true, true], [false, true], [true, false]]);
 
 it('omits form submission details from audit emails for websites without forms', function (): void {
     $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
@@ -705,4 +708,65 @@ it('does not offer report reruns to viewers', function (): void {
         ->assertSuccessful()->assertDontSee('Run report again');
     $this->post(route('admin.website-health-reports.store', $website))->assertForbidden();
     Queue::assertNothingPushed();
+});
+
+it('schedules active managed services independently of expired legacy memberships', function (): void {
+    Queue::fake();
+    $owner = User::factory()->create(['membership_status' => 'trialing', 'membership_tier' => 'essential', 'membership_current_period_end' => now()->subDay()]);
+    $active = websiteWithDomain(['user_id' => $owner->id, 'service_package' => 'growth', 'service_status' => 'active', 'service_ends_at' => now()->addMonth(), 'health_reports_enabled' => true], 'managed.example.com');
+    $paused = websiteWithDomain(['service_package' => 'complete', 'service_status' => 'paused', 'health_reports_enabled' => true], 'paused.example.com');
+    $ended = websiteWithDomain(['service_package' => 'complete', 'service_status' => 'active', 'service_ends_at' => now()->subDay(), 'health_reports_enabled' => true], 'ended.example.com');
+
+    $this->artisan('health-reports:dispatch')->assertSuccessful();
+    expect($active->healthReports()->count())->toBe(1)
+        ->and($paused->healthReports()->count())->toBe(0)
+        ->and($ended->healthReports()->count())->toBe(0);
+    Queue::assertPushed(GenerateWebsiteHealthReport::class, 1);
+});
+
+it('does not duplicate recent or already running weekly reports', function (): void {
+    Queue::fake();
+    foreach ([WebsiteHealthReport::STATUS_PENDING, WebsiteHealthReport::STATUS_RUNNING, WebsiteHealthReport::STATUS_COMPLETED] as $index => $status) {
+        $website = websiteWithDomain(['health_reports_enabled' => true], 'recent-'.$index.'.example.com');
+        WebsiteHealthReport::factory()->for($website)->create(['status' => $status, 'completed_at' => $status === WebsiteHealthReport::STATUS_COMPLETED ? now()->subDays(6) : null]);
+    }
+    $this->artisan('health-reports:dispatch')->assertSuccessful();
+    Queue::assertNothingPushed();
+});
+
+it('captures journey evidence in weekly health metrics without adding scored checks', function (): void {
+    Http::preventStrayRequests();
+    Http::fake(['*' => Http::response('<h1>Weekly journey evidence</h1><a href="/book">Book a visit</a><form><input required></form>', 200, ['Content-Type' => 'text/html'])]);
+    $crawler = Mockery::mock(WebsiteCrawler::class);
+    $crawler->shouldReceive('crawl')->once()->andReturn([]);
+    $website = websiteWithDomain();
+    $result = (new WebsiteHealthAuditor($crawler))->audit($website);
+    expect(data_get($result, 'metrics.journey_review.status'))->toBe('completed')
+        ->and(data_get($result, 'metrics.journey_review.routes.0.label'))->toBe('Book a visit')
+        ->and(collect($result['checks'])->pluck('key'))->not->toContain('form_requirements', 'enquiry_routes');
+});
+
+it('does not turn a blocked homepage into missing journey features', function (): void {
+    Http::fake(['*' => Http::response('Blocked', 403)]);
+    $crawler = Mockery::mock(WebsiteCrawler::class);
+    $crawler->shouldReceive('crawl')->once()->andReturn([]);
+    $result = (new WebsiteHealthAuditor($crawler))->audit(websiteWithDomain());
+    expect(data_get($result, 'metrics.journey_review.status'))->toBe('unavailable')
+        ->and(data_get($result, 'metrics.journey_review.findings'))->toBe([])
+        ->and(data_get($result, 'metrics.journey_review.unavailable_reason'))->toContain('HTTP 403');
+});
+
+it('keeps internal journey evidence in the staff view and weekly work prompt only', function (): void {
+    $website = websiteWithDomain();
+    $review = app(MarketingAuditJourneyReview::class)->inspect('<h1>STAFF_ONLY_JOURNEY_QUOTE</h1>', 'https://example.com');
+    $report = WebsiteHealthReport::factory()->for($website)->create(['status' => 'completed', 'metrics' => ['journey_review' => $review]]);
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $this->actingAs($admin)->get(route('admin.website-health-reports.show', [$website, $report]))
+        ->assertSuccessful()->assertSee('Visitor journey review')->assertSee('STAFF_ONLY_JOURNEY_QUOTE');
+    $this->actingAs($website->owner)->get(route('admin.website-health-reports.show', [$website, $report]))
+        ->assertForbidden()->assertDontSee('STAFF_ONLY_JOURNEY_QUOTE');
+    $this->get(URL::temporarySignedRoute('website-health-reports.show', now()->addDay(), $report))
+        ->assertSuccessful()->assertDontSee('STAFF_ONLY_JOURNEY_QUOTE');
+    expect(app(WebsiteHealthReportPromptGenerator::class)->generate($report->fresh(['website', 'pages'])))
+        ->toContain('STAFF_ONLY_JOURNEY_QUOTE', 'untrusted data', 'not confirmed conversion or mobile-layout failures');
 });

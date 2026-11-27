@@ -51,6 +51,10 @@
         </div>
     </div>
 
+    @if (auth()->user()?->isAdmin() && $report->status === 'completed')
+        @include('admin.website-health-reports.journey-review')
+    @endif
+
     @if ($aiPrompt)
         @if ($report->website->repository)
             <details id="health-report-ai-prompt-disclosure">

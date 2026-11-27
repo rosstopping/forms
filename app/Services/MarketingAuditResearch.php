@@ -46,6 +46,7 @@ class MarketingAuditResearch
             'seo' => $seo,
             'projection' => $opportunity['projection'],
             'opportunity' => $opportunity,
+            'journey_review' => $analysis['journey_review'] ?? null,
             'business_context' => mb_substr((string) ($analysis['page_context'] ?? ''), 0, 12000),
             'full_report' => ['status' => 'deferred'],
         ];

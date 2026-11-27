@@ -32,12 +32,20 @@ class WebsiteHealthAuditor
         $url = 'https://'.$domain;
         $checks = [];
         $metrics = $this->formMetrics($website);
+        $metrics['journey_review'] = app(MarketingAuditJourneyReview::class)->inspect('', $url);
 
         try {
             $startedAt = microtime(true);
             $response = $this->request()->get($url);
             $metrics['response_time_ms'] = (int) round((microtime(true) - $startedAt) * 1000);
             $metrics['http_status'] = $response->status();
+            if ($response->successful()) {
+                $body = $this->boundedBody($response);
+                $metrics['journey_review'] = app(MarketingAuditJourneyReview::class)->inspect($body, $url, $response->header('Content-Type') ?: 'text/html');
+                $metrics['journey_review']['partial'] = $metrics['journey_review']['partial'] || strlen($response->body()) > strlen($body);
+            } else {
+                $metrics['journey_review']['unavailable_reason'] = 'The homepage returned HTTP '.$response->status().'. No visitor journey observations were generated.';
+            }
 
             $checks = [
                 ...$checks,

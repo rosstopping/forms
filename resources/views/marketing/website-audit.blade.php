@@ -335,6 +335,7 @@
                                 @endforelse
                             </dl>
                         </section>
+                        @include('marketing.audit-journey-review')
                         <section class="grid gap-6 rounded-3xl bg-white p-5 ring-1 ring-ink/10 sm:p-8" aria-labelledby="audit-projection-title">
                             <div class="grid gap-2">
                                 <p class="text-base font-medium text-garden sm:text-sm">Search opportunity</p>

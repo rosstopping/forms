@@ -29,7 +29,9 @@ class DispatchDueWebsiteHealthReports extends Command
                     ->where('completed_at', '>=', now()->subDays($frequencyDays))))
             ->chunkById(100, function ($websites) use (&$dispatched): void {
                 foreach ($websites as $website) {
-                    if ($website->owner && ! $website->owner->hasActiveMembership()) {
+                    if (filled($website->service_package)
+                        ? ! $website->hasActiveService()
+                        : ($website->owner && ! $website->owner->hasActiveMembership())) {
                         continue;
                     }
 

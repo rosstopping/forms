@@ -239,6 +239,10 @@ class GenerateWebsiteHealthReport implements ShouldBeUnique, ShouldQueue
 
     protected function sendReport(WebsiteMailRecipients $recipients): void
     {
+        if (! config('forms.health_reports.emails_enabled', false)) {
+            return;
+        }
+
         $website = $this->report->website()->with(['owner', 'members'])->firstOrFail();
         $reportRecipients = $recipients->forReports($website);
 

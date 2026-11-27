@@ -23,6 +23,7 @@ return [
     'webhook_timeout' => (int) env('FORMS_WEBHOOK_TIMEOUT', 10),
     'webhook_response_max_length' => (int) env('FORMS_WEBHOOK_RESPONSE_MAX_LENGTH', 2000),
     'health_reports' => [
+        'emails_enabled' => filter_var(env('FORMS_HEALTH_REPORT_EMAILS_ENABLED', false), FILTER_VALIDATE_BOOL),
         'timeout' => (int) env('FORMS_HEALTH_REPORT_TIMEOUT', 10),
         'connect_timeout' => (int) env('FORMS_HEALTH_REPORT_CONNECT_TIMEOUT', 5),
         'max_response_kb' => (int) env('FORMS_HEALTH_REPORT_MAX_RESPONSE_KB', 1024),
