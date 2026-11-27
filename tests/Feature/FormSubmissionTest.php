@@ -742,3 +742,41 @@ it('shows readable validation errors for the static Northern Prep form', functio
         ->assertUnprocessable()->assertSee('Your enquiry has not been submitted.')->assertSee('email');
     $this->assertDatabaseCount('form_submissions', 0);
 });
+
+it('asks Casa Amore discount visitors to correct their email before recording a signup', function (string $email): void {
+    $website = Website::factory()->create();
+    $website->domains()->create(['domain' => 'casaamoretenerife.com', 'is_primary' => true]);
+    $payload = [
+        '_form_name' => 'popup',
+        '_form_success_url' => 'https://casaamoretenerife.com/code-thanks/',
+        'name' => 'Sam',
+        'email' => $email,
+        'group_size' => '8',
+        'arrival_month' => 'May 2027',
+    ];
+
+    $this->withHeader('Origin', 'https://www.casaamoretenerife.com')->post('/submit', $payload)
+        ->assertUnprocessable()->assertSee('Please correct')->assertSee('email');
+    $this->postJson('/submit', $payload)->assertUnprocessable()->assertJsonValidationErrors('email');
+    $this->assertDatabaseCount('form_submissions', 0);
+    Mail::assertNothingOutgoing();
+    Queue::assertNothingPushed();
+    Http::assertNothingSent();
+
+    $this->post('/submit', array_replace($payload, ['email' => 'sam+offers@example.com']))
+        ->assertRedirect($payload['_form_success_url']);
+    expect(FormSubmission::query()->sole()->is_spam)->toBeFalse();
+})->with(['sam&example.com', 'sam.example.com', 'sam@example', '']);
+
+it('keeps the discount email rule specific to the Casa Amore popup', function (string $domain, string $form): void {
+    $website = Website::factory()->create();
+    $website->domains()->create(['domain' => $domain, 'is_primary' => true]);
+
+    $this->withHeader('Origin', 'https://'.$domain)->postJson('/submit', [
+        '_form_name' => $form, 'email' => 'sam.example.com',
+    ])->assertSuccessful();
+    expect(FormSubmission::query()->sole()->is_spam)->toBeTrue();
+})->with([
+    ['casaamoretenerife.com', 'Contact form'],
+    ['another.example', 'popup'],
+]);

@@ -125,7 +125,7 @@ it('records content and honeypot quarantine reasons without storing security fie
     Mail::assertNothingSent();
     Queue::assertNotPushed(SendFormSubmissionAcknowledgement::class);
 })->with([
-    'content' => [['message' => 'Visit https://spam.example/offer'], 'content'],
+    'content' => [['message' => 'Buy now at https://spam.example/offer'], 'content'],
     'honeypot' => [['_honeypot' => 'filled'], 'honeypot'],
 ]);
 
