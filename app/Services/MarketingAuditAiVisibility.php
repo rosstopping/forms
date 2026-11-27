@@ -33,19 +33,21 @@ class MarketingAuditAiVisibility
     /** @return array{questions: array<int, string>, evidence: array<int, array<string, string>>, method: string} */
     public function selection(string $domain, string $businessContext): array
     {
-        $empty = ['questions' => [], 'evidence' => [], 'method' => 'natural_buyer_questions_v1'];
+        $empty = ['questions' => [], 'evidence' => [], 'method' => 'natural_buyer_questions_v2'];
         $context = Str::squish(mb_substr($businessContext, 0, 12000));
         if (mb_strlen($context) < 40) {
             return $empty;
         }
-        $key = 'marketing-audit-service-questions:v3:'.hash('sha256', Str::lower($domain).'|'.$context);
+        $key = 'marketing-audit-service-questions:v4:'.hash('sha256', Str::lower($domain).'|'.$context);
         if (is_array($cached = Cache::get($key))) {
             return $cached;
         }
         try {
             $response = (new AuditServiceQuestionSelector)->prompt(json_encode(['domain' => $domain, 'website_text' => $context], JSON_THROW_ON_ERROR), provider: 'openai', timeout: 35)->toArray();
             $selection = $this->validatedSelection($domain, $context, $response);
-            Cache::put($key, $selection, now()->addDays(7));
+            if ($selection['questions'] !== []) {
+                Cache::put($key, $selection, now()->addDays(7));
+            }
 
             return $selection;
         } catch (Throwable $exception) {
@@ -60,7 +62,7 @@ class MarketingAuditAiVisibility
      */
     public function validatedSelection(string $domain, string $context, array $selection): array
     {
-        $result = ['questions' => [], 'evidence' => [], 'method' => 'natural_buyer_questions_v1'];
+        $result = ['questions' => [], 'evidence' => [], 'method' => 'natural_buyer_questions_v2'];
         if (($selection['supported'] ?? false) !== true) {
             return $result;
         }
@@ -73,7 +75,7 @@ class MarketingAuditAiVisibility
             $excluded[] = $businessName;
         }
         $seen = [];
-        foreach (array_slice($selection['services'] ?? [], 0, 6) as $item) {
+        foreach (array_slice($selection['services'] ?? [], 0, 4) as $item) {
             if (! is_array($item)) {
                 continue;
             }
@@ -103,6 +105,10 @@ class MarketingAuditAiVisibility
             $tokens = preg_split('/[^\pL\pN]+/u', Str::lower($service), -1, PREG_SPLIT_NO_EMPTY);
             $tokens = array_filter($tokens, fn (string $token): bool => mb_strlen($token) >= 3 && ! in_array($token, ['and', 'for', 'the', 'our', 'services', 'service', 'work', 'custom', 'bespoke'], true));
             if ($tokens === [] || ! collect($tokens)->contains(fn (string $token): bool => Str::contains($normalised, rtrim($token, 's')))) {
+                continue;
+            }
+            $claims = ['commission-free', 'fee-free', 'guaranteed', 'unlimited'];
+            if (collect($claims)->contains(fn (string $claim): bool => Str::contains($normalised, $claim) && ! Str::contains($context, $claim))) {
                 continue;
             }
             preg_match_all('/\b\d+(?:[.,]\d+)*\b/u', $question, $numbers);

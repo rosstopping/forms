@@ -23,7 +23,7 @@ it('uses complete AI generated buyer questions and caches selection without rank
     $questions = $service->questions('digizu.co.uk', ['keywords' => [['term' => 'vvip zante']]], $context);
     expect($questions)->toBe(['Who can manage monthly SEO for my small business?', 'How much does a small business website design cost?']);
     expect($service->questions('digizu.co.uk', null, $context))->toBe($questions);
-    expect($service->selection('digizu.co.uk', $context)['method'])->toBe('natural_buyer_questions_v1');
+    expect($service->selection('digizu.co.uk', $context)['method'])->toBe('natural_buyer_questions_v2');
     AuditServiceQuestionSelector::assertPrompted(fn ($prompt): bool => ! str_contains($prompt->prompt, '"keywords"'));
     Http::assertNothingSent();
 });
@@ -103,4 +103,40 @@ it('rejects seller addressed questions and published-price targeting without a f
         buyerQuestion('SEO services', $offer, 'How much do your SEO services cost?', 'price'),
     ];
     expect(app(MarketingAuditAiVisibility::class)->validatedSelection('agency.example', $offer, ['supported' => true, 'services' => $items])['questions'])->toBe([]);
+});
+
+it('uses ranked backup candidates after invalid outputs while retaining only two questions', function (): void {
+    $offer = 'We sell White Party tickets and VIP boat party tickets for events in Zante.';
+    $items = [
+        buyerQuestion('White Party', $offer, 'Which businesses would you recommend for White Party tickets?'),
+        buyerQuestion('VIP boat party', $offer, 'Who sells VIP boat party tickets for £40?', 'price'),
+        buyerQuestion('White Party', $offer, 'Where can I buy White Party tickets in Zante?', 'booking', 'Zante', $offer),
+        buyerQuestion('VIP boat party', $offer, 'How much do VIP boat party tickets cost in Zante?', 'price', 'Zante', $offer),
+    ];
+    AuditServiceQuestionSelector::fake([['supported' => true, 'business_name' => 'Event Company', 'client_names' => [], 'services' => $items]])->preventStrayPrompts();
+    $result = app(MarketingAuditAiVisibility::class)->selection('events.example', $offer);
+    expect($result['questions'])->toBe([$items[2]['question'], $items[3]['question']])->toHaveCount(2);
+    AuditServiceQuestionSelector::assertPrompted(fn ($prompt): bool => str_contains($prompt->prompt, 'White Party'));
+});
+
+it('rejects an inferred fee free claim and uses another generated candidate', function (): void {
+    $offer = 'We sell boat party tickets. Booking online saves money on commission.';
+    $items = [
+        buyerQuestion('boat party tickets', $offer, 'Where can I buy commission-free boat party tickets?', 'booking'),
+        buyerQuestion('boat party tickets', $offer, 'How can I book boat party tickets online?', 'booking'),
+    ];
+    $result = app(MarketingAuditAiVisibility::class)->validatedSelection('events.example', $offer, ['supported' => true, 'services' => $items]);
+    expect($result['questions'])->toBe([$items[1]['question']]);
+});
+
+it('does not cache invalid generation as a successful week long result', function (): void {
+    $offer = 'We provide boiler servicing for local homeowners.';
+    $item = buyerQuestion('boiler servicing', $offer, 'Where can I book boiler servicing for my home?', 'booking');
+    AuditServiceQuestionSelector::fake([
+        ['supported' => false, 'services' => []],
+        ['supported' => true, 'services' => [$item]],
+    ])->preventStrayPrompts();
+    $service = app(MarketingAuditAiVisibility::class);
+    expect($service->selection('plumber.example', $offer)['questions'])->toBe([]);
+    expect($service->selection('plumber.example', $offer)['questions'])->toBe([$item['question']]);
 });
