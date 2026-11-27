@@ -13,6 +13,7 @@ use App\Models\Website;
 use App\Models\WeeklyReport;
 use App\Services\GoogleOAuthClient;
 use App\Services\ReportingPeriod;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
 beforeEach(function (): void {
@@ -117,4 +118,21 @@ test('unavailable Google totals do not become zeros or erase a successful inspec
     $this->artisan('reporting:sync', ['website' => $this->site->id])->assertFailed();
     expect(ReportingSnapshot::where('source', 'analytics')->count())->toBe(0);
     $this->actingAs($this->staff)->get(route('admin.reporting.index'))->assertOk()->assertSee('Review Google index verdicts')->assertSee('GA4 totals are due');
+});
+
+test('latest report queries qualify the website key shared with the aggregate join', function (): void {
+    $queries = collect();
+    DB::listen(function ($event) use ($queries): void {
+        $sql = str_replace(['"', chr(96)], '', strtolower($event->sql));
+        if (str_contains($sql, 'inner join (select max(')) {
+            $queries->push($sql);
+        }
+    });
+
+    $this->actingAs($this->staff)->get(route('admin.reporting.site', $this->site))->assertOk();
+    foreach (['weekly_reports', 'website_health_reports'] as $table) {
+        $query = $queries->first(fn (string $sql): bool => str_contains($sql, ' from '.$table.' inner join'));
+        expect($query)->not->toBeNull()
+            ->and(strstr($query, ' from ', true))->toContain($table.'.website_id');
+    }
 });

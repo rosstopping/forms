@@ -76,7 +76,7 @@ class AgentWorkOverview
         ]);
 
         $reporting = app(ReportingOverview::class);
-        $sites = Website::whereKey($websiteIds)->with(['searchConsoleConnection', 'latestWeeklyReport:id,website_id,period_end'])->get();
+        $sites = Website::whereKey($websiteIds)->with(['searchConsoleConnection', 'latestWeeklyReport:id,weekly_reports.website_id,period_end'])->get();
 
         return [
             'reporting_attention' => $reporting->attention($reporting->rows($sites), $attention),

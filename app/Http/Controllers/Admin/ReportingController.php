@@ -17,7 +17,7 @@ class ReportingController extends Controller
 {
     public function index(Request $request, ReportingOverview $overview): View
     {
-        $sites = Website::query()->accessibleTo($request->user())->with(['searchConsoleConnection', 'latestWeeklyReport:id,website_id,period_end'])
+        $sites = Website::query()->accessibleTo($request->user())->with(['searchConsoleConnection', 'latestWeeklyReport:id,weekly_reports.website_id,period_end'])
             ->orderByDesc('is_active')->orderBy('name')->get();
         $rows = $overview->rows($sites);
 
@@ -27,7 +27,7 @@ class ReportingController extends Controller
     public function site(Request $request, Website $website, ReportingOverview $overview, SeoTargetKeywordPerformance $rankings): View
     {
         abort_unless($website->isAccessibleBy($request->user()), 403);
-        $website->load(['searchConsoleConnection', 'latestWeeklyReport:id,website_id,period_end', 'latestHealthReport:id,website_id']);
+        $website->load(['searchConsoleConnection', 'latestWeeklyReport:id,weekly_reports.website_id,period_end', 'latestHealthReport:id,website_health_reports.website_id']);
         $rows = $overview->rows(collect([$website]));
         $ideas = collect();
         foreach ([ContentOpportunity::class, CompetitorOpportunity::class] as $source) {
