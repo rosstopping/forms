@@ -127,6 +127,8 @@ use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
+Route::permanentRedirect('/guides/website-maintenance', '/journal/what-website-maintenance-actually-includes')->name('marketing.legacy-maintenance');
+
 Route::get('/agencies', [AgencyMarketingController::class, 'index'])->name('marketing.agencies');
 
 Route::get('/book-a-call', [PpcLandingController::class, 'book'])->middleware('throttle:30,1')->name('marketing.ppc.book');

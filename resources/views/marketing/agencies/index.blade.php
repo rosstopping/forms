@@ -51,11 +51,7 @@
     </section>
     <section aria-labelledby="ross-introduction" class="py-14 sm:py-20">
         <div class="mx-auto grid max-w-6xl items-center gap-10 px-5 sm:px-8 lg:grid-cols-[3fr_2fr] lg:px-10">
-            <figure class="flex aspect-video flex-col items-center justify-center gap-4 rounded-3xl bg-lichen px-6 text-center ring-1 ring-ink/10">
-                <img src="{{ asset((\App\Support\PublicWebsite::origin() ? 'tools-assets/' : '').'ross-topping.jpg') }}" alt="Ross Topping, founder of Digizu" width="96" height="96" class="size-24 rounded-full object-cover" loading="lazy">
-                <div><p class="text-lg font-medium">A quick introduction from Ross</p><p class="mt-2 text-sm text-ink/60">60–90 seconds · Video coming soon</p></div>
-                <figcaption class="max-w-sm text-sm/6 text-ink/60">Meet the person behind Digizu and see how we could work together.</figcaption>
-            </figure>
+            <img src="{{ asset((\App\Support\PublicWebsite::origin() ? 'tools-assets/' : '').'ross-topping.jpg') }}" alt="Ross Topping, founder of Digizu" width="160" height="160" class="size-40 rounded-full object-cover" loading="lazy">
             <div>
                 <h2 id="ross-introduction" class="text-3xl font-medium tracking-tight sm:text-4xl">Hi, I’m Ross.</h2>
                 <p class="mt-5 text-base/7 text-ink/70">I’m a web developer from Doncaster. I’ve been building and managing websites for over 10 years, and now help other developers and agencies offer SEO without taking on all the extra work.</p>

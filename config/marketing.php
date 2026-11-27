@@ -20,12 +20,12 @@ return [
             'title' => 'Website management for your business.',
             'description' => 'We maintain your website, improve its pages and keep your enquiry forms working.',
             'problem_title' => 'Keep your website up to date.',
-            'problem' => 'A website can look fine on the surface while quietly losing enquiries, slipping in search results, or falling behind the business it is meant to support. When maintenance, content, SEO and day-to-day decisions are split across different suppliers, the owner often becomes the person forced to hold it all together.',
+            'problem' => 'Bring your existing site and a list of what needs attention. We check access, renewals, forms and who handles repairs before agreeing the work and price.',
             'benefits' => [
                 ['One accountable team', 'Website maintenance, SEO, content and forms are managed together instead of being passed between suppliers.'],
                 ['Useful ongoing care', 'Regular checks and sensible priorities keep the website supporting the business long after launch day.'],
                 ['Completed improvements', 'Our specialists turn findings into reviewable website work instead of leaving you with another report to decode.'],
-                ['A website you still own', 'Bring the site you already use or have us create one, with a portable foundation and a clear handover path.'],
+                ['A website you still own', 'We agree who controls your domain, hosting and content and what happens if you move to another provider.'],
             ],
             'service_title' => 'What we manage.',
             'service_description' => 'A managed website service should not stop at updates. Digizu looks after the complete role your website plays in the business, from maintenance and visibility to enquiries and ongoing improvement.',
@@ -54,9 +54,9 @@ return [
                 ['How is small business website management different from a one-off build?', 'A build ends when the website goes live. Management continues afterwards, covering routine checks, content that stays accurate, enquiry handling and search improvements as the business changes.'],
             ],
             'related' => [
-                ['website-maintenance-packages', 'Website maintenance packages', 'See what ongoing website maintenance should include for a business site that needs regular care.'],
+                ['technical-seo-services', 'Technical SEO', 'Find problems that keep search engines from reaching important pages.'],
                 ['seo-for-small-businesses', 'SEO for small businesses', 'Understand how ongoing SEO work can help a small business earn more relevant visibility.'],
-                ['improve-my-website', 'Improve an existing website', 'Start with what you already have and make the strongest parts work harder.'],
+                ['website-lead-generation', 'Website enquiries', 'Check how visitors find your services and contact you.'],
             ],
         ],
         'website-maintenance-packages' => [
@@ -184,7 +184,7 @@ return [
                 ['What is a managed SEO service?', 'A managed SEO service combines analysis, prioritisation, content and implementation. Digizu’s specialists identify opportunities and manage the agreed website improvements rather than only supplying recommendations.'],
                 ['Do you guarantee Google rankings?', 'No responsible SEO provider can guarantee a particular position. We provide evidence-led priorities, specialist implementation and clear reporting on progress.'],
                 ['Do I need Google Search Console?', 'Connecting Search Console gives Digizu first-party information about the searches where your website appears. We can help you connect a property that matches your website.'],
-                ['Which Digizu package includes managed SEO?', 'Ross agrees the search review, page improvements, content work and review schedule with you before work starts. Ongoing SEO is quoted separately from the monthly website service.'],
+                ['Which Digizu package includes managed SEO?', 'Ross agrees the search review, page improvements, content work and review schedule with you before work starts. Website design and support cost £149 per month or £349 per month with ongoing SEO.'],
             ],
             'related' => [
                 ['seo-for-small-businesses', 'SEO for small businesses', 'See how ongoing SEO work can stay commercially useful for a smaller business budget and team.'],

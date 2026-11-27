@@ -35,6 +35,8 @@ class PublicWebsite
 
     public static function path(string $path, ?Route $route): string
     {
-        return (config('public_website.static_routes', [])[$route?->getName() ?? ''] ?? null) ?? $path;
+        return config('public_website.merged_paths', [])[$path]
+            ?? config('public_website.static_routes', [])[$route?->getName() ?? '']
+            ?? $path;
     }
 }

@@ -6,6 +6,7 @@ return [
     'pages' => [
         'doncaster' => [
             'path' => 'seo/doncaster',
+            'digizu_canonical' => '/seo-doncaster/',
             'title' => 'SEO Company in Doncaster | Digizu',
             'description' => 'A Doncaster-based SEO service that does the work. Website improvements, Google ranking tracking and weekly reporting, with no long-term contract.',
             'eyebrow' => 'Doncaster based. Personally managed.',

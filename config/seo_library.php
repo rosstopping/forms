@@ -3813,7 +3813,7 @@ return [
                 [
                     'heading' => 'Where Digizu fits',
                     'paragraphs' => [
-                        'Digizu quotes for the SEO review and improvements your website needs. The scope and review schedule are agreed before work starts. Ongoing SEO is separate from the £149 monthly website service. Check the current service pages rather than relying on a price copied into an old article.',
+                        'Digizu charges £149 per month for a website or £349 per month for a website with ongoing SEO. We agree the pages, search priorities and scope before work starts.',
                     ],
                     'link' => [
                         'route' => 'marketing.pricing',
@@ -4850,7 +4850,7 @@ return [
             [
                 'heading' => 'Compare maintenance and SEO packages by responsibility',
                 'paragraphs' => [
-                    'Maintenance keeps the website dependable. Active SEO adds search interpretation and focused page improvements. Digizu quotes for ongoing SEO separately from the monthly website service. Agree the website care, content and Business Profile work you need before work starts.',
+                    'Maintenance keeps the website dependable. Active SEO adds search interpretation and focused page improvements. Digizu offers a website for £149 per month or a website with ongoing SEO for £349 per month. Agree the website care, content and Business Profile work you need before work starts.',
                 ],
                 'link' => [
                     'route' => 'marketing.article',
