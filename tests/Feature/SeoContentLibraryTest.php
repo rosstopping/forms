@@ -45,6 +45,7 @@ it('keeps sitemap pages available and checks promoted pages and internal link de
     $documents = [];
     $inbound = [];
     $links = [];
+    $outbound = [];
     foreach ($urls as $url) {
         $html = $this->get($url)->assertSuccessful()->getContent();
         $document = new DOMDocument;
@@ -60,10 +61,35 @@ it('keeps sitemap pages available and checks promoted pages and internal link de
             }
             $destination = Str::before(Str::before($href, '#'), '?');
             $links[$href] = $destination;
+            $outbound[$url][] = $destination;
             if ($destination !== $url) {
                 $inbound[$destination] = true;
             }
         }
+    }
+    $reachable = [route('marketing.home') => 0];
+    $pending = [route('marketing.home')];
+    while ($pending !== []) {
+        $source = array_shift($pending);
+        foreach ($outbound[$source] ?? [] as $destination) {
+            if (isset($documents[$destination]) && ! isset($reachable[$destination])) {
+                $reachable[$destination] = $reachable[$source] + 1;
+                $pending[] = $destination;
+            }
+        }
+    }
+    $promotedUrls = [route('marketing.agencies')];
+    foreach (array_keys(config('agencies.pages')) as $slug) {
+        $promotedUrls[] = route('marketing.agencies.show', $slug);
+    }
+    foreach (array_keys(config('marketing.industries')) as $slug) {
+        $promotedUrls[] = route('marketing.industry', $slug);
+    }
+    foreach (array_keys(config('marketing.landing_pages')) as $slug) {
+        $promotedUrls[] = route('marketing.landing', $slug);
+    }
+    foreach ($promotedUrls as $url) {
+        expect($reachable[$url] ?? PHP_INT_MAX)->toBeLessThanOrEqual(2, 'Not reachable within two links from home: '.$url);
     }
     foreach (['marketing.home', 'marketing.free-site-audit', 'marketing.faqs', 'marketing.journal', 'marketing.privacy', 'marketing.terms'] as $route) {
         $url = route($route);

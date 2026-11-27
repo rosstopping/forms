@@ -56,6 +56,8 @@
             <div class="mx-auto flex max-w-7xl flex-col gap-6 px-5 py-8 sm:px-8 lg:flex-row lg:items-center lg:justify-between lg:px-10">
                 <p class="text-base text-ink/65 sm:text-sm">© {{ now()->year }} Sitewell.</p>
                 <nav aria-label="Footer navigation" class="flex flex-wrap gap-x-6 gap-y-2 text-base text-ink/65 sm:text-sm">
+                    <a href="{{ route('marketing.features') }}" class="inline-flex min-h-12 items-center hover:text-ink">Services</a>
+                    <a href="{{ route('marketing.agencies') }}" class="inline-flex min-h-12 items-center hover:text-ink">For agencies</a>
                     <a href="{{ route('marketing.about') }}" class="inline-flex min-h-12 items-center hover:text-ink">About</a>
                     <a href="{{ route('marketing.faqs') }}" class="inline-flex min-h-12 items-center hover:text-ink">FAQs</a>
                     <a href="{{ route('marketing.journal') }}" class="inline-flex min-h-12 items-center hover:text-ink">Journal</a>

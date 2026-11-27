@@ -22,7 +22,7 @@ it('shows each public marketing page', function (string $route, string $copy): v
     expect($links->item(0)->getAttribute('href'))->toBe(route('marketing.free-site-audit'));
     expect($xpath->query('//header//details')->length)->toBe(0);
     $footerLinks = $xpath->query('//footer//a');
-    expect(array_map(fn ($link) => $link->getAttribute('href'), iterator_to_array($footerLinks)))->toBe([route('marketing.about'), route('marketing.faqs'), route('marketing.journal'), route('marketing.privacy'), route('marketing.terms')]);
+    expect(array_map(fn ($link) => $link->getAttribute('href'), iterator_to_array($footerLinks)))->toBe([route('marketing.features'), route('marketing.agencies'), route('marketing.about'), route('marketing.faqs'), route('marketing.journal'), route('marketing.privacy'), route('marketing.terms')]);
     expect($xpath->query('//nav[@aria-label="Main navigation"]/a/span[contains(@class, "sm:hidden")]')->item(0)->textContent)->toBe('Free Audit');
     expect($xpath->query('//nav[@aria-label="Main navigation"]/a/span[contains(@class, "max-sm:hidden")]')->item(0)->textContent)->toBe('Get your free search audit');
     expect($xpath->query('//main')->length)->toBe(1);
@@ -341,8 +341,12 @@ it('keeps get started focused on one protected website form', function (): void 
         ->assertDontSee('Useful from the start')
         ->assertDontSee('What the audit checks.')
         ->assertSee('href="'.route('marketing.journal').'"', false)
-        ->assertDontSee('href="'.route('marketing.features').'"', false)
         ->assertDontSee('href="'.route('marketing.contact').'"', false);
+
+    $document = new DOMDocument;
+    @$document->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
+    $xpath = new DOMXPath($document);
+    expect($xpath->query('//main//a[@href="'.route('marketing.features').'"]')->length)->toBe(0);
 
     expect(substr_count($response->getContent(), 'data-audit-form'))->toBe(1)
         ->and(substr_count($response->getContent(), 'data-audit-preview'))->toBe(4);
