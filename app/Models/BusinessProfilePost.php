@@ -22,7 +22,7 @@ class BusinessProfilePost extends Model
 
     public const STATUS_FAILED = 'failed';
 
-    protected $fillable = ['business_profile_connection_id', 'status', 'topic', 'summary', 'call_to_action_type', 'call_to_action_url', 'google_post_name', 'approved_by', 'approved_at', 'published_at', 'error'];
+    protected $fillable = ['business_profile_connection_id', 'status', 'topic', 'summary', 'photo_url', 'call_to_action_type', 'call_to_action_url', 'google_post_name', 'approved_by', 'approved_at', 'published_at', 'error'];
 
     protected function casts(): array
     {

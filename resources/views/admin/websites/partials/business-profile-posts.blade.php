@@ -16,21 +16,31 @@
                     <p class="text-slate-500">{{ $post->published_at ? $post->published_at->format('j M Y') : 'Added '.$post->created_at->format('j M') }}</p>
                 </div>
                 <p class="mt-3 text-base font-medium text-pretty break-words text-slate-900 sm:text-sm">{{ $post->topic ?: 'Business update' }}</p>
-                @if ($post->status === 'pending_approval' && $canManageWebsite)
-                    <form method="POST" action="{{ route('admin.business-profile.posts.update', [$website, $post]) }}" class="mt-4 space-y-3">
+                @if (in_array($post->status, ['pending_approval', 'failed']) && $canManageWebsite)
+                    <form method="POST" action="{{ route('admin.business-profile.posts.update', [$website, $post]) }}" class="mt-4 space-y-3" x-data="{ photoUrl: {{ Illuminate\Support\Js::from(old('photo_url', $post->photo_url ?? '')) }} }">
                         @csrf @method('PUT')
-                        <div><label for="business-summary-{{ $post->id }}" class="ui-label">Post text</label><textarea id="business-summary-{{ $post->id }}" name="summary" rows="5" required maxlength="1500" class="{{ $profileInput }} mt-1">{{ $post->summary }}</textarea></div>
+                        <div><label for="business-summary-{{ $post->id }}" class="ui-label">Post text</label><textarea id="business-summary-{{ $post->id }}" name="summary" rows="5" required maxlength="1500" class="{{ $profileInput }} mt-1">{{ old('summary', $post->summary) }}</textarea></div>
                         <div class="grid gap-3 sm:grid-cols-2">
                             <div><label for="business-cta-{{ $post->id }}" class="ui-label">Button</label><select id="business-cta-{{ $post->id }}" name="call_to_action_type" class="{{ $profileInput }} mt-1">@foreach (['' => 'No button', 'LEARN_MORE' => 'Learn more', 'BOOK' => 'Book', 'ORDER' => 'Order', 'SIGN_UP' => 'Sign up', 'CALL' => 'Call'] as $value => $label)<option value="{{ $value }}" @selected(($post->call_to_action_type ?? '') === $value)>{{ $label }}</option>@endforeach</select></div>
                             <div><label for="business-url-{{ $post->id }}" class="ui-label">Button link</label><input id="business-url-{{ $post->id }}" type="url" name="call_to_action_url" value="{{ $post->call_to_action_url }}" maxlength="2048" placeholder="https://" class="{{ $profileInput }} mt-1"></div>
                         </div>
+                        <div>
+                            <label for="business-photo-{{ $post->id }}" class="ui-label">Photo link (optional)</label>
+                            <input id="business-photo-{{ $post->id }}" type="url" name="photo_url" x-model="photoUrl" value="{{ old('photo_url', $post->photo_url) }}" maxlength="2048" placeholder="https://" aria-describedby="business-photo-help-{{ $post->id }}" class="{{ $profileInput }} mt-1">
+                            <p id="business-photo-help-{{ $post->id }}" class="mt-1 text-sm text-slate-600">Use a public HTTPS link directly to the photo. Google will fetch it when you publish.</p>
+                            @error('photo_url')<p class="mt-1 text-sm text-rose-700">{{ $message }}</p>@enderror
+                        </div>
+                        <img x-show="photoUrl.startsWith('https://')" x-bind:src="photoUrl.startsWith('https://') ? photoUrl : null" alt="Post photo preview" referrerpolicy="no-referrer" class="max-h-64 w-full rounded-lg object-contain" x-cloak>
                         <button type="submit" class="ui-button ui-button-secondary ui-button-small">Approve & publish</button>
                     </form>
                 @elseif ($post->summary)
                     <p class="mt-3 whitespace-pre-line text-base break-words text-slate-600 sm:text-sm">{{ $post->summary }}</p>
                 @endif
+                @if ($post->photo_url)
+                    <img src="{{ $post->photo_url }}" alt="Post photo" loading="lazy" referrerpolicy="no-referrer" class="mt-3 max-h-64 w-full rounded-lg object-contain">
+                @endif
                 @if ($post->status === 'generating')<p class="mt-3 text-base text-slate-500 sm:text-sm">Your draft is being prepared. Refresh this page shortly to review it.</p>@endif
-                @if ($post->status === 'failed')<p class="mt-3 text-base text-rose-700 sm:text-sm">We could not prepare this draft. Retry or remove it from the queue.</p>@endif
+                @if ($post->status === 'failed')<p class="mt-3 text-base text-rose-700 sm:text-sm">We could not prepare this draft. Write the post above and approve it, retry drafting or remove it from the queue.</p>@endif
                 @if ($canManageWebsite && in_array($post->status, ['queued', 'failed', 'pending_approval']))
                     <div class="mt-3 flex flex-wrap gap-2">
                         @if (in_array($post->status, ['queued', 'failed']))<form method="POST" action="{{ route('admin.business-profile.posts.draft', [$website, $post]) }}">@csrf<button type="submit" class="{{ $profileButton }}">{{ $post->status === 'failed' ? 'Retry draft' : 'Draft now' }}</button></form>@endif

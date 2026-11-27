@@ -64,9 +64,9 @@ class BusinessProfilePostController extends Controller
     public function update(Request $request, Website $website, BusinessProfilePost $post, BusinessProfileClient $client): RedirectResponse
     {
         $this->authorizeWebsite($request, $website);
-        abort_unless($post->connection->website_id === $website->id && $post->status === BusinessProfilePost::STATUS_PENDING_APPROVAL, 422);
-        $data = $request->validate(['summary' => ['required', 'string', 'max:1500'], 'call_to_action_type' => ['nullable', 'string', 'in:LEARN_MORE,BOOK,ORDER,SIGN_UP,CALL'], 'call_to_action_url' => ['nullable', 'url', 'max:2048', Rule::requiredIf(filled($request->input('call_to_action_type')))]]);
-        $published = $client->createPost($post->connection, $data['summary'], $data['call_to_action_type'] ?? null, $data['call_to_action_url'] ?? null);
+        abort_unless($post->connection->website_id === $website->id && in_array($post->status, [BusinessProfilePost::STATUS_PENDING_APPROVAL, BusinessProfilePost::STATUS_FAILED]), 422);
+        $data = $request->validate(['summary' => ['required', 'string', 'max:1500'], 'photo_url' => ['nullable', 'url:https', 'max:2048'], 'call_to_action_type' => ['nullable', 'string', 'in:LEARN_MORE,BOOK,ORDER,SIGN_UP,CALL'], 'call_to_action_url' => ['nullable', 'url', 'max:2048', Rule::requiredIf(filled($request->input('call_to_action_type')))]]);
+        $published = $client->createPost($post->connection, $data['summary'], $data['call_to_action_type'] ?? null, $data['call_to_action_url'] ?? null, $data['photo_url'] ?? null);
         $post->update([...$data, 'status' => BusinessProfilePost::STATUS_PUBLISHED, 'google_post_name' => $published['name'] ?? null, 'approved_by' => $request->user()->id, 'approved_at' => now(), 'published_at' => now()]);
 
         return back()->with('status', 'Google post approved and published.');
