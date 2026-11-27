@@ -24,6 +24,7 @@ use App\Services\WebsiteHealthReportPromptGenerator;
 use App\Services\WebsiteMailRecipients;
 use App\Support\MembershipPlan;
 use Dom\HTMLDocument;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
@@ -769,4 +770,15 @@ it('keeps internal journey evidence in the staff view and weekly work prompt onl
         ->assertSuccessful()->assertDontSee('STAFF_ONLY_JOURNEY_QUOTE');
     expect(app(WebsiteHealthReportPromptGenerator::class)->generate($report->fresh(['website', 'pages'])))
         ->toContain('STAFF_ONLY_JOURNEY_QUOTE', 'untrusted data', 'not confirmed conversion or mobile-layout failures');
+});
+
+it('runs weekly reports on the due calendar day instead of drifting to eight days', function (): void {
+    Queue::fake();
+    $this->travelTo(Carbon::parse('2026-11-27 06:00:00'));
+    $website = websiteWithDomain(['health_reports_enabled' => true]);
+    WebsiteHealthReport::factory()->for($website)->create(['status' => WebsiteHealthReport::STATUS_COMPLETED, 'completed_at' => now()->subDays(7)->addSeconds(40)]);
+
+    $this->artisan('health-reports:dispatch')->assertSuccessful();
+    Queue::assertPushed(GenerateWebsiteHealthReport::class, 1);
+    expect($website->healthReports()->count())->toBe(2);
 });

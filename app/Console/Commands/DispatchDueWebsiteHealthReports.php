@@ -26,7 +26,7 @@ class DispatchDueWebsiteHealthReports extends Command
                 ->whereIn('status', [WebsiteHealthReport::STATUS_PENDING, WebsiteHealthReport::STATUS_RUNNING])
                 ->orWhere(fn ($query) => $query
                     ->where('status', WebsiteHealthReport::STATUS_COMPLETED)
-                    ->where('completed_at', '>=', now()->subDays($frequencyDays))))
+                    ->where('completed_at', '>=', now()->startOfDay()->subDays(max(1, (int) $frequencyDays) - 1))))
             ->chunkById(100, function ($websites) use (&$dispatched): void {
                 foreach ($websites as $website) {
                     if (filled($website->service_package)
