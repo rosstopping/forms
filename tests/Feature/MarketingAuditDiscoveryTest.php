@@ -34,6 +34,7 @@ it('shows a bounded comparison of real shared Google positions and reuses it', f
 it('records only observed AI mentions and citations for one unbranded question', function (): void {
     Cache::flush();
     $provider = Mockery::mock(OpenAiVisibilityProvider::class);
+    $provider->shouldReceive('forPublicAudit')->once()->andReturnSelf();
     $provider->shouldReceive('model')->twice()->andReturn('test-model');
     $provider->shouldReceive('check')->once()->andReturn(['text' => 'See https://example.com/garden-offices', 'citations' => [['url' => 'https://example.com/garden-offices']]]);
     $service = new MarketingAuditAiVisibility($provider, app(AiVisibilityAnalyzer::class));

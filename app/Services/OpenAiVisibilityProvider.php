@@ -10,6 +10,16 @@ use RuntimeException;
 
 class OpenAiVisibilityProvider implements AiVisibilityProvider
 {
+    private bool $publicAudit = false;
+
+    public function forPublicAudit(): self
+    {
+        $provider = clone $this;
+        $provider->publicAudit = true;
+
+        return $provider;
+    }
+
     public function __construct(private AiVisibilityObserver $observer) {}
 
     public function key(): string
@@ -19,7 +29,7 @@ class OpenAiVisibilityProvider implements AiVisibilityProvider
 
     public function available(): bool
     {
-        return config('ai_visibility.providers.'.$this->key().'.enabled') && filled(config('ai.providers.'.$this->key().'.key'));
+        return ($this->publicAudit ? config('marketing.audit_ai_visibility_enabled', true) : config('ai_visibility.providers.'.$this->key().'.enabled')) && filled(config('ai.providers.'.$this->key().'.key'));
     }
 
     public function model(): string

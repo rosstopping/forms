@@ -69,3 +69,14 @@ test('redirect citations remain auditable without inventing an original domain',
     expect($result['website_cited'])->toBeFalse()->and($result['brand_mentioned'])->toBeTrue()->and($result['citations'][0]['domain'])->toBe('vertexaisearch.cloud.google.com');
     Http::assertNothingSent();
 });
+
+test('public audit checks do not enable paused backend tracking', function (): void {
+    config(['ai_visibility.providers.openai.enabled' => false, 'marketing.audit_ai_visibility_enabled' => true]);
+    $internal = app(OpenAiVisibilityProvider::class);
+    $public = $internal->forPublicAudit();
+    expect($internal->available())->toBeFalse()->and($public->available())->toBeTrue();
+    config(['marketing.audit_ai_visibility_enabled' => false]);
+    expect($public->available())->toBeFalse();
+    config(['marketing.audit_ai_visibility_enabled' => true, 'ai.providers.openai.key' => null]);
+    expect($public->available())->toBeFalse()->and($internal->available())->toBeFalse();
+});

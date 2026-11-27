@@ -9,7 +9,10 @@ use Throwable;
 
 class MarketingAuditAiVisibility
 {
-    public function __construct(private OpenAiVisibilityProvider $provider, private AiVisibilityAnalyzer $analyzer) {}
+    public function __construct(private OpenAiVisibilityProvider $provider, private AiVisibilityAnalyzer $analyzer)
+    {
+        $this->provider = $provider->forPublicAudit();
+    }
 
     public function available(): bool
     {
