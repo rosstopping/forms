@@ -162,3 +162,8 @@ it('verifies the configured public Turnstile host while preserving the internal 
 it('keeps the public enquiry endpoint preflight available', function (): void {
     $this->options('https://digizu.co.uk/submit')->assertNoContent()->assertHeader('Access-Control-Allow-Origin', '*');
 });
+
+it('brands public missing pages as Digizu without indexing them', function (): void {
+    $this->get('https://digizu.co.uk/no-such-public-page')->assertNotFound()
+        ->assertSee('Digizu')->assertDontSee('Sitewell')->assertSee('noindex, nofollow');
+});

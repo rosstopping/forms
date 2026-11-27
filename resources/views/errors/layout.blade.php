@@ -1,3 +1,4 @@
+@php($errorBrand = request()->getHost() === parse_url(\App\Support\PublicWebsite::origin() ?? '', PHP_URL_HOST) ? 'Digizu' : 'Sitewell')
 <!DOCTYPE html>
 <html lang="en" class="antialiased">
 <head>
@@ -5,14 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#f4f1e8">
     <meta name="robots" content="noindex, nofollow">
-    <title>@yield('code') · @yield('title') · Sitewell</title>
+    <title>@yield('code') · @yield('title') · {{ $errorBrand }}</title>
     @vite(['resources/css/app.css'])
 </head>
 <body class="min-h-dvh bg-paper font-sans text-ink">
     <div class="isolate flex min-h-dvh flex-col overflow-hidden">
         <header class="relative z-10">
             <div class="mx-auto flex max-w-7xl items-center justify-between gap-6 px-5 py-5 sm:px-8 lg:px-10">
-                <a href="{{ url('/') }}" aria-label="Sitewell homepage" class="font-display text-2xl font-semibold tracking-tight text-ink">Sitewell</a>
+                <a href="{{ url('/') }}" aria-label="{{ $errorBrand }} homepage" class="font-display text-2xl font-semibold tracking-tight text-ink">{{ $errorBrand }}</a>
                 <a href="{{ url('/contact') }}" class="relative rounded-md px-3 py-2 text-base font-medium text-ink/70 ring-1 ring-ink/20 hover:bg-white/40 hover:text-ink sm:text-sm">Contact support<span class="absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2 pointer-fine:hidden" aria-hidden="true"></span></a>
             </div>
         </header>
@@ -43,7 +44,7 @@
 
         <footer class="relative z-10 border-t border-ink/10">
             <div class="mx-auto flex max-w-7xl flex-col gap-2 px-5 py-5 text-base text-ink/50 sm:flex-row sm:items-center sm:justify-between sm:px-8 sm:text-sm lg:px-10">
-                <p>© {{ now()->year }} Sitewell.</p>
+                <p>© {{ now()->year }} {{ $errorBrand }}.</p>
                 <p>Your website, well looked after.</p>
             </div>
         </footer>
