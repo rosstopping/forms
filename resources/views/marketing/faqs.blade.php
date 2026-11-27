@@ -1,7 +1,7 @@
 @extends('layouts.marketing')
 
 @section('title', 'Frequently asked questions')
-@section('meta_description', 'Straight answers about Sitewell website management, SEO, content, ownership, setup, reporting, and ongoing support.')
+@section('meta_description', 'Straight answers about Digizu website management, SEO, content, ownership, setup, reporting, and ongoing support.')
 
 @section('content')
     <section class="marketing-hero"><div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10"><p class="text-base font-medium sm:text-sm text-garden">Straight answers</p><h1 class="mt-5 max-w-[18ch] font-sans text-4xl font-medium tracking-tight text-balance sm:text-6xl">Your questions, answered.</h1><p class="mt-6 max-w-[58ch] text-pretty text-lg leading-8 text-ink/65">Setup, ownership, reporting and what’s included.</p></div></section>
@@ -10,7 +10,7 @@
         <div class="mx-auto max-w-5xl px-5 sm:px-8 lg:px-10">
             <div class="divide-y divide-ink/10 border-b border-ink/10">
                 @foreach ([
-                    ['Do I need a new website?', 'No. You can bring your existing website to Sitewell. If it is no longer the right foundation, every plan can include a new website instead.'],
+                    ['Do I need a new website?', 'No. You can bring your existing website to Digizu. If it is no longer the right foundation, every plan can include a new website instead.'],
                     ['Who actually manages the work?', 'Our website and SEO specialists assess priorities, complete routine improvements, and coordinate the work included in your plan.'],
                     ['Can I take the website with me?', 'Yes. Your website is portable. We will confirm the practical handover details before you get started.'],
                     ['Will I still control my domain and business accounts?', 'Yes. Your domain and connected business accounts remain yours.'],

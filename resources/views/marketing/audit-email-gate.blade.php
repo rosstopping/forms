@@ -48,8 +48,8 @@
                     <p class="text-base text-ink/55 sm:text-sm"><a href="{{ route('marketing.privacy') }}" class="underline underline-offset-4">Privacy policy</a></p>
                 </form>
             <div class="flex items-start gap-3 border-t border-ink/10 pt-4">
-                <img src="{{ asset('ross-topping.jpg') }}" alt="" width="36" height="36" class="size-9 shrink-0 rounded-full object-cover outline-1 -outline-offset-1 outline-black/5">
-                <p class="text-pretty text-base text-ink/60 sm:text-sm">I’m Ross, I run Sitewell. If you want a hand with anything we find, I can sort it for you.</p>
+                <img src="{{ asset((\App\Support\PublicWebsite::origin() ? 'tools-assets/' : '').'ross-topping.jpg') }}" alt="" width="36" height="36" class="size-9 shrink-0 rounded-full object-cover outline-1 -outline-offset-1 outline-black/5">
+                <p class="text-pretty text-base text-ink/60 sm:text-sm">I’m Ross, I run Digizu. If you want a hand with anything we find, I can sort it for you.</p>
             </div>
         </div>
     </section>

@@ -1,7 +1,7 @@
 @extends('layouts.marketing')
 
 @section('title', 'Examples')
-@section('meta_description', 'See practical examples of the website, SEO, enquiry, content, and local visibility work Sitewell specialists manage.')
+@section('meta_description', 'See practical examples of the website, SEO, enquiry, content, and local visibility work Digizu specialists manage.')
 
 @section('content')
     <section class="marketing-hero">

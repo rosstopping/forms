@@ -1,7 +1,7 @@
 @extends('layouts.marketing')
 
 @section('title', 'Our work')
-@section('meta_description', 'Explore websites currently supported by Sitewell across luxury travel, hospitality, events, ticketing, training, and professional services.')
+@section('meta_description', 'Explore websites currently supported by Digizu across luxury travel, hospitality, events, ticketing, training, and professional services.')
 
 @section('content')
     <section class="marketing-hero">

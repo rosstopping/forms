@@ -6,6 +6,7 @@ use App\Models\WebsiteAudit;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
@@ -27,6 +28,7 @@ class WebsiteAuditPersonalReview extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
+            from: new Address(config('mail.from.address'), 'Ross at Digizu'),
             replyTo: [config('marketing.audit_notification_email')],
             subject: 'Your personal website review for '.$this->audit->domain,
         );

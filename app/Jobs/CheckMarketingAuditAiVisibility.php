@@ -7,6 +7,7 @@ use App\Services\MarketingAuditAiVisibility;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\DB;
 use Throwable;
 
 class CheckMarketingAuditAiVisibility implements ShouldBeUnique, ShouldQueue
@@ -55,21 +56,26 @@ class CheckMarketingAuditAiVisibility implements ShouldBeUnique, ShouldQueue
             }
         }
 
-        $audit->update(['insights' => [...$audit->insights, 'ai_visibility' => [
-            'status' => 'completed',
-            'questions' => $questions,
-            'results' => $results,
-        ]]]);
+        DB::transaction(function () use ($audit, $questions, $results): void {
+            $saved = WebsiteAudit::query()->lockForUpdate()->findOrFail($audit->id);
+            $saved->update(['insights' => [...$saved->insights, 'ai_visibility' => [
+                ...($saved->insights['ai_visibility'] ?? []),
+                'status' => 'completed', 'questions' => $questions, 'results' => $results,
+            ]]]);
+        });
     }
 
     public function failed(?Throwable $exception): void
     {
-        $audit = $this->audit->fresh();
-        if ($audit !== null && data_get($audit->insights, 'ai_visibility.status') === 'pending') {
-            $audit->update(['insights' => [...$audit->insights, 'ai_visibility' => [
-                'status' => 'unavailable',
-                'questions' => data_get($audit->insights, 'ai_visibility.questions', []),
-            ]]]);
-        }
+        DB::transaction(function (): void {
+            $audit = WebsiteAudit::query()->lockForUpdate()->find($this->audit->id);
+            if ($audit !== null && data_get($audit->insights, 'ai_visibility.status') === 'pending') {
+                $audit->update(['insights' => [...$audit->insights, 'ai_visibility' => [
+                    ...($audit->insights['ai_visibility'] ?? []),
+                    'status' => 'unavailable',
+                    'questions' => data_get($audit->insights, 'ai_visibility.questions', []),
+                ]]]);
+            }
+        });
     }
 }

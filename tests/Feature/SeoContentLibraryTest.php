@@ -15,6 +15,7 @@ it('renders every new page with its own metadata, content, canonical and sitemap
 
     foreach ($pages as [$page, $url]) {
         $response = $this->get($url.'?utm_source=content-check')->assertSuccessful();
+        $response->assertDontSee('Growth plan')->assertDontSee('Complete plan')->assertDontSee('Essential plan');
         $html = $response->getContent();
         $description = $page['meta_description'] ?? $page['excerpt'] ?? $page['description'];
         $response->assertSee('<title>'.e($page['seo_title']).'</title>', false)
@@ -121,7 +122,7 @@ it('publishes article authorship and dates and keeps FAQ schema identical to vis
         $schema = json_decode($match[1], true, flags: JSON_THROW_ON_ERROR);
         expect($schema['@type'])->toBe('BlogPosting')
             ->and($schema['headline'])->toBe($article['title'])
-            ->and($schema['author']['name'])->toBe('Sitewell')
+            ->and($schema['author']['name'])->toBe('Digizu')
             ->and($schema['publisher']['url'])->toBe(route('marketing.home'))
             ->and($schema['datePublished'])->toBe($article['date_iso'])
             ->and($schema['mainEntityOfPage'])->toBe($url);

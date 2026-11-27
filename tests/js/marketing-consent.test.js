@@ -144,3 +144,12 @@ test('cookie settings allows an accepted visitor to withdraw, clear measurement 
     assert.equal(page.target.location.reloads, 1);
     assert.deepEqual(commands(page.target), [['consent', 'default', DENIED]]);
 });
+
+
+test('local previews never load production measurement after accepting cookies', () => {
+    const page = browser();
+    page.target.location.hostname = 'digizu.test';
+    bootMarketingConsent(page.document, page.target);
+    page.accept.click();
+    assert.equal(page.scripts.length, 0);
+});

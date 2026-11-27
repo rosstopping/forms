@@ -8,22 +8,22 @@
     <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="16x16 32x32 48x48">
     <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
     <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}" sizes="180x180">
-    <meta name="description" content="@yield('meta_description', 'Sitewell manages website and SEO improvements for UK businesses.')">
+    <meta name="description" content="@yield('meta_description', 'Digizu manages website and SEO improvements for UK businesses.')">
     @if (request()->routeIs('marketing.website-audits.*', 'admin.onboarding.audits.show'))
         <meta name="robots" content="noindex">
     @else
         <link rel="canonical" href="{{ request()->url() }}">
     @endif
-    <meta property="og:site_name" content="Sitewell">
+    <meta property="og:site_name" content="Digizu">
     <meta property="og:locale" content="en_GB">
     <meta property="og:type" content="@yield('og_type', 'website')">
-    <meta property="og:title" content="@yield('title', 'Sitewell'){{ $__env->hasSection('concise_title') ? '' : ' · Sitewell' }}">
-    <meta property="og:description" content="@yield('meta_description', 'Sitewell manages website and SEO improvements for UK businesses.')">
+    <meta property="og:title" content="@yield('title', 'Digizu'){{ $__env->hasSection('concise_title') ? '' : ' · Digizu' }}">
+    <meta property="og:description" content="@yield('meta_description', 'Digizu manages website and SEO improvements for UK businesses.')">
     <meta property="og:url" content="{{ request()->url() }}">
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="@yield('title', 'Sitewell'){{ $__env->hasSection('concise_title') ? '' : ' · Sitewell' }}">
-    <meta name="twitter:description" content="@yield('meta_description', 'Sitewell manages website and SEO improvements for UK businesses.')">
-    <title>@yield('title', 'Sitewell'){{ $__env->hasSection('concise_title') ? '' : ' · Sitewell' }}</title>
+    <meta name="twitter:title" content="@yield('title', 'Digizu'){{ $__env->hasSection('concise_title') ? '' : ' · Digizu' }}">
+    <meta name="twitter:description" content="@yield('meta_description', 'Digizu manages website and SEO improvements for UK businesses.')">
+    <title>@yield('title', 'Digizu'){{ $__env->hasSection('concise_title') ? '' : ' · Digizu' }}</title>
     @fonts
     @yield('structured_data')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -41,7 +41,7 @@
         @endif
         <header class="bg-white text-ink">
             <div class="mx-auto flex max-w-7xl items-center justify-between gap-5 px-5 py-4 sm:px-8 sm:py-5 lg:px-10">
-                <p class="shrink-0 text-2xl font-semibold tracking-tight sm:text-3xl"><a href="{{ route('marketing.home') }}" aria-label="Homepage">sitewell<span class="text-garden">.</span></a></p>
+                <p class="shrink-0 text-2xl font-semibold tracking-tight sm:text-3xl"><a href="{{ route('marketing.home') }}" aria-label="Homepage">digizu<span class="text-garden">.</span></a></p>
                 <nav aria-label="Main navigation">
                     <a href="{{ route('marketing.free-site-audit') }}" class="inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-4 py-3 text-center text-base font-medium ring-1 ring-black/20 hover:bg-lichen focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-garden sm:gap-3 sm:px-5 sm:text-sm"><span class="sm:hidden">Free Audit</span><span class="max-sm:hidden">Get your free search audit</span><span aria-hidden="true">→</span></a>
                 </nav>
@@ -49,12 +49,18 @@
         </header>
 
         <main id="main-content" tabindex="-1">
+            @if (app()->environment('local') && isset($audit) && data_get($audit->insights, 'local_preview'))
+                <aside role="note" class="mx-auto mb-6 max-w-7xl rounded-2xl bg-lichen px-5 py-4 text-base text-ink sm:px-8">
+                    Local preview. Website and search checks are saved from {{ \Illuminate\Support\Carbon::parse(data_get($audit->insights, 'local_preview.source_created_at'))->format('j F Y') }}.
+                    Service page coverage was checked on {{ \Illuminate\Support\Carbon::parse(data_get($audit->insights, 'service_pages.result.checked_at'))->format('j F Y') }}.
+                </aside>
+            @endif
             @yield('content')
         </main>
 
         <footer class="border-t border-black/10 bg-white text-ink">
             <div class="mx-auto flex max-w-7xl flex-col gap-6 px-5 py-8 sm:px-8 lg:flex-row lg:items-center lg:justify-between lg:px-10">
-                <p class="text-base text-ink/65 sm:text-sm">© {{ now()->year }} Sitewell.</p>
+                <p class="text-base text-ink/65 sm:text-sm">© {{ now()->year }} Digizu.</p>
                 <nav aria-label="Footer navigation" class="flex flex-wrap gap-x-6 gap-y-2 text-base text-ink/65 sm:text-sm">
                     <a href="{{ route('marketing.features') }}" class="inline-flex min-h-12 items-center hover:text-ink">Services</a>
                     <a href="{{ route('marketing.agencies') }}" class="inline-flex min-h-12 items-center hover:text-ink">For agencies</a>

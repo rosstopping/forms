@@ -185,7 +185,7 @@ Route::middleware(['signed', 'throttle:30,1'])->group(function () {
     Route::post('/outreach/{prospect}/unsubscribe', [ProspectUnsubscribeController::class, 'store'])->name('prospects.unsubscribe.store');
 });
 
-Route::redirect('/free-site-audit', '/get-started', 301);
+Route::redirect('/free-site-audit', '/get-started', 301)->name('marketing.free-site-audit.legacy');
 Route::get('/php-security-check', [PhpSecurityCheckController::class, 'create'])->name('marketing.php-security-check');
 Route::post('/php-security-check', [PhpSecurityCheckController::class, 'store'])->middleware('throttle:5,1')->name('marketing.php-security-check.store');
 
@@ -204,7 +204,7 @@ Route::get('/website-audits/{websiteAudit}/preview', [FreeSiteAuditController::c
     ->middleware('throttle:website-audit-reports')
     ->name('marketing.website-audits.preview');
 Route::get('/website-audits/{websiteAudit}/email-preferences', [FreeSiteAuditController::class, 'emailPreferences'])->middleware('signed')->name('marketing.website-audits.email-preferences');
-Route::post('/website-audits/{websiteAudit}/email-preferences', [FreeSiteAuditController::class, 'unsubscribe'])->middleware(['signed', 'throttle:10,1']);
+Route::post('/website-audits/{websiteAudit}/email-preferences', [FreeSiteAuditController::class, 'unsubscribe'])->middleware(['signed', 'throttle:10,1'])->name('marketing.website-audits.email-preferences.update');
 Route::post('/website-audits/{websiteAudit}/email-report', [FreeSiteAuditController::class, 'emailReport'])
     ->middleware('throttle:website-audit-email')
     ->name('marketing.website-audits.email-report');
@@ -233,7 +233,7 @@ Route::get('/submitted', function (Request $request) {
 
 Route::middleware(['web', 'throttle:120,1'])->group(function () {
     Route::options('/submit', fn () => response()->noContent())
-        ->middleware(AllowFormSubmissionCors::class);
+        ->middleware(AllowFormSubmissionCors::class)->name('forms.submit.preflight');
 
     Route::post('/submit', [FormSubmissionController::class, 'store'])
         ->name('forms.submit')

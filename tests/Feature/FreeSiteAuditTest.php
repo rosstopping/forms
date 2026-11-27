@@ -76,7 +76,7 @@ it('shows audit progress and exposes only its processing state', function (): vo
 
     $this->getJson(route('marketing.website-audits.status', $audit))
         ->assertSuccessful()
-        ->assertExactJson(['status' => 'pending', 'completed' => false, 'failed' => false, 'ai_visibility_status' => null, 'full_report_status' => null]);
+        ->assertExactJson(['status' => 'pending', 'completed' => false, 'failed' => false, 'service_pages_status' => null, 'ai_visibility_status' => null, 'full_report_status' => null]);
 });
 
 it('contains long website addresses in the audit heading while retaining the full address', function (): void {
@@ -521,12 +521,12 @@ it('keeps the progress experience visible for at least ten seconds', function ()
         ->assertSee('Checking your website and preparing your report.');
 
     $this->getJson(route('marketing.website-audits.status', $audit))
-        ->assertExactJson(['status' => 'completed', 'completed' => false, 'failed' => false, 'ai_visibility_status' => null, 'full_report_status' => null]);
+        ->assertExactJson(['status' => 'completed', 'completed' => false, 'failed' => false, 'service_pages_status' => null, 'ai_visibility_status' => null, 'full_report_status' => null]);
 
     $this->travel(11)->seconds();
 
     $this->getJson(route('marketing.website-audits.status', $audit))
-        ->assertExactJson(['status' => 'completed', 'completed' => true, 'failed' => false, 'ai_visibility_status' => null, 'full_report_status' => null]);
+        ->assertExactJson(['status' => 'completed', 'completed' => true, 'failed' => false, 'service_pages_status' => null, 'ai_visibility_status' => null, 'full_report_status' => null]);
 });
 
 it('emails a secure continuation link after the website review', function (): void {

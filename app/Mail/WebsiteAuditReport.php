@@ -28,9 +28,9 @@ class WebsiteAuditReport extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            from: new Address(config('mail.from.address'), 'Ross at Sitewell'),
+            from: new Address(config('mail.from.address'), 'Ross at Digizu'),
             replyTo: [config('marketing.audit_notification_email')],
-            subject: ($this->audit->personal_review_requested_at ? 'Your growth plan request for ' : 'Your full Sitewell report for ').$this->audit->domain,
+            subject: ($this->audit->personal_review_requested_at ? 'Your growth plan request for ' : 'Your full Digizu report for ').$this->audit->domain,
         );
     }
 

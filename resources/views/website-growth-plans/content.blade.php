@@ -4,7 +4,7 @@
 @endphp
 <main class="isolate mx-auto max-w-5xl px-4 py-6 sm:px-8 sm:py-10 print:max-w-none print:p-0" data-growth-plan-document>
     <header class="flex flex-wrap items-center justify-between gap-3 px-1 pb-6 print:pb-4">
-        <p class="text-2xl font-semibold tracking-tight">sitewell<span class="text-garden">.</span></p>
+        <p class="text-2xl font-semibold tracking-tight">digizu<span class="text-garden">.</span></p>
         <p class="text-base text-ink/55 sm:text-sm">{{ $preparedAt->format('F Y') }} · Website growth plan</p>
     </header>
 

@@ -1,7 +1,7 @@
 @extends('layouts.marketing')
 
 @section('title', 'Website review for '.$audit->domain)
-@section('meta_description', 'Your private Sitewell website review and proposed next steps.')
+@section('meta_description', 'Your private Digizu website review and proposed next steps.')
 
 @section('content')
 @php
@@ -99,18 +99,21 @@
                 @endif
             </section>
         @endif
-        @if ($isFinalisingReport)
+        @if ($isFinalisingReport || ($showDetails && in_array(data_get($audit->insights, 'service_pages.status'), ['queued', 'running'], true)))
             <script>
                 (() => {
                     const statusUrl = @js($researchStatusUrl);
                     const initialStatus = @js($fullReportStatus);
                     const initialAiStatus = @js(data_get($aiVisibility, 'status'));
+                    const initialServiceStatus = @js(data_get($audit->insights, 'service_pages.status'));
+                    let attempts = 0;
                     const timer = window.setInterval(async () => {
+                        if (++attempts > 120) { window.clearInterval(timer); return; }
                         try {
                             const response = await fetch(statusUrl, { headers: { Accept: 'application/json' } });
                             if (! response.ok) return;
                             const result = await response.json();
-                            if (result.full_report_status !== initialStatus || result.ai_visibility_status !== initialAiStatus) {
+                            if (result.full_report_status !== initialStatus || result.ai_visibility_status !== initialAiStatus || result.service_pages_status !== initialServiceStatus) {
                                 window.clearInterval(timer);
                                 window.location.reload();
                             }
@@ -295,7 +298,7 @@
                         <section class="grid gap-4 border-t border-ink/10 pt-8" aria-labelledby="audit-ai-title">
                                 <div class="grid gap-2">
                                     <h2 id="audit-ai-title" class="text-2xl font-medium tracking-tight text-balance">AI search check.</h2>
-                                    <p class="max-w-[60ch] text-pretty text-base text-ink/65">Questions suggested by Google terms your site ranks for. These are sampled OpenAI answers; AI tools do not have fixed rankings for every question.</p>
+                                    <p class="max-w-[60ch] text-pretty text-base text-ink/65">Questions based on services evidenced on your own website. These are sampled OpenAI answers; AI tools do not have fixed rankings for every question.</p>
                                 </div>
                                 @if (is_array($aiVisibility))
                                     <div class="grid gap-4 sm:grid-cols-2">
@@ -316,7 +319,7 @@
                                     </div>
                                     <p class="text-base text-ink/55 sm:text-sm">These answers are samples, not a measure of all AI searches.</p>
                                 @else
-                                    <p class="text-base text-ink/65">There isn't enough unbranded search data to choose a useful question yet.</p>
+                                    <p class="text-base text-ink/65">There isn’t enough clear service information to choose a useful question yet.</p>
                                 @endif
                         </section>
                         @endif
@@ -335,6 +338,7 @@
                                 @endforelse
                             </dl>
                         </section>
+                        @include('marketing.audit-service-pages')
                         @include('marketing.audit-journey-review')
                         <section class="grid gap-6 rounded-3xl bg-white p-5 ring-1 ring-ink/10 sm:p-8" aria-labelledby="audit-projection-title">
                             <div class="grid gap-2">
@@ -391,7 +395,7 @@
 
                         <div data-audit-next-step class="grid gap-6 border-t border-ink/10 pt-8" aria-labelledby="audit-plan-title">
                             <h2 id="audit-plan-title" class="max-w-[35ch] text-3xl font-medium tracking-tight text-balance">The improvements we could take care of.</h2>
-                            <p class="max-w-[60ch] text-pretty text-base text-ink/65">The check gives us a starting point. Ross will review what matters for your business, then we’ll agree the work Sitewell would handle for you.</p>
+                            <p class="max-w-[60ch] text-pretty text-base text-ink/65">The check gives us a starting point. Ross will review what matters for your business, then we’ll agree the work Digizu would handle for you.</p>
                             <ol class="grid" role="list">
                                 @foreach ([
                                     ['Fix the website issues.', 'Resolve the flagged technical problems, then check important pages for crawl, mobile and usability issues.'],
@@ -452,7 +456,7 @@
 </section>
 @if ($audit->isReadyToDisplay() && $showDetails && ! $isFinalisingReport)
     <div data-audit-actions class="fixed right-4 bottom-4 z-40 sm:right-6 sm:bottom-6">
-        <a data-audit-book-call href="{{ route('marketing.ppc.book') }}" class="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-white py-2 pr-4 pl-2 text-base font-medium text-ink shadow-md ring-1 ring-ink/10 hover:bg-lichen focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden"><img src="{{ asset('ross-topping.jpg') }}" alt="" width="32" height="32" class="size-8 rounded-full object-cover"><span>Talk to Ross</span></a>
+        <a data-audit-book-call href="{{ route('marketing.ppc.book') }}" class="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-white py-2 pr-4 pl-2 text-base font-medium text-ink shadow-md ring-1 ring-ink/10 hover:bg-lichen focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-garden"><img src="{{ asset((\App\Support\PublicWebsite::origin() ? 'tools-assets/' : '').'ross-topping.jpg') }}" alt="" width="32" height="32" class="size-8 rounded-full object-cover"><span>Talk to Ross</span></a>
     </div>
 @endif
 @endsection

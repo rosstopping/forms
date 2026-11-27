@@ -26,5 +26,5 @@
             @endforeach
         </ul>
     @endif
-    <p class="mt-5 border-t border-ink/10 pt-4 text-pretty text-base/6 text-ink/60 sm:text-sm/6">Design preview with fictional businesses and data, not customer results. {{ ($preview ?? 'portfolio') === 'report' ? 'Agency-branded reporting is proposed; current reports use Sitewell branding.' : 'This consolidated agency dashboard is proposed; current customer access uses individual website workspaces.' }}</p>
+    <p class="mt-5 border-t border-ink/10 pt-4 text-pretty text-base/6 text-ink/60 sm:text-sm/6">Design preview with fictional businesses and data, not customer results. {{ ($preview ?? 'portfolio') === 'report' ? 'Agency-branded reporting is proposed; current reports use Digizu branding.' : 'This consolidated agency dashboard is proposed; current customer access uses individual website workspaces.' }}</p>
 </figure>

@@ -43,7 +43,7 @@
                     <div><dt class="text-base text-ink/45 sm:text-sm">Page title</dt><dd class="mt-1 text-pretty text-base font-medium sm:text-sm">Commercial Electrician in Doncaster</dd></div>
                     <div><dt class="text-base text-ink/45 sm:text-sm">Why it changed</dt><dd class="mt-1 text-pretty text-base text-ink/65 sm:text-sm">The page was already appearing for a valuable local search but its title did not describe the service or area.</dd></div>
                 </dl>
-                <div class="mt-5 border-t border-ink/10 pt-4"><p class="font-mono text-base text-garden sm:text-sm">Managed and published by your Sitewell specialist</p></div>
+                <div class="mt-5 border-t border-ink/10 pt-4"><p class="font-mono text-base text-garden sm:text-sm">Managed and published by your Digizu specialist</p></div>
             </section>
         </div>
 

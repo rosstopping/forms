@@ -95,7 +95,7 @@ export function bootMarketingConsent(document, target = window) {
                 document.cookie = `${COOKIE}=${encodeURIComponent(value)}; Max-Age=${MAX_AGE / 1000}; path=/; SameSite=Lax; Secure`;
             }
             if (banner) banner.hidden = true;
-            if (choice === 'accepted') {
+            if (choice === 'accepted' && !target.location.hostname.endsWith('.test') && target.location.hostname !== 'localhost') {
                 // Consent update is queued before GTM and before saved-enquiry events.
                 command(target, 'consent', 'update', { ...GRANTED });
                 if (!loaded) {

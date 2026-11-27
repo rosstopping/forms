@@ -1,7 +1,7 @@
 @extends('layouts.marketing')
 
 @section('title', 'Managed SEO and website care for UK businesses')
-@section('meta_description', 'Sitewell fixes and looks after your website, then works on its Google and AI search visibility. Show us your website to see where we’d start.')
+@section('meta_description', 'Digizu fixes and looks after your website, then works on its Google and AI search visibility. Show us your website to see where we’d start.')
 @section('structured_data')
     @php
         $homeUrl = route('marketing.home');
@@ -11,7 +11,7 @@
                 [
                     '@type' => 'Organization',
                     '@id' => $homeUrl.'#organization',
-                    'name' => 'Sitewell',
+                    'name' => 'Digizu',
                     'url' => $homeUrl,
                     'description' => 'Managed website and SEO service for UK businesses.',
                     'telephone' => '+441302248374',
@@ -20,7 +20,7 @@
                 [
                     '@type' => 'WebSite',
                     '@id' => $homeUrl.'#website',
-                    'name' => 'Sitewell',
+                    'name' => 'Digizu',
                     'url' => $homeUrl,
                     'publisher' => ['@id' => $homeUrl.'#organization'],
                     'inLanguage' => 'en-GB',
@@ -73,7 +73,7 @@
     <section class="py-8 text-[#151618] sm:py-12" aria-labelledby="homepage-founder">
         <div class="mx-auto grid max-w-7xl gap-8 px-5 sm:px-8 lg:grid-cols-[4fr_7fr] lg:px-10">
             <div data-home-reveal class="flex items-start gap-4">
-                <img src="{{ asset('ross-topping.jpg') }}" alt="Ross Topping, founder of Sitewell" width="80" height="80" class="size-16 shrink-0 rounded-full object-cover sm:size-20" decoding="async">
+                <img src="{{ asset((\App\Support\PublicWebsite::origin() ? 'tools-assets/' : '').'ross-topping.jpg') }}" alt="Ross Topping, founder of Digizu" width="80" height="80" class="size-16 shrink-0 rounded-full object-cover sm:size-20" decoding="async">
                 <div class="grid gap-2">
                     <h2 id="homepage-founder" class="text-2xl font-medium tracking-tight sm:text-3xl">Hi, I’m Ross.</h2>
                     <p class="text-base text-[#62666d]">Founder & Web Developer. Based in Doncaster.</p>

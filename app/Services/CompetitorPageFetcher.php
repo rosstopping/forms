@@ -16,7 +16,7 @@ class CompetitorPageFetcher
     public function __construct(private WebsiteCrawler $crawler) {}
 
     /** @return array<string, mixed> */
-    public function fetch(string $url, string $domain): array
+    public function fetch(string $url, string $domain, bool $includeLinks = false): array
     {
         $originalUrl = $url;
         $seen = [];
@@ -46,7 +46,9 @@ class CompetitorPageFetcher
             }
             $html = $this->body($response, 1048576);
             $analysis = $this->crawler->analyseHtml($html, $url);
-            unset($analysis['discovered_links']);
+            if (! $includeLinks) {
+                unset($analysis['discovered_links']);
+            }
             $document = new DOMDocument;
             $previous = libxml_use_internal_errors(true);
             $document->loadHTML($html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
@@ -77,6 +79,49 @@ class CompetitorPageFetcher
             return [...$analysis, 'requested_url' => $originalUrl, 'final_url' => $url, 'headings' => array_slice($headings, 0, 40), 'main_content' => Str::limit(trim($content), 12000, ''), 'structured_data_types' => array_values(array_unique($types))];
         }
         throw new RuntimeException('Too many redirects.');
+    }
+
+    /** @return array<int, string> */
+    public function sitemapLinks(string $websiteUrl, string $domain): array
+    {
+        $origin = parse_url($websiteUrl, PHP_URL_SCHEME).'://'.parse_url($websiteUrl, PHP_URL_HOST);
+        $pending = [$origin.'/sitemap.xml'];
+        $links = [];
+        for ($reads = 0; $pending !== [] && $reads < 3; $reads++) {
+            $url = array_shift($pending);
+            $response = $this->request($url, $domain);
+            if (! $response->successful()) {
+                continue;
+            }
+            $xml = $this->body($response, 256000);
+            if (stripos($xml, '<!DOCTYPE') !== false || stripos($xml, '<!ENTITY') !== false) {
+                continue;
+            }
+            $document = new DOMDocument;
+            $previous = libxml_use_internal_errors(true);
+            $loaded = $document->loadXML($xml, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+            libxml_clear_errors();
+            libxml_use_internal_errors($previous);
+            if (! $loaded) {
+                continue;
+            }
+            $xpath = new DOMXPath($document);
+            foreach ($xpath->query('//*[local-name()="loc"]') as $node) {
+                $link = trim($node->textContent);
+                try {
+                    $this->validateUrl($link, $domain);
+                } catch (RuntimeException) {
+                    continue;
+                }
+                if ($document->documentElement?->localName === 'sitemapindex') {
+                    $pending = array_slice(array_values(array_unique([...$pending, $link])), 0, 2);
+                } elseif (count($links) < 60) {
+                    $links[] = $link;
+                }
+            }
+        }
+
+        return array_values(array_unique($links));
     }
 
     protected function validateUrl(string $url, string $domain): string

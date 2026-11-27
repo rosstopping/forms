@@ -1,14 +1,14 @@
 @extends('layouts.marketing')
 
 @section('title', 'See what we’d fix on your website')
-@section('meta_description', 'Show us your website for a free check of its health and search visibility. See where Sitewell would start and how we could handle the improvements for you.')
+@section('meta_description', 'Show us your website for a free check of its health and search visibility. See where Digizu would start and how we could handle the improvements for you.')
 
 @section('content')
 <section class="px-3 pt-1 pb-16 sm:px-6 sm:pt-2 sm:pb-24" aria-labelledby="audit-title">
     <div class="mx-auto grid max-w-7xl justify-items-center gap-8 rounded-3xl bg-lichen px-5 py-16 text-center sm:gap-10 sm:px-10 sm:py-24">
         <div class="grid justify-items-center gap-5">
             <h1 id="audit-title" class="max-w-3xl text-4xl font-medium tracking-tight text-balance sm:text-6xl">Show us your website. We’ll show you where we’d start.</h1>
-            <p class="max-w-[48ch] text-pretty text-lg text-ink/65">Start with a free website check. See what needs attention, then decide whether you’d like Sitewell to take care of the improvements.</p>
+            <p class="max-w-[48ch] text-pretty text-lg text-ink/65">Start with a free website check. See what needs attention, then decide whether you’d like Digizu to take care of the improvements.</p>
         </div>
         <form method="POST" action="{{ route('marketing.free-site-audit.store') }}" data-audit-form data-marketing-attribution="{{ json_encode($attribution) }}" class="grid w-full max-w-xl gap-3 text-left">
             @csrf
@@ -85,7 +85,7 @@
                 </div>
                 <div class="grid content-start gap-2 p-6 sm:p-8">
                     <dt class="text-xl font-medium tracking-tight text-ink">What we’d work on.</dt>
-                    <dd class="max-w-[48ch] text-pretty text-base text-ink/65">The work Sitewell could take care of, with a six-month search scenario when there’s enough data.</dd>
+                    <dd class="max-w-[48ch] text-pretty text-base text-ink/65">The work Digizu could take care of, with a six-month search scenario when there’s enough data.</dd>
                 </div>
             </div>
         </dl>

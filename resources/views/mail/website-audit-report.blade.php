@@ -21,7 +21,7 @@ This private link is available until {{ $audit->expires_at->format('j F Y') }}.
 
 Prefer to talk it through? [Book a call with me]({{ $bookingUrl }}).
 
-Ross at Sitewell
+Ross at Digizu
 
 @if ($audit->marketing_consent_at)
 You opted into ongoing website advice. [Unsubscribe]({{ $preferencesUrl }}) at any time.

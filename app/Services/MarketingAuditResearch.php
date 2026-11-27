@@ -73,10 +73,13 @@ class MarketingAuditResearch
             $insights['competitors'] = $seo !== null ? $this->competitors->forDomain($audit->domain, $seo) : null;
         }
         if (! array_key_exists('ai_visibility', $insights)) {
-            $questions = $this->aiVisibility->questions($audit->domain, $seo);
+            $selection = $this->aiVisibility->selection($audit->domain, (string) ($insights['business_context'] ?? ''));
+            $questions = $selection['questions'];
             $insights['ai_visibility'] = $questions !== [] ? [
                 'status' => $this->aiVisibility->available() ? 'pending' : 'unavailable',
                 'questions' => $questions,
+                'question_evidence' => $selection['evidence'],
+                'question_method' => $selection['method'],
             ] : null;
         }
 

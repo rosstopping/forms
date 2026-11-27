@@ -1,6 +1,6 @@
 @extends('layouts.marketing')
 
-@section('title', 'Email preferences | Sitewell')
+@section('title', 'Email preferences | Digizu')
 @section('content')
 <section class="mx-auto grid max-w-xl gap-6 px-5 py-16">
     <h1 class="text-3xl font-medium tracking-tight">Email preferences</h1>

@@ -12,7 +12,7 @@ it('shows each public marketing page', function (string $route, string $copy): v
     $response = $this->get(route($route))
         ->assertSuccessful()
         ->assertSee('marketing-site prospect-workspace', false)
-        ->assertSee('Sitewell')
+        ->assertSee('Digizu')
         ->assertSee($copy);
     $document = new DOMDocument;
     @$document->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
@@ -29,7 +29,7 @@ it('shows each public marketing page', function (string $route, string $copy): v
 
 })->with([
     'home' => ['marketing.home', 'Turn more searches into'],
-    'how it works' => ['marketing.how-it-works', 'How Sitewell looks after your website'],
+    'how it works' => ['marketing.how-it-works', 'How Digizu looks after your website'],
     'features' => ['marketing.features', 'Website care. SEO. Content.'],
     'pricing' => ['marketing.pricing', 'Choose your level of support.'],
     'examples' => ['marketing.examples', 'The work we do.'],
@@ -38,9 +38,9 @@ it('shows each public marketing page', function (string $route, string $copy): v
     'faqs' => ['marketing.faqs', 'Your questions, answered.'],
     'get started' => ['marketing.free-site-audit', 'Show us your website.'],
     'journal' => ['marketing.journal', 'Practical website and SEO guides.'],
-    'contact' => ['marketing.contact', 'Talk to Sitewell.'],
-    'privacy policy' => ['marketing.privacy', 'How Sitewell uses personal information'],
-    'terms of service' => ['marketing.terms', 'Terms for using Sitewell'],
+    'contact' => ['marketing.contact', 'Talk to Digizu.'],
+    'privacy policy' => ['marketing.privacy', 'How Digizu uses personal information'],
+    'terms of service' => ['marketing.terms', 'Terms for using Digizu'],
 ]);
 
 it('shows journal articles and returns not found for unknown slugs', function (): void {
@@ -69,7 +69,7 @@ it('shows journal articles and returns not found for unknown slugs', function ()
         ->assertSuccessful()
         ->assertSee('Start with the business outcome, not the dashboard')
         ->assertSee('Conversions and leads tell you whether the traffic is useful')
-        ->assertSee('How Sitewell monitors website performance')
+        ->assertSee('How Digizu monitors website performance')
         ->assertSee('Start a free website audit')
         ->assertSee('href="'.route('marketing.article', 'search-data-to-content-decisions').'"', false)
         ->assertSee('href="'.route('marketing.article', 'how-often-should-i-update-my-website').'"', false)
@@ -165,7 +165,7 @@ it('outputs canonical URLs for key marketing pages', function (string $routeName
 ]);
 
 it('uses shorter SEO page titles for flagged marketing pages', function (string $routeName, array $parameters, string $title): void {
-    $fullTitle = $title.' · Sitewell';
+    $fullTitle = $title.' · Digizu';
 
     $this->get(route($routeName, $parameters))
         ->assertSuccessful()
@@ -192,13 +192,13 @@ it('adds organization structured data on the home page', function (): void {
         ->assertSee('Organization')
         ->assertSee('WebSite')
         ->assertSee('Managed SEO')
-        ->assertSee('Sitewell');
+        ->assertSee('Digizu');
 });
 
-it('keeps social metadata aligned with the page title and links articles to Sitewell', function (): void {
+it('keeps social metadata aligned with the page title and links articles to Digizu', function (): void {
     $this->get(route('marketing.home'))
         ->assertSuccessful()
-        ->assertSee('<meta property="og:title" content="Managed SEO and website care for UK businesses · Sitewell">', false)
+        ->assertSee('<meta property="og:title" content="Managed SEO and website care for UK businesses · Digizu">', false)
         ->assertSee('<meta name="twitter:card" content="summary">', false);
 
     $this->get(route('marketing.article', 'a-clean-website-handover'))
@@ -293,9 +293,9 @@ it('publishes an XML sitemap for the marketing site', function (): void {
 it('explains every website connection option and shows the walkthrough video', function (): void {
     $this->get(route('marketing.how-it-works'))
         ->assertSuccessful()
-        ->assertSee('The Sitewell Pixel')
+        ->assertSee('The Digizu Pixel')
         ->assertSee('The WordPress connector')
-        ->assertSee('Fully managed by Sitewell')
+        ->assertSee('Fully managed by Digizu')
         ->assertSee('https://www.loom.com/embed/d406218f4a2843f7a7d8abbf804f2ba6')
         ->assertSee('You can often keep your current website and hosting.')
         ->assertDontSee('our team')
@@ -449,7 +449,7 @@ it('features the local UK phone number on the home page', function (): void {
 it('keeps contact separate from website-only onboarding', function (): void {
     $this->get(route('marketing.contact'))
         ->assertSuccessful()
-        ->assertSee('Contact Sitewell')
+        ->assertSee('Contact Digizu')
         ->assertSee('01302 248 374')
         ->assertSee('href="tel:+441302248374"', false)
         ->assertSee('Work email')
@@ -508,7 +508,7 @@ it('publishes search-led service landing pages with unique metadata and FAQ sche
 
     $response
         ->assertSuccessful()
-        ->assertSee('<title>'.$title.' · Sitewell</title>', false)
+        ->assertSee('<title>'.$title.' · Digizu</title>', false)
         ->assertSee('<meta name="description" content="'.$landing['meta_description'].'">', false)
         ->assertSee($heading)
         ->assertSee('application/ld+json')
@@ -516,7 +516,7 @@ it('publishes search-led service landing pages with unique metadata and FAQ sche
         ->assertSee('Get your free search audit')
         ->assertSee('Related help');
 
-    expect(strlen($title.' · Sitewell'))->toBeLessThanOrEqual(65)
+    expect(strlen($title.' · Digizu'))->toBeLessThanOrEqual(65)
         ->and(strlen($landing['meta_description']))->toBeLessThanOrEqual(160);
 })->with([
     'website management' => ['website-management-services', 'Website management for UK businesses', 'Website management for your business.'],

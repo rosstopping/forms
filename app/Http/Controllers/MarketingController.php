@@ -208,7 +208,7 @@ class MarketingController extends Controller
         return view('marketing.terms-of-service');
     }
 
-    public function sitemap(): Response
+    public function sitemap(Request $request): Response
     {
         $urls = collect([
             'marketing.home',
@@ -245,6 +245,18 @@ class MarketingController extends Controller
             ->merge(collect($this->articles())->map(
                 fn (array $article): string => route('marketing.article', $article['slug'])
             ));
+
+        if ($request->routeIs('public-website.sitemap')) {
+            $sitemapPath = config('public_website.static_sitemap');
+            abort_unless(is_string($sitemapPath) && is_readable($sitemapPath), 503);
+            $staticSitemap = simplexml_load_file($sitemapPath, options: LIBXML_NONET);
+            abort_if($staticSitemap === false, 503);
+            $staticPaths = collect($staticSitemap->xpath('//*[local-name()="loc"]'))
+                ->map(fn ($url): string => rtrim((string) parse_url((string) $url, PHP_URL_PATH), '/'));
+            $urls = $urls->reject(fn (string $url): bool => $staticPaths->contains(rtrim((string) parse_url($url, PHP_URL_PATH), '/')));
+        }
+
+        $urls = $urls->unique()->values();
 
         return response()
             ->view('marketing.sitemap', compact('urls'))
@@ -306,7 +318,7 @@ class MarketingController extends Controller
                             [
                                 'route' => 'marketing.landing',
                                 'parameters' => ['website-maintenance-packages'],
-                                'label' => 'Explore Sitewell’s website maintenance packages',
+                                'label' => 'Explore Digizu’s website maintenance packages',
                             ],
                         ],
                     ],
@@ -356,7 +368,7 @@ class MarketingController extends Controller
                             [
                                 'route' => 'marketing.landing',
                                 'parameters' => ['website-management-services'],
-                                'label' => 'See how Sitewell manages ongoing website improvements',
+                                'label' => 'See how Digizu manages ongoing website improvements',
                             ],
                         ],
                     ],
@@ -425,16 +437,16 @@ class MarketingController extends Controller
                         ],
                     ],
                     [
-                        'heading' => 'How Sitewell monitors website performance',
+                        'heading' => 'How Digizu monitors website performance',
                         'paragraphs' => [
-                            'Sitewell looks at clicks, impressions, ranking context, page quality, and what happens after the visit. That makes it easier to choose the next useful improvement instead of reacting to isolated numbers.',
+                            'Digizu looks at clicks, impressions, ranking context, page quality, and what happens after the visit. That makes it easier to choose the next useful improvement instead of reacting to isolated numbers.',
                             'For a business owner, the value is not having to stitch together Search Console, page performance, and website issues alone. The evidence should lead to a clear next step.',
                         ],
                         'links' => [
                             [
                                 'route' => 'marketing.article',
                                 'parameters' => ['search-data-to-content-decisions'],
-                                'label' => 'Read how Sitewell turns search data into practical content decisions',
+                                'label' => 'Read how Digizu turns search data into practical content decisions',
                             ],
                             [
                                 'route' => 'marketing.article',
@@ -444,7 +456,7 @@ class MarketingController extends Controller
                             [
                                 'route' => 'marketing.landing',
                                 'parameters' => ['managed-seo-services'],
-                                'label' => 'Explore Sitewell’s managed SEO services',
+                                'label' => 'Explore Digizu’s managed SEO services',
                             ],
                             [
                                 'route' => 'marketing.free-site-audit',
@@ -738,7 +750,7 @@ class MarketingController extends Controller
                         'heading' => 'When to use a professional website audit',
                         'paragraphs' => [
                             'If you can see something is wrong but cannot confidently prioritise what to fix first, a structured audit is usually the quickest way to avoid wasted effort.',
-                            'Sitewell’s free website audit highlights practical issues across visibility, page quality and enquiry handling so you can make an informed next decision.',
+                            'Digizu’s free website audit highlights practical issues across visibility, page quality and enquiry handling so you can make an informed next decision.',
                         ],
                         'links' => [
                             [
@@ -827,7 +839,7 @@ class MarketingController extends Controller
                             ],
                             [
                                 'route' => 'marketing.features',
-                                'label' => 'Explore how Sitewell handles health checks and search opportunities',
+                                'label' => 'Explore how Digizu handles health checks and search opportunities',
                             ],
                             [
                                 'route' => 'marketing.article',
@@ -854,7 +866,7 @@ class MarketingController extends Controller
                                 'route' => 'marketing.landing',
                                 'parameters' => ['website-maintenance-packages'],
                                 'label' => 'Explore our website maintenance packages',
-                                'description' => 'See how Sitewell approaches ongoing website care for small businesses.',
+                                'description' => 'See how Digizu approaches ongoing website care for small businesses.',
                             ],
                             [
                                 'route' => 'marketing.article',
@@ -878,7 +890,7 @@ class MarketingController extends Controller
                             ],
                             [
                                 'route' => 'marketing.pricing',
-                                'label' => 'See how Sitewell structures ongoing website care',
+                                'label' => 'See how Digizu structures ongoing website care',
                             ],
                         ],
                     ],
@@ -933,7 +945,7 @@ class MarketingController extends Controller
                             [
                                 'route' => 'marketing.landing',
                                 'parameters' => ['seo-for-small-businesses'],
-                                'label' => 'See how Sitewell handles SEO for small businesses',
+                                'label' => 'See how Digizu handles SEO for small businesses',
                                 'description' => 'A practical view of ongoing SEO work, measurable movement, and commercially useful priorities.',
                             ],
                             [

@@ -11,7 +11,7 @@
     <title>{{ $landing['title'] }}</title>
     <meta name="description" content="{{ $landing['description'] }}">
     <link rel="canonical" href="{{ $canonical }}">
-    <meta property="og:site_name" content="Sitewell">
+    <meta property="og:site_name" content="Digizu">
     <meta property="og:locale" content="en_GB">
     <meta property="og:type" content="website">
     <meta property="og:title" content="{{ $landing['title'] }}">
@@ -28,7 +28,7 @@
         <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-white focus:p-4">Skip to content</a>
         <header class="border-b border-ink/10">
             <div class="mx-auto flex max-w-7xl items-center justify-between gap-5 px-5 py-4 sm:px-8 lg:px-10">
-                <p class="font-sans text-2xl font-semibold tracking-tight sm:text-3xl"><a href="{{ route('marketing.home') }}" aria-label="Homepage">sitewell<span class="text-garden">.</span></a></p>
+                <p class="font-sans text-2xl font-semibold tracking-tight sm:text-3xl"><a href="{{ route('marketing.home') }}" aria-label="Homepage">digizu<span class="text-garden">.</span></a></p>
                 <nav aria-label="Landing page navigation" class="flex items-center gap-6 text-base sm:text-sm">
                     <a href="#ross" class="hover:text-garden max-sm:hidden">Meet Ross</a>
                     <a href="{{ route('marketing.ppc.book') }}" class="inline-flex min-h-12 items-center underline decoration-ink/30 underline-offset-4 hover:decoration-ink">Book a call <span class="pl-2" aria-hidden="true">↗</span></a>
@@ -40,14 +40,13 @@
         </main>
         <footer class="border-t border-ink/15 py-8">
             <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-6 px-5 text-base text-ink/70 sm:px-8 sm:text-sm lg:px-10">
-                <p>© {{ now()->year }} Sitewell.</p>
+                <p>© {{ now()->year }} Digizu.</p>
                 <nav aria-label="Company information" class="flex flex-wrap gap-x-6 gap-y-3">
                     <a class="font-normal hover:text-ink" href="{{ route('marketing.about') }}">About</a>
                     <a class="font-normal hover:text-ink" href="{{ route('marketing.contact') }}">Contact</a>
                     <button type="button" data-consent-manage class="min-h-12 text-left hover:text-ink focus-visible:outline-offset-4">Cookie settings</button>
                     <a class="font-normal hover:text-ink" href="{{ route('marketing.privacy') }}">Privacy</a>
                     <a class="font-normal hover:text-ink" href="{{ route('marketing.terms') }}">Terms</a>
-                    <a class="font-normal hover:text-ink" href="{{ route('login') }}">Log in</a>
                 </nav>
             </div>
         </footer>

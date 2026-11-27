@@ -10,10 +10,10 @@
         $breadcrumbs[] = ['@type' => 'ListItem', 'position' => 3, 'name' => $page['label'], 'item' => $schemaUrl];
     }
     $entity = !$isHub && $page['kind'] === 'article'
-        ? ['@type' => 'Article', 'headline' => $schemaTitle, 'author' => ['@type' => 'Organization', 'name' => 'Sitewell', 'url' => route('marketing.home')], 'mainEntityOfPage' => $schemaUrl]
+        ? ['@type' => 'Article', 'headline' => $schemaTitle, 'author' => ['@type' => 'Organization', 'name' => 'Digizu', 'url' => route('marketing.home')], 'mainEntityOfPage' => $schemaUrl]
         : ['@type' => 'WebPage', 'name' => $schemaTitle];
     $schema = ['@context' => 'https://schema.org', '@graph' => [
-        [...$entity, 'url' => $schemaUrl, 'description' => $isHub ? 'Fully managed SEO and website care for web agencies, delivered by Ross and Sitewell.' : $page['description']],
+        [...$entity, 'url' => $schemaUrl, 'description' => $isHub ? 'Fully managed SEO and website care for web agencies, delivered by Ross and Digizu.' : $page['description']],
         ['@type' => 'BreadcrumbList', 'itemListElement' => $breadcrumbs],
     ]];
 @endphp

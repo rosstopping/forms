@@ -1,1 +1,1 @@
-© {{ date('Y') }} Sitewell. All rights reserved.
+© {{ date('Y') }} Digizu. All rights reserved.

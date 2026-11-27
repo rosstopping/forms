@@ -41,7 +41,7 @@
     <section class="border-y border-ink/10 bg-lichen/45 py-12 sm:py-16">
         <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
             <div>
-                <p class="text-base font-medium sm:text-sm text-garden">What Sitewell manages</p>
+                <p class="text-base font-medium sm:text-sm text-garden">What Digizu manages</p>
                 <h2 class="mt-4 max-w-[24ch] font-sans text-4xl font-medium tracking-tight text-balance sm:text-5xl">{{ $landing['service_title'] }}</h2>
                 <p class="mt-5 max-w-[48ch] text-pretty text-lg text-ink/60 sm:text-base">{{ $landing['service_description'] }}</p>
             </div>

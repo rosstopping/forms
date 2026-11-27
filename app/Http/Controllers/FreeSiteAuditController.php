@@ -257,6 +257,7 @@ class FreeSiteAuditController extends Controller
             'status' => $websiteAudit->status,
             'completed' => $websiteAudit->isReadyToDisplay(),
             'failed' => $websiteAudit->status === WebsiteAudit::STATUS_FAILED,
+            'service_pages_status' => $unlocked ? data_get($websiteAudit->insights, 'service_pages.status') : null,
             'ai_visibility_status' => $unlocked ? data_get($websiteAudit->insights, 'ai_visibility.status') : null,
             'full_report_status' => $unlocked ? data_get($websiteAudit->insights, 'full_report.status', 'completed') : null,
         ]);

@@ -1,5 +1,6 @@
 <?php
 
+use App\Ai\Agents\AuditServiceQuestionSelector;
 use App\Models\SeoKeyword;
 use App\Models\SeoSnapshot;
 use App\Models\WebsiteAudit;
@@ -13,6 +14,10 @@ use App\Services\MarketingAuditPageCounter;
 use App\Services\MarketingAuditResearch;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+
+beforeEach(function (): void {
+    AuditServiceQuestionSelector::fake([['supported' => false, 'client_names' => [], 'services' => []]])->preventStrayPrompts();
+});
 
 it('builds the public projection and cached page count before deferring private research', function (): void {
     Cache::flush();

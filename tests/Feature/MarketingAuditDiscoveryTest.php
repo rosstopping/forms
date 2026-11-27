@@ -1,5 +1,6 @@
 <?php
 
+use App\Ai\Agents\AuditServiceQuestionSelector;
 use App\Jobs\CheckMarketingAuditAiVisibility;
 use App\Models\WebsiteAudit;
 use App\Services\AiVisibilityAnalyzer;
@@ -36,10 +37,14 @@ it('records only observed AI mentions and citations for one unbranded question',
     $provider->shouldReceive('model')->twice()->andReturn('test-model');
     $provider->shouldReceive('check')->once()->andReturn(['text' => 'See https://example.com/garden-offices', 'citations' => [['url' => 'https://example.com/garden-offices']]]);
     $service = new MarketingAuditAiVisibility($provider, app(AiVisibilityAnalyzer::class));
-    $question = $service->question('example.com', ['keywords' => [['term' => 'example garden offices'], ['term' => 'garden office fitters']]]);
-
+    $context = 'We are garden office fitters and garden office builders serving local businesses.';
+    AuditServiceQuestionSelector::fake([['supported' => true, 'client_names' => [], 'services' => [
+        ['service' => 'garden office fitters', 'evidence' => $context],
+        ['service' => 'garden office builders', 'evidence' => $context],
+    ]]])->preventStrayPrompts();
+    $question = $service->question('example.com', ['keywords' => [['term' => 'unrelated client name']]], $context);
     expect($question)->toBe('Which businesses would you recommend for garden office fitters?');
-    expect($service->questions('example.com', ['keywords' => [['term' => 'example garden offices'], ['term' => 'garden office fitters'], ['term' => 'garden office builders'], ['term' => 'office pods uk']]]))
+    expect($service->questions('example.com', null, $context))
         ->toBe(['Which businesses would you recommend for garden office fitters?', 'Which businesses would you recommend for garden office builders?']);
     $result = $service->check('example.com', $question);
     expect($result)->toMatchArray(['status' => 'completed', 'website_mentioned' => true, 'website_cited' => true, 'provider' => 'OpenAI']);

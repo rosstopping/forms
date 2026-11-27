@@ -4,8 +4,9 @@
 @if ($brandName !== null)
 <span class="brand">{{ $brandName }}</span>
 @else
-@if ($url)<a href="{{ $url }}" class="brand">sitewell<span class="brand-dot">.</span></a>
-@else<span class="brand">sitewell<span class="brand-dot">.</span></span>@endif
+@php($url = \App\Support\PublicWebsite::origin() ?? $url)
+@if ($url)<a href="{{ $url }}" class="brand">digizu<span class="brand-dot">.</span></a>
+@else<span class="brand">digizu<span class="brand-dot">.</span></span>@endif
 @endif
 </td>
 </tr>

@@ -314,7 +314,7 @@ test('shared plans are standalone static documents with concise legacy content',
     $plan->update(['report' => $report]);
     $response = $this->get($plan->shareUrl())->assertSuccessful()
         ->assertSee('Priority searches selected for this plan.')->assertSee('Focus searches already in Google’s top 10.')->assertSee('Audit warnings and failed checks to review.')
-        ->assertSee('marketing-site', false)->assertSee('@page', false)->assertSee('print:break-inside-avoid', false)
+        ->assertSee('marketing-site', false)->assertSee('>digizu<span', false)->assertDontSee('>sitewell<span', false)->assertSee('@page', false)->assertSee('print:break-inside-avoid', false)
         ->assertSee('This historical introduction')->assertDontSee('admin/websites', false);
     $document = new DOMDocument;
     @$document->loadHTML($response->getContent());

@@ -1,5 +1,5 @@
 @extends('layouts.marketing')
-@section('title', 'SEO outsourcing for web agencies | Sitewell')
+@section('title', 'SEO outsourcing for web agencies | Digizu')
 @section('concise_title', '1')
 @section('meta_description', 'Offer fully managed SEO and website care to your agency’s clients. Ross handles the work; you set your prices and keep the relationship. Book a quick chat.')
 @section('structured_data')
@@ -33,7 +33,7 @@
                 </form>
             </div>
             <div class="flex flex-wrap items-center justify-center gap-6">
-                <a data-audit-book-call href="{{ route('marketing.ppc.book') }}" class="inline-flex min-h-12 items-center gap-3 rounded-full bg-white py-2 pr-5 pl-2 font-medium ring-1 ring-black/15 hover:bg-[#fafaf9] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#d63d24]"><img src="{{ asset('ross-topping.jpg') }}" alt="" width="32" height="32" class="size-8 rounded-full object-cover">Book a quick chat <span aria-hidden="true">↗</span></a>
+                <a data-audit-book-call href="{{ route('marketing.ppc.book') }}" class="inline-flex min-h-12 items-center gap-3 rounded-full bg-white py-2 pr-5 pl-2 font-medium ring-1 ring-black/15 hover:bg-[#fafaf9] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#d63d24]"><img src="{{ asset((\App\Support\PublicWebsite::origin() ? 'tools-assets/' : '').'ross-topping.jpg') }}" alt="" width="32" height="32" class="size-8 rounded-full object-cover">Book a quick chat <span aria-hidden="true">↗</span></a>
                 <a href="#how-it-works" class="inline-flex min-h-12 items-center text-sm font-medium underline decoration-ink/25 underline-offset-4 hover:text-garden">See how it works</a>
             </div>
         </div>
@@ -52,9 +52,9 @@
     <section aria-labelledby="ross-introduction" class="py-14 sm:py-20">
         <div class="mx-auto grid max-w-6xl items-center gap-10 px-5 sm:px-8 lg:grid-cols-[3fr_2fr] lg:px-10">
             <figure class="flex aspect-video flex-col items-center justify-center gap-4 rounded-3xl bg-lichen px-6 text-center ring-1 ring-ink/10">
-                <img src="{{ asset('ross-topping.jpg') }}" alt="Ross Topping, founder of Sitewell" width="96" height="96" class="size-24 rounded-full object-cover" loading="lazy">
+                <img src="{{ asset((\App\Support\PublicWebsite::origin() ? 'tools-assets/' : '').'ross-topping.jpg') }}" alt="Ross Topping, founder of Digizu" width="96" height="96" class="size-24 rounded-full object-cover" loading="lazy">
                 <div><p class="text-lg font-medium">A quick introduction from Ross</p><p class="mt-2 text-sm text-ink/60">60–90 seconds · Video coming soon</p></div>
-                <figcaption class="max-w-sm text-sm/6 text-ink/60">Meet the person behind Sitewell and see how we could work together.</figcaption>
+                <figcaption class="max-w-sm text-sm/6 text-ink/60">Meet the person behind Digizu and see how we could work together.</figcaption>
             </figure>
             <div>
                 <h2 id="ross-introduction" class="text-3xl font-medium tracking-tight sm:text-4xl">Hi, I’m Ross.</h2>

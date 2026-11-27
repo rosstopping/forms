@@ -157,7 +157,7 @@ it('acknowledges the review personally and invites a useful reply before selling
     $audit = WebsiteAudit::factory()->create(['email' => 'owner@example.com', 'personal_review_requested_at' => now()]);
     $mail = new WebsiteAuditReport($audit);
     $envelope = $mail->envelope();
-    expect($envelope->from->name)->toBe('Ross at Sitewell')
+    expect($envelope->from->name)->toBe('Ross at Digizu')
         ->and($envelope->from->address)->toBe(config('mail.from.address'))
         ->and($envelope->replyTo[0]->address)->toBe(config('marketing.audit_notification_email'))
         ->and($envelope->subject)->toBe('Your growth plan request for '.$audit->domain);

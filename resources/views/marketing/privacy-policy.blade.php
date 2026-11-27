@@ -1,84 +1,84 @@
 @extends('layouts.marketing')
 
 @section('title', 'Privacy policy')
-@section('meta_description', 'How Sitewell collects, uses, shares, and protects personal information, including data received through Google APIs.')
+@section('meta_description', 'How Digizu collects, uses, shares and protects personal information, including data received through Google APIs.')
 
 @section('content')
     <article class="py-12 sm:py-16">
         <div class="mx-auto max-w-4xl px-5 sm:px-8 lg:px-10">
             <p class="text-base font-medium sm:text-sm text-garden">Legal</p>
             <h1 class="mt-5 font-sans text-4xl font-medium tracking-tight text-balance sm:text-6xl">Privacy policy</h1>
-            <p class="mt-6 max-w-2xl text-pretty text-lg text-ink/65">How Sitewell uses personal information when you visit our website, use our services, contact us, or connect a third-party service.</p>
-            <p class="mt-4 text-sm text-ink/50">Effective date: 16 October 2026</p>
+            <p class="mt-6 max-w-2xl text-pretty text-lg text-ink/65">How Digizu uses personal information when you visit our website, use our services, contact us or connect a third-party service.</p>
+            <p class="mt-4 text-sm text-ink/50">Effective date: 27 November 2026</p>
 
             <div class="mt-14 space-y-12 text-base leading-7 text-ink/70">
                 <section class="space-y-4">
                     <h2 class="font-sans text-3xl font-medium tracking-tight text-ink">1. Who we are</h2>
-                    <p>Sitewell provides website care, form and lead management, website health monitoring, search insights, content workflows, and connected business-profile tools. Sitewell is the controller of personal information used to operate our website, customer accounts, billing, and direct customer relationships.</p>
-                    <p>When a customer uses Sitewell to process information submitted through the customer’s website or otherwise controls the purpose of that processing, the customer is the controller and Sitewell acts as its processor.</p>
+                    <p>Digizu provides website care, form and lead management, website health monitoring, search insights, content workflows and connected business-profile tools. Digizu is the controller of personal information used to operate our website, customer accounts, billing and direct customer relationships.</p>
+                    <p>When a customer uses Digizu to process information submitted through the customer’s website or otherwise controls the purpose of that processing, the customer is the controller and Digizu acts as its processor.</p>
                     <p>Questions or data-protection requests can be sent through our <a href="{{ route('marketing.contact') }}" class="font-medium text-garden underline decoration-garden/30 underline-offset-4 hover:decoration-garden">contact page</a>.</p>
                 </section>
 
                 <section class="space-y-4">
                     <h2 class="font-sans text-3xl font-medium tracking-tight text-ink">2. Information we collect</h2>
                     <ul class="list-disc space-y-3 pl-6 marker:text-garden">
-                        <li><strong class="font-semibold text-ink">Account and contact details:</strong> names, email addresses, login credentials, organisation details, preferences, support messages, and membership information.</li>
-                        <li><strong class="font-semibold text-ink">Billing information:</strong> subscription status, transaction references, and limited payment metadata. Payment-card details are handled by our payment provider rather than stored by Sitewell.</li>
-                        <li><strong class="font-semibold text-ink">Website and service data:</strong> websites, domains, forms, submissions, leads, email-delivery records, reports, content, configuration, repository information, and actions taken in the service.</li>
+                        <li><strong class="font-semibold text-ink">Account and contact details:</strong> names, email addresses, login credentials, organisation details, preferences, support messages and membership information.</li>
+                        <li><strong class="font-semibold text-ink">Billing information:</strong> subscription status, transaction references and limited payment metadata. Payment-card details are handled by our payment provider rather than stored by Digizu.</li>
+                        <li><strong class="font-semibold text-ink">Website and service data:</strong> websites, domains, forms, submissions, leads, email-delivery records, reports, content, configuration, repository information and actions taken in the service.</li>
                         <li><strong class="font-semibold text-ink">Connected-service data:</strong> information you authorise us to obtain from services such as Google and GitHub, together with encrypted access and refresh tokens needed to maintain those connections.</li>
-                        <li><strong class="font-semibold text-ink">Google Search Console data:</strong> connected properties and search-performance information such as queries, pages, clicks, impressions, click-through rates, and average positions.</li>
-                        <li><strong class="font-semibold text-ink">Google Business Profile data:</strong> account and location identifiers, business details, categories, opening hours, website information, customer reviews and existing replies, posts, and approved profile changes.</li>
-                        <li><strong class="font-semibold text-ink">Website-review engagement:</strong> approximate active reading time, scroll depth, review-popup interactions, whether an email form was started or submitted, and calendar clicks and confirmed bookings. We do not save unfinished email addresses. We use these first-party signals to understand interest and improve our review journey.</li>
-                        <li><strong class="font-semibold text-ink">Technical and security data:</strong> IP address, browser and device information, timestamps, logs, cookie identifiers, and information needed to prevent abuse and maintain the service.</li>
-                        <li><strong class="font-semibold text-ink">Public business information:</strong> business contact details, websites, and publicly available evidence used to research potential customers and prepare outreach. Outreach engagement records may include whether a message or tracked link was opened or selected; we do not store the recipient’s IP address or user-agent string for that tracking.</li>
+                        <li><strong class="font-semibold text-ink">Google Search Console data:</strong> connected properties and search-performance information such as queries, pages, clicks, impressions, click-through rates and average positions.</li>
+                        <li><strong class="font-semibold text-ink">Google Business Profile data:</strong> account and location identifiers, business details, categories, opening hours, website information, customer reviews and existing replies, posts and approved profile changes.</li>
+                        <li><strong class="font-semibold text-ink">Website-review engagement:</strong> approximate active reading time, scroll depth, review-popup interactions, whether an email form was started or submitted and calendar clicks and confirmed bookings. We do not save unfinished email addresses. We use these first-party signals to understand interest and improve our review journey.</li>
+                        <li><strong class="font-semibold text-ink">Technical and security data:</strong> IP address, browser and device information, timestamps, logs, cookie identifiers and information needed to prevent abuse and maintain the service.</li>
+                        <li><strong class="font-semibold text-ink">Public business information:</strong> business contact details, websites and publicly available evidence used to research potential customers and prepare outreach. Outreach engagement records may include whether a message or tracked link was opened or selected; we do not store the recipient’s IP address or user-agent string for that tracking.</li>
                     </ul>
                 </section>
 
                 <section class="space-y-4">
                     <h2 class="font-sans text-3xl font-medium tracking-tight text-ink">3. How and why we use information</h2>
-                    <p>We use personal information to provide and secure Sitewell, authenticate users, process subscriptions, respond to enquiries, deliver requested audits and communications, monitor website health, manage forms and leads, provide connected features, generate reviewable recommendations and drafts, improve reliability, prevent fraud and spam, and comply with legal obligations.</p>
-                    <p>Our lawful bases under UK data-protection law are performance of a contract, steps requested before entering a contract, legitimate interests in operating and improving our services and communicating with relevant businesses, consent where requested, and compliance with legal obligations. Where we rely on legitimate interests, we consider the effect on the people concerned and provide a way to object.</p>
-                    <p>If you request a personal website review, we store your email address with your audit, send your report link and personal recommendations, and record follow-up progress such as replies, booked calls and becoming a customer. No account is created by requesting a review. Ongoing website advice and promotional follow-up require the separate optional opt-in on this form. We record your choice and its date; you can withdraw it using the unsubscribe link in your emails or by contacting us.</p>
+                    <p>We use personal information to provide and secure Digizu, authenticate users, process subscriptions, respond to enquiries, deliver requested audits and communications, monitor website health, manage forms and leads, provide connected features, generate reviewable recommendations and drafts, improve reliability, prevent fraud and spam and comply with legal obligations.</p>
+                    <p>Our lawful bases under UK data-protection law are performance of a contract, steps requested before entering a contract, legitimate interests in operating and improving our services and communicating with relevant businesses, consent where requested and compliance with legal obligations. Where we rely on legitimate interests, we consider the effect on the people concerned and provide a way to object.</p>
+                    <p>If you request a personal website review, we store your email address with your audit, send your report link and personal recommendations and record follow-up progress such as replies, booked calls and becoming a customer. No account is created by requesting a review. Ongoing website advice and promotional follow-up require the separate optional opt-in on this form. We record your choice and its date; you can withdraw it using the unsubscribe link in your emails or by contacting us.</p>
                     <p>Some features use artificial intelligence to prepare drafts or recommendations. These outputs are intended for human review. We may send the minimum necessary content to our configured AI service provider to deliver the feature; we do not use Google user data to train general-purpose AI models.</p>
                 </section>
 
                 <section class="space-y-4">
                     <h2 class="font-sans text-3xl font-medium tracking-tight text-ink">4. Google API data</h2>
-                    <p>Sitewell only accesses Google data after an authorised user chooses to connect a Google account. We use that data to provide the Search Console and Google Business Profile features described above, including search reporting, profile health checks, review syncing, review-reply drafts, and posts or profile updates that an authorised user approves.</p>
-                    <p>We do not sell Google user data, use it for advertising, or transfer it for creditworthiness, lending, or unrelated purposes. We share it only with service providers where necessary to operate or secure the requested feature, comply with law, or act with the user’s explicit direction.</p>
-                    <p>Sitewell’s use and transfer to any other app of information received from Google APIs adheres to the <a href="https://developers.google.com/terms/api-services-user-data-policy" class="font-medium text-garden underline decoration-garden/30 underline-offset-4 hover:decoration-garden">Google API Services User Data Policy</a>, including the Limited Use requirements.</p>
-                    <p>You can disconnect Google within Sitewell or revoke Sitewell’s access from your Google Account. Disconnecting stops new collection through that connection and removes the stored connection credentials, subject to limited backup, security, and legal-retention requirements.</p>
+                    <p>Digizu only accesses Google data after an authorised user chooses to connect a Google account. We use that data to provide the Search Console and Google Business Profile features described above, including search reporting, profile health checks, review syncing, review-reply drafts and posts or profile updates that an authorised user approves.</p>
+                    <p>We do not sell Google user data, use it for advertising or transfer it for creditworthiness, lending or unrelated purposes. We share it only with service providers where necessary to operate or secure the requested feature, comply with law or act with the user’s explicit direction.</p>
+                    <p>Digizu’s use and transfer to any other app of information received from Google APIs adheres to the <a href="https://developers.google.com/terms/api-services-user-data-policy" class="font-medium text-garden underline decoration-garden/30 underline-offset-4 hover:decoration-garden">Google API Services User Data Policy</a>, including the Limited Use requirements.</p>
+                    <p>You can disconnect Google within Digizu or revoke Digizu’s access from your Google Account. Disconnecting stops new collection through that connection and removes the stored connection credentials, subject to limited backup, security and legal-retention requirements.</p>
                 </section>
 
                 <section class="space-y-4">
                     <h2 class="font-sans text-3xl font-medium tracking-tight text-ink">5. Sharing and international transfers</h2>
-                    <p>We may share information with vetted providers that support hosting, infrastructure, email delivery, payments, customer support, security, analytics, AI-assisted features, and integrations requested by you. We may also disclose information when required by law, to protect people or the service, in connection with a business reorganisation, or with your direction.</p>
+                    <p>We may share information with vetted providers that support hosting, infrastructure, email delivery, payments, customer support, security, analytics, AI-assisted features and integrations requested by you. We may also disclose information when required by law, to protect people or the service, in connection with a business reorganisation or with your direction.</p>
                     <p>Some providers process information outside the United Kingdom. Where required, we use recognised safeguards such as adequacy regulations or approved contractual protections.</p>
                 </section>
 
                 <section class="space-y-4">
                     <h2 class="font-sans text-3xl font-medium tracking-tight text-ink">6. Retention and security</h2>
-                    <p>We keep information only for as long as reasonably necessary for the purpose for which it was collected, to provide the service, resolve disputes, maintain security and audit records, and meet legal, tax, and accounting obligations. Retention depends on the type of record, account status, customer instructions, and applicable legal requirements.</p>
-                    <p>We use administrative and technical measures designed to protect information. These include access controls, encrypted transport, encryption of stored OAuth credentials, restricted staff access, backups, and monitoring. No system can guarantee absolute security.</p>
+                    <p>We keep information only for as long as reasonably necessary for the purpose for which it was collected, to provide the service, resolve disputes, maintain security and audit records and meet legal, tax and accounting obligations. Retention depends on the type of record, account status, customer instructions and applicable legal requirements.</p>
+                    <p>We use administrative and technical measures designed to protect information. These include access controls, encrypted transport, encryption of stored OAuth credentials, restricted staff access, backups and monitoring. No system can guarantee absolute security.</p>
                 </section>
 
                 <section class="space-y-4">
                     <h2 class="font-sans text-3xl font-medium tracking-tight text-ink">7. Cookies</h2>
-                    <p>Sitewell uses essential cookies and storage for login sessions, security, forms and your cookie choice. Optional Google Ads and Google Analytics measurement is off by default. Google Tag Manager and its measurement tags load only after you select Accept optional cookies. Rejecting optional cookies does not prevent you from browsing, requesting an audit or sending an enquiry.</p>
-                    <p>We remember your choice for up to 180 days using first-party storage. Use Cookie settings in the footer to change or withdraw it at any time. Withdrawal reloads the page to stop loaded measurement code and removes measurement cookies accessible on our domain; it cannot delete cookies held by Google on Google’s own domains.</p>
-                    <p>If you accept, Google may receive measurement data such as the page address, browser and device information and an advertising click identifier. Our saved-enquiry conversion event contains an opaque transaction ID, not your name, email address or enquiry message. Saving an enquiry and sending a reply work independently of optional advertising measurement.</p>
+                    <p>Digizu uses essential cookies and storage for login sessions, security, forms and your cookie choice. Optional Google Ads, Google Analytics, Meta and Hotjar measurement is off by default. Audit pages use Google Tag Manager. The main website also uses Meta for advertising measurement and Hotjar to understand page interaction. Optional measurement loads only after you accept it. Rejecting optional cookies does not prevent you from browsing, requesting an audit or sending an enquiry.</p>
+                    <p>Audit pages remember your choice for up to 180 days using first-party storage. The main website saves your choice in browser storage until you change it or clear that storage. Use Cookie settings in the footer to change or withdraw it at any time. Withdrawal reloads the page to stop loaded measurement code and removes measurement cookies accessible on our domain; it cannot delete cookies held on a provider’s own domains.</p>
+                    <p>If you accept, Google, Meta and Hotjar may receive page addresses, browser and device information, interaction data or advertising identifiers for the measurement enabled on that page. Our saved-enquiry conversion event contains an opaque transaction ID, not your name, email address or enquiry message. Saving an enquiry and sending a reply work independently of optional advertising measurement.</p>
                 </section>
 
                 <section class="space-y-4">
                     <h2 class="font-sans text-3xl font-medium tracking-tight text-ink">8. Your rights</h2>
-                    <p>Depending on the circumstances, UK data-protection law may give you rights to access, correct, erase, restrict, or receive your personal information; object to processing; withdraw consent; and complain to the Information Commissioner’s Office. These rights can be limited by law and may depend on the lawful basis for processing.</p>
+                    <p>Depending on the circumstances, UK data-protection law may give you rights to access, correct, erase, restrict or receive your personal information; object to processing; withdraw consent; and complain to the Information Commissioner’s Office. These rights can be limited by law and may depend on the lawful basis for processing.</p>
                     <p>Contact us through our <a href="{{ route('marketing.contact') }}" class="font-medium text-garden underline decoration-garden/30 underline-offset-4 hover:decoration-garden">contact page</a> to exercise a right. If your information was submitted to one of our customers through their website, contact that customer first because they usually control that information.</p>
                 </section>
 
                 <section class="space-y-4">
                     <h2 class="font-sans text-3xl font-medium tracking-tight text-ink">9. Children and changes</h2>
-                    <p>Sitewell is a business service and is not directed to children. We do not knowingly collect children’s information through customer accounts.</p>
-                    <p>We may update this policy as the service or legal requirements change. We will publish the revised policy here, update its effective date, and provide additional notice where a material change requires it.</p>
+                    <p>Digizu is a business service and is not directed to children. We do not knowingly collect children’s information through customer accounts.</p>
+                    <p>We may update this policy as the service or legal requirements change. We will publish the revised policy here, update its effective date and provide additional notice where a material change requires it.</p>
                 </section>
             </div>
         </div>

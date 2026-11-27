@@ -19,6 +19,11 @@
     </source>
     <php>
         <env name="APP_ENV" value="testing"/>
+        <env name="OPENAI_API_KEY" value="" force="true"/>
+        <env name="DATAFORSEO_PASSWORD" value="" force="true"/>
+        <env name="DATAFORSEO_LOGIN" value="" force="true"/>
+        <env name="PUBLIC_WEBSITE_URL" value="" force="true"/>
+        <env name="PUBLIC_WEBSITE_LEGACY_URL" value="https://sitewell.digizu.co.uk" force="true"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>

@@ -5,12 +5,15 @@ namespace App\Providers;
 use App\Contracts\SerpProvider;
 use App\Models\WebsiteAudit;
 use App\Services\CachedSerpProvider;
+use App\Support\PublicWebsite;
 use App\View\Composers\NavigationComposer;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Route;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
@@ -30,6 +33,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        URL::formatHostUsing(fn (string $root, ?Route $route): string => PublicWebsite::origin() !== null && PublicWebsite::owns($route) ? PublicWebsite::origin() : $root);
+        URL::formatPathUsing(fn (string $path, ?Route $route): string => PublicWebsite::origin() !== null && PublicWebsite::owns($route) ? PublicWebsite::path($path, $route) : $path);
+
         RateLimiter::for('ai-visibility', fn ($job) => Limit::perMinute(max(1, (int) config('ai_visibility.checks_per_minute')))->by('ai-visibility:'.$job->result->provider));
 
         Gate::define('access-outreach', fn ($user): bool => $user->isAdmin());

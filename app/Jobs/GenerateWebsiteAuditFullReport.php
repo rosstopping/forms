@@ -46,6 +46,10 @@ class GenerateWebsiteAuditFullReport implements ShouldBeUnique, ShouldQueue
                 'status' => 'completed',
                 'completed_at' => now()->toIso8601String(),
             ]]]);
+            if (data_get($saved->insights, 'service_pages.status') === null) {
+                $saved->update(['insights' => [...$saved->insights, 'service_pages' => ['status' => 'queued']]]);
+                CheckAuditServicePages::dispatch($saved)->afterCommit();
+            }
             if (data_get($saved->insights, 'ai_visibility.status') === 'pending') {
                 CheckMarketingAuditAiVisibility::dispatch($saved)->afterCommit();
             }

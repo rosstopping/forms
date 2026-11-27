@@ -1,14 +1,14 @@
 @extends('layouts.marketing')
 
-@section('title', 'About Sitewell and Ross')
-@section('meta_description', 'Meet Ross, the Doncaster-based web developer behind Sitewell. We manage websites and SEO for UK businesses and keep improving them after launch.')
+@section('title', 'About Digizu and Ross')
+@section('meta_description', 'Meet Ross, the Doncaster-based web developer behind Digizu. We manage websites and SEO for UK businesses and keep improving them after launch.')
 
 @section('content')
     <section class="marketing-hero">
         <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
-            <p class="text-base font-medium sm:text-sm text-garden">About Sitewell</p>
+            <p class="text-base font-medium sm:text-sm text-garden">About Digizu</p>
             <h1 class="mt-5 max-w-[19ch] font-sans text-4xl font-medium tracking-tight text-balance sm:text-6xl">Your website needs looking after.</h1>
-            <p class="mt-6 max-w-[60ch] text-pretty text-lg leading-8 text-ink/65">I’m Ross, a web developer based in Doncaster. I built Sitewell to keep improving business websites after launch.</p>
+            <p class="mt-6 max-w-[60ch] text-pretty text-lg leading-8 text-ink/65">I’m Ross, a web developer based in Doncaster. I built Digizu to keep improving business websites after launch.</p>
         </div>
     </section>
 

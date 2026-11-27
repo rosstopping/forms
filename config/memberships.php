@@ -19,7 +19,7 @@ return [
             'summary' => 'One website included',
             'features' => [
                 'Free website included if you need one',
-                'Bring your existing site or take your Sitewell website with you',
+                'Bring your existing site or take your website with you',
                 'Website health and SEO audits managed by our specialists',
                 'Practical fixes and a clear weekly report',
                 'Managed forms, spam protection, and customer replies',
@@ -35,7 +35,7 @@ return [
             'summary' => 'Everything in Essential',
             'features' => [
                 'Free website included if you need one',
-                'Bring your existing site or take your Sitewell website with you',
+                'Bring your existing site or take your website with you',
                 'Search performance interpreted by our SEO specialists',
                 'Striking-distance keywords and commercial opportunities',
                 'Automated competitor research to guide your content and SEO improvements',
@@ -54,7 +54,7 @@ return [
             'summary' => 'Everything in Growth',
             'features' => [
                 'Free website included if you need one',
-                'Bring your existing site or take your Sitewell website with you',
+                'Bring your existing site or take your website with you',
                 'Up to three scheduled content improvements per week, prepared for review',
                 'Broader, weekly competitor research with deeper page comparisons',
                 'Specialist Google Business Profile management',

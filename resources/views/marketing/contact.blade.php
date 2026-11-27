@@ -1,14 +1,14 @@
 @extends('layouts.marketing')
 
-@section('title', 'Contact Sitewell')
-@section('meta_description', 'Talk to a Sitewell specialist about managing your website, SEO, enquiries, content, and local visibility.')
+@section('title', 'Contact Digizu')
+@section('meta_description', 'Talk to a Digizu specialist about managing your website, SEO, enquiries, content, and local visibility.')
 
 @section('content')
     <section class="marketing-hero">
         <div class="mx-auto grid max-w-7xl gap-10 px-5 sm:px-8 lg:grid-cols-[2fr_3fr] lg:px-10">
             <div>
-                <p class="text-base font-medium sm:text-sm text-garden">Contact Sitewell</p>
-                <h1 class="mt-5 max-w-[20ch] font-sans text-4xl font-medium tracking-tight text-balance sm:text-6xl">Talk to Sitewell.</h1>
+                <p class="text-base font-medium sm:text-sm text-garden">Contact Digizu</p>
+                <h1 class="mt-5 max-w-[20ch] font-sans text-4xl font-medium tracking-tight text-balance sm:text-6xl">Talk to Digizu.</h1>
                 <p class="mt-6 max-w-[48ch] text-pretty text-lg text-ink/65 sm:text-base">Tell us about your business and your website. One of our specialists will assess what needs attention and explain how we can manage its website health, SEO, and enquiries for you.</p>
                 <div class="mt-8 border-y border-ink/15 py-5">
                     <p class="text-base font-medium sm:text-sm text-garden">Prefer to talk?</p>

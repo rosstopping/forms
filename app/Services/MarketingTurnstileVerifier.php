@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Support\PublicWebsite;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -45,6 +46,10 @@ class MarketingTurnstileVerifier
         }
 
         $expectedHost = Str::lower((string) (config('services.turnstile.marketing.hostname') ?: $requestHost));
+        $publicHost = parse_url(PublicWebsite::origin() ?? '', PHP_URL_HOST);
+        if (is_string($publicHost) && Str::lower($requestHost) === Str::lower($publicHost)) {
+            $expectedHost = Str::lower($publicHost);
+        }
 
         return Str::lower((string) $response->json('hostname')) === $expectedHost;
     }

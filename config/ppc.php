@@ -6,12 +6,12 @@ return [
     'pages' => [
         'doncaster' => [
             'path' => 'seo/doncaster',
-            'title' => 'SEO Company in Doncaster | Sitewell',
+            'title' => 'SEO Company in Doncaster | Digizu',
             'description' => 'A Doncaster-based SEO service that does the work. Website improvements, Google ranking tracking and weekly reporting, with no long-term contract.',
             'eyebrow' => 'Doncaster based. Personally managed.',
             'heading' => 'SEO company in Doncaster',
             'promise' => 'Your local SEO team. The work, taken care of.',
-            'intro' => 'Work directly with Ross, a web developer based in Doncaster, on your website and local search visibility. Sitewell reviews your pages, makes agreed improvements and reports on progress.',
+            'intro' => 'Work directly with Ross, a web developer based in Doncaster, on your website and local search visibility. Digizu reviews your pages, makes agreed improvements and reports on progress.',
             'problem_title' => 'SEO for your services and service area',
             'problem' => 'Customers need to know what you offer, where you work and how to contact you. We review the searches and pages relevant to your business, then agree which content and technical changes to make.',
             'priorities' => [
@@ -22,7 +22,7 @@ return [
             'example_title' => 'For a business serving Doncaster and nearby towns',
             'example' => 'If your homepage is trying to cover every service and location, we can separate the important services, explain your real coverage and improve the route to an enquiry. Each page should explain a genuine service or answer a customer question.',
             'faqs' => [
-                ['Are you based in Doncaster?', 'Yes. Ross is a web developer based in Doncaster. Sitewell works with local businesses as well as businesses elsewhere in the UK.'],
+                ['Are you based in Doncaster?', 'Yes. Ross is a web developer based in Doncaster. Digizu works with local businesses as well as businesses elsewhere in the UK.'],
                 ['Can you help me appear for searches outside Doncaster?', 'Yes, where you genuinely serve those areas. We agree the services and locations that matter, then improve relevant pages without manufacturing thin location pages.'],
             ],
             'related' => ['local', 'managed'],
@@ -30,7 +30,7 @@ return [
         'local' => [
             'path' => 'local-seo',
             'canonical_landing' => 'local-seo-services',
-            'title' => 'Local SEO Services, Fully Managed | Sitewell',
+            'title' => 'Local SEO Services, Fully Managed | Digizu',
             'description' => 'Local SEO for businesses that want more relevant local enquiries. We improve your website, monitor search performance and report on the work each week.',
             'eyebrow' => 'For businesses serving a local area',
             'heading' => 'Local SEO services',
@@ -46,22 +46,22 @@ return [
             'example_title' => 'For a local service business with one general services page',
             'example' => 'We might create a clearer page for your most important service, add genuine coverage details and improve the contact route on mobile. The aim is to help a nearby customer understand the offer and take the next step.',
             'faqs' => [
-                ['Is Google Business Profile management included?', 'Website-focused local SEO is part of the managed SEO work. Hands-on Google Business Profile management, posts and review replies are available with Complete. We will explain the scope before you commit.'],
-                ['Can you guarantee a place in the Maps results?', 'No. Google controls those results. We can improve relevant website signals and, on Complete, manage your Business Profile, but we do not promise a Maps position.'],
+                ['Is Google Business Profile management included?', 'Website-focused local SEO is part of the managed SEO work. Hands-on Business Profile management, posts and review replies can be included in an agreed SEO scope. We will explain the scope before you commit.'],
+                ['Can you guarantee a place in the Maps results?', 'No. Google controls those results. We can improve relevant website signals and agree any Business Profile work with you, but we do not promise a Maps position.'],
             ],
             'related' => ['doncaster', 'small-business'],
         ],
         'small-business' => [
             'path' => 'small-business-seo',
             'canonical_landing' => 'seo-for-small-businesses',
-            'title' => 'SEO for Small Businesses | Sitewell',
+            'title' => 'SEO for Small Businesses | Digizu',
             'description' => 'Fully managed SEO for small businesses. Practical website improvements and weekly updates. No long-term contract.',
             'eyebrow' => 'For owners with a business to run',
             'heading' => 'SEO for small businesses',
             'promise' => 'Less on your to-do list. More care for your website.',
             'intro' => 'You do not need another SEO tool to learn. We find what needs attention, improve your pages and keep you informed with a clear weekly update.',
             'problem_title' => 'Your website should not become your second job',
-            'problem' => 'There is always another SEO recommendation, another tool and another thing to learn. Meanwhile, your service pages stay the same. Sitewell gives you a person responsible for turning useful findings into completed work.',
+            'problem' => 'There is always another SEO recommendation, another tool and another thing to learn. Meanwhile, your service pages stay the same. Digizu gives you a person responsible for turning useful findings into completed work.',
             'priorities' => [
                 ['Focus on the work that matters first', 'Start with your main services and useful search opportunities, rather than chasing every possible keyword.'],
                 ['Agree the work up front', 'Set priorities for your website before the work begins, with no long-term contract.'],
@@ -78,7 +78,7 @@ return [
         'managed' => [
             'path' => 'managed-seo',
             'canonical_landing' => 'managed-seo-services',
-            'title' => 'Fully Managed SEO Services | Sitewell',
+            'title' => 'Fully Managed SEO Services | Digizu',
             'description' => 'Fully managed SEO that gets implemented. Website audits, content, technical improvements, ranking tracking and clear weekly reporting.',
             'eyebrow' => 'Analysis, implementation and ongoing care',
             'heading' => 'Fully managed SEO',
@@ -94,15 +94,15 @@ return [
             'example_title' => 'For a business with an audit waiting to be actioned',
             'example' => 'We review the findings against your current website, choose the most useful fixes and work through them. Content changes remain reviewable, and changes that depend on your platform or another supplier are made explicit.',
             'faqs' => [
-                ['What does fully managed actually mean?', 'Sitewell handles the analysis, prioritisation and agreed website improvements. You provide access and business context, and approve changes where needed. We do not simply send you a list and leave implementation to you.'],
-                ['Does managed SEO mean unlimited work?', 'No. Work is prioritised within your plan and the capabilities of your website. Growth includes up to one scheduled content improvement per week, prepared for review; it is not a promise of unlimited articles or a complete rebuild every month.'],
+                ['What does fully managed actually mean?', 'Digizu handles the analysis, prioritisation and agreed website improvements. You provide access and business context, and approve changes where needed. We do not simply send you a list and leave implementation to you.'],
+                ['Does managed SEO mean unlimited work?', 'No. Work is prioritised within your plan and the capabilities of your website. Your quote sets the content scope and review schedule. It does not promise unlimited articles or a complete rebuild every month.'],
             ],
             'related' => ['rankings', 'small-business'],
         ],
         'rankings' => [
             'path' => 'improve-google-rankings',
-            'title' => 'Improve Your Google Rankings | Sitewell',
-            'description' => 'Find out what may be holding your website back on Google. Sitewell checks your website, improves your pages and monitors search progress.',
+            'title' => 'Improve Your Google Rankings | Digizu',
+            'description' => 'Find out what may be holding your website back on Google. Digizu checks your website, improves your pages and monitors search progress.',
             'eyebrow' => 'For websites that should be easier to find',
             'heading' => 'Improve your Google rankings',
             'promise' => 'Find what is holding your website back. Then work on it.',
@@ -125,7 +125,7 @@ return [
     ],
     'faqs' => [
         ['How quickly will rankings improve?', 'SEO takes time. Some website fixes can be made quickly, but search results depend on competition, your starting point and Google. Expect ongoing work and measurement over months, with no promised ranking or deadline.'],
-        ['Can you work with my existing website or WordPress?', 'Yes. We review the platform and available access first. Sitewell supports WordPress, the Sitewell Pixel and connected repositories where appropriate. We explain any limits before starting; a new website is not automatically required.'],
+        ['Can you work with my existing website or WordPress?', 'Yes. We review the platform and available access first. Digizu supports WordPress, the Digizu Pixel and connected repositories where appropriate. We explain any limits before starting; a new website is not automatically required.'],
         ['Do I need to change website provider?', 'Not necessarily. We can work with your existing setup when it supports the improvements needed. If a restriction requires help from your provider, we will explain that rather than promise access we do not have.'],
         ['How do you access my website?', 'The initial check uses public information only. For managed work, we agree a suitable connection and permissions with you. Never enter a website password into the audit form.'],
         ['What exactly do you change?', 'Depending on the priorities, we improve titles, headings, content, internal links, service pages and technical SEO issues. We agree scope and keep significant content and business decisions reviewable.'],

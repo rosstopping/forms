@@ -34,13 +34,13 @@ What do you most want your website to bring you — enquiries, bookings or sales
 
 ## Want me to take care of this?
 
-If you’d like us to handle these improvements, we can agree the first steps on a short call. Sitewell can then look after your website and keep working on its search visibility at the level of support you choose.
+If you’d like us to handle these improvements, we can agree the first steps on a short call. Digizu can then look after your website and keep working on its search visibility at the level of support you choose.
 
 <x-mail::button :url="$bookingUrl" color="secondary">
 Book a call with Ross
 </x-mail::button>
 
-Ross at Sitewell
+Ross at Digizu
 
 @if ($audit->marketing_consent_at)
 You opted into ongoing website advice. [Unsubscribe]({{ $preferencesUrl }}) at any time.

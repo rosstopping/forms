@@ -3,7 +3,7 @@
 return [
     'landing_pages' => [
         'seo-website-audits' => [
-            'seo_title' => 'SEO website audits | Sitewell',
+            'seo_title' => 'SEO website audits | Digizu',
             'title' => 'SEO website audits',
             'eyebrow' => 'SEO website audits',
             'meta_description' => 'Find the website and search issues worth fixing first, with page-level evidence, practical priorities and a clear route from review to improvement.',
@@ -12,7 +12,7 @@ return [
                 [
                     'heading' => 'Start with a decision, not a score',
                     'paragraphs' => [
-                        'An audit should help you decide what to fix, what to investigate and what can wait. Sitewell reviews website health and SEO findings in the context of the pages that matter to the business. A long list of warnings is not useful if it does not identify the next step.',
+                        'An audit should help you decide what to fix, what to investigate and what can wait. Digizu reviews website health and SEO findings in the context of the pages that matter to the business. A long list of warnings is not useful if it does not identify the next step.',
                         'The initial website review gives a starting point. Ongoing interpretation can go further when the right website access and matching Search Console data are connected.',
                     ],
                 ],
@@ -47,7 +47,7 @@ return [
                     'heading' => 'From findings to an agreed priority',
                     'paragraphs' => [
                         'We distinguish problems that affect important journeys from lower-impact housekeeping. Some findings can be checked directly; others need business knowledge or connected search data. A missing description and an inaccessible service page should not receive the same response.',
-                        'Website health and SEO audits are included in Sitewell’s ongoing care. The implementation route depends on your website’s connection and the agreed work. An audit is not a promise that every issue will be repaired immediately.',
+                        'Website health and SEO audits are included in Digizu’s ongoing care. The implementation route depends on your website’s connection and the agreed work. An audit is not a promise that every issue will be repaired immediately.',
                     ],
                 ],
                 [
@@ -133,16 +133,16 @@ return [
             ],
         ],
         'google-business-profile-optimisation' => [
-            'seo_title' => 'Google Business Profile optimisation | Sitewell',
+            'seo_title' => 'Google Business Profile optimisation | Digizu',
             'title' => 'Google Business Profile optimisation',
             'eyebrow' => 'Google Business Profile optimisation',
-            'meta_description' => 'Keep your local business information useful and accurate with Sitewell’s Complete plan: profile checks, recommended changes, posts and review replies.',
-            'description' => 'Keep your local business information useful and accurate with Sitewell’s Complete plan: profile checks, recommended changes, posts and review replies.',
+            'meta_description' => 'Keep your local business information useful and accurate with an agreed Digizu service covering profile checks, recommended changes, posts and review replies.',
+            'description' => 'Keep your local business information useful and accurate with an agreed Digizu service covering profile checks, recommended changes, posts and review replies.',
             'sections' => [
                 [
                     'heading' => 'Treat the profile as a customer touchpoint',
                     'paragraphs' => [
-                        'People may see your hours, services and reviews before they ever open your website. Incorrect information wastes that opportunity. Sitewell’s Complete plan includes specialist Business Profile management alongside website and SEO work.',
+                        'People may see your hours, services and reviews before they ever open your website. Incorrect information wastes that opportunity. Ross can agree Business Profile management alongside your website and SEO work.',
                         'We connect profile health findings with recommended changes, prepared posts and customer review replies. The business needs to confirm details such as opening hours, service scope and anything that could misrepresent the offer.',
                     ],
                 ],
@@ -190,7 +190,7 @@ return [
                 [
                     'heading' => 'Choose the scope that fits your business',
                     'paragraphs' => [
-                        'Complete is the published plan for managed Business Profile work. Website-focused local improvements can be part of a broader SEO plan, but do not assume every plan includes profile management.',
+                        'Business Profile work is agreed separately as part of your SEO scope. Website-focused local improvements do not automatically include profile management.',
                     ],
                     'link' => [
                         'route' => 'marketing.pricing',
@@ -205,7 +205,7 @@ return [
             'faqs' => [
                 [
                     'Which plan includes Business Profile management?',
-                    'Complete includes specialist Business Profile management, profile health checks, recommended changes, prepared posts and review replies.',
+                    'An agreed Business Profile service can include profile checks, recommended changes, prepared posts and review replies.',
                 ],
                 [
                     'Can you guarantee a Google Maps ranking?',
@@ -223,7 +223,7 @@ return [
                     'What is included?',
                     'Which plan manages profiles?',
                 ],
-                'customer_problem' => 'Keep your local business information useful and accurate with Sitewell’s Complete plan: profile checks, recommended changes, posts and review replies.',
+                'customer_problem' => 'Keep your local business information useful and accurate with an agreed Digizu service covering profile checks, recommended changes, posts and review replies.',
                 'sitewell_capability' => 'Complete Business Profile management',
                 'internal_links' => [
                     [
@@ -262,7 +262,7 @@ return [
             ],
         ],
         'seo-rank-tracking-services' => [
-            'seo_title' => 'SEO rank tracking services | Sitewell',
+            'seo_title' => 'SEO rank tracking services | Digizu',
             'title' => 'SEO rank tracking services',
             'eyebrow' => 'SEO rank tracking services',
             'meta_description' => 'Monitor selected search terms with page and market context, then connect ranking observations to Search Console clicks and useful website improvements.',
@@ -271,14 +271,14 @@ return [
                 [
                     'heading' => 'Choose keywords that could lead to worthwhile work',
                     'paragraphs' => [
-                        'A large keyword list is not a strategy. Start with services, areas and customer needs that match the business. Sitewell can record selected target-keyword rankings and use search performance to help interpret the pages behind them.',
+                        'A large keyword list is not a strategy. Start with services, areas and customer needs that match the business. Digizu can record selected target-keyword rankings and use search performance to help interpret the pages behind them.',
                         'Include the phrases that matter even if their search volume appears modest. A precise service query can be more commercially useful than a broad term that attracts the wrong audience.',
                     ],
                 ],
                 [
                     'heading' => 'Know what the observation represents',
                     'paragraphs' => [
-                        'Tracked results are observations under the configured market, language and device settings. They are not a live view of what every customer sees. Sitewell retains observation context, including the ranking URL and whether a result came from a cached check.',
+                        'Tracked results are observations under the configured market, language and device settings. They are not a live view of what every customer sees. Digizu retains observation context, including the ranking URL and whether a result came from a cached check.',
                         'Current target-keyword checks use desktop organic results. Do not treat them as a street-by-street Google Maps grid or a promise of mobile positions.',
                     ],
                 ],
@@ -318,7 +318,7 @@ return [
                     'heading' => 'Turn a change into a useful question',
                     'paragraphs' => [
                         'If the ranking URL changes, check whether a different page is competing for the same intent. If a position falls, compare consistent periods and look for site changes before assuming an algorithm penalty.',
-                        'Sitewell’s managed SEO work can connect observations with page improvements. Agree the tracking scope and settings with the team rather than assuming unlimited terms or continuous checks.',
+                        'Digizu’s managed SEO work can connect observations with page improvements. Agree the tracking scope and settings with the team rather than assuming unlimited terms or continuous checks.',
                     ],
                     'link' => [
                         'route' => 'marketing.article',
@@ -396,7 +396,7 @@ return [
             ],
         ],
         'technical-seo-services' => [
-            'seo_title' => 'Technical SEO services | Sitewell',
+            'seo_title' => 'Technical SEO services | Digizu',
             'title' => 'Technical SEO services',
             'eyebrow' => 'Technical SEO services',
             'meta_description' => 'Identify technical obstacles on important pages and manage agreed improvements, with clear priorities across access, structure and website health.',
@@ -406,7 +406,7 @@ return [
                     'heading' => 'Fix the obstacle before expanding the website',
                     'paragraphs' => [
                         'A useful service page cannot earn organic visits if it is accidentally excluded from indexing or buried behind broken links. Technical SEO investigates those obstacles and separates them from a content or demand problem.',
-                        'Sitewell’s website health checks review technical and on-page findings. We prioritise practical work around the pages that support the business, instead of pursuing a perfect score across every URL.',
+                        'Digizu’s website health checks review technical and on-page findings. We prioritise practical work around the pages that support the business, instead of pursuing a perfect score across every URL.',
                     ],
                 ],
                 [
@@ -439,7 +439,7 @@ return [
                 [
                     'heading' => 'Make implementation responsibilities explicit',
                     'paragraphs' => [
-                        'The right fix depends on the platform and how Sitewell connects to it. Metadata changes, template work and infrastructure changes have different access requirements. Agree the affected pages, delivery route and verification before work starts.',
+                        'The right fix depends on the platform and how Digizu connects to it. Metadata changes, template work and infrastructure changes have different access requirements. Agree the affected pages, delivery route and verification before work starts.',
                         'Do not assume technical SEO means rebuilding the whole site. Equally, a text edit cannot resolve every hosting, application or booking-system problem.',
                     ],
                 ],
@@ -526,7 +526,7 @@ return [
             ],
         ],
         'seo-content-writing-services' => [
-            'seo_title' => 'SEO content writing services | Sitewell',
+            'seo_title' => 'SEO content writing services | Digizu',
             'title' => 'SEO content writing services',
             'eyebrow' => 'SEO content writing services',
             'meta_description' => 'Plan and prepare useful service pages, articles and content improvements around real business questions, with specialist review and a clear publishing route.',
@@ -535,7 +535,7 @@ return [
                 [
                     'heading' => 'Choose the page before choosing a word count',
                     'paragraphs' => [
-                        'The first question is whether a new page is needed. An existing service page may already attract the right searches but omit an important answer. Sitewell uses website findings, search activity and business priorities to decide whether to improve it or prepare something new.',
+                        'The first question is whether a new page is needed. An existing service page may already attract the right searches but omit an important answer. Digizu uses website findings, search activity and business priorities to decide whether to improve it or prepare something new.',
                         'Content should help someone understand the service or make a decision. We do not need a new article simply because a calendar has an empty slot.',
                     ],
                 ],
@@ -552,8 +552,8 @@ return [
                 [
                     'heading' => 'Preparation, review and publishing are separate steps',
                     'paragraphs' => [
-                        'Sitewell prepares content and improvements for review. Business facts, regulated advice and significant claims need the right person’s approval. The implementation route depends on the website connection.',
-                        'Growth includes up to one scheduled content improvement per week; Complete includes up to three. Scheduled work depends on eligible tasks and a connected repository. These are preparation limits, not a guarantee of a fixed number of new published articles.',
+                        'Digizu prepares content and improvements for review. Business facts, regulated advice and significant claims need the right person’s approval. The implementation route depends on the website connection.',
+                        'Ross agrees the content scope and review schedule before work starts. Scheduled work depends on eligible tasks and your website setup. Preparation does not guarantee a fixed number of new published articles.',
                     ],
                     'link' => [
                         'route' => 'marketing.feature',
@@ -603,7 +603,7 @@ return [
                 ],
                 [
                     'How often is content prepared?',
-                    'Growth allows up to one scheduled improvement per week and Complete up to three, subject to eligible work and a connected repository. Work is prepared for review before publication.',
+                    'The number and frequency of improvements are agreed for your website, subject to eligible work and the connection needed to prepare changes. Work is prepared for review before publication.',
                 ],
             ],
             'brief' => [
@@ -652,7 +652,7 @@ return [
         'plumbers' => [
             'eyebrow' => 'Plumbers',
             'title' => 'SEO for plumbers',
-            'seo_title' => 'SEO for plumbers | Sitewell',
+            'seo_title' => 'SEO for plumbers | Digizu',
             'description' => 'Win the plumbing enquiries you can actually serve. Separate urgent call-outs from planned work, show your coverage clearly and make it easy to call from a phone.',
             'sections' => [
                 [
@@ -692,7 +692,7 @@ return [
                 [
                     'heading' => 'Count answerable calls, not every visit',
                     'paragraphs' => [
-                        'Record which enquiries are in your working area and which turn into jobs. A rise in DIY repair traffic may add little value if callers need a service you do not provide. Sitewell can use search performance to prioritise plumbing pages and keep connected form enquiries visible.',
+                        'Record which enquiries are in your working area and which turn into jobs. A rise in DIY repair traffic may add little value if callers need a service you do not provide. Digizu can use search performance to prioritise plumbing pages and keep connected form enquiries visible.',
                     ],
                     'link' => [
                         'route' => 'marketing.article',
@@ -749,7 +749,7 @@ return [
         'heating-engineers' => [
             'eyebrow' => 'Heating engineers',
             'title' => 'SEO for heating engineers',
-            'seo_title' => 'SEO for heating engineers | Sitewell',
+            'seo_title' => 'SEO for heating engineers | Digizu',
             'description' => 'Make boiler servicing, heating repairs and replacement enquiries easier to find and qualify, with service pages that reflect the systems and areas you actually cover.',
             'sections' => [
                 [
@@ -780,14 +780,14 @@ return [
                             'seo-content-writing-services',
                         ],
                         'label' => 'managed SEO content',
-                        'before' => 'Sitewell’s ',
+                        'before' => 'Digizu’s ',
                         'after' => ' can keep service information aligned with what the business is offering.',
                     ],
                 ],
                 [
                     'heading' => 'What should better visibility achieve?',
                     'paragraphs' => [
-                        'Track the mix of servicing, repair and replacement enquiries, not simply total traffic. If installation capacity is limited, attracting more of those calls may be less useful than filling servicing appointments. Give Sitewell that commercial context when agreeing page priorities.',
+                        'Track the mix of servicing, repair and replacement enquiries, not simply total traffic. If installation capacity is limited, attracting more of those calls may be less useful than filling servicing appointments. Give Digizu that commercial context when agreeing page priorities.',
                     ],
                     'link' => [
                         'route' => 'marketing.industry',
@@ -820,7 +820,7 @@ return [
                             'seo-content-writing-services',
                         ],
                         'label' => 'managed SEO content',
-                        'before' => 'Sitewell’s ',
+                        'before' => 'Digizu’s ',
                         'after' => ' can keep service information aligned with what the business is offering.',
                     ],
                     [
@@ -844,7 +844,7 @@ return [
         'roofers' => [
             'eyebrow' => 'Roofers',
             'title' => 'SEO for roofers',
-            'seo_title' => 'SEO for roofers | Sitewell',
+            'seo_title' => 'SEO for roofers | Digizu',
             'description' => 'Help homeowners distinguish a roof repair from a replacement project, see evidence of your work and request an inspection with useful details.',
             'sections' => [
                 [
@@ -882,7 +882,7 @@ return [
                 [
                     'heading' => 'Prioritise the roof types you want to work on',
                     'paragraphs' => [
-                        'Sitewell can strengthen the pages for the jobs you actually want, use search data to identify gaps and monitor connected enquiries. Technical checks also matter on image-heavy galleries: compress large files without losing useful detail and keep captions readable.',
+                        'Digizu can strengthen the pages for the jobs you actually want, use search data to identify gaps and monitor connected enquiries. Technical checks also matter on image-heavy galleries: compress large files without losing useful detail and keep captions readable.',
                     ],
                     'link' => [
                         'route' => 'marketing.landing',
@@ -939,7 +939,7 @@ return [
         'electricians' => [
             'eyebrow' => 'Electricians',
             'title' => 'SEO for electricians',
-            'seo_title' => 'SEO for electricians | Sitewell',
+            'seo_title' => 'SEO for electricians | Digizu',
             'description' => 'Make your electrical services easier to choose, from fault-finding enquiries to planned installations, with clear scope, service areas and evidence of competence.',
             'sections' => [
                 [
@@ -977,7 +977,7 @@ return [
                 [
                     'heading' => 'Judge enquiries by fit',
                     'paragraphs' => [
-                        'Sitewell can review search terms and improve the pages receiving relevant attention. Compare enquiries for the work you want with general traffic, then adjust the content. A popular advice page is not a substitute for a clear installation or inspection page.',
+                        'Digizu can review search terms and improve the pages receiving relevant attention. Compare enquiries for the work you want with general traffic, then adjust the content. A popular advice page is not a substitute for a clear installation or inspection page.',
                     ],
                     'link' => [
                         'route' => 'marketing.article',
@@ -1034,7 +1034,7 @@ return [
         'builders' => [
             'eyebrow' => 'Builders',
             'title' => 'SEO for builders',
-            'seo_title' => 'SEO for builders | Sitewell',
+            'seo_title' => 'SEO for builders | Digizu',
             'description' => 'Attract better-qualified building enquiries with project pages that explain the work, the practical constraints and what happens before a quotation.',
             'sections' => [
                 [
@@ -1072,7 +1072,7 @@ return [
                 [
                     'heading' => 'Build visibility around feasible projects',
                     'paragraphs' => [
-                        'Sitewell can prioritise service pages using search data and your capacity, then help keep project information current. Local pages should explain genuine working coverage and relevant projects, rather than imply separate offices across a county.',
+                        'Digizu can prioritise service pages using search data and your capacity, then help keep project information current. Local pages should explain genuine working coverage and relevant projects, rather than imply separate offices across a county.',
                     ],
                     'link' => [
                         'route' => 'marketing.article',
@@ -1129,7 +1129,7 @@ return [
         'kitchen-companies' => [
             'eyebrow' => 'Kitchen companies',
             'title' => 'SEO for kitchen companies',
-            'seo_title' => 'SEO for kitchen companies | Sitewell',
+            'seo_title' => 'SEO for kitchen companies | Digizu',
             'description' => 'Help kitchen buyers move from inspiration to a showroom visit or design appointment, with clear ranges, real installations and useful comparison information.',
             'sections' => [
                 [
@@ -1167,7 +1167,7 @@ return [
                 [
                     'heading' => 'Connect ranges to local demand',
                     'paragraphs' => [
-                        'Sitewell can improve showroom and service pages alongside supporting content, using Search Console evidence to choose priorities. Measure design appointments and qualified enquiries separately from inspiration traffic.',
+                        'Digizu can improve showroom and service pages alongside supporting content, using Search Console evidence to choose priorities. Measure design appointments and qualified enquiries separately from inspiration traffic.',
                     ],
                     'link' => [
                         'route' => 'marketing.landing',
@@ -1224,7 +1224,7 @@ return [
         'bathroom-fitters' => [
             'eyebrow' => 'Bathroom fitters',
             'title' => 'SEO for bathroom fitters',
-            'seo_title' => 'SEO for bathroom fitters | Sitewell',
+            'seo_title' => 'SEO for bathroom fitters | Digizu',
             'description' => 'Explain the bathroom projects you take on, show how installation works and help local homeowners request a useful survey or quotation.',
             'sections' => [
                 [
@@ -1255,14 +1255,14 @@ return [
                             'local-seo-services',
                         ],
                         'label' => 'local SEO services',
-                        'before' => 'Sitewell’s ',
+                        'before' => 'Digizu’s ',
                         'after' => ' can connect those details with the searches made by nearby homeowners.',
                     ],
                 ],
                 [
                     'heading' => 'Keep inspiration connected to the fitting service',
                     'paragraphs' => [
-                        'Advice about tile colours may attract readers outside your area. Link relevant ideas to the fitting page and check whether enquiries match your coverage. Sitewell can review that search activity and improve the pages that support actual projects.',
+                        'Advice about tile colours may attract readers outside your area. Link relevant ideas to the fitting page and check whether enquiries match your coverage. Digizu can review that search activity and improve the pages that support actual projects.',
                     ],
                     'link' => [
                         'route' => 'marketing.industry',
@@ -1295,7 +1295,7 @@ return [
                             'local-seo-services',
                         ],
                         'label' => 'local SEO services',
-                        'before' => 'Sitewell’s ',
+                        'before' => 'Digizu’s ',
                         'after' => ' can connect those details with the searches made by nearby homeowners.',
                     ],
                     [
@@ -1319,7 +1319,7 @@ return [
         'landscapers' => [
             'eyebrow' => 'Landscapers',
             'title' => 'SEO for landscapers',
-            'seo_title' => 'SEO for landscapers | Sitewell',
+            'seo_title' => 'SEO for landscapers | Digizu',
             'description' => 'Reach customers planning garden changes with pages that distinguish design, construction and ongoing care, supported by genuine outdoor project evidence.',
             'sections' => [
                 [
@@ -1365,7 +1365,7 @@ return [
                             'managed-seo-services',
                         ],
                         'label' => 'managed SEO',
-                        'before' => 'Sitewell can use ',
+                        'before' => 'Digizu can use ',
                         'after' => ' to connect these project priorities with the website work.',
                     ],
                 ],
@@ -1399,7 +1399,7 @@ return [
                             'managed-seo-services',
                         ],
                         'label' => 'managed SEO',
-                        'before' => 'Sitewell can use ',
+                        'before' => 'Digizu can use ',
                         'after' => ' to connect these project priorities with the website work.',
                     ],
                 ],
@@ -1414,7 +1414,7 @@ return [
         'estate-agents' => [
             'eyebrow' => 'Estate agents',
             'title' => 'SEO for estate agents',
-            'seo_title' => 'SEO for estate agents | Sitewell',
+            'seo_title' => 'SEO for estate agents | Digizu',
             'description' => 'Build search visibility beyond short-lived property listings, with useful branch, valuation and area pages that help vendors and landlords choose an agent.',
             'sections' => [
                 [
@@ -1449,7 +1449,7 @@ return [
                 [
                     'heading' => 'Track instructions as well as property interest',
                     'paragraphs' => [
-                        'Sitewell can help improve valuation and management pages using search performance. Your team should also record whether enquiries become appointments or instructions; buyer browsing alone is a weak measure of agency growth.',
+                        'Digizu can help improve valuation and management pages using search performance. Your team should also record whether enquiries become appointments or instructions; buyer browsing alone is a weak measure of agency growth.',
                     ],
                     'link' => [
                         'route' => 'marketing.article',
@@ -1506,7 +1506,7 @@ return [
         'solicitors' => [
             'eyebrow' => 'Solicitors',
             'title' => 'SEO for solicitors',
-            'seo_title' => 'SEO for solicitors | Sitewell',
+            'seo_title' => 'SEO for solicitors | Digizu',
             'description' => 'Make practice areas, people and enquiry routes easier to assess, with clear service pages that build trust without promising a legal outcome.',
             'sections' => [
                 [
@@ -1541,7 +1541,7 @@ return [
                 [
                     'heading' => 'Choose useful visibility over broad legal traffic',
                     'paragraphs' => [
-                        'An article answering a general legal question may attract readers the firm cannot assist. Sitewell can use Search Console data to prioritise practice pages and supporting content, while the firm retains review of legal accuracy.',
+                        'An article answering a general legal question may attract readers the firm cannot assist. Digizu can use Search Console data to prioritise practice pages and supporting content, while the firm retains review of legal accuracy.',
                     ],
                     'link' => [
                         'route' => 'marketing.landing',
@@ -1598,7 +1598,7 @@ return [
         'accountants' => [
             'eyebrow' => 'Accountants',
             'title' => 'SEO for accountants',
-            'seo_title' => 'SEO for accountants | Sitewell',
+            'seo_title' => 'SEO for accountants | Digizu',
             'description' => 'Help prospective clients understand who you work with, what is included and how to switch, instead of making them decode a list of accounting terms.',
             'sections' => [
                 [
@@ -1619,7 +1619,7 @@ return [
                     'heading' => 'Keep deadline content under review',
                     'paragraphs' => [
                         'Tax and filing information changes. Assign a qualified reviewer and a review date to articles that discuss obligations, and link to the relevant official source. An old deadline article can attract traffic while damaging trust.',
-                        'Sitewell can prepare content improvements, but financial or tax guidance needs the firm’s expert sign-off.',
+                        'Digizu can prepare content improvements, but financial or tax guidance needs the firm’s expert sign-off.',
                     ],
                     'link' => [
                         'route' => 'marketing.landing',
@@ -1691,7 +1691,7 @@ return [
         'dentists' => [
             'eyebrow' => 'Dentists',
             'title' => 'SEO for dentists',
-            'seo_title' => 'SEO for dentists | Sitewell',
+            'seo_title' => 'SEO for dentists | Digizu',
             'description' => 'Help prospective patients find the practice, understand appointment options and assess treatment information reviewed by the dental team.',
             'sections' => [
                 [
@@ -1729,7 +1729,7 @@ return [
                 [
                     'heading' => 'Measure useful appointments without exposing patient details',
                     'paragraphs' => [
-                        'Sitewell can improve public pages and review search visibility. Assess booking outcomes using appropriate aggregate information, keeping sensitive patient details out of marketing reports. The practice should approve clinical claims before publication.',
+                        'Digizu can improve public pages and review search visibility. Assess booking outcomes using appropriate aggregate information, keeping sensitive patient details out of marketing reports. The practice should approve clinical claims before publication.',
                     ],
                     'link' => [
                         'route' => 'marketing.article',
@@ -1786,7 +1786,7 @@ return [
         'physiotherapists' => [
             'eyebrow' => 'Physiotherapists',
             'title' => 'SEO for physiotherapists',
-            'seo_title' => 'SEO for physiotherapists | Sitewell',
+            'seo_title' => 'SEO for physiotherapists | Digizu',
             'description' => 'Connect local clinic searches with clear practitioner, appointment and service information, while keeping health content accurate and professionally reviewed.',
             'sections' => [
                 [
@@ -1824,7 +1824,7 @@ return [
                 [
                     'heading' => 'Keep local discovery connected to capacity',
                     'paragraphs' => [
-                        'Sitewell can review clinic and service-page visibility, prepare improvements and help keep connected enquiries visible. Use available appointment types and clinician capacity to guide priorities rather than pursuing every health keyword.',
+                        'Digizu can review clinic and service-page visibility, prepare improvements and help keep connected enquiries visible. Use available appointment types and clinician capacity to guide priorities rather than pursuing every health keyword.',
                     ],
                     'link' => [
                         'route' => 'marketing.landing',
@@ -1881,7 +1881,7 @@ return [
         'personal-trainers' => [
             'eyebrow' => 'Personal trainers',
             'title' => 'SEO for personal trainers',
-            'seo_title' => 'SEO for personal trainers | Sitewell',
+            'seo_title' => 'SEO for personal trainers | Digizu',
             'description' => 'Reach people looking for the training you actually offer, with clear locations, session formats and a realistic route to a first conversation.',
             'sections' => [
                 [
@@ -1916,7 +1916,7 @@ return [
                 [
                     'heading' => 'Measure the sessions you want to fill',
                     'paragraphs' => [
-                        'Use the timetable and training format to choose page priorities. Sitewell can strengthen those pages and monitor search performance; your booking records show whether suitable enquiries become clients.',
+                        'Use the timetable and training format to choose page priorities. Digizu can strengthen those pages and monitor search performance; your booking records show whether suitable enquiries become clients.',
                     ],
                     'link' => [
                         'route' => 'marketing.industry',
@@ -1973,7 +1973,7 @@ return [
         'online-coaches' => [
             'eyebrow' => 'Online coaches',
             'title' => 'SEO for online coaches',
-            'seo_title' => 'SEO for online coaches | Sitewell',
+            'seo_title' => 'SEO for online coaches | Digizu',
             'description' => 'Build visibility around a defined audience and coaching offer, so people can understand the fit, delivery and limits before booking a call.',
             'sections' => [
                 [
@@ -2008,7 +2008,7 @@ return [
                 [
                     'heading' => 'Measure suitable applications',
                     'paragraphs' => [
-                        'Sitewell can help identify which queries bring people to programme pages and prepare focused improvements. Track the quality of applications and attendance at calls alongside search visits, so broad informational traffic does not disguise a poor fit.',
+                        'Digizu can help identify which queries bring people to programme pages and prepare focused improvements. Track the quality of applications and attendance at calls alongside search visits, so broad informational traffic does not disguise a poor fit.',
                     ],
                     'link' => [
                         'route' => 'marketing.landing',
@@ -2065,7 +2065,7 @@ return [
         'restaurants' => [
             'eyebrow' => 'Restaurants',
             'title' => 'SEO for restaurants',
-            'seo_title' => 'SEO for restaurants | Sitewell',
+            'seo_title' => 'SEO for restaurants | Digizu',
             'description' => 'Make menus, opening hours and booking options easy to find, so nearby diners can decide and reserve without chasing information across several platforms.',
             'sections' => [
                 [
@@ -2096,14 +2096,14 @@ return [
                             'google-business-profile-optimisation',
                         ],
                         'label' => 'profile optimisation',
-                        'before' => 'Sitewell’s ',
+                        'before' => 'Digizu’s ',
                         'after' => ' can help keep local discovery connected to accurate business details.',
                     ],
                 ],
                 [
                     'heading' => 'Evaluate bookings, not menu views alone',
                     'paragraphs' => [
-                        'Searches and menu views indicate interest, but they do not prove a table was booked. Compare visibility with your reservation data and quieter services. Sitewell can improve the public pages while the restaurant’s booking system remains the source for reservations.',
+                        'Searches and menu views indicate interest, but they do not prove a table was booked. Compare visibility with your reservation data and quieter services. Digizu can improve the public pages while the restaurant’s booking system remains the source for reservations.',
                     ],
                     'link' => [
                         'route' => 'marketing.article',
@@ -2136,7 +2136,7 @@ return [
                             'google-business-profile-optimisation',
                         ],
                         'label' => 'profile optimisation',
-                        'before' => 'Sitewell’s ',
+                        'before' => 'Digizu’s ',
                         'after' => ' can help keep local discovery connected to accurate business details.',
                     ],
                     [
@@ -2160,7 +2160,7 @@ return [
         'wedding-venues' => [
             'eyebrow' => 'Wedding venues',
             'title' => 'SEO for wedding venues',
-            'seo_title' => 'SEO for wedding venues | Sitewell',
+            'seo_title' => 'SEO for wedding venues | Digizu',
             'description' => 'Help couples compare location, capacity and the feel of your venue, with useful galleries and a clear path from research to a viewing.',
             'sections' => [
                 [
@@ -2199,7 +2199,7 @@ return [
                 [
                     'heading' => 'Work backwards from the planning season',
                     'paragraphs' => [
-                        'Publish useful comparison and planning information before peak enquiry periods. Sitewell can improve the venue pages and supporting content using search activity, while your team keeps availability and package details current. Track viewing requests and qualified enquiries rather than treating every brochure download as a booking.',
+                        'Publish useful comparison and planning information before peak enquiry periods. Digizu can improve the venue pages and supporting content using search activity, while your team keeps availability and package details current. Track viewing requests and qualified enquiries rather than treating every brochure download as a booking.',
                     ],
                     'link' => [
                         'route' => 'marketing.landing',
@@ -2256,7 +2256,7 @@ return [
         'hotels-and-holiday-accommodation' => [
             'eyebrow' => 'Hotels and holiday accommodation',
             'title' => 'SEO for hotels and holiday accommodation',
-            'seo_title' => 'Hotel & holiday accommodation SEO | Sitewell',
+            'seo_title' => 'Hotel & holiday accommodation SEO | Digizu',
             'description' => 'Make direct booking decisions easier with clear room or property information, destination context and reliable availability routes.',
             'sections' => [
                 [
@@ -2294,7 +2294,7 @@ return [
                 [
                     'heading' => 'Plan around occupancy, not generic traffic',
                     'paragraphs' => [
-                        'Sitewell can help prioritise room, property and local information pages based on search performance. Compare with your own booking and occupancy data before deciding that a visibility change improved revenue.',
+                        'Digizu can help prioritise room, property and local information pages based on search performance. Compare with your own booking and occupancy data before deciding that a visibility change improved revenue.',
                     ],
                     'link' => [
                         'route' => 'marketing.industry',
@@ -2351,7 +2351,7 @@ return [
         'car-garages' => [
             'eyebrow' => 'Car garages',
             'title' => 'SEO for car garages',
-            'seo_title' => 'SEO for car garages | Sitewell',
+            'seo_title' => 'SEO for car garages | Digizu',
             'description' => 'Help local motorists find the right workshop service, understand booking requirements and contact you with the vehicle details needed to help.',
             'sections' => [
                 [
@@ -2389,7 +2389,7 @@ return [
                 [
                     'heading' => 'Choose workshop priorities before keywords',
                     'paragraphs' => [
-                        'Sitewell can review service-page visibility and improve the pages for work you want to grow. Judge progress using suitable bookings and your workshop capacity, not broad automotive advice traffic.',
+                        'Digizu can review service-page visibility and improve the pages for work you want to grow. Judge progress using suitable bookings and your workshop capacity, not broad automotive advice traffic.',
                     ],
                     'link' => [
                         'route' => 'marketing.landing',
@@ -2446,7 +2446,7 @@ return [
         'cleaning-companies' => [
             'eyebrow' => 'Cleaning companies',
             'title' => 'SEO for cleaning companies',
-            'seo_title' => 'SEO for cleaning companies | Sitewell',
+            'seo_title' => 'SEO for cleaning companies | Digizu',
             'description' => 'Separate domestic, commercial and one-off cleaning enquiries so customers can understand the scope and request a realistic quote.',
             'sections' => [
                 [
@@ -2484,7 +2484,7 @@ return [
                 [
                     'heading' => 'Measure contracts and recurring work separately',
                     'paragraphs' => [
-                        'More one-off enquiries may not meet a goal of winning recurring commercial contracts. Sitewell can use search data to prioritise the right service pages, prepare clearer copy and keep connected enquiries organised.',
+                        'More one-off enquiries may not meet a goal of winning recurring commercial contracts. Digizu can use search data to prioritise the right service pages, prepare clearer copy and keep connected enquiries organised.',
                     ],
                     'link' => [
                         'route' => 'marketing.article',
@@ -2543,7 +2543,7 @@ return [
         [
             'slug' => 'why-competitors-rank-above-me',
             'title' => 'Why are my competitors ranking above me?',
-            'seo_title' => 'Why competitors rank above you | Sitewell',
+            'seo_title' => 'Why competitors rank above you | Digizu',
             'excerpt' => 'Compare the actual pages above yours, identify differences in intent and usefulness, and choose improvements that fit your business.',
             'category' => 'SEO problems',
             'date' => '24 September 2026',
@@ -2605,7 +2605,7 @@ return [
                 [
                     'heading' => 'Change the gap you can substantiate',
                     'paragraphs' => [
-                        'Pick a meaningful improvement, record when it goes live and compare the same query and page over a suitable period. Sitewell’s competitor research can inform this review, while managed page improvements turn a specific finding into work.',
+                        'Pick a meaningful improvement, record when it goes live and compare the same query and page over a suitable period. Digizu’s competitor research can inform this review, while managed page improvements turn a specific finding into work.',
                     ],
                     'link' => [
                         'route' => 'marketing.landing',
@@ -2665,7 +2665,7 @@ return [
         [
             'slug' => 'why-google-business-profile-not-ranking',
             'title' => 'Why isn’t my Google Business Profile ranking?',
-            'seo_title' => 'Google Business Profile not ranking? | Sitewell',
+            'seo_title' => 'Google Business Profile not ranking? | Digizu',
             'excerpt' => 'Work through profile eligibility, relevance and location before assuming a missing map result means your website SEO has failed.',
             'category' => 'SEO problems',
             'date' => '5 September 2026',
@@ -2717,7 +2717,7 @@ return [
                 [
                     'heading' => 'Where managed support fits',
                     'paragraphs' => [
-                        'Sitewell’s Complete plan includes profile health checks, recommended changes, posts and prepared review replies. These help maintain the profile; they cannot guarantee a map position or remove the effect of distance.',
+                        'An agreed Business Profile service can include profile checks, recommended changes, posts and prepared review replies. These help maintain the profile; they cannot guarantee a map position or remove the effect of distance.',
                     ],
                     'link' => [
                         'route' => 'marketing.landing',
@@ -2777,7 +2777,7 @@ return [
         [
             'slug' => 'website-traffic-but-no-enquiries',
             'title' => 'Why is my website getting traffic but no enquiries?',
-            'seo_title' => 'Website traffic but no enquiries? | Sitewell',
+            'seo_title' => 'Website traffic but no enquiries? | Digizu',
             'excerpt' => 'Find out whether the issue is unsuitable traffic, unclear service pages, a broken contact route or enquiries that are not being followed up.',
             'category' => 'SEO problems',
             'date' => '17 August 2026',
@@ -2839,7 +2839,7 @@ return [
                             'website-lead-generation',
                         ],
                         'label' => 'website lead generation',
-                        'before' => 'Sitewell’s ',
+                        'before' => 'Digizu’s ',
                         'after' => ' combines clearer journeys with connected forms and follow-up visibility.',
                     ],
                 ],
@@ -2879,7 +2879,7 @@ return [
                             'website-lead-generation',
                         ],
                         'label' => 'website lead generation',
-                        'before' => 'Sitewell’s ',
+                        'before' => 'Digizu’s ',
                         'after' => ' combines clearer journeys with connected forms and follow-up visibility.',
                     ],
                     [
@@ -2906,7 +2906,7 @@ return [
         [
             'slug' => 'page-two-to-page-one-google',
             'title' => 'My website is on page 2 of Google: what should I improve?',
-            'seo_title' => 'From page 2 to page 1 on Google | Sitewell',
+            'seo_title' => 'From page 2 to page 1 on Google | Digizu',
             'excerpt' => 'Use near-ranking queries to choose focused page improvements without treating an average position or a page-one promise as a business result.',
             'category' => 'SEO problems',
             'date' => '29 July 2026',
@@ -2951,7 +2951,7 @@ return [
                     'heading' => 'Record a change and allow time to assess it',
                     'paragraphs' => [
                         'Note the date the improvement is live. Compare like-for-like periods and the same query-page combination, considering seasonality and limited data. Avoid rewriting every week simply because daily positions fluctuate.',
-                        'Sitewell identifies striking-distance opportunities and prepares page improvements, but neither the starting position nor an improvement guarantees a page-one result.',
+                        'Digizu identifies striking-distance opportunities and prepares page improvements, but neither the starting position nor an improvement guarantees a page-one result.',
                     ],
                     'link' => [
                         'route' => 'marketing.landing',
@@ -3011,7 +3011,7 @@ return [
         [
             'slug' => 'how-to-rank-for-near-me-searches',
             'title' => 'How to rank for “near me” searches',
-            'seo_title' => 'How to rank for near me searches | Sitewell',
+            'seo_title' => 'How to rank for near me searches | Digizu',
             'excerpt' => 'Build useful local service information and a truthful business presence instead of filling pages with the words “near me”.',
             'category' => 'Local SEO',
             'date' => '8 July 2026',
@@ -3057,7 +3057,7 @@ return [
                             'local-seo-services',
                         ],
                         'label' => 'local SEO services',
-                        'before' => 'Sitewell’s ',
+                        'before' => 'Digizu’s ',
                         'after' => ' connect service pages, local information and practical enquiry routes.',
                     ],
                 ],
@@ -3097,7 +3097,7 @@ return [
                             'local-seo-services',
                         ],
                         'label' => 'local SEO services',
-                        'before' => 'Sitewell’s ',
+                        'before' => 'Digizu’s ',
                         'after' => ' connect service pages, local information and practical enquiry routes.',
                     ],
                     [
@@ -3124,7 +3124,7 @@ return [
         [
             'slug' => 'how-to-get-more-local-customers',
             'title' => 'How to get more local customers from Google',
-            'seo_title' => 'Get more local customers from Google | Sitewell',
+            'seo_title' => 'Get more local customers from Google | Digizu',
             'excerpt' => 'Connect local discovery to a useful page, an easy enquiry and dependable follow-up, then measure which searches bring suitable customers.',
             'category' => 'Local SEO',
             'date' => '18 June 2026',
@@ -3187,7 +3187,7 @@ return [
                     'heading' => 'Find the break before adding more pages',
                     'paragraphs' => [
                         'If the business is visible but enquiries are scarce, check the landing page and contact route. If suitable enquiries are arriving but rarely become customers, review response times, capacity and qualification. Search optimisation cannot solve every sales or operational issue.',
-                        'Sitewell can help with local pages and connected lead handling; Business Profile management is included on Complete.',
+                        'Digizu can help with local pages and connected lead handling; Business Profile management can be included in an agreed SEO scope.',
                     ],
                     'link' => [
                         'route' => 'marketing.landing',
@@ -3247,7 +3247,7 @@ return [
         [
             'slug' => 'how-to-find-website-keyword-rankings',
             'title' => 'How to find out what keywords your website ranks for',
-            'seo_title' => 'What keywords does my website rank for? | Sitewell',
+            'seo_title' => 'What keywords does my website rank for? | Digizu',
             'excerpt' => 'Find the Google searches your website appears for, check which pages rank and export your keyword data with this practical Search Console walkthrough.',
             'category' => 'Search measurement',
             'date' => '28 May 2026',
@@ -3316,7 +3316,7 @@ return [
                 [
                     'heading' => 'Understand what rank tracking adds',
                     'paragraphs' => [
-                        'A tracker checks a selected phrase under specified settings. Search Console’s average position summarises impressions from real searches. Differences are expected; neither should be presented as the one position every person sees. Sitewell stores selected keyword observations and uses connected Search Console data for broader context.',
+                        'A tracker checks a selected phrase under specified settings. Search Console’s average position summarises impressions from real searches. Differences are expected; neither should be presented as the one position every person sees. Digizu stores selected keyword observations and uses connected Search Console data for broader context.',
                     ],
                     'link' => [
                         'route' => 'marketing.landing',
@@ -3391,7 +3391,7 @@ return [
         [
             'slug' => 'how-to-find-seo-problems',
             'title' => 'How to find SEO problems on your website',
-            'seo_title' => 'Find SEO problems on your website | Sitewell',
+            'seo_title' => 'Find SEO problems on your website | Digizu',
             'excerpt' => 'Check indexing, page clarity, internal links and enquiry paths in a useful order, without treating every audit warning as an emergency.',
             'category' => 'SEO problems',
             'date' => '7 May 2026',
@@ -3462,7 +3462,7 @@ return [
                 [
                     'heading' => 'Recheck after the fix',
                     'paragraphs' => [
-                        'A report is only a starting point. Test the changed page, then monitor the relevant search or enquiry outcome. Sitewell’s website health checks and weekly reporting help keep findings connected to practical follow-up.',
+                        'A report is only a starting point. Test the changed page, then monitor the relevant search or enquiry outcome. Digizu’s website health checks and weekly reporting help keep findings connected to practical follow-up.',
                     ],
                     'link' => [
                         'route' => 'marketing.landing',
@@ -3470,7 +3470,7 @@ return [
                             'seo-website-audits',
                         ],
                         'label' => 'SEO website audits',
-                        'before' => 'Explore Sitewell’s ',
+                        'before' => 'Explore Digizu’s ',
                         'after' => ' if you need help deciding what deserves attention first.',
                     ],
                 ],
@@ -3504,7 +3504,7 @@ return [
                             'seo-website-audits',
                         ],
                         'label' => 'SEO website audits',
-                        'before' => 'Explore Sitewell’s ',
+                        'before' => 'Explore Digizu’s ',
                         'after' => ' if you need help deciding what deserves attention first.',
                     ],
                 ],
@@ -3522,7 +3522,7 @@ return [
         [
             'slug' => 'what-is-local-seo',
             'title' => 'What is local SEO and how does it work?',
-            'seo_title' => 'What is local SEO? | Sitewell',
+            'seo_title' => 'What is local SEO? | Digizu',
             'excerpt' => 'Learn how local search connects a business, its services and its location, and why website results and map results need different expectations.',
             'category' => 'Local SEO',
             'date' => '17 April 2026',
@@ -3592,7 +3592,7 @@ return [
                 [
                     'heading' => 'How to tell whether the work is helping',
                     'paragraphs' => [
-                        'Look at relevant search visibility, visits to local service pages and suitable enquiries. Keep location and seasonal changes in mind when comparing periods. Sitewell can help connect those signals with page improvements.',
+                        'Look at relevant search visibility, visits to local service pages and suitable enquiries. Keep location and seasonal changes in mind when comparing periods. Digizu can help connect those signals with page improvements.',
                     ],
                     'link' => [
                         'route' => 'marketing.landing',
@@ -3652,7 +3652,7 @@ return [
         [
             'slug' => 'how-long-does-seo-take',
             'title' => 'How long does SEO take to work?',
-            'seo_title' => 'How long does SEO take? | Sitewell',
+            'seo_title' => 'How long does SEO take? | Digizu',
             'excerpt' => 'Set realistic expectations by separating implementation, discovery, ranking changes and customer enquiries, then agree useful review points.',
             'category' => 'SEO decisions',
             'date' => '27 March 2026',
@@ -3716,9 +3716,9 @@ return [
                     ],
                 ],
                 [
-                    'heading' => 'What Sitewell can make visible',
+                    'heading' => 'What Digizu can make visible',
                     'paragraphs' => [
-                        'Sitewell connects search analysis and managed improvements with ongoing reporting. That gives a basis for discussing what changed and what deserves attention next; it does not guarantee the speed or size of a ranking improvement.',
+                        'Digizu connects search analysis and managed improvements with ongoing reporting. That gives a basis for discussing what changed and what deserves attention next; it does not guarantee the speed or size of a ranking improvement.',
                     ],
                     'link' => [
                         'route' => 'marketing.landing',
@@ -3778,8 +3778,8 @@ return [
         [
             'slug' => 'how-much-does-seo-cost-uk',
             'title' => 'How much does SEO cost in the UK?',
-            'seo_title' => 'How much does SEO cost in the UK? | Sitewell',
-            'excerpt' => 'Compare SEO quotes by scope, implementation and responsibility, with current Sitewell pricing linked separately from illustrative budget calculations.',
+            'seo_title' => 'How much does SEO cost in the UK? | Digizu',
+            'excerpt' => 'Compare SEO quotes by scope, implementation and responsibility, with current Digizu pricing linked separately from illustrative budget calculations.',
             'category' => 'SEO decisions',
             'date' => '6 March 2026',
             'date_iso' => '2026-03-06',
@@ -3811,15 +3811,15 @@ return [
                     ],
                 ],
                 [
-                    'heading' => 'Where Sitewell fits',
+                    'heading' => 'Where Digizu fits',
                     'paragraphs' => [
-                        'Sitewell publishes its current plan prices and inclusions on the pricing page. Essential focuses on website care and enquiries, Growth adds managed search and content work, and Complete adds Business Profile management and broader support. Check the current offer and scope there rather than relying on a price copied into an old article.',
+                        'Digizu quotes for the SEO review and improvements your website needs. The scope and review schedule are agreed before work starts. Ongoing SEO is separate from the £149 monthly website service. Check the current service pages rather than relying on a price copied into an old article.',
                     ],
                     'link' => [
                         'route' => 'marketing.pricing',
                         'parameters' => [
                         ],
-                        'label' => 'current Sitewell pricing',
+                        'label' => 'current Digizu pricing',
                         'before' => 'Compare ',
                         'after' => ' against the responsibilities you want a provider to take on.',
                     ],
@@ -3851,14 +3851,14 @@ return [
                     'What should an SEO quote include?',
                     'Is implementation included?',
                 ],
-                'customer_problem' => 'Compare SEO quotes by scope, implementation and responsibility, with current Sitewell pricing linked separately from illustrative budget calculations.',
+                'customer_problem' => 'Compare SEO quotes by scope, implementation and responsibility, with current Digizu pricing linked separately from illustrative budget calculations.',
                 'sitewell_capability' => 'Published membership scope',
                 'internal_links' => [
                     [
                         'route' => 'marketing.pricing',
                         'parameters' => [
                         ],
-                        'label' => 'current Sitewell pricing',
+                        'label' => 'current Digizu pricing',
                         'before' => 'Compare ',
                         'after' => ' against the responsibilities you want a provider to take on.',
                     ],
@@ -3886,7 +3886,7 @@ return [
         [
             'slug' => 'seo-vs-google-ads',
             'title' => 'SEO vs Google Ads: which should a small business use?',
-            'seo_title' => 'SEO vs Google Ads for small businesses | Sitewell',
+            'seo_title' => 'SEO vs Google Ads for small businesses | Digizu',
             'excerpt' => 'Compare paid and organic search by urgency, landing-page readiness and measurement, rather than assuming one channel always wins.',
             'category' => 'SEO decisions',
             'date' => '13 February 2026',
@@ -3955,9 +3955,9 @@ return [
                     ],
                 ],
                 [
-                    'heading' => 'Sitewell’s role',
+                    'heading' => 'Digizu’s role',
                     'paragraphs' => [
-                        'Sitewell’s published service focuses on managed website care, SEO, content and lead handling. This article is a channel comparison, not an offer to manage Google Ads. Use the current plan scope when deciding which responsibilities Sitewell should own.',
+                        'Digizu’s published service focuses on managed website care, SEO, content and lead handling. This article is a channel comparison, not an offer to manage Google Ads. Use the current plan scope when deciding which responsibilities Digizu should own.',
                     ],
                     'link' => [
                         'route' => 'marketing.landing',
@@ -4017,7 +4017,7 @@ return [
         [
             'slug' => 'what-is-a-website-seo-audit',
             'title' => 'What is a website SEO audit?',
-            'seo_title' => 'What is a website SEO audit? | Sitewell',
+            'seo_title' => 'What is a website SEO audit? | Digizu',
             'excerpt' => 'Understand what a useful SEO audit checks, what it cannot establish automatically and how a report should become a prioritised plan.',
             'category' => 'SEO foundations',
             'date' => '23 January 2026',
@@ -4087,14 +4087,14 @@ return [
                 [
                     'heading' => 'An audit starts the work',
                     'paragraphs' => [
-                        'After a fix, recheck the page and monitor the relevant outcome. Sitewell offers an initial website review and ongoing health and SEO auditing within its website care service. Deeper interpretation depends on connected data and agreed scope.',
+                        'After a fix, recheck the page and monitor the relevant outcome. Digizu offers an initial website review and ongoing health and SEO auditing within its website care service. Deeper interpretation depends on connected data and agreed scope.',
                     ],
                     'link' => [
                         'route' => 'marketing.landing',
                         'parameters' => [
                             'seo-website-audits',
                         ],
-                        'label' => 'Sitewell’s SEO audits',
+                        'label' => 'Digizu’s SEO audits',
                         'before' => 'See ',
                         'after' => ' for the practical starting point.',
                     ],
@@ -4128,7 +4128,7 @@ return [
                         'parameters' => [
                             'seo-website-audits',
                         ],
-                        'label' => 'Sitewell’s SEO audits',
+                        'label' => 'Digizu’s SEO audits',
                         'before' => 'See ',
                         'after' => ' for the practical starting point.',
                     ],
@@ -4147,7 +4147,7 @@ return [
         [
             'slug' => 'what-are-google-search-impressions',
             'title' => 'What are Google search impressions?',
-            'seo_title' => 'What are Google search impressions? | Sitewell',
+            'seo_title' => 'What are Google search impressions? | Digizu',
             'excerpt' => 'Understand impressions, clicks and click-through rate, then use page-level trends to decide whether growing visibility is useful.',
             'category' => 'Search measurement',
             'date' => '30 December 2025',
@@ -4217,7 +4217,7 @@ return [
                 [
                     'heading' => 'Use impressions as an early signal',
                     'paragraphs' => [
-                        'Sitewell uses connected Search Console data to help identify pages worth improving. An impression trend can point to an opportunity, but it should be read alongside intent, clicks and business outcomes.',
+                        'Digizu uses connected Search Console data to help identify pages worth improving. An impression trend can point to an opportunity, but it should be read alongside intent, clicks and business outcomes.',
                     ],
                     'link' => [
                         'route' => 'marketing.article',
@@ -4277,7 +4277,7 @@ return [
         [
             'slug' => 'what-is-domain-authority',
             'title' => 'What is domain authority and should you care about it?',
-            'seo_title' => 'What is domain authority? | Sitewell',
+            'seo_title' => 'What is domain authority? | Digizu',
             'excerpt' => 'Learn what third-party authority scores estimate and why a higher score is not the same as better rankings or more customers.',
             'category' => 'Search measurement',
             'date' => '9 December 2025',
@@ -4329,7 +4329,7 @@ return [
                     'heading' => 'When a changing score deserves attention',
                     'paragraphs' => [
                         'If a tool reports a sudden change, inspect the underlying data and whether its model changed. Compare that with first-party search performance. A score movement without a corresponding business or search change is not automatically an SEO emergency.',
-                        'Sitewell’s search analysis focuses on opportunities connected to actual pages and commercial priorities.',
+                        'Digizu’s search analysis focuses on opportunities connected to actual pages and commercial priorities.',
                     ],
                     'link' => [
                         'route' => 'marketing.landing',
@@ -4389,7 +4389,7 @@ return [
         [
             'slug' => 'do-google-reviews-help-seo',
             'title' => 'Do Google reviews help SEO?',
-            'seo_title' => 'Do Google reviews help SEO? | Sitewell',
+            'seo_title' => 'Do Google reviews help SEO? | Digizu',
             'excerpt' => 'Understand where reviews fit into local visibility and customer confidence, without buying ratings or treating a review count as a ranking guarantee.',
             'category' => 'Local SEO',
             'date' => '18 November 2025',
@@ -4443,9 +4443,9 @@ return [
                     ],
                 ],
                 [
-                    'heading' => 'How Sitewell supports the work',
+                    'heading' => 'How Digizu supports the work',
                     'paragraphs' => [
-                        'Complete includes Business Profile management and prepared customer review replies. The business still needs an honest review process and accurate service information. Review activity should sit alongside website improvements, not replace them.',
+                        'Business Profile management and prepared review replies can be included in an agreed SEO service. The business still needs an honest review process and accurate service information. Review activity should sit alongside website improvements, not replace them.',
                     ],
                     'link' => [
                         'route' => 'marketing.landing',
@@ -4505,7 +4505,7 @@ return [
         [
             'slug' => 'does-new-content-improve-rankings',
             'title' => 'Does adding new content improve Google rankings?',
-            'seo_title' => 'Does new content improve Google rankings? | Sitewell',
+            'seo_title' => 'Does new content improve Google rankings? | Digizu',
             'excerpt' => 'Decide when to publish a new page, improve an existing one or leave useful content alone, based on a genuine search need.',
             'category' => 'SEO foundations',
             'date' => '28 October 2025',
@@ -4573,9 +4573,9 @@ return [
                     ],
                 ],
                 [
-                    'heading' => 'Sitewell’s content rhythm follows eligible work',
+                    'heading' => 'Digizu’s content rhythm follows eligible work',
                     'paragraphs' => [
-                        'Growth and Complete include scheduled content improvements at different limits. Work can strengthen an existing page rather than create a new one, and scheduled preparation depends on eligible work and a connected repository. Drafts are prepared for review before publication.',
+                        'The content scope and schedule are agreed for your website. Work can strengthen an existing page rather than create a new one, and scheduled preparation depends on eligible work and a connected repository. Drafts are prepared for review before publication.',
                     ],
                     'link' => [
                         'route' => 'marketing.landing',
@@ -4635,7 +4635,7 @@ return [
         [
             'slug' => 'can-ai-assistants-find-your-business',
             'title' => 'Can ChatGPT, Gemini and other AI assistants find your business?',
-            'seo_title' => 'Can AI assistants find your business? | Sitewell',
+            'seo_title' => 'Can AI assistants find your business? | Digizu',
             'excerpt' => 'Improve the public information assistants may find, and assess AI visibility without treating one generated answer as a stable ranking.',
             'category' => 'AI search',
             'date' => '7 October 2025',
@@ -4674,7 +4674,7 @@ return [
                     'heading' => 'Avoid claiming coverage you cannot measure',
                     'paragraphs' => [
                         'One set of checks cannot establish visibility across every assistant or every user. Do not combine generated mentions with Google rankings as if they were the same metric. Referral visits and real enquiries provide a different kind of evidence.',
-                        'Sitewell has configured OpenAI visibility checks for selected prompts. Those observations are provider-specific; they are not a promise of monitoring Gemini or every assistant. Confirm availability and scope with the team.',
+                        'Digizu has configured OpenAI visibility checks for selected prompts. Those observations are provider-specific; they are not a promise of monitoring Gemini or every assistant. Confirm availability and scope with the team.',
                     ],
                 ],
                 [
@@ -4714,7 +4714,7 @@ return [
                 ],
                 'questions' => [
                     'Can I guarantee an AI mention?',
-                    'Does Sitewell track every assistant?',
+                    'Does Digizu track every assistant?',
                 ],
                 'customer_problem' => 'Improve the public information assistants may find, and assess AI visibility without treating one generated answer as a stable ranking.',
                 'sitewell_capability' => 'Configured OpenAI prompt visibility checks',
@@ -4763,7 +4763,7 @@ return [
             [
                 'heading' => 'Choose between profile work and a website gap',
                 'paragraphs' => [
-                    'A map visibility problem may involve profile status or proximity; a weak service page needs a different investigation. Check the customer’s route before prescribing more location pages. Complete includes managed Business Profile work, while website SEO scope should be agreed against the selected plan.',
+                    'A map visibility problem may involve profile status or proximity; a weak service page needs a different investigation. Check the customer’s route before prescribing more location pages. Agree Business Profile work and website SEO separately against the problems found.',
                 ],
                 'link' => [
                     'route' => 'marketing.article',
@@ -4850,7 +4850,7 @@ return [
             [
                 'heading' => 'Compare maintenance and SEO packages by responsibility',
                 'paragraphs' => [
-                    'Maintenance keeps the website dependable. Active SEO adds search interpretation and focused page improvements. Sitewell’s Essential plan covers website care and enquiries; Growth adds managed SEO and content, while Complete adds Business Profile management. Choose the scope you need rather than assuming every maintenance package includes all three.',
+                    'Maintenance keeps the website dependable. Active SEO adds search interpretation and focused page improvements. Digizu quotes for ongoing SEO separately from the monthly website service. Agree the website care, content and Business Profile work you need before work starts.',
                 ],
                 'link' => [
                     'route' => 'marketing.article',
