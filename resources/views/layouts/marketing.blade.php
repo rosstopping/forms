@@ -42,7 +42,10 @@
         <header class="bg-white text-ink">
             <div class="mx-auto flex max-w-7xl items-center justify-between gap-5 px-5 py-4 sm:px-8 sm:py-5 lg:px-10">
                 <p class="shrink-0 text-2xl font-semibold tracking-tight sm:text-3xl"><a href="{{ route('marketing.home') }}" aria-label="Homepage">digizu<span class="text-garden">.</span></a></p>
-                <nav aria-label="Main navigation">
+                <nav aria-label="Main navigation" class="flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
+                    @if (\App\Support\PublicWebsite::origin())
+                        <a href="/pay-monthly-websites/" class="font-medium text-garden underline underline-offset-4">Website plans</a>
+                    @endif
                     <a href="{{ route('marketing.free-site-audit') }}" class="inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-4 py-3 text-center text-base font-medium ring-1 ring-black/20 hover:bg-lichen focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-garden sm:gap-3 sm:px-5 sm:text-sm"><span class="sm:hidden">Free Audit</span><span class="max-sm:hidden">Get your free search audit</span><span aria-hidden="true">→</span></a>
                 </nav>
             </div>
@@ -63,6 +66,9 @@
                 <p class="text-base text-ink/65 sm:text-sm">© {{ now()->year }} Digizu.</p>
                 <nav aria-label="Footer navigation" class="flex flex-wrap gap-x-6 gap-y-2 text-base text-ink/65 sm:text-sm">
                     <a href="{{ route('marketing.features') }}" class="inline-flex min-h-12 items-center hover:text-ink">Services</a>
+                    @if (\App\Support\PublicWebsite::origin())
+                        <a href="/case-studies/" class="inline-flex min-h-12 items-center hover:text-ink">Case studies</a>
+                    @endif
                     <a href="{{ route('marketing.agencies') }}" class="inline-flex min-h-12 items-center hover:text-ink">For agencies</a>
                     <a href="{{ route('marketing.about') }}" class="inline-flex min-h-12 items-center hover:text-ink">About</a>
                     <a href="{{ route('marketing.faqs') }}" class="inline-flex min-h-12 items-center hover:text-ink">FAQs</a>

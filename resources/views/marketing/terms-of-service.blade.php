@@ -31,7 +31,7 @@
 
                 <section class="space-y-4">
                     <h2 class="font-sans text-3xl font-medium tracking-tight text-ink">4. Charges, renewals and cancellation</h2>
-                    <p>The £149 monthly website service has no setup fee or minimum term and can be cancelled at any time. Your quote sets out ownership and handover arrangements for the website, domain, email and hosting when the monthly service ends. Ongoing SEO is quoted separately, with the scope and review schedule agreed before work starts.</p>
+                    <p>The £149 monthly website service has no setup fee or minimum term and can be cancelled at any time. Your quote sets out ownership and handover arrangements for the website, domain, email and hosting when the monthly service ends. The website with ongoing SEO costs £349 per month. We agree the SEO scope and review schedule before work starts.</p>
                     <p>Prices and billing intervals are shown when you subscribe or agreed in writing. Unless stated otherwise, subscriptions renew automatically for the same billing interval until cancelled. You authorise our payment provider to collect applicable charges and taxes using your selected payment method.</p>
                     <p>You may cancel through the available account tools or by contacting us. Cancellation stops future renewal and normally takes effect at the end of the paid billing period. Fees already paid are non-refundable except where required by law or expressly agreed otherwise. Your statutory rights, where they apply, are not affected.</p>
                 </section>

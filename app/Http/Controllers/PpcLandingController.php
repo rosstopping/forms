@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\WebsiteAudit;
 use App\Support\MarketingJourney;
+use App\Support\PublicWebsite;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,14 +20,19 @@ class PpcLandingController extends Controller
         abort_unless(is_array($landing), 404);
         $attribution = $journey->capture($request, $landing['path']);
 
+        $canonical = isset($landing['canonical_landing'])
+            ? route('marketing.landing', $landing['canonical_landing'])
+            : route('marketing.ppc.'.$page);
+        if (isset($landing['digizu_canonical']) && PublicWebsite::origin() !== null) {
+            $canonical = PublicWebsite::origin().$landing['digizu_canonical'];
+        }
+
         return view('marketing.ppc', [
             'landing' => $landing,
             'pageKey' => $page,
             'attribution' => $attribution,
             'faqs' => [...$landing['faqs'], ...config('ppc.faqs')],
-            'canonical' => isset($landing['canonical_landing'])
-                ? route('marketing.landing', $landing['canonical_landing'])
-                : route('marketing.ppc.'.$page),
+            'canonical' => $canonical,
         ]);
     }
 

@@ -42,6 +42,10 @@
             <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-6 px-5 text-base text-ink/70 sm:px-8 sm:text-sm lg:px-10">
                 <p>© {{ now()->year }} Digizu.</p>
                 <nav aria-label="Company information" class="flex flex-wrap gap-x-6 gap-y-3">
+                    @if (\App\Support\PublicWebsite::origin())
+                        <a class="font-normal hover:text-ink" href="/pay-monthly-websites/">Website plans</a>
+                        <a class="font-normal hover:text-ink" href="/case-studies/">Case studies</a>
+                    @endif
                     <a class="font-normal hover:text-ink" href="{{ route('marketing.about') }}">About</a>
                     <a class="font-normal hover:text-ink" href="{{ route('marketing.contact') }}">Contact</a>
                     <button type="button" data-consent-manage class="min-h-12 text-left hover:text-ink focus-visible:outline-offset-4">Cookie settings</button>

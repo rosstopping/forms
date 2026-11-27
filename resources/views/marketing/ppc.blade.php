@@ -20,6 +20,9 @@
         <h1 class="max-w-[24ch] text-4xl font-medium tracking-tight text-balance sm:text-5xl lg:text-6xl">{{ $landing['heading'] }}</h1>
         <p class="max-w-[56ch] text-lg text-ink/70">{{ $landing['intro'] }}</p>
         <x-marketing.ppc-actions primary />
+        @if (\App\Support\PublicWebsite::origin())
+            <p><a href="/pay-monthly-websites/" class="text-garden underline underline-offset-4">Website with SEO for £349 per month</a> · <a href="/case-studies/casa-amore-seo/" class="text-garden underline underline-offset-4">Casa Amore’s SEO results</a></p>
+        @endif
         <p class="max-w-[64ch] text-base text-ink/65">The initial check uses public information. Website access is only needed for agreed changes.</p>
     </div>
 </section>
@@ -74,6 +77,9 @@
 </section>
 <section class="mx-3 mb-12 rounded-3xl bg-lichen py-12 sm:mx-6 sm:py-16">
     <div class="mx-auto grid max-w-7xl gap-6 px-5 sm:px-8 lg:px-10"><h2 class="max-w-[30ch] text-3xl font-medium tracking-tight sm:text-4xl">Start with your website</h2><x-marketing.ppc-actions primary />
+        @if (\App\Support\PublicWebsite::origin())
+            <p><a href="/pay-monthly-websites/" class="text-garden underline underline-offset-4">Website with SEO for £349 per month</a> · <a href="/case-studies/casa-amore-seo/" class="text-garden underline underline-offset-4">Casa Amore’s SEO results</a></p>
+        @endif
         <nav aria-label="Related SEO services" class="flex flex-wrap gap-x-6 gap-y-3 text-base text-ink/70">
             @foreach ($landing['related'] as $related)
                 <a href="{{ route('marketing.ppc.'.$related) }}" class="underline underline-offset-4 hover:text-ink">{{ config('ppc.pages.'.$related.'.heading') }}</a>

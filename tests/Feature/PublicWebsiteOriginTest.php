@@ -19,7 +19,7 @@ beforeEach(function (): void {
 it('generates public routes on Digizu in a queue context while retaining internal routes', function (): void {
     URL::forceRootUrl('https://sitewell.digizu.co.uk');
     expect(route('marketing.home'))->toBe('https://digizu.co.uk')
-        ->and(route('marketing.pricing'))->toBe('https://digizu.co.uk/seo-doncaster')
+        ->and(route('marketing.pricing'))->toBe('https://digizu.co.uk/pay-monthly-websites')
         ->and(route('marketing.free-site-audit'))->toBe('https://digizu.co.uk/get-started')
         ->and(route('login'))->toBe('https://sitewell.digizu.co.uk/login');
     $audit = WebsiteAudit::factory()->create();
@@ -33,7 +33,7 @@ it('generates public routes on Digizu in a queue context while retaining interna
 
 it('moves marketing pages without starting research and preserves campaign parameters', function (): void {
     $this->get('https://sitewell.digizu.co.uk/pricing?utm_source=legacy')
-        ->assertRedirect('https://digizu.co.uk/seo-doncaster/?utm_source=legacy')
+        ->assertRedirect('https://digizu.co.uk/pay-monthly-websites/?utm_source=legacy')
         ->assertStatus(301);
     Queue::assertNothingPushed();
 });
@@ -76,14 +76,14 @@ it('submits a Digizu audit once and redirects to the Digizu report', function ()
 });
 
 it('redirects replaced marketing paths on Digizu to the existing page', function (): void {
-    $this->get('https://digizu.co.uk/pricing?utm_source=legacy')->assertRedirect('https://digizu.co.uk/seo-doncaster/?utm_source=legacy');
+    $this->get('https://digizu.co.uk/pricing?utm_source=legacy')->assertRedirect('https://digizu.co.uk/pay-monthly-websites/?utm_source=legacy');
     $this->get('https://digizu.co.uk/wordpress')->assertRedirect('https://digizu.co.uk/contact/');
     Queue::assertNothingPushed();
 });
 
 it('publishes a public sitemap with Digizu URLs and no private audit records', function (): void {
     $sitemap = tempnam(sys_get_temp_dir(), 'digizu-static-sitemap-');
-    file_put_contents($sitemap, '<urlset><url><loc>https://digizu.co.uk/</loc></url><url><loc>https://digizu.co.uk/services/</loc></url><url><loc>https://digizu.co.uk/seo-doncaster/</loc></url><url><loc>https://digizu.co.uk/seo-for-small-businesses/</loc></url></urlset>');
+    file_put_contents($sitemap, '<urlset><url><loc>https://digizu.co.uk/</loc></url><url><loc>https://digizu.co.uk/services/</loc></url><url><loc>https://digizu.co.uk/pay-monthly-websites/</loc></url><url><loc>https://digizu.co.uk/seo-doncaster/</loc></url><url><loc>https://digizu.co.uk/seo-for-small-businesses/</loc></url></urlset>');
     config(['public_website.static_sitemap' => $sitemap]);
 
     $response = $this->get('https://digizu.co.uk/tools-sitemap.xml')->assertSuccessful();
@@ -174,4 +174,18 @@ it('returns homepage audit validation as JSON only when requested', function ():
     $this->from('https://digizu.co.uk/get-started')->post('https://digizu.co.uk/get-started', ['website_url' => 'invalid'])
         ->assertRedirect('https://digizu.co.uk/get-started')->assertSessionHasErrors('website_url');
     Queue::assertNothingPushed();
+});
+
+it('sends merged pages on both hosts straight to the surviving URL', function (): void {
+    foreach (config('public_website.merged_paths') as $from => $to) {
+        foreach (['digizu.co.uk', 'sitewell.digizu.co.uk'] as $host) {
+            $this->get("https://{$host}{$from}?utm_source=search")
+                ->assertStatus(301)->assertRedirect("https://digizu.co.uk{$to}?utm_source=search");
+        }
+    }
+});
+
+it('keeps the Doncaster campaign page available with the organic service canonical', function (): void {
+    $this->get('https://digizu.co.uk/seo/doncaster?utm_source=campaign')
+        ->assertOk()->assertSee('<link rel="canonical" href="https://digizu.co.uk/seo-doncaster/">', false);
 });

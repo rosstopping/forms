@@ -253,7 +253,10 @@ class MarketingController extends Controller
             abort_if($staticSitemap === false, 503);
             $staticPaths = collect($staticSitemap->xpath('//*[local-name()="loc"]'))
                 ->map(fn ($url): string => rtrim((string) parse_url((string) $url, PHP_URL_PATH), '/'));
-            $urls = $urls->reject(fn (string $url): bool => $staticPaths->contains(rtrim((string) parse_url($url, PHP_URL_PATH), '/')));
+            $campaignPaths = collect(config('ppc.pages', []))->whereNotNull('digizu_canonical')
+                ->map(fn (array $page): string => '/'.$page['path']);
+            $excluded = $staticPaths->merge($campaignPaths);
+            $urls = $urls->reject(fn (string $url): bool => $excluded->contains(rtrim((string) parse_url($url, PHP_URL_PATH), '/')));
         }
 
         $urls = $urls->unique()->values();

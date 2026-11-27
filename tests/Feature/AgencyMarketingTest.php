@@ -58,8 +58,8 @@ it('publishes eighteen distinct agency pages with metadata, breadcrumbs and site
 
 it('keeps the flagged agency page titles within search result length guidance', function (): void {
     foreach ([
-        'white-label-seo' => 'White-label SEO: your clients, your service | Sitewell',
-        'seo-reporting' => 'Agency SEO reporting: explain the work and results | Sitewell',
+        'white-label-seo' => 'White-label SEO: your clients, your service | Digizu',
+        'seo-reporting' => 'Agency SEO reporting: explain the work and results | Digizu',
     ] as $slug => $title) {
         $this->get(route('marketing.agencies.show', $slug))
             ->assertSuccessful()
@@ -71,9 +71,9 @@ it('keeps the flagged agency page titles within search result length guidance', 
 
 it('presents the managed agency service with existing booking and honest availability', function (): void {
     $home = $this->get(route('marketing.home'))->assertSuccessful()->getContent();
-    expect(substr_count($home, 'href="'.route('marketing.agencies').'"'))->toBe(0);
+    expect(substr_count($home, 'href="'.route('marketing.agencies').'"'))->toBe(1);
     $this->get(route('marketing.agencies'))->assertSuccessful()
-        ->assertSee('What’s included?')->assertSee('Video coming soon')
+        ->assertSee('What’s included?')->assertDontSee('Video coming soon')
         ->assertDontSee('fictional businesses and data')->assertDontSee('Join the agency beta')
         ->assertSee('Up to three scheduled content improvements per week')
         ->assertSee('data-audit-book-call', false)
@@ -162,7 +162,7 @@ it('rate limits public beta submissions', function (): void {
 
 it('keeps the managed service metadata and schema consistent without unconfirmed prices', function (): void {
     $response = $this->get(route('marketing.agencies'))->assertSuccessful()
-        ->assertSee('<title>SEO outsourcing for web agencies | Sitewell</title>', false)
+        ->assertSee('<title>SEO outsourcing for web agencies | Digizu</title>', false)
         ->assertDontSee('£150')->assertDontSee('£316')->assertDontSee('agency beta');
     preg_match('/<script type="application\/ld\+json">(.*?)<\/script>/s', $response->getContent(), $matches);
     $schema = json_decode($matches[1], true, flags: JSON_THROW_ON_ERROR);
