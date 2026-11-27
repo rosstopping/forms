@@ -167,3 +167,11 @@ it('brands public missing pages as Digizu without indexing them', function (): v
     $this->get('https://digizu.co.uk/no-such-public-page')->assertNotFound()
         ->assertSee('Digizu')->assertDontSee('Sitewell')->assertSee('noindex, nofollow');
 });
+
+it('returns homepage audit validation as JSON only when requested', function (): void {
+    $this->postJson('https://digizu.co.uk/get-started', ['website_url' => 'invalid'])
+        ->assertUnprocessable()->assertJsonValidationErrors('website_url');
+    $this->from('https://digizu.co.uk/get-started')->post('https://digizu.co.uk/get-started', ['website_url' => 'invalid'])
+        ->assertRedirect('https://digizu.co.uk/get-started')->assertSessionHasErrors('website_url');
+    Queue::assertNothingPushed();
+});
